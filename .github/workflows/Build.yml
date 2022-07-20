@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '!master'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2    
+
+    # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.2
+      
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Restore the application
+      run: msbuild src\IO.Milvus.sln /t:Restore /p:Configuration=Release
+
+    # build release
+    - name: Build Relase
+      run: msbuild src\IO.Milvus.sln /p:Configuration=Release

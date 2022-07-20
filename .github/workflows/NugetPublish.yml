@@ -1,0 +1,41 @@
+name: NugetPublish
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+    - '*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+    
+    # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    - name: Restore the application
+      run: msbuild src\IO.Milvus.sln /t:Restore /p:Configuration=Release
+
+    # build release
+    - name: Build Relase
+      run: msbuild src\IO.Milvus.sln /p:Configuration=Release
+      
+    # 4.Install Nuget
+    - name: Install Nuget
+      run: |
+        $sourceNugetExe = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+        $targetNugetExe = "nuget.exe"
+        Invoke-WebRequest $sourceNugetExe -OutFile $targetNugetExe
+        
+    # 5. Push  package
+    - name: Push generated package to GitHub registry
+      run: |
+        .\nuget push .\src\IO.Milvus\bin\Release\*.nupkg -Source https://api.nuget.org/v3/index.json -SkipDuplicate -ApiKey ${{ secrets.NugetKey }} -NoSymbols
