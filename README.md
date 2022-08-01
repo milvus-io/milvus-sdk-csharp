@@ -12,8 +12,6 @@
 
 C# SDK for [Milvus](https://github.com/milvus-io/milvus).
 
-
-
 ## Getting Started
 
 **Visual Studio**
@@ -84,3 +82,11 @@ var defualtClient = MilvusServiceClient.CreateGrpcDefaultClient(
 If you want to use io.milvus in asp.net core, you can take a look at this [doc](https://docs.microsoft.com/zh-cn/aspnet/core/grpc/?view=aspnetcore-6.0).
 
 Use namespace of IO.Milvus.Grpc with [DI](https://docs.microsoft.com/zh-cn/aspnet/core/grpc/clientfactory?view=aspnetcore-6.0).
+
+## Milvus-Workbench
+
+### under development
+
+There is a project named milvus-workbench in src/IO.Milvus.Workbench.
+It's a desktop version to manager milvus connections.
+![](./resources/workbench.png)

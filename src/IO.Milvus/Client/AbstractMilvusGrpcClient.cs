@@ -152,8 +152,11 @@ namespace IO.Milvus.Client
                 var schema = new CollectionSchema()
                 {
                     Name = requestParam.CollectionName,
-                    Description = requestParam.Description,
                 };
+                if (!string.IsNullOrEmpty(requestParam.Description))
+                {
+                    schema.Description = requestParam.Description;                  
+                }
 
                 long fieldID = 0;
                 foreach (var fieldType in requestParam.FieldTypes)
@@ -163,10 +166,13 @@ namespace IO.Milvus.Client
                         FieldID = fieldID++,
                         Name = fieldType.Name,
                         IsPrimaryKey = fieldType.IsPrimaryKey,
-                        Description = fieldType.Description,
                         DataType = fieldType.DataType,
-                        AutoID = fieldType.IsAutoID,
+                        AutoID = fieldType.IsAutoID,                        
                     };
+                    if (!string.IsNullOrEmpty(fieldType.Description))
+                    {
+                        field.Description = fieldType.Description;
+                    }
 
                     var typeParamsList = AssembleKvPair(fieldType.TypeParams);
 
@@ -1321,7 +1327,7 @@ namespace IO.Milvus.Client
                     CollectionName = requestParam.CollectionName,
                     Expr = requestParam.Expr,
                     GuaranteeTimestamp = requestParam.GuaranteeTimestamp,
-                    TravelTimestamp = requestParam.TravelTimestamp,                    
+                    TravelTimestamp = requestParam.TravelTimestamp,                   
                 };
 
                 request.OutputFields.AddRange(requestParam.OutFields);

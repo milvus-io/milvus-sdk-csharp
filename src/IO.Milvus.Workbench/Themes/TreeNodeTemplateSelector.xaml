@@ -1,0 +1,178 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:IO.Milvus.Workbench.Themes"
+    xmlns:models="clr-namespace:IO.Milvus.Workbench.Models">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="./Icons.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+    <local:TreeNodeItemTemplateSelector x:Key="MilvisTreeNodeTemplateSeletor">
+        <local:TreeNodeItemTemplateSelector.MilvusConnectionNodeDT>
+            <DataTemplate DataType="{x:Type models:MilvusConnectionNode}">
+                <Grid Height="20">
+                    <Grid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Command="{Binding ConnectCmd}" Header="Connect/Reload Milvus">
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding State}" Value="{x:Static models:NodeState.Success}">
+                                                <Setter Property="Icon">
+                                                    <Setter.Value>
+                                                        <Image Source="../Assets/Icons/milvusRefresh16.png" />
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Setter Property="Header" Value="Reload Milvus" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/milvusConnect16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding DisconnectCmd}" Header="Disconnect Milvus">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/milvusDisconnect16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding DeleteCmd}" Header="Delete">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/milvusDelete16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding CreateCollectionCmd}" Header="Create Collection">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/milvusAddCollection16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Grid.ContextMenu>
+                    <Grid.ToolTip>
+                        <TextBlock Text="{Binding}" />
+                    </Grid.ToolTip>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Image Height="20" Source="{StaticResource milvus32}" />
+                    <Ellipse
+                        Name="ConnectionStatePoint"
+                        Width="5"
+                        Height="5"
+                        Margin="0,0,5,5"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding State}" Value="{x:Static models:NodeState.Success}">
+                                        <Setter Property="Fill" Value="Green" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="{x:Static models:NodeState.Error}">
+                                        <Setter Property="Fill" Value="Red" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="{x:Static models:NodeState.Closed}">
+                                        <Setter Property="Fill" Value="Red" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="{x:Static models:NodeState.Connecting}">
+                                        <Setter Property="Fill" Value="Yellow" />
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard x:Name="Flash">
+                                                <Storyboard>
+                                                    <DoubleAnimation
+                                                        AutoReverse="True"
+                                                        RepeatBehavior="Forever"
+                                                        Storyboard.TargetProperty="Opacity"
+                                                        From="1.0"
+                                                        To="0.0"
+                                                        Duration="0:0:1" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <StopStoryboard BeginStoryboardName="Flash" />
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Text="{Binding DisplayName}" />
+                </Grid>
+            </DataTemplate>
+        </local:TreeNodeItemTemplateSelector.MilvusConnectionNodeDT>
+        <local:TreeNodeItemTemplateSelector.CollectionNodeDT>
+            <DataTemplate DataType="{x:Type models:CollectionNode}">
+                <Grid Height="20">
+                    <Grid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Command="{Binding LoadCollectionCmd}" Header="Load Collection">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/collectionLoad16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding ReleaseCollectionCmd}" Header="Release Collection">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/collectionRelease16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding DropCollectionCmd}" Header="Drop Collection">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/collectionDelete16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Create Partition">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/partitionCreate16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Grid.ContextMenu>
+                    <Grid.ToolTip>
+                        <TextBlock Text="{Binding}" />
+                    </Grid.ToolTip>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Image Height="18" Source="{StaticResource collection}" />
+                    <TextBlock
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Text="{Binding Name}" />
+                </Grid>
+            </DataTemplate>
+        </local:TreeNodeItemTemplateSelector.CollectionNodeDT>
+        <local:TreeNodeItemTemplateSelector.PartitionNodeDT>
+            <DataTemplate DataType="{x:Type models:PartitionNode}">
+                <Grid Height="20">
+                    <Grid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Delete Partition">
+                                <MenuItem.Icon>
+                                    <Image Source="../Assets/Icons/partitionDelete16.png" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Grid.ContextMenu>
+                    <Grid.ToolTip>
+                        <TextBlock Text="{Binding}" />
+                    </Grid.ToolTip>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Image Height="18" Source="{StaticResource partition}" />
+                    <TextBlock
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Text="{Binding Name}" />
+                </Grid>
+            </DataTemplate>
+        </local:TreeNodeItemTemplateSelector.PartitionNodeDT>
+    </local:TreeNodeItemTemplateSelector>
+</ResourceDictionary>

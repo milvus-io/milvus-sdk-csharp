@@ -5,9 +5,11 @@ VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IO.Milvus", "IO.Milvus\IO.Milvus.csproj", "{B580F531-D699-475D-AB09-9D6979DDE4D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IO.MilvusTests", "IO.MilvusTests\IO.MilvusTests.csproj", "{A7A92847-F38D-4F27-AB11-5EF4BF0822E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IO.MilvusTests", "IO.MilvusTests\IO.MilvusTests.csproj", "{A7A92847-F38D-4F27-AB11-5EF4BF0822E8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{F28B43AD-22FF-4892-AA86-762D978FA0A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IO.Milvus.Workbench", "IO.Milvus.Workbench\IO.Milvus.Workbench.csproj", "{A8F224E6-C033-4096-8EBE-496A86A86360}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,6 +25,10 @@ Global
 		{A7A92847-F38D-4F27-AB11-5EF4BF0822E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7A92847-F38D-4F27-AB11-5EF4BF0822E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A7A92847-F38D-4F27-AB11-5EF4BF0822E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8F224E6-C033-4096-8EBE-496A86A86360}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8F224E6-C033-4096-8EBE-496A86A86360}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8F224E6-C033-4096-8EBE-496A86A86360}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8F224E6-C033-4096-8EBE-496A86A86360}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

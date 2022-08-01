@@ -1,0 +1,246 @@
+﻿<Window
+    x:Class="IO.Milvus.Workbench.Dialogs.CreateCollectionDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converter="clr-namespace:IO.Milvus.Workbench.Converter"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:fields="clr-namespace:IO.Milvus.Workbench.Models.Fields"
+    xmlns:grpc="clr-namespace:IO.Milvus.Grpc;assembly=IO.Milvus"
+    xmlns:local="clr-namespace:IO.Milvus.Workbench.Dialogs"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:themes="clr-namespace:IO.Milvus.Workbench.Themes"
+    xmlns:viewmodels="clr-namespace:IO.Milvus.Workbench.ViewModels"
+    Title="{Binding Title}"
+    Width="500"
+    Height="500"
+    d:DataContext="{d:DesignInstance Type=viewmodels:CreateCollectionDialogViewModel}"
+    Icon="{StaticResource collection}"
+    ShowInTaskbar="False"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <Style x:Key="RightTextBlock" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+        </Style>
+        <converter:EnumToStringConverter x:Key="EnumToListConveter" />
+        <themes:FieldTemplateSelector x:Key="FieldTemplateSelector">
+            <themes:FieldTemplateSelector.DefaultFieldTemplate>
+                <DataTemplate DataType="{x:Type fields:DefaultField}">
+                    <GroupBox Margin="5">
+                        <GroupBox.Header>
+                            <Grid>
+                                <TextBlock Text="Field" />
+                                <Button
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Right"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding DataContext.RemoveFieldCmd, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ItemsControl}}}"
+                                    CommandParameter="{Binding}">
+                                    <Image Source="../Assets/Icons/fieldDelete16.png" />
+                                </Button>
+                            </Grid>
+                        </GroupBox.Header>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RightTextBlock}" Text="FieldName:" />
+                            <TextBox Grid.Column="1" Text="{Binding Name}" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="Field Type:" />
+                            <ComboBox
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                SelectedIndex="0"
+                                ItemsSource="{Binding DataTypes}"
+                                SelectedItem="{Binding FieldType}" />
+                            <TextBlock
+                                Grid.Row="2"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="Description" />
+                            <TextBox
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Text="{Binding Description}" />
+                        </Grid>
+                    </GroupBox>
+                </DataTemplate>
+            </themes:FieldTemplateSelector.DefaultFieldTemplate>
+            <themes:FieldTemplateSelector.PrimaryKeyFieldTemplate>
+                <DataTemplate DataType="{x:Type fields:PrimaryField}">
+                    <GroupBox Margin="5" Header="Primary Key(Int64)">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RightTextBlock}" Text="FieldName:" />
+                            <TextBox Grid.Column="1" Text="{Binding Name}" />
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="AutoID:" />
+                            <CheckBox
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                IsChecked="{Binding AutoID}" />
+                            <TextBlock
+                                Grid.Row="2"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="Description" />
+                            <TextBox
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Text="{Binding Description}" />
+                        </Grid>
+                    </GroupBox>
+                </DataTemplate>
+            </themes:FieldTemplateSelector.PrimaryKeyFieldTemplate>
+            <themes:FieldTemplateSelector.VectorFieldTemplate>
+                <DataTemplate DataType="{x:Type fields:VectorField}">
+                    <GroupBox Margin="5" Header="Vector Field">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RightTextBlock}" Text="Vector Field Type:" />
+                            <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedField}">
+                                <ComboBoxItem Content="Float Vector" />
+                                <ComboBoxItem Content="Binary Vector" />
+                            </ComboBox>
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="Field Name:" />
+                            <TextBox
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Text="{Binding Name}" />
+                            <TextBlock
+                                Grid.Row="2"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="Dimension:" />
+                            <TextBox
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                Text="{Binding Dimension}" />
+                            <TextBlock
+                                Grid.Row="3"
+                                Style="{StaticResource RightTextBlock}"
+                                Text="Description" />
+                            <TextBox
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                Text="{Binding Description}" />
+                        </Grid>
+                    </GroupBox>
+                </DataTemplate>
+            </themes:FieldTemplateSelector.VectorFieldTemplate>
+        </themes:FieldTemplateSelector>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="241*" />
+            <RowDefinition Height="50" />
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30" />
+                <RowDefinition Height="30" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Style="{StaticResource RightTextBlock}"
+                Text="Name:" />
+            <TextBox
+                Grid.Column="1"
+                Margin="10,0"
+                VerticalAlignment="Center"
+                Text="{Binding Name}" />
+            <TextBlock
+                Grid.Row="1"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Style="{StaticResource RightTextBlock}"
+                Text="Description:" />
+            <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                Margin="10,0"
+                VerticalAlignment="Center"
+                Text="{Binding Description}" />
+            <Separator
+                Grid.Row="1"
+                Grid.ColumnSpan="2"
+                VerticalAlignment="Bottom" />
+            <Grid Grid.Row="2" Grid.ColumnSpan="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition Height="30" />
+                </Grid.RowDefinitions>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl
+                        Margin="2"
+                        ItemTemplateSelector="{StaticResource FieldTemplateSelector}"
+                        ItemsSource="{Binding Fields}" />
+                </ScrollViewer>
+                <Button
+                    Grid.Row="1"
+                    Height="23"
+                    Margin="10,0"
+                    Command="{Binding AddFieldComd}"
+                    Content="Add New Field" />
+            </Grid>
+        </Grid>
+        <Separator VerticalAlignment="Bottom" />
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="100" />
+                <ColumnDefinition Width="100" />
+            </Grid.ColumnDefinitions>
+            <Button
+                Name="YesBtn"
+                Grid.Column="1"
+                Width="75"
+                Height="23"
+                Command="{Binding AddCmd}"
+                Content="_Yes" />
+            <Button
+                Grid.Column="2"
+                Width="75"
+                Height="23"
+                Command="{Binding CanacelCmd}"
+                Content="_Cancel" />
+        </Grid>
+    </Grid>
+</Window>

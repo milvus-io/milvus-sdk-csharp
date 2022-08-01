@@ -1,0 +1,93 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ControlTemplate x:Key="ExpanderPlusToggleButton" TargetType="{x:Type ToggleButton}">
+        <Border
+            Name="Border"
+            Grid.Row="0"
+            Background="#707070"
+            BorderThickness="1"
+            CornerRadius="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <!--  Draws a plus (+) sign on the expander  -->
+                <Path
+                    x:Name="Sign"
+                    Grid.Column="1"
+                    Width="12"
+                    Height="12"
+                    Margin="0,10,15,10"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Data="M 0,6 H 12 M 6,0 V 12 Z"
+                    Stroke="#E5E5E5"
+                    StrokeThickness="2" />
+                <ContentPresenter
+                    x:Name="HeaderContent"
+                    Grid.Column="0"
+                    Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}, Path=ActualWidth}"
+                    Margin="15,0,0,0"
+                    VerticalAlignment="Center"
+                    RecognizesAccessKey="True" />
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="true">
+                <!--  Sets the sign on the expander to a minus (-)  -->
+                <Setter TargetName="Sign" Property="Data" Value="M 0,6 H 12 Z" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Border" Property="Background" Value="{x:Null}" />
+                <Setter TargetName="Border" Property="BorderBrush" Value="{x:Null}" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style x:Key="WorkspaceReferencesExpanderStyle" TargetType="Expander">
+        <Setter Property="Background" Value="{StaticResource SecondaryGray}" />
+        <Setter Property="Foreground" Value="{StaticResource PreferencesWindowFontColor}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <!--  Control template for expander  -->
+                <ControlTemplate x:Name="exp" TargetType="Expander">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Name="ContentRow" Height="0" />
+                        </Grid.RowDefinitions>
+                        <Border
+                            Name="Border"
+                            Grid.Row="0"
+                            Background="{x:Null}"
+                            BorderBrush="{x:Null}"
+                            BorderThickness="1"
+                            CornerRadius="0,0,0,0">
+                            <ToggleButton
+                                Background="#FF4682B4"
+                                IsChecked="{Binding Path=IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                OverridesDefaultStyle="True"
+                                Template="{StaticResource ExpanderPlusToggleButton}">
+                                <ToggleButton.Content>
+                                    <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
+                                </ToggleButton.Content>
+                            </ToggleButton>
+                        </Border>
+                        <Border
+                            x:Name="Content"
+                            Grid.Row="1"
+                            BorderThickness="1,0,1,1"
+                            CornerRadius="0,0,4,4">
+                            <ContentPresenter Margin="2,0,0,15" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ContentRow" Property="Height" Value="{Binding ElementName=Content, Path=Height}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
