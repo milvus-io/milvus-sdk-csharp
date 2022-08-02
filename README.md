@@ -29,12 +29,8 @@ https://www.nuget.org/packages/IO.Milvus/
 
  [![NET6](https://img.shields.io/badge/.NET-6.0-red)](https://github.com/lepoco/wpfui/blob/main/src/Wpf.Ui/WPFUI.csproj) 
  ![NET5](https://img.shields.io/badge/.NET-5.0-blue)
- ![NETFramework48](https://img.shields.io/badge/.NET%20Framework-4.8-orange)
- ![NETFramework47](https://img.shields.io/badge/.NET%20Framework-4.7-orange)
- ![NETFramework461](https://img.shields.io/badge/.NET%20Framework-4.6.1-orange)
 
 ```
-.net framework 4.6.1 or higher
 .net 5.0 or .net 6.0
 ```
 
