@@ -5,9 +5,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>weigan</Authors>
     <Description>Milvus C# SDK</Description>
-    <PackageProjectUrl>https://github.com/weianweigan/milvus-sdk-csharp</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
     <PackageIcon>milvussharp.png</PackageIcon>
-    <RepositoryUrl>https://github.com/weianweigan/milvus-sdk-csharp</RepositoryUrl>
+    <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
     <PackageTags>milvus;vector database</PackageTags>
     <Version>2.0.0-alpha.3</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
