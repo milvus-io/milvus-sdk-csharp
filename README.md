@@ -37,12 +37,12 @@ https://www.nuget.org/packages/IO.Milvus/
 ### Installing
 
 ```
-Install-Package IO.Milvus -Version 2.0.0-alpha.2
+Install-Package IO.Milvus -Version 2.0.0-alpha.3
 ```
 Or
 
 ```xml
-<PackageReference Include="IO.Milvus" Version="2.0.0-alpha.2" />
+<PackageReference Include="IO.Milvus" Version="2.0.0-alpha.3" />
 ```
 
 
@@ -77,4 +77,4 @@ var defualtClient = MilvusServiceClient.CreateGrpcDefaultClient(
 
 If you want to use io.milvus in asp.net core, you can take a look at this [doc](https://docs.microsoft.com/zh-cn/aspnet/core/grpc/?view=aspnetcore-6.0).
 
-Use namespace of IO.Milvus.Grpc with [DI](https://docs.microsoft.com/zh-cn/aspnet/core/grpc/clientfactory?view=aspnetcore-6.0).
+Use namespace IO.Milvus.Grpc with [DI](https://docs.microsoft.com/aspnet/core/grpc/clientfactory?view=aspnetcore-6.0).
