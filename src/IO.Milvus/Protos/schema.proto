@@ -1,15 +1,13 @@
 syntax = "proto3";
 package milvus.proto.schema;
 
-option go_package = "github.com/milvus-io/milvus/internal/proto/schemapb";
+option go_package = "github.com/milvus-io/milvus-proto/go-api/schemapb";
 
 option java_multiple_files = true;
 option java_package = "io.milvus.grpc";
 option java_outer_classname = "SchemaProto";
 option java_generate_equals_and_hash = true;
-
 option csharp_namespace = "IO.Milvus.Grpc";
-
 import "common.proto";
 
 /**
@@ -27,9 +25,17 @@ enum DataType {
   Double = 11;
 
   String = 20;
+  VarChar = 21; // variable-length strings with a specified maximum length
 
   BinaryVector = 100;
   FloatVector = 101;
+}
+
+enum FieldState {
+  FieldCreated = 0;
+  FieldCreating = 1;
+  FieldDropping = 2;
+  FieldDropped = 3;
 }
 
 /**
@@ -44,6 +50,7 @@ message FieldSchema {
   repeated common.KeyValuePair type_params = 6;
   repeated common.KeyValuePair index_params = 7;
   bool autoID = 8;
+  FieldState state = 9; // To keep compatible with older version, the default state is `Created`.
 }
 
 /**
@@ -130,3 +137,4 @@ message SearchResultData {
   IDs ids = 5;
   repeated int64 topks = 6;
 }
+
