@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Common.ClientEnum;
+﻿using Google.Protobuf;
+using IO.Milvus.Common.ClientEnum;
 using IO.Milvus.Exception;
 using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
@@ -145,7 +146,7 @@ namespace IO.Milvus.Param.Dml
             }
         }
 
-        internal SearchRequest ToRequset(bool check = false)
+        internal SearchRequest ToRequest(bool check = false)
         {
             if (check)
             {
@@ -154,25 +155,56 @@ namespace IO.Milvus.Param.Dml
 
             var request = new SearchRequest()
             {
+                DbName = "",
                 CollectionName = CollectionName,
                 GuaranteeTimestamp = GuaranteeTimestamp,
                 TravelTimestamp = TravelTimestamp,
+                SearchParams ={
+                    // expr for boolean expression
+                    new Grpc.KeyValuePair() { Key = "metric_type", Value = MetricType.ToString() },
+                    new Grpc.KeyValuePair() { Key = "anns_field", Value = VectorFieldName },
+                    new Grpc.KeyValuePair() { Key = "topk", Value = TopK.ToString() },
+                    new Grpc.KeyValuePair() { Key = "params", Value =  Params },
+                },
+                DslType = DslType.BoolExprV1,
+                Dsl = Expr,
+                Nq = Vectors.Count
             };
 
             request.OutputFields.AddRange(OutFields);
             request.PartitionNames.AddRange(PartitionNames);
 
-            //TODO add vectors
-            PlaceholderType plType = PlaceholderType.None;
+            var placeholderGroup = new PlaceholderGroup();
+
             foreach (var vector in Vectors)
             {
-                if (typeof(TVector) == typeof(float))
+                if (typeof(TVector) == typeof(List<float>))
                 {
-                    plType = PlaceholderType.FloatVector;
+                    var floatVector = vector as List<float>;
 
-                    
+                    var placeholderValue = new PlaceholderValue
+                    {
+                        Type = PlaceholderType.FloatVector,
+                        Tag = "$0"
+                    };
+
+                    using (var memoryStream = new MemoryStream(floatVector.Count * sizeof(float)))
+                    using (var binaryWriter = new BinaryWriter(memoryStream))
+                    {
+                        for (int i = 0; i < floatVector.Count; i++)
+                            binaryWriter.Write(floatVector[i]);
+
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+
+                        placeholderValue.Values.Add(ByteString.FromStream(memoryStream));
+
+                    }
+                    placeholderGroup.Placeholders.Add(placeholderValue);
+
                 }
             }
+
+            request.PlaceholderGroup = placeholderGroup.ToByteString();
 
             return request;
         }

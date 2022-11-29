@@ -1404,16 +1404,7 @@ namespace IO.Milvus.Client
             try
             {
                 requestParam.Check();
-                var request = new SearchRequest()
-                {
-                    CollectionName = requestParam.CollectionName,
-                    
-                    GuaranteeTimestamp = requestParam.GuaranteeTimestamp,
-                    TravelTimestamp = requestParam.TravelTimestamp,
-                };
-
-                request.PartitionNames.AddRange(requestParam.PartitionNames);
-                request.OutputFields.AddRange(requestParam.OutFields);
+                var request = requestParam.ToRequest();
 
                 var response = client.Search(request, callOptions ?? WithInternalOptions());
 
@@ -1445,16 +1436,7 @@ namespace IO.Milvus.Client
             try
             {
                 requestParam.Check();
-                var request = new SearchRequest()
-                {
-                    CollectionName = requestParam.CollectionName,
-
-                    GuaranteeTimestamp = requestParam.GuaranteeTimestamp,
-                    TravelTimestamp = requestParam.TravelTimestamp,
-                };
-
-                request.PartitionNames.AddRange(requestParam.PartitionNames);
-                request.OutputFields.AddRange(requestParam.OutFields);
+                var request = requestParam.ToRequest();
 
                 var response = await client.SearchAsync(request, callOptions ?? WithInternalOptions());
 

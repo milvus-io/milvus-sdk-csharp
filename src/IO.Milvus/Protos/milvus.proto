@@ -1,17 +1,17 @@
 syntax = "proto3";
 package milvus.proto.milvus;
 
-option go_package = "github.com/milvus-io/milvus/internal/proto/milvuspb";
+option go_package = "github.com/milvus-io/milvus-proto/go-api/milvuspb";
 
 option java_multiple_files = true;
 option java_package = "io.milvus.grpc";
 option java_outer_classname = "MilvusProto";
 option java_generate_equals_and_hash = true;
-
 option csharp_namespace = "IO.Milvus.Grpc";
 
 import "common.proto";
 import "schema.proto";
+import "google/protobuf/descriptor.proto";
 
 service MilvusService {
   rpc CreateCollection(CreateCollectionRequest) returns (common.Status) {}
@@ -22,6 +22,7 @@ service MilvusService {
   rpc DescribeCollection(DescribeCollectionRequest) returns (DescribeCollectionResponse) {}
   rpc GetCollectionStatistics(GetCollectionStatisticsRequest) returns (GetCollectionStatisticsResponse) {}
   rpc ShowCollections(ShowCollectionsRequest) returns (ShowCollectionsResponse) {}
+  rpc AlterCollection(AlterCollectionRequest) returns (common.Status) {}
 
   rpc CreatePartition(CreatePartitionRequest) returns (common.Status) {}
   rpc DropPartition(DropPartitionRequest) returns (common.Status) {}
@@ -31,13 +32,17 @@ service MilvusService {
   rpc GetPartitionStatistics(GetPartitionStatisticsRequest) returns (GetPartitionStatisticsResponse) {}
   rpc ShowPartitions(ShowPartitionsRequest) returns (ShowPartitionsResponse) {}
 
+  rpc GetLoadingProgress(GetLoadingProgressRequest) returns (GetLoadingProgressResponse) {}
+
   rpc CreateAlias(CreateAliasRequest) returns (common.Status) {}
   rpc DropAlias(DropAliasRequest) returns (common.Status) {}
   rpc AlterAlias(AlterAliasRequest) returns (common.Status) {}
 
   rpc CreateIndex(CreateIndexRequest) returns (common.Status) {}
   rpc DescribeIndex(DescribeIndexRequest) returns (DescribeIndexResponse) {}
+  // Deprecated: use DescribeIndex instead
   rpc GetIndexState(GetIndexStateRequest) returns (GetIndexStateResponse) {}
+  // Deprecated: use DescribeIndex instead
   rpc GetIndexBuildProgress(GetIndexBuildProgressRequest) returns (GetIndexBuildProgressResponse) {}
   rpc DropIndex(DropIndexRequest) returns (common.Status) {}
 
@@ -51,6 +56,7 @@ service MilvusService {
   rpc GetFlushState(GetFlushStateRequest) returns (GetFlushStateResponse) {}
   rpc GetPersistentSegmentInfo(GetPersistentSegmentInfoRequest) returns (GetPersistentSegmentInfoResponse) {}
   rpc GetQuerySegmentInfo(GetQuerySegmentInfoRequest) returns (GetQuerySegmentInfoResponse) {}
+  rpc GetReplicas(GetReplicasRequest) returns (GetReplicasResponse) {}
 
   rpc Dummy(DummyRequest) returns (DummyResponse) {}
 
@@ -59,10 +65,35 @@ service MilvusService {
 
   // https://wiki.lfaidata.foundation/display/MIL/MEP+8+--+Add+metrics+for+proxy
   rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse) {}
+  rpc GetComponentStates(GetComponentStatesRequest) returns (ComponentStates) {}
+
   rpc LoadBalance(LoadBalanceRequest) returns (common.Status) {}
   rpc GetCompactionState(GetCompactionStateRequest) returns (GetCompactionStateResponse) {}
   rpc ManualCompaction(ManualCompactionRequest) returns (ManualCompactionResponse) {}
   rpc GetCompactionStateWithPlans(GetCompactionPlansRequest) returns (GetCompactionPlansResponse) {}
+
+  // https://wiki.lfaidata.foundation/display/MIL/MEP+24+--+Support+bulk+load
+  rpc Import(ImportRequest) returns (ImportResponse) {}
+  rpc GetImportState(GetImportStateRequest) returns (GetImportStateResponse) {}
+  rpc ListImportTasks(ListImportTasksRequest) returns (ListImportTasksResponse) {}
+
+  // https://wiki.lfaidata.foundation/display/MIL/MEP+27+--+Support+Basic+Authentication
+  rpc CreateCredential(CreateCredentialRequest) returns (common.Status) {}
+  rpc UpdateCredential(UpdateCredentialRequest) returns (common.Status) {}
+  rpc DeleteCredential(DeleteCredentialRequest) returns (common.Status) {}
+  rpc ListCredUsers(ListCredUsersRequest) returns (ListCredUsersResponse) {}
+
+  // https://wiki.lfaidata.foundation/display/MIL/MEP+29+--+Support+Role-Based+Access+Control
+  rpc CreateRole(CreateRoleRequest) returns (common.Status) {}
+  rpc DropRole(DropRoleRequest) returns (common.Status) {}
+  rpc OperateUserRole(OperateUserRoleRequest) returns (common.Status) {}
+  rpc SelectRole(SelectRoleRequest) returns (SelectRoleResponse) {}
+  rpc SelectUser(SelectUserRequest) returns (SelectUserResponse) {}
+  rpc OperatePrivilege(OperatePrivilegeRequest) returns (common.Status) {}
+  rpc SelectGrant(SelectGrantRequest) returns (SelectGrantResponse) {}
+
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
+  rpc CheckHealth(CheckHealthRequest) returns (CheckHealthResponse) {}
 }
 
 message CreateAliasRequest {
@@ -89,31 +120,61 @@ message AlterAliasRequest{
 * Create collection in milvus
 */
 message CreateCollectionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeCreateCollection
+    object_name_index: -1
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
   string db_name = 2;
   // The unique collection name in milvus.(Required)
-  string collection_name = 3; 
+  string collection_name = 3;
   // The serialized `schema.CollectionSchema`(Required)
-  bytes schema = 4; 
+  bytes schema = 4;
   // Once set, no modification is allowed (Optional)
   // https://github.com/milvus-io/milvus/issues/6690
   int32 shards_num = 5;
   // The consistency level that the collection used, modification is not supported now.
   common.ConsistencyLevel consistency_level = 6;
+  repeated common.KeyValuePair properties = 7;
 }
 
 /**
-* Drop collection in milvus, also will drop data in collection. 
+* Drop collection in milvus, also will drop data in collection.
 */
 message DropCollectionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeDropCollection
+    object_name_index: -1
+  };
   // Not useful for now
-  common.MsgBase base = 1; 
+  common.MsgBase base = 1;
   // Not useful for now
   string db_name = 2;
   // The unique collection name in milvus.(Required)
   string collection_name = 3;
+}
+
+/**
+* Alter collection in milvus
+*/
+message AlterCollectionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeCreateCollection
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // Not useful for now
+  string db_name = 2;
+  // The unique collection name in milvus.(Required)
+  string collection_name = 3;
+  int64  collectionID = 4;
+  repeated common.KeyValuePair properties = 5;
 }
 
 /**
@@ -125,7 +186,7 @@ message HasCollectionRequest {
   // Not useful for now
   string db_name = 2;
   // The collection name you want to check.
-  string collection_name = 3; 
+  string collection_name = 3;
   // If time_stamp is not zero, will return true when time_stamp >= created collection timestamp, otherwise will return false.
   uint64 time_stamp = 4;
 }
@@ -145,6 +206,11 @@ message StringResponse {
 * Get collection meta datas like: schema, collectionID, shards number ...
 */
 message DescribeCollectionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeDescribeCollection
+    object_name_index: -1
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
@@ -185,24 +251,37 @@ message DescribeCollectionResponse {
   common.ConsistencyLevel consistency_level = 11;
   // The collection name
   string collection_name = 12;
+  repeated common.KeyValuePair properties = 13;
 }
 
 /**
 * Load collection data into query nodes, then you can do vector search on this collection.
 */
 message LoadCollectionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeLoad
+    object_name_index: 3
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
   string db_name = 2;
   // The collection name you want to load
   string collection_name = 3;
+  // The replica number to load, default by 1
+  int32 replica_number = 4;
 }
 
 /**
 * Release collection data from query nodes, then you can't do vector search on this collection.
 */
 message ReleaseCollectionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeRelease
+    object_name_index: 3
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
@@ -212,9 +291,47 @@ message ReleaseCollectionRequest {
 }
 
 /**
+* Get statistics like row_count.
+* WARNING: This API is experimental and not useful for now.
+*/
+message GetStatisticsRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeGetStatistics
+    object_name_index: 3
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // Not useful for now
+  string db_name = 2;
+  // The collection name you want get statistics
+  string collection_name = 3;
+  // The partition names you want get statistics, empty for all partitions
+  repeated string partition_names = 4;
+  // Not useful for now, reserved for future
+  uint64 guarantee_timestamp = 5;
+}
+
+/**
+* Will return statistics in stats field like [{key:"row_count",value:"1"}]
+* WARNING: This API is experimental and not useful for now.
+*/
+message GetStatisticsResponse {
+  // Contain error_code and reason
+  common.Status status = 1;
+  // Collection statistics data
+  repeated common.KeyValuePair stats = 2;
+}
+
+/**
 * Get collection statistics like row_count.
 */
 message GetCollectionStatisticsRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeGetStatistics
+    object_name_index: 3
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
@@ -236,17 +353,23 @@ message GetCollectionStatisticsResponse {
 /*
 * This is for ShowCollectionsRequest type field.
 */
+// Deprecated: use GetLoadingProgress rpc instead
 enum ShowType {
-  // Will return all colloections 
+  // Will return all collections
   All = 0;
   // Will return loaded collections with their inMemory_percentages
   InMemory = 1;
 }
 
 /*
-* List collections 
+* List collections
 */
 message ShowCollectionsRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeShowCollections
+    object_name_index: -1
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
@@ -256,7 +379,8 @@ message ShowCollectionsRequest {
   // Decide return Loaded collections or All collections(Optional)
   ShowType type = 4;
   // When type is InMemory, will return these collection's inMemory_percentages.(Optional)
-  repeated string collection_names = 5; 
+  // Deprecated: use GetLoadingProgress rpc instead
+  repeated string collection_names = 5;
 }
 
 /*
@@ -274,7 +398,10 @@ message ShowCollectionsResponse {
   // The utc timestamp calculated by created_timestamp
   repeated uint64 created_utc_timestamps = 5;
   // Load percentage on querynode when type is InMemory
-  repeated int64 inMemory_percentages = 6; 
+  // Deprecated: use GetLoadingProgress rpc instead
+  repeated int64 inMemory_percentages = 6;
+  // Indicate whether query service is available
+  repeated bool query_service_available = 7;
 }
 
 /*
@@ -302,7 +429,7 @@ message DropPartitionRequest {
   // The collection name in milvus
   string collection_name = 3;
   // The partition name you want to drop
-  string partition_name = 4; 
+  string partition_name = 4;
 }
 
 /*
@@ -332,6 +459,8 @@ message LoadPartitionsRequest {
   string collection_name = 3;
   // The partition names you want to load
   repeated string partition_names = 4;
+  // The replicas number you would load, 1 by default
+  int32 replica_number = 5;
 }
 
 /*
@@ -360,7 +489,7 @@ message GetPartitionStatisticsRequest {
   // The collection name in milvus
   string collection_name = 3;
   // The partition name you want to collect statistics
-  string partition_name = 4; 
+  string partition_name = 4;
 }
 
 message GetPartitionStatisticsResponse {
@@ -383,6 +512,7 @@ message ShowPartitionsRequest {
   // When type is InMemory, will return these patitions's inMemory_percentages.(Optional)
   repeated string partition_names = 5;
   // Decide return Loaded partitions or All partitions(Optional)
+  // Deprecated: use GetLoadingProgress rpc instead
   ShowType type = 6;
 }
 
@@ -402,6 +532,7 @@ message ShowPartitionsResponse {
   // All utc timestamps calculated by created_timestamps
   repeated uint64 created_utc_timestamps = 5;
   // Load percentage on querynode
+  // Deprecated: use GetLoadingProgress rpc instead
   repeated int64 inMemory_percentages = 6;
 }
 
@@ -434,8 +565,13 @@ message ShowSegmentsResponse {
 * Create index for vector datas
 */
 message CreateIndexRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeCreateIndex
+    object_name_index: 3
+  };
   // Not useful for now
-  common.MsgBase base = 1; 
+  common.MsgBase base = 1;
   // Not useful for now
   string db_name = 2;
   // The particular collection name you want to create index.
@@ -443,24 +579,31 @@ message CreateIndexRequest {
   // The vector field name in this particular collection
   string field_name = 4;
   // Support keys: index_type,metric_type, params. Different index_type may has different params.
-  repeated common.KeyValuePair extra_params = 5; 
+  repeated common.KeyValuePair extra_params = 5;
+  // Version before 2.0.2 doesn't contain index_name, we use default index name.
+  string index_name = 6;
 }
 
 /*
-* Get created index information. 
+* Get created index information.
 * Current release of Milvus only supports showing latest built index.
 */
 message DescribeIndexRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeIndexDetail
+    object_name_index: 3
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
   string db_name = 2;
   // The particular collection name in Milvus
   string collection_name = 3;
-   // The vector field name in this particular collection
+  // The vector field name in this particular collection
   string field_name = 4;
   // No need to set up for now @2021.06.30
-  string index_name = 5; 
+  string index_name = 5;
 }
 
 /*
@@ -475,6 +618,12 @@ message IndexDescription {
   repeated common.KeyValuePair params = 3;
   // The vector field name
   string field_name = 4;
+  // index build progress
+  int64 indexed_rows = 5;
+  int64 total_rows = 6;
+  // index state
+  common.IndexState state = 7;
+  string index_state_fail_reason = 8;
 }
 
 /*
@@ -488,9 +637,14 @@ message DescribeIndexResponse {
 }
 
 /*
-*  Get index building progress 
+*  Get index building progress
 */
 message GetIndexBuildProgressRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeIndexDetail
+    object_name_index: 3
+  };
   // Not useful for now
   common.MsgBase base = 1;
   // Not useful for now
@@ -510,6 +664,11 @@ message GetIndexBuildProgressResponse {
 }
 
 message GetIndexStateRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeIndexDetail
+    object_name_index: 3
+  };
   common.MsgBase base = 1; // must
   string db_name = 2 ;
   string collection_name = 3; // must
@@ -524,6 +683,11 @@ message GetIndexStateResponse {
 }
 
 message DropIndexRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeDropIndex
+    object_name_index: 3
+  };
   common.MsgBase base = 1; // must
   string db_name = 2;
   string collection_name = 3; // must
@@ -532,6 +696,11 @@ message DropIndexRequest {
 }
 
 message InsertRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeInsert
+    object_name_index: 3
+  };
   common.MsgBase base = 1;
   string db_name = 2;
   string collection_name = 3;
@@ -554,6 +723,11 @@ message MutationResult {
 }
 
 message DeleteRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeDelete
+    object_name_index: 3
+  };
   common.MsgBase base = 1;
   string db_name = 2;
   string collection_name = 3;
@@ -562,24 +736,13 @@ message DeleteRequest {
   repeated uint32 hash_keys = 6;
 }
 
-enum PlaceholderType {
-  None = 0;
-  BinaryVector = 100;
-  FloatVector = 101;
-}
-
-message PlaceholderValue {
-  string tag = 1;
-  PlaceholderType type = 2;
-  // values is a 2d-array, every array contains a vector
-  repeated bytes values = 3;
-}
-
-message PlaceholderGroup {
-  repeated PlaceholderValue placeholders = 1;
-}
 
 message SearchRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeSearch
+    object_name_index: 3
+  };
   common.MsgBase base = 1; // must
   string db_name = 2;
   string collection_name = 3; // must
@@ -592,6 +755,7 @@ message SearchRequest {
   repeated common.KeyValuePair search_params = 9; // must
   uint64 travel_timestamp = 10;
   uint64 guarantee_timestamp = 11; // guarantee_timestamp
+  int64  nq = 12;
 }
 
 message Hits {
@@ -607,6 +771,11 @@ message SearchResults {
 }
 
 message FlushRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeFlush
+    object_name_indexs: 3
+  };
   common.MsgBase base = 1;
   string db_name = 2;
   repeated string collection_names = 3;
@@ -616,9 +785,16 @@ message FlushResponse{
   common.Status status = 1;
   string db_name = 2;
   map<string, schema.LongArray> coll_segIDs = 3;
+  map<string, schema.LongArray> flush_coll_segIDs = 4;
+  map<string, int64> coll_seal_times = 5;
 }
 
 message QueryRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeQuery
+    object_name_index: 3
+  };
   common.MsgBase base = 1;
   string db_name = 2;
   string collection_name = 3;
@@ -627,6 +803,7 @@ message QueryRequest {
   repeated string partition_names = 6;
   uint64 travel_timestamp = 7;
   uint64 guarantee_timestamp = 8; // guarantee_timestamp
+  repeated common.KeyValuePair query_params = 9; // optional
 }
 
 message QueryResults {
@@ -646,7 +823,7 @@ message VectorsArray {
   oneof array {
     VectorIDs id_array = 1; // vector ids
     schema.VectorField data_array = 2; // vectors data
-  } 
+  }
 }
 
 message CalcDistanceRequest {
@@ -660,8 +837,8 @@ message CalcDistanceResults {
   common.Status status = 1;
   // num(op_left)*num(op_right) distance values, "HAMMIN" return integer distance
   oneof array {
-    	schema.IntArray int_dist = 2;
-	schema.FloatArray float_dist = 3;
+    schema.IntArray int_dist = 2;
+    schema.FloatArray float_dist = 3;
   }
 }
 
@@ -692,8 +869,10 @@ message QuerySegmentInfo {
   int64 num_rows = 5;
   string index_name = 6;
   int64 indexID = 7;
+  // deprecated, check node_ids(NodeIds) field
   int64 nodeID = 8;
   common.SegmentState state = 9;
+  repeated int64 nodeIds = 10;
 }
 
 message GetQuerySegmentInfoRequest {
@@ -734,17 +913,44 @@ message GetMetricsResponse {
   string component_name = 3; // metrics from which component
 }
 
+message ComponentInfo {
+  int64 nodeID = 1;
+  string role = 2;
+  common.StateCode state_code = 3;
+  repeated common.KeyValuePair extra_info = 4;
+}
+
+message ComponentStates {
+  ComponentInfo state = 1;
+  repeated ComponentInfo subcomponent_states = 2;
+  common.Status status = 3;
+}
+
+message GetComponentStatesRequest {
+}
+
 /*
 * Do load balancing operation from src_nodeID to dst_nodeID.
 */
 message LoadBalanceRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeLoadBalance
+    object_name_index: 5
+  };
   common.MsgBase base = 1;
   int64 src_nodeID = 2;
   repeated int64 dst_nodeIDs = 3;
   repeated int64 sealed_segmentIDs = 4;
+  string collectionName = 5;
 }
 
 message ManualCompactionRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeCompaction
+    object_name_index: 1
+  };
   int64 collectionID = 1;
   uint64 timetravel = 2;
 }
@@ -764,6 +970,7 @@ message GetCompactionStateResponse {
   int64 executingPlanNo = 3;
   int64 timeoutPlanNo = 4;
   int64 completedPlanNo = 5;
+  int64 failedPlanNo = 6;
 }
 
 message GetCompactionPlansRequest {
@@ -790,6 +997,357 @@ message GetFlushStateResponse {
   bool flushed = 2;
 }
 
+message ImportRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Collection
+    object_privilege: PrivilegeImport
+    object_name_index: 1
+  };
+  string collection_name = 1;                // target collection
+  string partition_name = 2;                 // target partition
+  repeated string channel_names = 3;         // channel names for the collection
+  bool row_based = 4;                        // the file is row-based or column-based
+  repeated string files = 5;                 // file paths to be imported
+  repeated common.KeyValuePair options = 6;  // import options, bucket, etc.
+}
+
+message ImportResponse {
+  common.Status status = 1;
+  repeated int64 tasks = 2;  // id array of import tasks
+}
+
+message GetImportStateRequest {
+  int64 task = 1;  // id of an import task
+}
+
+message GetImportStateResponse {
+  common.Status status = 1;
+  common.ImportState state = 2;                      // is this import task finished or not
+  int64 row_count = 3;                               // if the task is finished, this value is how many rows are imported. if the task is not finished, this value is how many rows are parsed. return 0 if failed.
+  repeated int64 id_list = 4;                        // auto generated ids if the primary key is autoid
+  repeated common.KeyValuePair infos = 5;            // more information about the task, progress percent, file path, failed reason, etc.
+  int64 id = 6;                                      // id of an import task
+  int64 collection_id = 7;                           // collection ID of the import task.
+  repeated int64 segment_ids = 8;                    // a list of segment IDs created by the import task.
+  int64 create_ts = 9;                               // timestamp when the import task is created.
+}
+
+message ListImportTasksRequest {
+  string collection_name = 1; // target collection, list all tasks if the name is empty
+  int64 limit = 2;            // maximum number of tasks returned, list all tasks if the value is 0
+}
+
+message ListImportTasksResponse {
+  common.Status status = 1;
+  repeated GetImportStateResponse tasks = 2;  // list of all import tasks
+}
+
+message GetReplicasRequest {
+  common.MsgBase base = 1;
+  int64 collectionID = 2;
+  bool with_shard_nodes = 3;
+}
+
+message GetReplicasResponse {
+  common.Status status = 1;
+  repeated ReplicaInfo replicas = 2;
+}
+
+message ReplicaInfo {    // ReplicaGroup
+  int64 replicaID = 1;
+  int64 collectionID = 2;
+  repeated int64 partition_ids = 3;    // empty indicates to load collection
+  repeated ShardReplica shard_replicas = 4;
+  repeated int64 node_ids = 5; // include leaders
+}
+
+message ShardReplica {
+  int64 leaderID = 1;
+  string leader_addr = 2; // IP:port
+  string dm_channel_name = 3;
+  // optional, DO NOT save it in meta, set it only for GetReplicas()
+  // if with_shard_nodes is true
+  repeated int64 node_ids = 4;
+}
+
 service ProxyService {
   rpc RegisterLink(RegisterLinkRequest) returns (RegisterLinkResponse) {}
+}
+
+// https://wiki.lfaidata.foundation/display/MIL/MEP+27+--+Support+Basic+Authentication
+
+message CreateCredentialRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeCreateOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // username
+  string username = 2;
+  // ciphertext password
+  string password = 3;
+  // create time
+  uint64 created_utc_timestamps = 4;
+  // modify time
+  uint64 modified_utc_timestamps = 5;
+}
+
+message UpdateCredentialRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: User
+    object_privilege: PrivilegeUpdateUser
+    object_name_index: 2
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // username
+  string username = 2;
+  // old password
+  string oldPassword = 3;
+  // new password
+  string newPassword = 4;
+  // create time
+  uint64 created_utc_timestamps = 5;
+  // modify time
+  uint64 modified_utc_timestamps = 6;
+}
+
+message DeleteCredentialRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeDropOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // Not useful for now
+  string username = 2;
+}
+
+message ListCredUsersResponse {
+  // Contain error_code and reason
+  common.Status status = 1;
+  // username array
+  repeated string usernames = 2;
+}
+
+message ListCredUsersRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeSelectOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+}
+
+// https://wiki.lfaidata.foundation/display/MIL/MEP+29+--+Support+Role-Based+Access+Control
+message RoleEntity {
+  string name = 1;
+}
+
+message UserEntity {
+  string name = 1;
+}
+
+message CreateRoleRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeCreateOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // role
+  RoleEntity entity = 2;
+}
+
+message DropRoleRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeDropOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // role name
+  string role_name = 2;
+}
+
+enum OperateUserRoleType {
+  AddUserToRole = 0;
+  RemoveUserFromRole = 1;
+}
+
+message OperateUserRoleRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeManageOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // username
+  string username = 2;
+  // role name
+  string role_name = 3;
+  // operation type
+  OperateUserRoleType type = 4;
+}
+
+message SelectRoleRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeSelectOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // role
+  RoleEntity role = 2;
+  // include user info
+  bool include_user_info = 3;
+}
+
+message RoleResult {
+  RoleEntity role = 1;
+  repeated UserEntity users = 2;
+}
+
+message SelectRoleResponse {
+  // Not useful for now
+  common.Status status = 1;
+  // role result array
+  repeated RoleResult results = 2;
+}
+
+message SelectUserRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: User
+    object_privilege: PrivilegeSelectUser
+    object_name_index: 2
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // user
+  UserEntity user = 2;
+  // include user info
+  bool include_role_info = 3;
+}
+
+message UserResult {
+  UserEntity user = 1;
+  repeated RoleEntity roles = 2;
+}
+
+message SelectUserResponse {
+  // Not useful for now
+  common.Status status = 1;
+  // user result array
+  repeated UserResult results = 2;
+}
+
+message ObjectEntity {
+  string name = 1;
+}
+
+message PrivilegeEntity {
+  string name = 1;
+}
+
+message GrantorEntity {
+  UserEntity user = 1;
+  PrivilegeEntity privilege = 2;
+}
+
+message GrantPrivilegeEntity {
+  repeated GrantorEntity entities = 1;
+}
+
+message GrantEntity {
+  // role
+  RoleEntity role = 1;
+  // object
+  ObjectEntity object = 2;
+  // object name
+  string object_name = 3;
+  // privilege
+  GrantorEntity grantor = 4;
+}
+
+message SelectGrantRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeSelectOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // grant
+  GrantEntity entity = 2;
+}
+
+message SelectGrantResponse {
+  // Not useful for now
+  common.Status status = 1;
+  // grant info array
+  repeated GrantEntity entities = 2;
+}
+
+enum OperatePrivilegeType {
+  Grant = 0;
+  Revoke = 1;
+}
+
+message OperatePrivilegeRequest {
+  option (common.privilege_ext_obj) = {
+    object_type: Global
+    object_privilege: PrivilegeManageOwnership
+    object_name_index: -1
+  };
+  // Not useful for now
+  common.MsgBase base = 1;
+  // grant
+  GrantEntity entity = 2;
+  // operation type
+  OperatePrivilegeType type = 3;
+}
+
+message GetLoadingProgressRequest {
+  // Not useful for now
+  common.MsgBase base = 1;
+  string collection_name = 2;
+  repeated string partition_names = 3;
+}
+
+message GetLoadingProgressResponse {
+  common.Status status = 1;
+  int64 progress = 2;
+}
+
+message MilvusExt {
+  string version = 1;
+}
+
+extend google.protobuf.FileOptions {
+  MilvusExt milvus_ext_obj = 1001;
+}
+
+message GetVersionRequest {
+}
+
+message GetVersionResponse {
+  common.Status status = 1;
+  string version =2;
+}
+
+message CheckHealthRequest {
+}
+
+message CheckHealthResponse {
+  common.Status status = 1;
+  bool isHealthy = 2;
+  repeated string reasons = 3;
 }
