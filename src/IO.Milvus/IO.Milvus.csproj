@@ -25,9 +25,9 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Protobuf Include="Protos\common.proto" />
-    <Protobuf Include="Protos\schema.proto" ProtoRoot="Protos\" />
-    <Protobuf Include="Protos\milvus.proto" ProtoRoot="Protos\" />
+    <Protobuf Include="Protos\proto\common.proto" />
+    <Protobuf Include="Protos\proto\schema.proto" ProtoRoot="Protos\proto" />
+    <Protobuf Include="Protos\proto\milvus.proto" ProtoRoot="Protos\proto" />
   </ItemGroup>
 
   <ItemGroup>
