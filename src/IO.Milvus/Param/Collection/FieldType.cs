@@ -1,8 +1,7 @@
 ﻿using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using Milvus.Proto.Schema;
 
 namespace IO.Milvus.Param.Collection
 {
@@ -13,13 +12,15 @@ namespace IO.Milvus.Param.Collection
     public class FieldType
     {
         private int dimension;
+
         #region Fields
+
         #endregion
 
         #region Ctor
+
         public FieldType()
         {
-
         }
 
         public static FieldType Create(
@@ -44,6 +45,7 @@ namespace IO.Milvus.Param.Collection
                     field.TypeParams[typeParam.Key] = typeParam.Value;
                 }
             }
+
             field.Check();
 
             return field;
@@ -77,16 +79,20 @@ namespace IO.Milvus.Param.Collection
                     field.TypeParams[typeParam.Key] = typeParam.Value;
                 }
             }
+
             field.Check();
 
             return field;
         }
+
         #endregion
 
         #region Properties
+
         public int Dimension
         {
-            get => dimension; set
+            get => dimension;
+            set
             {
                 dimension = value;
                 TypeParams[Constant.VECTOR_DIM] = Dimension.ToString();
@@ -106,6 +112,7 @@ namespace IO.Milvus.Param.Collection
         public Dictionary<string, string> TypeParams { get; } = new Dictionary<string, string>();
 
         public bool IsAutoID { get; set; } = false;
+
         #endregion
 
         internal void Check()
@@ -172,7 +179,8 @@ namespace IO.Milvus.Param.Collection
         /// <returns><see cref="string"/></returns>
         public override string ToString()
         {
-            return $"FieldType{{{nameof(Name)}={Name}\', {nameof(DataType)}={DataType}\', {nameof(IsPrimaryKey)}={IsPrimaryKey}, {nameof(IsAutoID)}={IsAutoID}, {nameof(TypeParams)}={TypeParams}}}";
+            return
+                $"FieldType{{{nameof(Name)}={Name}\', {nameof(DataType)}={DataType}\', {nameof(IsPrimaryKey)}={IsPrimaryKey}, {nameof(IsAutoID)}={IsAutoID}, {nameof(TypeParams)}={TypeParams}}}";
         }
     }
 }

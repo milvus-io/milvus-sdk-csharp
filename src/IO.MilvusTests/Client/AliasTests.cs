@@ -7,8 +7,8 @@ namespace IO.Milvus.Client.Tests
 {
     /// <summary>
     /// unit test about alias
-    /// the tests must be executed in order of alphabet. A -> B -> C 
-    /// 
+    /// the tests must be executed in order of alphabet. A -> B -> C
+    ///
     /// </summary>
     /// <remarks>
     /// <see cref="https://milvus.io/docs/v2.0.x/collection_alias.md"/>
@@ -17,8 +17,8 @@ namespace IO.Milvus.Client.Tests
     public class AliasTests : MilvusServiceClientTestsBase
     {
         [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName,HostConfig.DefaultAliasName)]
-        public void ACreateAliasTest(string collectionName,string aliasName)
+        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultAliasName)]
+        public void ACreateAliasTest(string collectionName, string aliasName)
         {
             var r = MilvusClient.CreateAlias(CreateAliasParam.Create(collectionName, aliasName));
             AssertRpcStatus(r);

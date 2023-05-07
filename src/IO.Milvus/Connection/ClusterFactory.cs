@@ -2,7 +2,6 @@
 using IO.Milvus.Param;
 using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace IO.Milvus.Connection
 {

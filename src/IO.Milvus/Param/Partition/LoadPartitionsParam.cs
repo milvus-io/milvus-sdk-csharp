@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.Exception;
 using IO.Milvus.Utils;
-using System;
 using System.Collections.Generic;
 
 namespace IO.Milvus.Param.Partition

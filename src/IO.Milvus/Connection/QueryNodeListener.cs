@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using IO.Milvus.Param.Dml;
-using IO.Milvus.Grpc;
 using IO.Milvus.Response;
 using IO.Milvus.Utils;
+using Milvus.Proto.Milvus;
 
 namespace IO.Milvus.Connection
 {

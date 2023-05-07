@@ -2,7 +2,8 @@
 using IO.MilvusTests.Client.Base;
 using IO.Milvus.Param.Partition;
 using IO.MilvusTests;
-using IO.Milvus.Param;
+using Milvus.Proto.Common;
+using Status = IO.Milvus.Param.Status;
 
 namespace IO.Milvus.Client.Tests
 {
@@ -60,7 +61,7 @@ namespace IO.Milvus.Client.Tests
 
             Assert.IsNotNull(r);
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Status.ErrorCode == Grpc.ErrorCode.Success);
+            Assert.IsTrue(r.Data.Status.ErrorCode == ErrorCode.Success);
         }
 
         [TestMethod()]
@@ -82,6 +83,6 @@ namespace IO.Milvus.Client.Tests
 
             AssertRpcStatus(r);
         }
-        
+
     }
 }

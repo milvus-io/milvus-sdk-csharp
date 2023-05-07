@@ -1,11 +1,10 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using Milvus.Proto.Schema;
 
 namespace IO.Milvus.Response
 {

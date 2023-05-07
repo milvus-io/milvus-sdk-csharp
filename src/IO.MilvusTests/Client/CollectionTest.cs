@@ -1,5 +1,4 @@
-﻿using IO.Milvus.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using IO.Milvus.Param;
 using IO.Milvus.Param.Collection;
 using IO.MilvusTests.Client.Base;
@@ -8,9 +7,9 @@ using IO.MilvusTests;
 namespace IO.Milvus.Client.Tests
 {
     [TestClass]
-    public class CollectionTest:MilvusServiceClientTestsBase
+    public class CollectionTest : MilvusServiceClientTestsBase
     {
-        [TestMethod()]
+        [TestMethod]
         [DataRow(HostConfig.DefaultTestCollectionName, true)]
         [DataRow("test2", false)]
         public void HasCollectionTest(string collectionName, bool exist)
@@ -21,34 +20,25 @@ namespace IO.Milvus.Client.Tests
             Assert.IsTrue(r.Data == exist);
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public void HasCollectionErrorTest(string collectionName)
+        [TestMethod]
+        public void HasCollectionErrorTest()
         {
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
+
             var r = MilvusClient.HasCollection(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success,r.Exception?.ToString());
+            ThenDropCollection(collectionName);
+            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
         }
 
-        [TestMethod()]
+        [TestMethod]
         public void CreateCollectionTest()
         {
-            var rd = new Random(DateTime.Now.Second);
             var collectionName = $"test{rd.Next()}";
-
-            var r = MilvusClient.CreateCollection(
-                CreateCollectionParam.Create(
-                   collectionName: collectionName,
-                   shardsNum: 2,
-                   new List<FieldType>()
-                {
-                    FieldType.Create(
-                        $"priKey{rd.Next()}",
-                    Grpc.DataType.Int64,
-                    null,
-                    true
-                    )
-                }));
+            var r = CreateBookCollection(collectionName);
 
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsNotNull(r.Data);
@@ -57,58 +47,85 @@ namespace IO.Milvus.Client.Tests
             Assert.IsTrue(hasR.Status == Status.Success);
             Assert.IsTrue(hasR.Data);
 
-            MilvusClient.DropCollection(collectionName);
+            ThenDropCollection(collectionName);
 
             hasR = MilvusClient.HasCollection(HasCollectionParam.Create(collectionName));
             Assert.IsTrue(hasR.Status == Status.Success);
             Assert.IsTrue(!hasR.Data);
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public void ShowCollectionsTest(string collectionName)
+        [TestMethod]
+        public void ShowCollectionsTest()
         {
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
+
             var r = MilvusClient.ShowCollections(ShowCollectionsParam.Create(null));
 
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsTrue(r.Data.CollectionNames.Contains(collectionName));
+
+            ThenDropCollection(collectionName);
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public void DescribeCollectionTest(string collectionName)
+        [TestMethod]
+        public void DescribeCollectionTest()
         {
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
+
             var r = MilvusClient.DescribeCollection(DescribeCollectionParam.Create(collectionName));
 
+            ThenDropCollection(collectionName);
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsTrue(r.Data.Schema.Name == collectionName);
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public void DescribeCollectionWithNameTest(string collectionName)
+        [TestMethod]
+        public void DescribeCollectionWithNameTest()
         {
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
+
             var r = MilvusClient.DescribeCollection(collectionName);
 
+            ThenDropCollection(collectionName);
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsTrue(r.Data.Schema.Name == collectionName);
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, true)]
-        [DataRow(HostConfig.DefaultTestCollectionName, false)]
-        public void GetCollectionStatisticsTest(string collectionName,bool isFlushCollection)
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void GetCollectionStatisticsTest(bool isFlushCollection)
         {
-            var r = MilvusClient.GetCollectionStatistics(GetCollectionStatisticsParam.Create(collectionName,isFlushCollection));
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
 
+            var r = MilvusClient.GetCollectionStatistics(
+                GetCollectionStatisticsParam.Create(collectionName, isFlushCollection));
+
+            ThenDropCollection(collectionName);
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsTrue(r.Data.Stats.First().Key == "row_count");
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public void LoadCollectionTest(string collectionName)
+        [TestMethod]
+        public void LoadCollectionTest()
         {
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
+
             var r = MilvusClient.LoadCollection(LoadCollectionParam.Create(collectionName));
 
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
@@ -118,12 +135,19 @@ namespace IO.Milvus.Client.Tests
 
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+
+
+            ThenDropCollection(collectionName);
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public void LoadCollectionWithNameTest(string collectionName)
+        [TestMethod]
+        public void LoadCollectionWithNameTest()
         {
+            var collectionName = $"test{rd.Next()}";
+            GivenNoCollection(collectionName);
+            GivenCollection(collectionName);
+            GivenBookIndex(collectionName);
+
             var r = MilvusClient.LoadCollection(collectionName);
 
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
@@ -133,6 +157,8 @@ namespace IO.Milvus.Client.Tests
 
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
             Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+
+            ThenDropCollection(collectionName);
         }
 
         //[TestMethod()]

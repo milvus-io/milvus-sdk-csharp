@@ -1,9 +1,8 @@
 ﻿using IO.Milvus.Exception;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using IO.Milvus.Utils;
-using System;
+using Milvus.Proto.Schema;
 
 namespace IO.Milvus.Param.Collection
 {
@@ -73,7 +72,7 @@ namespace IO.Milvus.Param.Collection
                 throw new ParamException("Collection field cannot be null");
             }
 
-            if (!FieldTypes.First().IsPrimaryKey || FieldTypes.First().DataType != Grpc.DataType.Int64)
+            if (!FieldTypes.First().IsPrimaryKey || FieldTypes.First().DataType != DataType.Int64)
             {
                 throw new ParamException("The first filedType's IsPrimaryKey must be true and DataType == Int64");
             }

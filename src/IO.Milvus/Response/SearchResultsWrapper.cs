@@ -1,9 +1,8 @@
 ﻿using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Milvus.Proto.Schema;
 
 namespace IO.Milvus.Response
 {

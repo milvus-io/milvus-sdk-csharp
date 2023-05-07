@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace IO.Milvus.Param.Collection
+﻿namespace IO.Milvus.Param.Collection
 {
     public class GetCollectionStatisticsParam
     {

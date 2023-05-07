@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IO.Milvus.Param.Partition
+﻿namespace IO.Milvus.Param.Partition
 {
     public class GetPartitionStatisticsParam
     {

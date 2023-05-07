@@ -1,8 +1,6 @@
-﻿using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
-using System;
+﻿using IO.Milvus.Utils;
 using System.Collections.Generic;
-using System.Linq;
+using Milvus.Proto.Milvus;
 
 namespace IO.Milvus.Param.Collection
 {

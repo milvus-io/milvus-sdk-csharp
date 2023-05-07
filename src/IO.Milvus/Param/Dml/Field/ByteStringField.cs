@@ -1,5 +1,5 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.Grpc;
+using Milvus.Proto.Schema;
 
 namespace IO.Milvus.Param.Dml
 {

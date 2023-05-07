@@ -1,17 +1,14 @@
 ﻿using Grpc.Core;
-using IO.Milvus.Grpc;
 using IO.Milvus.Param;
 using IO.Milvus.Param.Alias;
 using IO.Milvus.Param.Collection;
 using IO.Milvus.Param.Control;
-using IO.Milvus.Param.Credential;
 using IO.Milvus.Param.Dml;
 using IO.Milvus.Param.Index;
 using IO.Milvus.Param.Partition;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
+using Milvus.Proto.Milvus;
 
 namespace IO.Milvus.Client
 {

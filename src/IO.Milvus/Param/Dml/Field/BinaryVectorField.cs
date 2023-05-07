@@ -1,7 +1,7 @@
 ﻿using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System.Collections.Generic;
 using System.Linq;
+using Milvus.Proto.Schema;
 
 namespace IO.Milvus.Param.Dml
 {
@@ -28,10 +28,10 @@ namespace IO.Milvus.Param.Dml
             return new FieldData()
             {
                 FieldName = FieldName,
-                Type = DataType,               
+                Type = DataType,
                 Vectors = new VectorField()
                 {
-                    FloatVector = floatArray,                    
+                    FloatVector = floatArray,
                     Dim = count,
                 },
             };

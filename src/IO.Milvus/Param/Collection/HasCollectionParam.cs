@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-
-namespace IO.Milvus.Param.Collection
+﻿namespace IO.Milvus.Param.Collection
 {
     /// <summary>
     /// Parameters for <code>hasCollection</code> interface.
