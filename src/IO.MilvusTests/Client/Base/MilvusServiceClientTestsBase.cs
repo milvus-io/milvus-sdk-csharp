@@ -1,10 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using IO.Milvus.Param;
 using IO.Milvus.Client;
+using IO.Milvus.Grpc;
 using IO.Milvus.Param.Collection;
 using IO.Milvus.Param.Dml;
 using IO.Milvus.Param.Index;
-using Milvus.Proto.Schema;
+using Status = IO.Milvus.Param.Status;
 
 namespace IO.MilvusTests.Client.Base
 {

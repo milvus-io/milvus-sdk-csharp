@@ -1,6 +1,6 @@
 ﻿using IO.Milvus.Utils;
 using System.Collections.Generic;
-using Milvus.Proto.Milvus;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param.Partition
 {

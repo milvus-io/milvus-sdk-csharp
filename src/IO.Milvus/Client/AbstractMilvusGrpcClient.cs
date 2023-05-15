@@ -15,11 +15,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Google.Protobuf;
-using Milvus.Proto.Common;
-using Milvus.Proto.Milvus;
-using Milvus.Proto.Schema;
-using KeyValuePair = Milvus.Proto.Common.KeyValuePair;
-using Status = Milvus.Proto.Common.Status;
+using IO.Milvus.Grpc;
+using KeyValuePair = IO.Milvus.Grpc.KeyValuePair;
+using Status = IO.Milvus.Grpc.Status;
 
 namespace IO.Milvus.Client
 {

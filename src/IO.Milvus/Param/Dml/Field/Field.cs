@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Milvus.Proto.Schema;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param.Dml
 {

@@ -1,7 +1,7 @@
 ﻿using IO.Milvus.Exception;
 using System;
 using System.Collections.Generic;
-using Milvus.Proto.Schema;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param.Collection
 {

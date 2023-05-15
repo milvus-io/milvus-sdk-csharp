@@ -5,9 +5,8 @@ using IO.Milvus.Utils;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Milvus.Proto.Common;
-using Milvus.Proto.Milvus;
-using KeyValuePair = Milvus.Proto.Common.KeyValuePair;
+using IO.Milvus.Grpc;
+using KeyValuePair = IO.Milvus.Grpc.KeyValuePair;
 
 namespace IO.Milvus.Param.Dml
 {

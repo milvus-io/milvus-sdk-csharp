@@ -1,5 +1,5 @@
 ﻿using Google.Protobuf;
-using Milvus.Proto.Schema;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param.Dml
 {
@@ -22,7 +22,7 @@ namespace IO.Milvus.Param.Dml
                 Type = DataType,
                 Vectors = new VectorField()
                 {
-                    BinaryVector = Bytes,                    
+                    BinaryVector = Bytes,
                 }
             };
         }

@@ -8,7 +8,7 @@ using IO.Milvus.Param.Index;
 using IO.Milvus.Param.Partition;
 using System;
 using System.Threading.Tasks;
-using Milvus.Proto.Milvus;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Client
 {
@@ -56,7 +56,7 @@ namespace IO.Milvus.Client
         R<RpcStatus> LoadCollection(LoadCollectionParam requestParam,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Releases a collection from memory to reduce memory usage. Note that you 
+        /// Releases a collection from memory to reduce memory usage. Note that you
         /// cannot search while the corresponding collection is released from memory.
         /// </summary>
         /// <param name="requestParam"></param>
@@ -106,7 +106,7 @@ namespace IO.Milvus.Client
         R<DescribeCollectionResponse> DescribeCollection(string collectionName,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Releases a collection from memory to reduce memory usage. Note that you 
+        /// Releases a collection from memory to reduce memory usage. Note that you
         /// cannot search while the corresponding collection is released from memory.
         /// </summary>
         /// <param name="collectionName"></param>
@@ -130,7 +130,7 @@ namespace IO.Milvus.Client
 
         /// <summary>
         ///  Flushes collections.
-        /// Currently we do not support this method on client since compaction is not supported on server.     
+        /// Currently we do not support this method on client since compaction is not supported on server.
         /// </summary>
         /// <param name="requestParam"></param>
         /// <returns></returns>
@@ -145,7 +145,7 @@ namespace IO.Milvus.Client
         R<RpcStatus> CreatePartition(CreatePartitionParam requestParam,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Drops a partition. Note that this method drops all data in this partition 
+        /// Drops a partition. Note that this method drops all data in this partition
         /// and the _default partition cannot be dropped.
         /// </summary>
         /// <param name="requestParam"></param>
@@ -229,8 +229,8 @@ namespace IO.Milvus.Client
         R<RpcStatus> DropIndex(DropIndexParam requestParam,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Shows the information of the specified index. Current release of Milvus 
-        /// only supports showing latest built index.    
+        /// Shows the information of the specified index. Current release of Milvus
+        /// only supports showing latest built index.
         /// </summary>
         /// <param name="requestParam"></param>
         /// <returns></returns>
@@ -270,7 +270,7 @@ namespace IO.Milvus.Client
         Task<R<MutationResult>> InsertAsync(InsertParam requestParam,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Deletes entity(s) based on primary key(s) filtered by boolean expression. Current release 
+        /// Deletes entity(s) based on primary key(s) filtered by boolean expression. Current release
         /// of Milvus only supports expression in the format "pk_field in [1, 2, ...]"
         /// </summary>
         /// <param name="requestParam"></param>
@@ -294,16 +294,16 @@ namespace IO.Milvus.Client
         R<SearchResults> Search<TVector>(SearchParam<TVector> requestParam,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Queries entity(s) based on scalar field(s) filtered by boolean expression. 
-        /// Note that the order of the returned entities cannot be guaranteed.     
+        /// Queries entity(s) based on scalar field(s) filtered by boolean expression.
+        /// Note that the order of the returned entities cannot be guaranteed.
         /// </summary>
         /// <param name="requestParam"></param>
         /// <returns></returns>
         R<QueryResults> Query(QueryParam requestParam,CallOptions? callOptions = null);
 
         /// <summary>
-        /// Queries entity(s) based on scalar field(s) filtered by boolean expression. 
-        /// Note that the order of the returned entities cannot be guaranteed.     
+        /// Queries entity(s) based on scalar field(s) filtered by boolean expression.
+        /// Note that the order of the returned entities cannot be guaranteed.
         /// </summary>
         /// <param name="requestParam"></param>
         /// <returns></returns>

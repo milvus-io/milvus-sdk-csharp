@@ -1,5 +1,5 @@
 ﻿using IO.Milvus.Exception;
-using Milvus.Proto.Common;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param
 {

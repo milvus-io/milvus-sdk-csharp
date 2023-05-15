@@ -1,11 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using IO.MilvusTests.Client.Base;
+﻿using IO.Milvus.Grpc;
 using IO.Milvus.Param.Partition;
-using IO.MilvusTests;
-using Milvus.Proto.Common;
+using IO.MilvusTests.Client.Base;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Status = IO.Milvus.Param.Status;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client
 {
     [TestClass()]
     public class PartitionTest:MilvusServiceClientTestsBase

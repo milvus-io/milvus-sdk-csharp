@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Text;
-using System.Threading.Tasks;
 using Grpc.Core;
 using Grpc.Net.Client;
+using IO.Milvus.Grpc;
 using IO.Milvus.Param;
-using Milvus.Proto.Milvus;
 #if NET461_OR_GREATER
 using System.Net.Http;
 #endif
