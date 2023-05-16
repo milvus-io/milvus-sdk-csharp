@@ -36,11 +36,7 @@ namespace IO.Milvus.Client
 
         public bool ClientIsReady()
         {
-#if NET461_OR_GREATER
             return true;
-#else
-            return channel.State != ConnectivityState.Shutdown;
-#endif
         }
 
         public void Close()

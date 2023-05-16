@@ -6,6 +6,7 @@ using IO.Milvus.Param.Collection;
 using IO.Milvus.Param.Dml;
 using IO.Milvus.Param.Index;
 using Status = IO.Milvus.Param.Status;
+using Grpc.Net.Client;
 
 namespace IO.MilvusTests.Client.Base
 {
@@ -19,10 +20,22 @@ namespace IO.MilvusTests.Client.Base
             get => _milvusclient ?? (_milvusclient = DefaultClient());
         }
 
+        public GrpcChannel CreateChannel(ConnectParam connectParam)
+        {
+#if NET461_OR_GREATER
+            return GrpcChannel.ForAddress(connectParam.GetAddress(),new GrpcChannelOptions
+    {
+        HttpHandler = new WinHttpHandler()
+    });
+#else
+            return GrpcChannel.ForAddress(connectParam.GetAddress());
+#endif
+        }
+
         public MilvusServiceClient DefaultClient()
         {
             _milvusclient ??= new MilvusServiceClient(
-                HostConfig.ConnectParam);
+                HostConfig.ConnectParam,CreateChannel(HostConfig.ConnectParam));
 
             Assert.IsNotNull(MilvusClient);
             Assert.IsTrue(MilvusClient.ClientIsReady());
@@ -33,7 +46,7 @@ namespace IO.MilvusTests.Client.Base
         public MilvusServiceClient NewClient()
         {
             var client = new MilvusServiceClient(
-                HostConfig.ConnectParam);
+                HostConfig.ConnectParam, CreateChannel(HostConfig.ConnectParam));
 
             Assert.IsNotNull(client);
             Assert.IsTrue(client.ClientIsReady());

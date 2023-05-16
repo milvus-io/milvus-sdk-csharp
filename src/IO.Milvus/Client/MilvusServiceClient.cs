@@ -18,7 +18,7 @@ namespace IO.Milvus.Client
     /// </remarks>
     public class MilvusServiceClient : AbstractMilvusGrpcClient
     {
-        public MilvusServiceClient(ConnectParam connectParam)
+        public MilvusServiceClient(ConnectParam connectParam,GrpcChannel grpcChannel = null)
         {
             connectParam.Check();
 
@@ -34,15 +34,14 @@ namespace IO.Milvus.Client
                 });
             }
 
-#if NET461_OR_GREATER
-            var httpHandler = new HttpClientHandler();
-            httpHandler.ServerCertificateCustomValidationCallback =
- HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            channel = GrpcChannel.ForAddress(connectParam.GetAddress(),new GrpcChannelOptions { HttpHandler =
- httpHandler });
-#else
-            channel = GrpcChannel.ForAddress(connectParam.GetAddress());
-#endif
+            if (grpcChannel == null)
+            {
+                channel = GrpcChannel.ForAddress(connectParam.GetAddress());
+            }
+            else
+            {
+                channel = grpcChannel;
+            }
 
             client = new MilvusService.MilvusServiceClient(channel);
         }

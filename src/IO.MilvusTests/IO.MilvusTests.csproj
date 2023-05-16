@@ -1,25 +1,34 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
 
-        <IsPackable>false</IsPackable>
-        <LangVersion>10.0</LangVersion>
+    <IsPackable>false</IsPackable>
+    <LangVersion>10.0</LangVersion>
 
-        <TargetFrameworks>net7.0;net5.0;net6.0</TargetFrameworks>
-    </PropertyGroup>
+    <TargetFrameworks>net472;net6.0;net7.0</TargetFrameworks>
 
-    <ItemGroup>
-        <!--<PackageReference Include="IO.Milvus" Version="2.0.0-alpha" />-->
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0"/>
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.8"/>
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.8"/>
-        <PackageReference Include="coverlet.collector" Version="3.1.2"/>
-    </ItemGroup>
+    <PlatformTarget>x64</PlatformTarget>
 
-    <ItemGroup>
-        <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj"/>
-    </ItemGroup>
+  </PropertyGroup>
+
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="8.0.0-preview.4.23259.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--<PackageReference Include="IO.Milvus" Version="2.0.0-alpha" />-->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="8.0.0-preview.4.23259.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj" />
+  </ItemGroup>
 
 </Project>
