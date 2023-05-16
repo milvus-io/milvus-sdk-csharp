@@ -1,10 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using IO.MilvusTests.Client.Base;
+﻿using IO.Milvus.Grpc;
 using IO.Milvus.Param.Partition;
-using IO.MilvusTests;
-using IO.Milvus.Param;
+using IO.MilvusTests.Client.Base;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Status = IO.Milvus.Param.Status;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client
 {
     [TestClass()]
     public class PartitionTest:MilvusServiceClientTestsBase
@@ -60,7 +60,7 @@ namespace IO.Milvus.Client.Tests
 
             Assert.IsNotNull(r);
             Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Status.ErrorCode == Grpc.ErrorCode.Success);
+            Assert.IsTrue(r.Data.Status.ErrorCode == ErrorCode.Success);
         }
 
         [TestMethod()]
@@ -82,6 +82,6 @@ namespace IO.Milvus.Client.Tests
 
             AssertRpcStatus(r);
         }
-        
+
     }
 }

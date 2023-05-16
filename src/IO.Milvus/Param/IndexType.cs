@@ -17,10 +17,18 @@
         RHNSW_PQ,
         RHNSW_SQ,
         ANNOY,
+
         /// <summary>
         /// Only supported for binary vectors
         /// </summary>
         BIN_FLAT,
         BIN_IVF_FLAT,
+
+        /// <summary>
+        ///AUTOINDEX is a proprietary index type available on Zilliz Cloud for index auto-optimization.
+        /// Available on https://zilliz.com
+        /// https://zilliz.com/doc/manage_indexes
+        /// </summary>
+        AUTOINDEX
     }
 }

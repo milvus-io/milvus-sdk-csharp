@@ -1,7 +1,6 @@
 ﻿using IO.Milvus.Exception;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace IO.Milvus.Param
 {

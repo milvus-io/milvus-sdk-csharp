@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace IO.Milvus.Param.Alias
+﻿namespace IO.Milvus.Param.Alias
 {
     /// <summary>
     /// Parameters for <see cref="CreateAliasParam"/> interface.

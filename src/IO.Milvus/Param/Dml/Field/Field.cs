@@ -1,12 +1,11 @@
 ﻿using Google.Protobuf;
-using Google.Protobuf.Collections;
 using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param.Dml
 {
@@ -15,8 +14,7 @@ namespace IO.Milvus.Param.Dml
         public static Field Create<TData>(
             string name,
             List<TData> datas
-            )
-            where TData : struct
+        )
         {
             return new Field<TData>()
             {
@@ -37,7 +35,7 @@ namespace IO.Milvus.Param.Dml
             return field;
         }
 
-        public static Field CreateBinaryVectors(string name,List<List<float>> datas)
+        public static Field CreateBinaryVectors(string name, List<List<float>> datas)
         {
             return new BinaryVectorField()
             {
@@ -79,8 +77,7 @@ namespace IO.Milvus.Param.Dml
         public abstract FieldData ToGrpcFieldData();
     }
 
-    public class Field<TData>:Field
-        where TData:struct
+    public class Field<TData> : Field
     {
         public Field()
         {
@@ -106,83 +103,83 @@ namespace IO.Milvus.Param.Dml
                 case DataType.None:
                 //throw new MilvusException($"DataType Error:{DataType}");
                 case DataType.Bool:
-                    {
-                        var boolData = new BoolArray();
-                        boolData.Data.AddRange(Datas as List<bool>);
+                {
+                    var boolData = new BoolArray();
+                    boolData.Data.AddRange(Datas as List<bool>);
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            BoolData = boolData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        BoolData = boolData
+                    };
+                }
                     break;
                 case DataType.Int8:
                     throw new NotSupportedException("not support in .net");
                 case DataType.Int16:
-                    {
-                        var intData = new IntArray();
-                        intData.Data.AddRange((Datas as List<Int16>).Select(p => (int)p));
+                {
+                    var intData = new IntArray();
+                    intData.Data.AddRange((Datas as List<Int16>).Select(p => (int)p));
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            IntData = intData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        IntData = intData
+                    };
+                }
                     break;
                 case DataType.Int32:
-                    {
-                        var intData = new IntArray();
-                        intData.Data.AddRange(Datas as List<int>);
+                {
+                    var intData = new IntArray();
+                    intData.Data.AddRange(Datas as List<int>);
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            IntData = intData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        IntData = intData
+                    };
+                }
                     break;
                 case DataType.Int64:
-                    {
-                        var longData = new LongArray();
-                        longData.Data.AddRange(Datas as List<long>);
+                {
+                    var longData = new LongArray();
+                    longData.Data.AddRange(Datas as List<long>);
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            LongData = longData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        LongData = longData
+                    };
+                }
                     break;
                 case DataType.Float:
-                    {
-                        var floatData = new FloatArray();
-                        floatData.Data.AddRange(Datas as List<float>);
+                {
+                    var floatData = new FloatArray();
+                    floatData.Data.AddRange(Datas as List<float>);
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            FloatData = floatData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        FloatData = floatData
+                    };
+                }
                     break;
                 case DataType.Double:
-                    {
-                        var doubleData = new DoubleArray();
-                        doubleData.Data.AddRange(Datas as List<double>);
+                {
+                    var doubleData = new DoubleArray();
+                    doubleData.Data.AddRange(Datas as List<double>);
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            DoubleData = doubleData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        DoubleData = doubleData
+                    };
+                }
                     break;
                 case DataType.String:
-                    {
-                        var stringData = new StringArray();
-                        stringData.Data.AddRange(Datas as List<string>);
+                {
+                    var stringData = new StringArray();
+                    stringData.Data.AddRange(Datas as List<string>);
 
-                        fieldData.Scalars = new ScalarField()
-                        {
-                            StringData = stringData
-                        };
-                    }
+                    fieldData.Scalars = new ScalarField()
+                    {
+                        StringData = stringData
+                    };
+                }
                     break;
                 default:
                     break;

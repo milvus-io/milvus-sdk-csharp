@@ -22,7 +22,7 @@ namespace IO.Milvus.Param.Dml
                 Type = DataType,
                 Vectors = new VectorField()
                 {
-                    BinaryVector = Bytes,                    
+                    BinaryVector = Bytes,
                 }
             };
         }

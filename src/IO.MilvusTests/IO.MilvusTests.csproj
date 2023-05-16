@@ -1,23 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
 
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <LangVersion>10.0</LangVersion>
 
-  <ItemGroup>
-    <!--<PackageReference Include="IO.Milvus" Version="2.0.0-alpha" />-->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-    <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
-    <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
-    <PackageReference Include="coverlet.collector" Version="3.1.2" />
-  </ItemGroup>
+        <TargetFrameworks>net7.0;net5.0;net6.0</TargetFrameworks>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <!--<PackageReference Include="IO.Milvus" Version="2.0.0-alpha" />-->
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0"/>
+        <PackageReference Include="MSTest.TestAdapter" Version="2.2.8"/>
+        <PackageReference Include="MSTest.TestFramework" Version="2.2.8"/>
+        <PackageReference Include="coverlet.collector" Version="3.1.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj"/>
+    </ItemGroup>
 
 </Project>

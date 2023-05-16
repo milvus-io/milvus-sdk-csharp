@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IO.Milvus.Param.Index
+﻿namespace IO.Milvus.Param.Index
 {
     public class DescribeIndexParam
     {
