@@ -29,15 +29,9 @@ https://www.nuget.org/packages/IO.Milvus/
 
 ### Installing
 
-```
-Install-Package IO.Milvus -Version 2.0.0-alpha.2
-```
-Or
-
 ```xml
 <PackageReference Include="IO.Milvus" Version="2.2.0-alpha.1" />
 ```
-
 
 ### Examples
 
