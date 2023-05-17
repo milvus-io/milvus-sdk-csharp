@@ -5,24 +5,25 @@
 
 using IO.Milvus.Param;
 
-namespace IO.MilvusTests
+namespace IO.MilvusTests;
+
+/// <summary>
+/// Milvus instance in my home,replace it with your config before run unittest.
+/// </summary>
+public class HostConfig
 {
-    /// <summary>
-    /// Milvus instance in my home,replace it with your config before run unittest.
-    /// </summary>
-    public class HostConfig
-    {
-        public const string Host = "192.168.100.139";
+    public const string Host = "http://192.168.100.139";
 
-        public const int Port = 19530;
+    public const int Port = 19530;
 
-        public const string DefaultTestCollectionName = "test";
+    public const int RestPort = 9091;
 
-        public const string DefaultTestPartitionName = "testPartitionName";
+    public const string DefaultTestCollectionName = "test";
 
-        public const string DefaultAliasName = "testAlias";
+    public const string DefaultTestPartitionName = "testPartitionName";
 
-        public static ConnectParam ConnectParam { get; } 
-            = ConnectParam.Create(Host, Port);
-    }
+    public const string DefaultAliasName = "testAlias";
+
+    public static ConnectParam ConnectParam { get; } 
+        = ConnectParam.Create(Host, Port);
 }

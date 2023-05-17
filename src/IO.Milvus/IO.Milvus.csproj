@@ -9,6 +9,7 @@
     <PackageIcon>milvussharp.png</PackageIcon>
     <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
     <PackageTags>milvus;vector database</PackageTags>
+    <LangVersion>latest</LangVersion>
     <Version>2.0.0-alpha.3</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
@@ -33,6 +34,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
 
 </Project>
