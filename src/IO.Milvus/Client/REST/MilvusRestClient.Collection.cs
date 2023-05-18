@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Text.Json;
 
 namespace IO.Milvus.Client.REST;
 
@@ -14,7 +15,7 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task DropCollectionAsync(
         string collectionName, 
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Delete collection {0}", collectionName);
 
@@ -60,9 +61,9 @@ public partial class MilvusRestClient
             .Create(collectionName)
             .WithConsistencyLevel(consistencyLevel)
             .WithFieldTypes(fieldTypes)
-            .Build();
+            .BuildRest();
             
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync (request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
 
         try
         {
@@ -76,12 +77,33 @@ public partial class MilvusRestClient
     }
 
     ///<inheritdoc/>
-    public Task<bool> HasCollectionAsync(
+    public async Task<bool> HasCollectionAsync(
         string collectionName, 
-        DateTime? dateTime, 
-        CancellationToken cancellationToken)
+        DateTime? dateTime = null, 
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Check if a {0} exists", collectionName);
+
+        using HttpRequestMessage request = HasCollectionRequest
+            .Create(collectionName)
+            .WithTimestamp(dateTime) 
+            .BuildRest();
+
+        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (System.Exception e)
+        {
+            this._log.LogError(e, "Failded check if a {0} exists: {0}, {1}", collectionName, e.Message, responseContent);
+            throw;
+        }
+
+        var hasCollectionResponse = JsonSerializer.Deserialize<HasCollectionResponse> (responseContent);
+
+        return hasCollectionResponse.Value;
     }
 
     ///<inheritdoc/>

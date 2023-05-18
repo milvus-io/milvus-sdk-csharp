@@ -47,7 +47,13 @@ public partial class MilvusGrpcClient : IMilvusClient2
                 { "authorization", authToken }
             });
 
-        _grpcClient = new MilvusService.MilvusServiceClient(grpcChannel);
+        _grpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
+    }
+
+    ///<inheritdoc/>
+    public override string ToString()
+    {
+        return $"{nameof(MilvusGrpcClient)}({_grpcChannel.Target})";
     }
 
     #region Private ===============================================================================

@@ -83,7 +83,7 @@ public sealed class FieldType
     /// <param name="isPrimaryKey"></param>
     public FieldType(
         string name,
-        DataType dataType,
+        MilvusDataType dataType,
         bool isPrimaryKey)
     {
         Name = name;
@@ -101,7 +101,7 @@ public sealed class FieldType
     /// Data type.
     /// </summary>
     [JsonPropertyName("data_type")]
-    public DataType DataType { get; set; }
+    public MilvusDataType DataType { get; set; }
 
     /// <summary>
     /// Description.

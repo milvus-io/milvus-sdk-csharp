@@ -58,6 +58,11 @@ public partial class MilvusRestClient:IMilvusClient2
     public int Port => this._httpClient.BaseAddress.Port;
     #endregion
 
+    public override string ToString()
+    {
+        return $"{nameof(MilvusRestClient)}({_httpClient.BaseAddress})";
+    }
+
     #region private ================================================================================
     private ILogger _log;
     private HttpClient _httpClient;

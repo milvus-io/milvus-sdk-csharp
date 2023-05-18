@@ -112,8 +112,7 @@ internal sealed class CreateCollectionRequest:
     private CreateCollectionRequest(string collectionName)
     {
         CollectionName = collectionName;
+        Schema.Name = collectionName;
     }
-
-    
     #endregion
 }
