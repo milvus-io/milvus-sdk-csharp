@@ -113,7 +113,7 @@ public sealed class FieldType
     /// Field id.
     /// </summary>
     [JsonPropertyName("fieldID")]
-    public int FieldId { get; set; }
+    public long FieldId { get; set; }
 
     /// <summary>
     /// Index params.

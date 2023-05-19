@@ -7,7 +7,9 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Drop a collection
 /// </summary>
-internal sealed class DropCollectionRequest
+internal sealed class DropCollectionRequest:
+    IRestRequest,
+    IGrpcRequest<Grpc.DropCollectionRequest>
 {
     /// <summary>
     /// Collection Name
@@ -20,13 +22,28 @@ internal sealed class DropCollectionRequest
 
     public static DropCollectionRequest Create(string collectionName)
     {
-        return new DropCollectionRequest { CollectionName = collectionName };
+        return new DropCollectionRequest(collectionName);
     }
 
-    public HttpRequestMessage Build()
+    public Grpc.DropCollectionRequest BuildGrpc()
+    {
+        return new Grpc.DropCollectionRequest
+        {
+            CollectionName = this.CollectionName
+        };
+    }
+
+    public HttpRequestMessage BuildRest()
     {
         return HttpRequest.CreateDeleteRequest(
-            $"{ApiVersion.V1}collection",
-            payload:this);
+            $"{ApiVersion.V1}/collection",
+            payload: this);
     }
+
+    #region Private =================================================
+    public DropCollectionRequest(string collectionName)
+    {
+        CollectionName = collectionName;
+    }
+    #endregion
 }

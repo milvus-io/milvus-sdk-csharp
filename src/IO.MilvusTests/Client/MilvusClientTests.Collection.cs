@@ -22,10 +22,18 @@ public class MilvusClientTests
 
         await milvusClient.CreateCollectionAsync(
             collectionName,
-            ConsistencyLevel.Strong,
             new[] {
                 new FieldType("book",MilvusDataType.Int64,true) }
             );
+
+        IList<MilvusCollection> collections = await milvusClient.ShowCollectionsAsync();
+        Assert.IsTrue(collections.Any(p => p.Name == collectionName));
+
+        IDictionary<string,string> statistics  = await milvusClient.GetCollectionStatisticsAsync(collectionName);
+        Assert.IsTrue(statistics.Count > 0);
+
+        DetailedMilvusCollection detailedMilvusCollection = await milvusClient.DescribeCollectionAsync(collectionName);
+        Assert.AreEqual(collectionName, detailedMilvusCollection.CollectionName);
 
         collectionExist = await milvusClient.HasCollectionAsync(collectionName);
         Assert.IsTrue(collectionExist);

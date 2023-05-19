@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using IO.Milvus.Utils;
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -6,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Describe a collection.
 /// </summary>
-public class DescribeCollectionResponse
+internal class DescribeCollectionResponse
 {
     /// <summary>
     /// The aliases of this collection.
@@ -63,11 +65,102 @@ public class DescribeCollectionResponse
     /// The message ID/posititon when collection is created.
     /// </summary>
     [JsonPropertyName("start_positions")]
-    public IList<KeyValuePair<IList<int>, string>> StartPostions { get; set; }
+    public Dictionary<string, IList<int>> StartPostions { get; set; }
 
     /// <summary>
     /// Response status.
     /// </summary>
     [JsonPropertyName("status")]
     public ResponseStatus Status { get; set; }
+
+    public DetailedMilvusCollection ToDetaildedMilvusCollection()
+    {
+        return new DetailedMilvusCollection(
+            Aliases,
+            CollectionName,
+            CollectionId,
+            ConsistencyLevel,
+            TimestampUtils.GetTimeFromTimstamp(CreatedTimestamp),
+            TimestampUtils.GetTimeFromTimstamp(CreatedUTCTimestamp),
+            Schema,
+            ShardsNum,
+            StartPostions
+            );
+    }
+}
+
+/// <summary>
+/// Describle a milvus collection
+/// </summary>
+public class DetailedMilvusCollection
+{
+    internal DetailedMilvusCollection(
+        IReadOnlyList<string> aliases, 
+        string collectionName, 
+        long collectionId, 
+        ConsistencyLevel consistencyLevel,
+        DateTime createdTime, 
+        DateTime createdUTCTime,
+        CollectionSchema schema,
+        int shardsNum,
+        Dictionary<string,IList<int>> startPostions)
+    {
+        Aliases = aliases;
+        CollectionName = collectionName;
+        CollectionId = collectionId;
+        ConsistencyLevel = consistencyLevel;
+        CreatedTime = createdTime;
+        CreatedUTCTime = createdUTCTime;
+        Schema = schema;
+        ShardsNum = shardsNum;
+        StartPostions = startPostions;
+    }
+
+    /// <summary>
+    /// The aliases of this collection.
+    /// </summary>
+    public IReadOnlyList<string> Aliases { get; }
+
+    /// <summary>
+    /// The collection name.
+    /// </summary>
+    public string CollectionName { get; }
+
+    /// <summary>
+    /// The collection id.
+    /// </summary>
+    public long CollectionId { get; }
+
+    /// <summary>
+    /// Consistency level.
+    /// </summary>
+    /// <remarks>
+    /// The consistency level that the collection used, modification is not supported now.
+    /// </remarks>
+    public ConsistencyLevel ConsistencyLevel { get; }
+
+    /// <summary>
+    /// Hybrid timestamp in milvus.
+    /// </summary>
+    public DateTime CreatedTime { get; }
+
+    /// <summary>
+    /// The utc timestamp calculated by created_timestamp.
+    /// </summary>
+    public DateTime CreatedUTCTime { get; }
+
+    /// <summary>
+    /// Collection Schema.
+    /// </summary>
+    public CollectionSchema Schema { get; }
+
+    /// <summary>
+    /// The shards number you set.
+    /// </summary>
+    public int ShardsNum { get; }
+
+    /// <summary>
+    /// The message ID/posititon when collection is created.
+    /// </summary>
+    public IDictionary<string, IList<int>> StartPostions { get; }
 }

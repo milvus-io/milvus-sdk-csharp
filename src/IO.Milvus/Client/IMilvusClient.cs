@@ -26,27 +26,25 @@ public interface IMilvusClient2
     /// Describe a collection.
     /// </summary>
     /// <param name="collectionName">collectionName</param>
-    /// <param name="collectionId">The collection ID you want to describe.</param>
-    /// <param name="dateTime">If time_stamp is not null, will describe collection success when time_stamp >= created collection timestamp, otherwise will throw error.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task<DescribeCollectionResponse> DescribeCollectionAsync(
-        string collectionName, int collectionId, 
-        DateTime? dateTime = null,
+    public Task<DetailedMilvusCollection> DescribeCollectionAsync(
+        string collectionName,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Create a collection.
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.</param>
-    /// <param name="consistencyLevel">The consistency level that the collection used, modification is not supported now.</param>
+    /// <param name="consistencyLevel">
+    /// The consistency level that the collection used, modification is not supported now.</param>
     /// <param name="fieldTypes">fieldtypes that represents this collection shema</param>
     /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     public Task CreateCollectionAsync(
         string collectionName, 
-        ConsistencyLevel consistencyLevel, 
         IList<FieldType> fieldTypes,
+        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
         int shards_num = 1,
         CancellationToken cancellationToken = default);
 
@@ -54,7 +52,11 @@ public interface IMilvusClient2
     /// Get if a collection's existence
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.</param>
-    /// <param name="dateTime">If time_stamp is not zero, will return true when time_stamp >= created collection timestamp, otherwise will return false.</param>
+    /// <param name="dateTime">
+    /// If time_stamp is not zero,
+    /// will return true when time_stamp >= created collection timestamp,
+    /// otherwise will return false.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     public Task<bool> HasCollectionAsync(
@@ -89,20 +91,26 @@ public interface IMilvusClient2
     /// <param name="collectionName">The collection name you want get statistics</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    public Task GetCollectionStatisticsAsync(
+    public Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
         string collectionName,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Show all collections
     /// </summary>
-    /// <param name="collectionNames">When type is InMemory, will return these collection's inMemory_percentages.(Optional)</param>
-    /// <param name="type">Decide return Loaded collections or All collections(Optional)</param>
+    /// <param name="collectionNames">
+    /// When type is InMemory, will return these collection's inMemory_percentages.(Optional)
+    /// </param>
+    /// <param name="showType">Decide return Loaded collections or All collections(Optional)</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    public Task ShowCollectionsAsync(
+    public Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null, 
-        int? type = null,
+        ShowType showType = ShowType.All,
         CancellationToken cancellationToken = default);
+    #endregion
+
+    #region Alias
+
     #endregion
 }

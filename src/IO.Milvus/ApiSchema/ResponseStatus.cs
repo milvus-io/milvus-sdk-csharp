@@ -1,17 +1,18 @@
-﻿using System.Text.Json.Serialization;
+﻿using IO.Milvus.Grpc;
+using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
 /// <summary>
 /// Response status
 /// </summary>
-public class ResponseStatus
+internal class ResponseStatus
 {
     /// <summary>
     /// Error code
     /// </summary>
     [JsonPropertyName("error_code")]
-    public int ErrorCode { get; set; }
+    public ErrorCode ErrorCode { get; set; }
 
     /// <summary>
     /// Reason

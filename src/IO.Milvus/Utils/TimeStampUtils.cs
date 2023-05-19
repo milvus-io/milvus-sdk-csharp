@@ -2,29 +2,40 @@
 
 namespace IO.Milvus.Utils;
 
-internal static class TimeStampUtils
+internal static class TimestampUtils
 {
-    public static long GetTimeStamp(bool accurateToMilliseconds = false)
+    public static long GetNowUTCTimestamp(bool accurateToMilliseconds = false)
     {
-        if (accurateToMilliseconds)
-        {
-            return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
-        }
-        else
-        {
-            return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
-        }
+        return ToUTCTimestamp(DateTime.Now, accurateToMilliseconds);
+    }
+
+    public static long ToUTCTimestamp(this DateTime dt, bool accurateToMilliseconds = false)
+    {
+        return ToTimestamp(dt.ToUniversalTime(), accurateToMilliseconds);
     }
 
     public static long ToTimestamp(this DateTime dt, bool accurateToMilliseconds = false)
     {
         if (accurateToMilliseconds)
         {
-            return (dt.ToUniversalTime().Ticks - 621355968000000000) / 10000;
+            return (dt.Ticks - 621355968000000000) / 10000;
         }
         else
         {
-            return (dt.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
+            return (dt.Ticks - 621355968000000000) / 10000000;
+        }
+    }
+
+    public static DateTime GetTimeFromTimstamp(long Timestamp, bool accurateToMilliseconds = false)
+    {
+        var startTime = new DateTime(1970, 1, 1);
+        if (accurateToMilliseconds)
+        {
+            return startTime.AddTicks(Timestamp * 10000);
+        }
+        else
+        {
+            return startTime.AddTicks(Timestamp * 10000000);
         }
     }
 }
