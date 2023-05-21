@@ -1,7 +1,6 @@
 # milvus-sdk-csharp
 
 <div class="column" align="middle">
-  <img src="https://img.shields.io/github/workflow/status/weianweigan/milvus-sdk-csharp/Build"/>
   <img src="https://img.shields.io/nuget/v/io.milvus"/>
   <img src="https://img.shields.io/nuget/dt/io.milvus"/>
 </div>
@@ -30,14 +29,8 @@ https://www.nuget.org/packages/IO.Milvus/
 ### Installing
 
 ```
-Install-Package IO.Milvus -Version 2.0.0-alpha.2
+Install-Package IO.Milvus
 ```
-Or
-
-```xml
-<PackageReference Include="IO.Milvus" Version="2.2.0-alpha.1" />
-```
-
 
 ### Examples
 
