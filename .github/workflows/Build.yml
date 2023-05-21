@@ -20,11 +20,6 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Checkout mivus-proto v2.2
-      run: |
-        cd ./src/IO.Milvus/Protos
-        git checkout -b 2.2 origin/2.2
-
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2

@@ -2,7 +2,7 @@ name: NugetPublish
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main | 2.2 ]
     tags:
     - '*'
 
@@ -15,10 +15,13 @@ jobs:
     
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    
+      with:
+        submodules: 'recursive'
+
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2
+
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
