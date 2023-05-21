@@ -1,11 +1,10 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Response
 {
@@ -142,7 +141,7 @@ namespace IO.Milvus.Response
                         for (int i = 0; i < count; ++i)
                         {
                             var bf = new MemoryStream(dim);
-                            bf.Write(data.ToByteArray(), i * dim, dim);                  
+                            bf.Write(data.ToByteArray(), i * dim, dim);
                             packData.Add(bf);
                         }
                         return packData;

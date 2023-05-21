@@ -1,11 +1,12 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Common.ClientEnum;
 using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using IO.Milvus.Grpc;
+using KeyValuePair = IO.Milvus.Grpc.KeyValuePair;
 
 namespace IO.Milvus.Param.Dml
 {
@@ -23,7 +24,8 @@ namespace IO.Milvus.Param.Dml
             string param = "{}",
             ulong travelTimestamp = 0L,
             ulong guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
-            ulong gracefulTime = 5000L
+            ulong gracefulTime = 5000L,
+            string expr = ""
             )
         {
             var sparam = new SearchParam<TVector>()
@@ -36,9 +38,11 @@ namespace IO.Milvus.Param.Dml
                 OutFields = outfields,
                 TopK = topk,
                 RoundDecimal = roundDecimal,
+                Params = param,
                 TravelTimestamp = travelTimestamp,
                 GuaranteeTimestamp = guaranteeTimestamp,
-                GracefulTime = gracefulTime
+                GracefulTime = gracefulTime,
+                Expr = expr
             };
             sparam.Check();
 
@@ -161,10 +165,10 @@ namespace IO.Milvus.Param.Dml
                 TravelTimestamp = TravelTimestamp,
                 SearchParams ={
                     // expr for boolean expression
-                    new Grpc.KeyValuePair() { Key = "metric_type", Value = MetricType.ToString() },
-                    new Grpc.KeyValuePair() { Key = "anns_field", Value = VectorFieldName },
-                    new Grpc.KeyValuePair() { Key = "topk", Value = TopK.ToString() },
-                    new Grpc.KeyValuePair() { Key = "params", Value =  Params },
+                    new KeyValuePair() { Key = "metric_type", Value = MetricType.ToString() },
+                    new KeyValuePair() { Key = "anns_field", Value = VectorFieldName },
+                    new KeyValuePair() { Key = "topk", Value = TopK.ToString() },
+                    new KeyValuePair() { Key = "params", Value =  Params },
                 },
                 DslType = DslType.BoolExprV1,
                 Dsl = Expr,

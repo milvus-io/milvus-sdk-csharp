@@ -1,8 +1,7 @@
 ﻿using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Param.Collection
 {
@@ -13,13 +12,16 @@ namespace IO.Milvus.Param.Collection
     public class FieldType
     {
         private int dimension;
+        private int maxLength;
+
         #region Fields
+
         #endregion
 
         #region Ctor
+
         public FieldType()
         {
-
         }
 
         public static FieldType Create(
@@ -44,6 +46,7 @@ namespace IO.Milvus.Param.Collection
                     field.TypeParams[typeParam.Key] = typeParam.Value;
                 }
             }
+
             field.Check();
 
             return field;
@@ -56,7 +59,7 @@ namespace IO.Milvus.Param.Collection
             int dimension,
             int maxLength,
             Dictionary<string, string> typeParams = null,
-            bool isPrimaryLey = false,
+            bool isPrimaryKey = false,
             bool isAutoID = false)
         {
             var field = new FieldType()
@@ -64,11 +67,15 @@ namespace IO.Milvus.Param.Collection
                 Name = name,
                 Description = description,
                 DataType = dataType,
-                Dimension = dimension,
                 MaxLength = maxLength,
                 IsAutoID = isAutoID,
-                IsPrimaryKey = isPrimaryLey
+                IsPrimaryKey = isPrimaryKey,
             };
+
+            if (dataType != DataType.VarChar)
+            {
+                field.Dimension = dimension;
+            }
 
             if (typeParams != null)
             {
@@ -77,23 +84,35 @@ namespace IO.Milvus.Param.Collection
                     field.TypeParams[typeParam.Key] = typeParam.Value;
                 }
             }
+
             field.Check();
 
             return field;
         }
+
         #endregion
 
         #region Properties
+
         public int Dimension
         {
-            get => dimension; set
+            get => dimension;
+            set
             {
                 dimension = value;
-                TypeParams[Constant.VECTOR_DIM] = Dimension.ToString();
+                TypeParams[Constant.VECTOR_DIM] = dimension.ToString();
             }
         }
 
-        public int MaxLength { get; set; }
+        public int MaxLength
+        {
+            get => maxLength;
+            set
+            {
+                maxLength = value;
+                TypeParams[Constant.VARCHAR_MAX_LENGTH] = maxLength.ToString();
+            }
+        }
 
         public string Description { get; set; } = "";
 
@@ -106,6 +125,7 @@ namespace IO.Milvus.Param.Collection
         public Dictionary<string, string> TypeParams { get; } = new Dictionary<string, string>();
 
         public bool IsAutoID { get; set; } = false;
+
         #endregion
 
         internal void Check()
@@ -172,7 +192,8 @@ namespace IO.Milvus.Param.Collection
         /// <returns><see cref="string"/></returns>
         public override string ToString()
         {
-            return $"FieldType{{{nameof(Name)}={Name}\', {nameof(DataType)}={DataType}\', {nameof(IsPrimaryKey)}={IsPrimaryKey}, {nameof(IsAutoID)}={IsAutoID}, {nameof(TypeParams)}={TypeParams}}}";
+            return
+                $"FieldType{{{nameof(Name)}={Name}\', {nameof(DataType)}={DataType}\', {nameof(IsPrimaryKey)}={IsPrimaryKey}, {nameof(IsAutoID)}={IsAutoID}, {nameof(TypeParams)}={TypeParams}}}";
         }
     }
 }

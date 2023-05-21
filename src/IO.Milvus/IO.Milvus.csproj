@@ -1,42 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0;net5.0;net461</TargetFrameworks>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Authors>weigan</Authors>
-    <Description>Milvus C# SDK</Description>
-    <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
-    <PackageIcon>milvussharp.png</PackageIcon>
-    <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
-    <PackageTags>milvus;vector database</PackageTags>
-    <Version>2.0.0-alpha.3</Version>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
-  </PropertyGroup>
+    <PropertyGroup>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <Authors>weigan</Authors>
+        <Description>Milvus C# SDK</Description>
+        <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
+        <PackageIcon>milvussharp.png</PackageIcon>
+        <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
+        <PackageTags>milvus;vector database</PackageTags>
+        <Version>2.2.0-alpha.2</Version>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="..\..\milvussharp.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Protobuf Include="Protos\proto\common.proto" />
-    <Protobuf Include="Protos\proto\schema.proto" ProtoRoot="Protos\proto" />
-    <Protobuf Include="Protos\proto\milvus.proto" ProtoRoot="Protos\proto" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="..\..\milvussharp.png">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.21.2" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.47.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.47.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+    <ItemGroup>
+        <Protobuf Include="Protos\proto\common.proto"/>
+        <Protobuf Include="Protos\proto\schema.proto" ProtoRoot="Protos\proto"/>
+        <Protobuf Include="Protos\proto\milvus.proto" ProtoRoot="Protos\proto"/>
+        <!--    <Protobuf Include="Protos\proto\feder.proto" ProtoRoot="Protos\proto" />-->
+        <!--    <Protobuf Include="Protos\proto\msg.proto" ProtoRoot="Protos\proto" />-->
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Google.Protobuf" Version="3.21.2"/>
+        <PackageReference Include="Grpc.Net.Client" Version="2.47.0"/>
+        <PackageReference Include="Grpc.Net.Common" Version="2.47.0"/>
+        <PackageReference Include="Grpc.Tools" Version="2.47.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 
 </Project>

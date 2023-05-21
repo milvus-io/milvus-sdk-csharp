@@ -1,8 +1,8 @@
 ﻿using IO.Milvus.Param;
 using System;
 using System.Collections.Generic;
-using IO.Milvus.Param.Dml;
 using IO.Milvus.Grpc;
+using IO.Milvus.Param.Dml;
 using IO.Milvus.Response;
 using IO.Milvus.Utils;
 

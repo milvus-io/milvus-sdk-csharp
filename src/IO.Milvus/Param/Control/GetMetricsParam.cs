@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IO.Milvus.Param.Control
+﻿namespace IO.Milvus.Param.Control
 {
     public class GetMetricsParam
     {

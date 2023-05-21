@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IO.Milvus.Param.Collection
+﻿namespace IO.Milvus.Param.Collection
 {
     /// <summary>
     /// Load a collection to memory

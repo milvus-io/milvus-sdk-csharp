@@ -2,7 +2,6 @@
 using IO.Milvus.Exception;
 using IO.Milvus.Param;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace IO.Milvus.Connection
 {

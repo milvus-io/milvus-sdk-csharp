@@ -1,10 +1,6 @@
-﻿using Google.Protobuf.Collections;
-using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
+﻿using IO.Milvus.Exception;
 using IO.Milvus.Utils;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace IO.Milvus.Param.Dml
@@ -14,7 +10,7 @@ namespace IO.Milvus.Param.Dml
         public static InsertParam Create(
             string collectionName,
             string partitionName,
-            List<Field> fields)
+            List<Field.Field> fields)
         {
             var param = new InsertParam()
             {
@@ -26,7 +22,7 @@ namespace IO.Milvus.Param.Dml
             return param;
         }
 
-        public List<Field> Fields { get; set; } = new List<Field>();
+        public List<Field.Field> Fields { get; set; } = new List<Field.Field>();
 
         public string CollectionName { get; set; }
 
@@ -46,7 +42,7 @@ namespace IO.Milvus.Param.Dml
                 if (Fields.Any(f => f == null))
                 {
                     throw new ParamException("Field cannot be null." +
-             " If the field is auto-id, just ignore it from Fields");
+                                             " If the field is auto-id, just ignore it from Fields");
                 }
 
                 ParamUtils.CheckNullEmptyString(field.FieldName, "Field Name");
@@ -56,7 +52,6 @@ namespace IO.Milvus.Param.Dml
                 //    throw new ParamException("Field value cannot be empty." +
                 //" If the field is auto-id, just ignore it from withFields()");
                 //}
-                
             }
 
             var count = Fields.First().RowCount;
@@ -64,6 +59,7 @@ namespace IO.Milvus.Param.Dml
             {
                 throw new ParamException("Field Row count should be same");
             }
+
             RowCount = (uint)count;
             //Check dim count
             //var count = Fields.First().Vectors.Dim;
@@ -78,6 +74,5 @@ namespace IO.Milvus.Param.Dml
 
             //TODO : More check for DataType
         }
-
     }
 }

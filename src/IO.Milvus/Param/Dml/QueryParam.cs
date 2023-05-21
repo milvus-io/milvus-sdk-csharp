@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.Common.ClientEnum;
 using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using System.Collections.Generic;
 
 namespace IO.Milvus.Param.Dml

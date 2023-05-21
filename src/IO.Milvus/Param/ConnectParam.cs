@@ -1,14 +1,14 @@
 ﻿using IO.Milvus.Exception;
-using IO.Milvus.Utils;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace IO.Milvus.Param
 {
     public class ConnectParam
     {
         private int _port = 19530;
+
         #region Ctor
+
         public ConnectParam()
         {
         }
@@ -17,56 +17,57 @@ namespace IO.Milvus.Param
             string host,
             int port = 19530,
             string name = "root",
-            string password = "milvus")
+            string password = "milvus",
+            bool useHttps = false)
         {
             var param = new ConnectParam()
             {
                 Host = host,
                 Port = port,
                 Authorization = $"{name}:{password}",
+                UseHttps = useHttps
             };
 
             param.Check();
             return param;
         }
+
         #endregion
 
         #region Properties
+
         public string Host { get; set; } = "localhost";
 
         public int Port
         {
-            get => _port; set
+            get => _port;
+            set
             {
                 _port = value;
                 CheckPort();
             }
         }
 
-        [Obsolete("Useless")]
-        public TimeSpan ConnectTimeout { get; } = TimeSpan.FromMilliseconds(10000);
+        [Obsolete("Useless")] public TimeSpan ConnectTimeout { get; } = TimeSpan.FromMilliseconds(10000);
 
-        [Obsolete("Useless")]
-        public TimeSpan KeepAliveTime { get; } = TimeSpan.MaxValue;
+        [Obsolete("Useless")] public TimeSpan KeepAliveTime { get; } = TimeSpan.MaxValue;
 
-        [Obsolete("Useless")]
-        public TimeSpan KeepAliveTimeout { get; } = TimeSpan.FromMilliseconds(20000);
+        [Obsolete("Useless")] public TimeSpan KeepAliveTimeout { get; } = TimeSpan.FromMilliseconds(20000);
 
-        [Obsolete("Useless")]
-        public bool IsKeepAliveWithoutCalls { get; } = false;
+        [Obsolete("Useless")] public bool IsKeepAliveWithoutCalls { get; } = false;
 
-        [Obsolete("Useless")]
-        public bool IsSecure { get; } = false;
+        [Obsolete("Useless")] public bool IsSecure { get; } = false;
 
-        [Obsolete("Useless")]
-        public TimeSpan IdleTimeout { get; } = TimeSpan.FromHours(24);
+        [Obsolete("Useless")] public TimeSpan IdleTimeout { get; } = TimeSpan.FromHours(24);
 
         public string Authorization { get; set; } = "root:milvus";
 
         public bool UseHttps { get; set; } = false;
+
         #endregion
 
         #region Methods
+
         internal void Check()
         {
             ParamUtils.CheckNullEmptyString(Host, $"{nameof(ConnectParam)}.{nameof(ConnectParam.Host)}");
@@ -92,6 +93,7 @@ namespace IO.Milvus.Param
                 throw new ParamException("Port is out of range!");
             }
         }
+
         #endregion
     }
 }

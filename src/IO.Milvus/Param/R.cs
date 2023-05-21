@@ -1,8 +1,5 @@
 ﻿using IO.Milvus.Exception;
 using IO.Milvus.Grpc;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IO.Milvus.Param
 {

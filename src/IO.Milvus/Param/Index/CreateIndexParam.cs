@@ -10,19 +10,45 @@ namespace IO.Milvus.Param.Index
         private string extraParam;
 
         public static CreateIndexParam Create(
-                    string collectionName,
-                    string fieldName,
-                    string indexName,
-                    IndexType indexType,
-                    MetricType metricType)
+            string collectionName,
+            string fieldName,
+            string indexName,
+            IndexType indexType,
+            MetricType metricType)
         {
+            if (indexType == IndexType.INVALID)
+            {
+                throw new ParamException("Index type is required");
+            }
+
+            if (metricType == MetricType.INVALID)
+            {
+                throw new ParamException("Metric type is required");
+            }
+
             var param = new CreateIndexParam()
             {
                 CollectionName = collectionName,
                 FieldName = fieldName,
                 IndexName = indexName,
                 IndexType = indexType,
-                MetricType = metricType
+                MetricType = metricType,
+            };
+            param.Check();
+
+            return param;
+        }
+
+        public static CreateIndexParam CreateScalar(
+            string collectionName,
+            string fieldName,
+            string indexName)
+        {
+            var param = new CreateIndexParam()
+            {
+                CollectionName = collectionName,
+                FieldName = fieldName,
+                IndexName = indexName
             };
             param.Check();
 
@@ -35,7 +61,8 @@ namespace IO.Milvus.Param.Index
 
         public string ExtraParam
         {
-            get => extraParam; set
+            get => extraParam;
+            set
             {
                 extraParam = value;
                 ExtraDic[Constant.PARAMS] = extraParam;
@@ -46,15 +73,18 @@ namespace IO.Milvus.Param.Index
 
         public IndexType IndexType
         {
-            get => indexType; set
+            get => indexType;
+            set
             {
                 indexType = value;
                 ExtraDic[Constant.INDEX_TYPE] = indexType.ToString();
             }
         }
+
         public MetricType MetricType
         {
-            get => metricType; set
+            get => metricType;
+            set
             {
                 metricType = value;
                 ExtraDic[Constant.METRIC_TYPE] = metricType.ToString();
@@ -71,16 +101,6 @@ namespace IO.Milvus.Param.Index
             if (string.IsNullOrEmpty(IndexName))
             {
                 IndexName = Constant.DEFAULT_INDEX_NAME;
-            }
-
-            if (IndexType == IndexType.INVALID)
-            {
-                throw new ParamException("Index type is required");
-            }
-
-            if (MetricType == MetricType.INVALID)
-            {
-                throw new ParamException("Metric type is required");
             }
         }
     }
