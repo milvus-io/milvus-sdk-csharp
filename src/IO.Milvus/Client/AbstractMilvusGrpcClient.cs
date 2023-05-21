@@ -964,6 +964,7 @@ namespace IO.Milvus.Client
                 {
                     CollectionName = requestParam.CollectionName,
                     PartitionName = requestParam.PartitionName,
+                    NumRows = requestParam.RowCount
                 };
                 request.FieldsData.AddRange(requestParam.Fields.Select(p => p.ToGrpcFieldData()));
 
@@ -1221,6 +1222,7 @@ namespace IO.Milvus.Client
                 {
                     CollectionName = requestParam.CollectionName,
                     FieldName = requestParam.FieldName,
+                    IndexName = requestParam.IndexName
                 };
                 request.ExtraParams.AddRange(requestParam.ExtraDic.Select(p => new KeyValuePair()
                 {

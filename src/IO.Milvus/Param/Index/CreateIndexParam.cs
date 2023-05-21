@@ -16,6 +16,16 @@ namespace IO.Milvus.Param.Index
             IndexType indexType,
             MetricType metricType)
         {
+            if (indexType == IndexType.INVALID)
+            {
+                throw new ParamException("Index type is required");
+            }
+
+            if (metricType == MetricType.INVALID)
+            {
+                throw new ParamException("Metric type is required");
+            }
+
             var param = new CreateIndexParam()
             {
                 CollectionName = collectionName,
@@ -23,6 +33,22 @@ namespace IO.Milvus.Param.Index
                 IndexName = indexName,
                 IndexType = indexType,
                 MetricType = metricType,
+            };
+            param.Check();
+
+            return param;
+        }
+
+        public static CreateIndexParam CreateScalar(
+            string collectionName,
+            string fieldName,
+            string indexName)
+        {
+            var param = new CreateIndexParam()
+            {
+                CollectionName = collectionName,
+                FieldName = fieldName,
+                IndexName = indexName
             };
             param.Check();
 
@@ -75,16 +101,6 @@ namespace IO.Milvus.Param.Index
             if (string.IsNullOrEmpty(IndexName))
             {
                 IndexName = Constant.DEFAULT_INDEX_NAME;
-            }
-
-            if (IndexType == IndexType.INVALID)
-            {
-                throw new ParamException("Index type is required");
-            }
-
-            if (MetricType == MetricType.INVALID)
-            {
-                throw new ParamException("Metric type is required");
             }
         }
     }
