@@ -1,7 +1,7 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Grpc;
 
-namespace IO.Milvus.Param.Dml
+namespace IO.Milvus.Param.Dml.Field
 {
     public class ByteStringField : Field
     {
