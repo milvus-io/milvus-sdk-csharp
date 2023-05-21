@@ -24,7 +24,8 @@ namespace IO.Milvus.Param.Dml
             string param = "{}",
             ulong travelTimestamp = 0L,
             ulong guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
-            ulong gracefulTime = 5000L
+            ulong gracefulTime = 5000L,
+            string expr = ""
             )
         {
             var sparam = new SearchParam<TVector>()
@@ -37,9 +38,11 @@ namespace IO.Milvus.Param.Dml
                 OutFields = outfields,
                 TopK = topk,
                 RoundDecimal = roundDecimal,
+                Params = param,
                 TravelTimestamp = travelTimestamp,
                 GuaranteeTimestamp = guaranteeTimestamp,
-                GracefulTime = gracefulTime
+                GracefulTime = gracefulTime,
+                Expr = expr
             };
             sparam.Check();
 

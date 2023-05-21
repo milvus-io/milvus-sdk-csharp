@@ -3,7 +3,7 @@
     public class DescribeIndexParam
     {
         public static DescribeIndexParam Create(string collectionName,
-            string indexName)
+            string indexName = "")
         {
             DescribeIndexParam param = new DescribeIndexParam()
             {
@@ -18,12 +18,6 @@
         internal void Check()
         {
             ParamUtils.CheckNullEmptyString(CollectionName, "Collection name");
-
-            if (string.IsNullOrEmpty(IndexName))
-            {
-                IndexName = Constant.DEFAULT_INDEX_NAME;
-            }
-
         }
 
         public string CollectionName { get; set; }
