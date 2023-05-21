@@ -1,1 +1,0 @@
-dotnet nuget push .\src\IO.Milvus\bin\Debug\IO.Milvus.2.2.0-alpha.1.nupkg --api-key oy2b5dlmhce4vxpycvvaaowwx7nhnrnepeid3wbplf3jc4 --source https://api.nuget.org/v3/index.json 
