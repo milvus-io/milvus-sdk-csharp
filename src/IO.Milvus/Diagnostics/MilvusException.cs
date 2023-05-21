@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Grpc;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Grpc;
 using System;
 using System.Runtime.Serialization;
 
@@ -23,7 +24,22 @@ public class MilvusException : System.Exception
     /// Initializes a new instance of the <see cref="MilvusException"/> class with a provided error code.
     /// </summary>
     /// <param name="errorCode"><see cref="ErrorCode"/></param>
-    public MilvusException(ErrorCode errorCode):base(GetErrorMsg(errorCode))
+    /// <param name="reason"><see cref="ResponseStatus.Reason"/></param>
+    internal MilvusException(ErrorCode errorCode,string reason = ""):base(GetErrorMsg(errorCode,reason))
+    {
+
+    }
+
+    internal MilvusException(ResponseStatus responseStatus):base(GetErrorMsg(responseStatus.ErrorCode,responseStatus.Reason))
+    {
+            
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MilvusException"/> class with a status.
+    /// </summary>
+    /// <param name="status">Status.</param>
+    public MilvusException(Grpc.Status status) : base(GetErrorMsg(status.ErrorCode, status.Reason))
     {
 
     }
@@ -38,8 +54,8 @@ public class MilvusException : System.Exception
     {
     }
 
-    private static string GetErrorMsg(ErrorCode errorCode)
+    private static string GetErrorMsg(ErrorCode errorCode, string reason)
     {
-        return $"ErrorCode:{errorCode}";
+        return $"ErrorCode: {errorCode} Reason: {reason}";
     }
 }

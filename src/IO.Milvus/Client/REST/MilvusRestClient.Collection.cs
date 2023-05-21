@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Text.Json;
 using System.Linq;
+using IO.Milvus.Diagnostics;
 
 namespace IO.Milvus.Client.REST;
 
@@ -31,9 +32,11 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Collection deletion failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
+
+        ValidateResponse(responseContent);
     }
 
     ///<inheritdoc/>
@@ -63,8 +66,8 @@ public partial class MilvusRestClient
 
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failded Describe collections: {0}", data.Status.ErrorCode);
-            throw new Diagnostics.MilvusException(data.Status.ErrorCode);
+            this._log.LogError("Failed Describe collections: {0}", data.Status.ErrorCode);
+            throw new MilvusException(data.Status);
         }
 
         return data.ToDetaildedMilvusCollection();
@@ -97,6 +100,8 @@ public partial class MilvusRestClient
             this._log.LogError(e, "Collection creation failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
+
+        ValidateResponse(responseContent);
     }
 
     ///<inheritdoc/>
@@ -120,9 +125,12 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failded check if a {0} exists: {0}, {1}", collectionName, e.Message, responseContent);
+            this._log.LogError(e, "Failed check if a {0} exists: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
+
+        if (string.IsNullOrEmpty(responseContent) || responseContent == "{}")
+            return false;
 
         var hasCollectionResponse = JsonSerializer.Deserialize<HasCollectionResponse> (responseContent);
 
@@ -148,22 +156,24 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failded release collection: {0}, {1}", collectionName, e.Message, responseContent);
+            this._log.LogError(e, "Failed release collection: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
+
+        ValidateResponse(responseContent);
     }
 
     ///<inheritdoc/>
     public async Task LoadCollectionAsync(
         string collectionName, 
-        int replicNumber = 1, 
+        int replicaNumber = 1, 
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Load collection: {0}", collectionName);
 
         using HttpRequestMessage request = LoadCollectionRequest
             .Create(collectionName)
-            .WithReplicNumber(replicNumber)
+            .WithReplicaNumber(replicaNumber)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -174,7 +184,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failded release collection: {0}, {1}", collectionName, e.Message, responseContent);
+            this._log.LogError(e, "Failed release collection: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
     }
@@ -198,13 +208,13 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failded release collection: {0}, {1}", collectionName, e.Message, responseContent);
+            this._log.LogError(e, "Failed release collection: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
 
-        var data = JsonSerializer.Deserialize<Dictionary<string,string>>(responseContent);
+        var data = JsonSerializer.Deserialize<GetCollectionStatisticsResponse>(responseContent);
 
-        return data;
+        return data.Statistics;
     }
 
     ///<inheritdoc/>
@@ -229,7 +239,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failded show collections: {0}, {1}", collectionNames?.ToString(), e.Message, responseContent);
+            this._log.LogError(e, "Failed show collections: {0}, {1}", collectionNames?.ToString(), e.Message, responseContent);
             throw;
         }
 
@@ -237,8 +247,8 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failded show collections: {0}", data.Status.ErrorCode);
-            throw new Diagnostics.MilvusException(data.Status.ErrorCode);
+            this._log.LogError("Failed show collections: {0}", data.Status.ErrorCode);
+            throw new Diagnostics.MilvusException(data.Status);
         }
 
         return data.ToCollections().ToList();

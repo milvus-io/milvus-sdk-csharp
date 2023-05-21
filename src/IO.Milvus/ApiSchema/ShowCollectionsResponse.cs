@@ -1,6 +1,7 @@
 ﻿using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -32,7 +33,7 @@ internal class ShowCollectionsResponse
     /// The utc timestamp calculated by created_timestamp.
     /// </summary>
     [JsonPropertyName("created_utc_timestamps")]
-    public IList<long> CreatedUTCTimestamps { get; set; }
+    public IList<long> CreatedUtcTimestamps { get; set; }
 
     /// <summary>
     /// Load percentage on querynode when type is InMemory.
@@ -55,9 +56,8 @@ internal class ShowCollectionsResponse
             yield return new MilvusCollection(
                 CollectionIds[i],
                 CollectionNames[i],
-                TimestampUtils.GetTimeFromTimstamp(CreatedTimestamps[i]),
-                TimestampUtils.GetTimeFromTimstamp(CreatedTimestamps[i]),
-                InMemoryPercentages[i]);
+                TimestampUtils.GetTimeFromTimstamp(CreatedUtcTimestamps[i]),
+                InMemoryPercentages?.Any() == true ? InMemoryPercentages[i] : -1);
         }
     }
 }
@@ -69,15 +69,13 @@ public class MilvusCollection
 {
     internal MilvusCollection(
         long id, 
-        string name, 
-        DateTime createdTime, 
-        DateTime createdUTCTime,
+        string name,
+        DateTime createdUtcTime,
         long inMemoryPercentage)
     {
         Id = id;
         Name = name;
-        CreatedTime = createdTime;
-        CreatedUTCTime = createdUTCTime;
+        CreatedUtcTime = createdUtcTime;
         InMemoryPercentage = inMemoryPercentage;
     }
 
@@ -92,14 +90,9 @@ public class MilvusCollection
     public string Name { get; }
 
     /// <summary>
-    /// Hybrid timestamps in milvus.
-    /// </summary>
-    public DateTime CreatedTime { get;}
-
-    /// <summary>
     /// The utc timestamp calculated by created_timestamp.
     /// </summary>
-    public DateTime CreatedUTCTime { get; }
+    public DateTime CreatedUtcTime { get; }
 
     /// <summary>
     /// Load percentage on querynode when type is InMemory.

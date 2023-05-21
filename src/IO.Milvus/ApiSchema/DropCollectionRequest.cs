@@ -1,4 +1,5 @@
 ﻿using IO.Milvus.Client.REST;
+using IO.Milvus.Diagnostics;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
@@ -8,6 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// Drop a collection
 /// </summary>
 internal sealed class DropCollectionRequest:
+    IValidatable,
     IRestRequest,
     IGrpcRequest<Grpc.DropCollectionRequest>
 {
@@ -27,6 +29,8 @@ internal sealed class DropCollectionRequest:
 
     public Grpc.DropCollectionRequest BuildGrpc()
     {
+        this.Validate();
+
         return new Grpc.DropCollectionRequest
         {
             CollectionName = this.CollectionName
@@ -35,9 +39,16 @@ internal sealed class DropCollectionRequest:
 
     public HttpRequestMessage BuildRest()
     {
+        this.Validate();
+
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/collection",
             payload: this);
+    }
+
+    public void Validate()
+    {
+        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
     }
 
     #region Private =================================================

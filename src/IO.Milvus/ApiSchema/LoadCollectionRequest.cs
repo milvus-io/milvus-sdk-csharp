@@ -8,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Load a collection for search
 /// </summary>
-internal sealed class LoadCollectionRequest:
+internal sealed class LoadCollectionRequest :
     IRestRequest,
     IGrpcRequest<Grpc.LoadCollectionRequest>,
     IValidatable
@@ -26,30 +26,34 @@ internal sealed class LoadCollectionRequest:
     /// The replica number to load, default by 1
     /// </summary>
     [JsonPropertyName("replica_number")]
-    public int ReplicNumber { get; set; } = 1;
+    public int ReplicaNumber { get; set; } = 1;
 
     public static LoadCollectionRequest Create(string collectionName)
     {
         return new LoadCollectionRequest(collectionName);
     }
 
-    public LoadCollectionRequest WithReplicNumber(int replicNumber)
+    public LoadCollectionRequest WithReplicaNumber(int replicaNumber)
     {
-        ReplicNumber = replicNumber;
+        ReplicaNumber = replicaNumber;
         return this;
     }
 
     public Grpc.LoadCollectionRequest BuildGrpc()
     {
+        this.Validate();
+
         return new Grpc.LoadCollectionRequest()
         {
             CollectionName = CollectionName,
-            ReplicaNumber = ReplicNumber,
+            ReplicaNumber = ReplicaNumber,
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
+        this.Validate();
+
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/collection/load",
             this);
@@ -58,7 +62,7 @@ internal sealed class LoadCollectionRequest:
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.True(ReplicNumber >= 1, "Replic number must be greater than 1.");
+        Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
     }
 
     #region Private =====================================================================================

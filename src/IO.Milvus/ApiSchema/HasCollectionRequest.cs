@@ -40,7 +40,7 @@ internal sealed class HasCollectionRequest:
 
     public HasCollectionRequest WithTimestamp(DateTime? dateTime)
     {
-        Timestamp = dateTime == null ? 0 : dateTime.Value.ToUTCTimestamp();
+        Timestamp = dateTime == null ? 0 : dateTime.Value.ToUtcTimestamp();
         return this;
     }
 

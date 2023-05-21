@@ -2,40 +2,31 @@
 
 namespace IO.Milvus.Utils;
 
+/// <summary>
+/// Timestamps methods
+/// </summary>
+/// <remarks>
+/// <see href="https://www.epochconverter.com/"/>
+/// </remarks>
 internal static class TimestampUtils
 {
-    public static long GetNowUTCTimestamp(bool accurateToMilliseconds = false)
+    public static long GetNowUTCTimestamp()
     {
-        return ToUTCTimestamp(DateTime.Now, accurateToMilliseconds);
+        return DateTimeOffset.Now.ToUnixTimeMilliseconds();
     }
 
-    public static long ToUTCTimestamp(this DateTime dt, bool accurateToMilliseconds = false)
+    public static long ToUtcTimestamp(this DateTime dt)
     {
-        return ToTimestamp(dt.ToUniversalTime(), accurateToMilliseconds);
+        return ToTimestamp(dt.ToUniversalTime());
     }
 
-    public static long ToTimestamp(this DateTime dt, bool accurateToMilliseconds = false)
-    {
-        if (accurateToMilliseconds)
-        {
-            return (dt.Ticks - 621355968000000000) / 10000;
-        }
-        else
-        {
-            return (dt.Ticks - 621355968000000000) / 10000000;
-        }
+    public static long ToTimestamp(this DateTime dt)
+    {        
+        return (dt.Ticks - 621355968000000000) / 10000;
     }
 
-    public static DateTime GetTimeFromTimstamp(long Timestamp, bool accurateToMilliseconds = false)
+    public static DateTime GetTimeFromTimstamp(long Timestamp)
     {
-        var startTime = new DateTime(1970, 1, 1);
-        if (accurateToMilliseconds)
-        {
-            return startTime.AddTicks(Timestamp * 10000);
-        }
-        else
-        {
-            return startTime.AddTicks(Timestamp * 10000000);
-        }
+        return DateTimeOffset.FromUnixTimeMilliseconds(Timestamp).DateTime;
     }
 }

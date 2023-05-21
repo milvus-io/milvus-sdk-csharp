@@ -39,11 +39,11 @@ namespace IO.Milvus.Client.Tests
             }
 
             var insertParam = InsertParam.Create(collectionName, partitionName,
-                new List<Field>()
+                new List<Param.Dml.Field>()
                 {
-                    Field.Create(nameof(bookIds),bookIds),
-                    Field.Create(nameof(wordCounts),wordCounts),
-                    Field.CreateBinaryVectors(nameof(bookIntros),bookIntros),
+                    Param.Dml.Field.Create(nameof(bookIds),bookIds),
+                    Param.Dml.Field.Create(nameof(wordCounts),wordCounts),
+                    Param.Dml.Field.CreateBinaryVectors(nameof(bookIntros),bookIntros),
                 });
 
             return insertParam;

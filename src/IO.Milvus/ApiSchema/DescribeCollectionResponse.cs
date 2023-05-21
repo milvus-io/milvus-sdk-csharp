@@ -26,7 +26,7 @@ internal class DescribeCollectionResponse
     /// The collection id.
     /// </summary>
     [JsonPropertyName("collectionID")]
-    public int CollectionId { get; set; }
+    public long CollectionId { get; set; }
 
     /// <summary>
     /// Consistency level.
@@ -41,13 +41,13 @@ internal class DescribeCollectionResponse
     /// Hybrid timestamp in milvus.
     /// </summary>
     [JsonPropertyName("created_timestamp")]
-    public int CreatedTimestamp { get; set; }
+    public long CreatedTimestamp { get; set; }
 
     /// <summary>
     /// The utc timestamp calculated by created_timestamp.
     /// </summary>
     [JsonPropertyName("created_utc_timestamp")]
-    public int CreatedUTCTimestamp { get; set; }
+    public long CreatedUTCTimestamp { get; set; }
 
     /// <summary>
     /// Collection Schema.
@@ -80,7 +80,6 @@ internal class DescribeCollectionResponse
             CollectionName,
             CollectionId,
             ConsistencyLevel,
-            TimestampUtils.GetTimeFromTimstamp(CreatedTimestamp),
             TimestampUtils.GetTimeFromTimstamp(CreatedUTCTimestamp),
             Schema,
             ShardsNum,
@@ -99,8 +98,7 @@ public class DetailedMilvusCollection
         string collectionName, 
         long collectionId, 
         ConsistencyLevel consistencyLevel,
-        DateTime createdTime, 
-        DateTime createdUTCTime,
+        DateTime createdUtcTime,
         CollectionSchema schema,
         int shardsNum,
         Dictionary<string,IList<int>> startPostions)
@@ -109,8 +107,7 @@ public class DetailedMilvusCollection
         CollectionName = collectionName;
         CollectionId = collectionId;
         ConsistencyLevel = consistencyLevel;
-        CreatedTime = createdTime;
-        CreatedUTCTime = createdUTCTime;
+        CreatedUtcTime = createdUtcTime;
         Schema = schema;
         ShardsNum = shardsNum;
         StartPostions = startPostions;
@@ -140,14 +137,9 @@ public class DetailedMilvusCollection
     public ConsistencyLevel ConsistencyLevel { get; }
 
     /// <summary>
-    /// Hybrid timestamp in milvus.
-    /// </summary>
-    public DateTime CreatedTime { get; }
-
-    /// <summary>
     /// The utc timestamp calculated by created_timestamp.
     /// </summary>
-    public DateTime CreatedUTCTime { get; }
+    public DateTime CreatedUtcTime { get; }
 
     /// <summary>
     /// Collection Schema.

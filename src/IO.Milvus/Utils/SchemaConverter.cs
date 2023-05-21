@@ -35,6 +35,7 @@ internal static class SchemaConverter
             Name = collectionSchema.Name,
             Description = collectionSchema.Description,
             AutoId = collectionSchema.AutoID,
+            Fields = new List<FieldType>()
         };
 
         foreach (var field in collectionSchema.Fields)

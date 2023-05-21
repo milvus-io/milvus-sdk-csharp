@@ -1,4 +1,6 @@
-﻿namespace IO.Milvus.Param
+﻿using System;
+
+namespace IO.Milvus.Param
 {
     /// <summary>
     /// Constant/static values for internal usage.
@@ -21,6 +23,7 @@
         public const string IMPORT_COLLECTION = "collection";
         public const string IMPORT_PARTITION = "partition";
         public const string DEFAULT_INDEX_NAME = "_default_idx";
+        public const string IGNORE_GROWING = "ignore_growing";
 
         /// <summary>
         ///  max value for waiting loading collection/partition interval, unit: millisecond

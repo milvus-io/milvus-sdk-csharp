@@ -62,7 +62,7 @@ internal class DescribeCollectionRequest:
         this.Validate();
 
         return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}collection",
+            $"{ApiVersion.V1}/collection",
             payload: this
             );
     }
@@ -81,10 +81,7 @@ internal class DescribeCollectionRequest:
 
     public void Validate()
     {
-        if (CollectionId <= 0)
-        {
-            Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        }
+        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
     }
 
     #region private ================================================================================

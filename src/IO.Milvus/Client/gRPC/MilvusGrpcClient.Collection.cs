@@ -33,8 +33,8 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Collection collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response.ErrorCode);
+            this._log.LogError("Create collection failed: {0}, {1}", response.ErrorCode, response.Reason);
+            throw new MilvusException(response);
         }
     }
 
@@ -54,7 +54,7 @@ public partial class MilvusGrpcClient
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Describe collection failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status.ErrorCode);
+            throw new MilvusException(response.Status);
         }
 
         return new DetailedMilvusCollection(
@@ -62,7 +62,6 @@ public partial class MilvusGrpcClient
             response.CollectionName,
             response.CollectionID,
             (ConsistencyLevel)response.ConsistencyLevel,
-            TimestampUtils.GetTimeFromTimstamp((long)response.CreatedTimestamp),
             TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamp),
             response.Schema.ToCollectioSchema(),
             response.ShardsNum,
@@ -86,7 +85,7 @@ public partial class MilvusGrpcClient
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Describe collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response.ErrorCode);   
+            throw new MilvusException(response);   
         }
     }
 
@@ -106,7 +105,7 @@ public partial class MilvusGrpcClient
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Get collection statistics: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status.ErrorCode);
+            throw new MilvusException(response.Status);
         }
 
         return response.Stats.ToDictionary(p => p.Key, p => p.Value);
@@ -129,7 +128,7 @@ public partial class MilvusGrpcClient
 
         if(response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            throw new MilvusException(response.Status.ErrorCode);
+            throw new MilvusException(response.Status);
         }
 
         return response.Value;
@@ -152,7 +151,7 @@ public partial class MilvusGrpcClient
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Load collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response.ErrorCode);
+            throw new MilvusException(response);
         }
     }
 
@@ -172,7 +171,7 @@ public partial class MilvusGrpcClient
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Release collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response.ErrorCode);
+            throw new MilvusException(response);
         }
     }
 
@@ -195,7 +194,7 @@ public partial class MilvusGrpcClient
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Show collections failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status.ErrorCode);
+            throw new MilvusException(response.Status);
         }
 
         return ToCollections(response).ToList();
@@ -213,11 +212,9 @@ public partial class MilvusGrpcClient
             yield return new MilvusCollection(
                 response.CollectionIds[i],
                 response.CollectionNames[i],
-                TimestampUtils.GetTimeFromTimstamp((long)response.CreatedTimestamps[i]),
-                TimestampUtils.GetTimeFromTimstamp((long)response.CreatedTimestamps[i]),
-                response.InMemoryPercentages[i]);
+                TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamps[i]),
+                response.InMemoryPercentages?.Any() == true ? response.InMemoryPercentages[i] : -1);
         }
     }
     #endregion
 }
-

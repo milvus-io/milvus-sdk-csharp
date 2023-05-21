@@ -3,9 +3,11 @@ using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +16,7 @@ namespace IO.Milvus.Client.REST;
 /// <summary>
 /// An implementation of a client for the Milvus VectorDB.
 /// </summary>
-public partial class MilvusRestClient:IMilvusClient2
+public partial class MilvusRestClient : IMilvusClient2
 {
     /// <summary>
     /// The constructor for the <see cref="MilvusRestClient"/>.
@@ -99,6 +101,18 @@ public partial class MilvusRestClient:IMilvusClient2
         if (port.HasValue) { builder.Port = port.Value; }
 
         return builder.Uri;
+    }
+
+    private void ValidateResponse(string responseContent)
+    {
+        if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
+            return;
+
+        var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
+        if (status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            throw new MilvusException(status);
+        }
     }
     #endregion
 }

@@ -16,32 +16,20 @@ internal class InsertRequest
     public string CollectionName { get; set; }
 
     /// <summary>
-    /// Db name
+    /// Partition name
     /// </summary>
-    [JsonPropertyName("db_name")]
-    public string DbName { get; set; }
+    [JsonPropertyName("partition_name")]
+    public string PartitionName { get; set; }
 
     /// <summary>
     /// Fields data
     /// </summary>
     [JsonPropertyName("fields_data")]
-    public IList<Field> FieldsData { get; set; }
-
-    /// <summary>
-    /// Hash keys
-    /// </summary>
-    [JsonPropertyName("hash_keys")]
-    public IList<int> HashKeys { get; set; }
+    public IList<Param.Dml.Field> FieldsData { get; set; }
 
     /// <summary>
     /// Number of rows
     /// </summary>
     [JsonPropertyName("num_rows")]
     public int NumRows { get; set; }
-
-    /// <summary>
-    /// Partition name
-    /// </summary>
-    [JsonPropertyName("partition_name")]
-    public string PartitionName { get; set; }
 }

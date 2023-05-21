@@ -5,13 +5,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace IO.MilvusTests.Client;
 
 [TestClass]
-public class MilvusClientTests
+public partial class MilvusClientTests
 {
     [TestMethod()]
     [TestClientProvider]
     public async Task CollectionTest(IMilvusClient2 milvusClient)
     {
-        string collectionName = "Test";
+        string collectionName = milvusClient.GetType().Name;
 
         bool collectionExist = await milvusClient.HasCollectionAsync(collectionName);
 
@@ -30,7 +30,7 @@ public class MilvusClientTests
         Assert.IsTrue(collections.Any(p => p.Name == collectionName));
 
         IDictionary<string,string> statistics  = await milvusClient.GetCollectionStatisticsAsync(collectionName);
-        Assert.IsTrue(statistics.Count > 0);
+        Assert.IsTrue(statistics.Count == 1);
 
         DetailedMilvusCollection detailedMilvusCollection = await milvusClient.DescribeCollectionAsync(collectionName);
         Assert.AreEqual(collectionName, detailedMilvusCollection.CollectionName);
