@@ -1,9 +1,9 @@
-﻿using IO.Milvus.Exception;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using IO.Milvus.Exception;
 using IO.Milvus.Grpc;
 
-namespace IO.Milvus.Param.Dml
+namespace IO.Milvus.Param.Dml.Field
 {
     public class BinaryVectorField : Field
     {
@@ -16,10 +16,11 @@ namespace IO.Milvus.Param.Dml
             var floatArray = new FloatArray();
 
             var count = Datas.First().Count;
-            if (!Datas.All(p =>p.Count == count))
+            if (!Datas.All(p => p.Count == count))
             {
                 throw new ParamException("Row count of fields must be equal");
             }
+
             foreach (var data in Datas)
             {
                 floatArray.Data.AddRange(data);

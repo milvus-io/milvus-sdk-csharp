@@ -12,6 +12,7 @@ namespace IO.Milvus.Param.Collection
     public class FieldType
     {
         private int dimension;
+        private int maxLength;
 
         #region Fields
 
@@ -58,7 +59,7 @@ namespace IO.Milvus.Param.Collection
             int dimension,
             int maxLength,
             Dictionary<string, string> typeParams = null,
-            bool isPrimaryLey = false,
+            bool isPrimaryKey = false,
             bool isAutoID = false)
         {
             var field = new FieldType()
@@ -66,11 +67,15 @@ namespace IO.Milvus.Param.Collection
                 Name = name,
                 Description = description,
                 DataType = dataType,
-                Dimension = dimension,
                 MaxLength = maxLength,
                 IsAutoID = isAutoID,
-                IsPrimaryKey = isPrimaryLey
+                IsPrimaryKey = isPrimaryKey,
             };
+
+            if (dataType != DataType.VarChar)
+            {
+                field.Dimension = dimension;
+            }
 
             if (typeParams != null)
             {
@@ -95,11 +100,19 @@ namespace IO.Milvus.Param.Collection
             set
             {
                 dimension = value;
-                TypeParams[Constant.VECTOR_DIM] = Dimension.ToString();
+                TypeParams[Constant.VECTOR_DIM] = dimension.ToString();
             }
         }
 
-        public int MaxLength { get; set; }
+        public int MaxLength
+        {
+            get => maxLength;
+            set
+            {
+                maxLength = value;
+                TypeParams[Constant.VARCHAR_MAX_LENGTH] = maxLength.ToString();
+            }
+        }
 
         public string Description { get; set; } = "";
 

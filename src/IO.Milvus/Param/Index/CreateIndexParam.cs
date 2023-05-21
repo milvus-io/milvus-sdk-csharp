@@ -10,11 +10,11 @@ namespace IO.Milvus.Param.Index
         private string extraParam;
 
         public static CreateIndexParam Create(
-                    string collectionName,
-                    string fieldName,
-                    string indexName,
-                    IndexType indexType,
-                    MetricType metricType)
+            string collectionName,
+            string fieldName,
+            string indexName,
+            IndexType indexType,
+            MetricType metricType)
         {
             var param = new CreateIndexParam()
             {
@@ -22,7 +22,7 @@ namespace IO.Milvus.Param.Index
                 FieldName = fieldName,
                 IndexName = indexName,
                 IndexType = indexType,
-                MetricType = metricType
+                MetricType = metricType,
             };
             param.Check();
 
@@ -35,7 +35,8 @@ namespace IO.Milvus.Param.Index
 
         public string ExtraParam
         {
-            get => extraParam; set
+            get => extraParam;
+            set
             {
                 extraParam = value;
                 ExtraDic[Constant.PARAMS] = extraParam;
@@ -46,15 +47,18 @@ namespace IO.Milvus.Param.Index
 
         public IndexType IndexType
         {
-            get => indexType; set
+            get => indexType;
+            set
             {
                 indexType = value;
                 ExtraDic[Constant.INDEX_TYPE] = indexType.ToString();
             }
         }
+
         public MetricType MetricType
         {
-            get => metricType; set
+            get => metricType;
+            set
             {
                 metricType = value;
                 ExtraDic[Constant.METRIC_TYPE] = metricType.ToString();

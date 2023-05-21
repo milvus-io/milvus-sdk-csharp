@@ -1,88 +1,82 @@
-﻿using IO.Milvus.Param;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using IO.MilvusTests.Client.Base;
+﻿using FluentAssertions;
 using IO.Milvus.Param.Dml;
-using IO.MilvusTests;
-using IO.Milvus.Param.Collection;
 using IO.Milvus.Param.Partition;
+using IO.MilvusTests.Client.Base;
+using IO.MilvusTests.Helpers;
+using Xunit;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client;
+
+/// <summary>
+/// a test class to execute unittest about data process
+/// </summary>
+public sealed class DataTests : MilvusServiceClientTestsBase, IAsyncLifetime
 {
-    /// <summary>
-    /// a test class to execute unittest about data process
-    /// </summary>
-    [TestClass]
-    public class DataTests : MilvusServiceClientTestsBase
+    private string collectionName;
+    private string aliasName;
+    private string partitionName;
+
+    public async Task InitializeAsync()
     {
-        public const string Book = nameof(Book);
+        collectionName = $"test{random.Next()}";
 
-        [TestMethod()]
-        [DataRow(Book, HostConfig.DefaultTestPartitionName)]
-        public void AInsertTest(string collectionName, string partitionName)
+        aliasName = collectionName + "_aliasName";
+        partitionName = collectionName + "_partitionName";
+    }
+
+    public async Task DisposeAsync()
+    {
+        this.ThenDropCollection(collectionName);
+
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
+    }
+
+    [Fact]
+    public async Task AInsertTest()
+    {
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
+        this.GivenPartition(collectionName, partitionName);
+
+        var r = InsertDataToBookCollection(collectionName, partitionName);
+
+        r.Assert();
+    }
+
+    [Fact]
+    public async Task BDeleteTest()
+    {
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
+
+        var hasP = MilvusClient.HasPartition(HasPartitionParam.Create(collectionName, partitionName));
+        if (!hasP.Data)
         {
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
-
-            var data = PrepareData(collectionName, partitionName);
-
-            var hasP = MilvusClient.HasPartition(HasPartitionParam.Create(collectionName, partitionName));
-            if (!hasP.Data)
-            {
-                var createP = MilvusClient.CreatePartition(CreatePartitionParam.Create(collectionName, partitionName));
-                AssertRpcStatus(createP);
-            }
-
-            var r = MilvusClient.Insert(data);
-
-            Assert.IsNotNull(r);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.SuccIndex.Count > 0);
+            var createP = MilvusClient.CreatePartition(CreatePartitionParam.Create(collectionName, partitionName));
+            createP.AssertRpcStatus();
         }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void BDeleteTest(string collectionName, string partitionName)
-        {
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+        InsertDataToBookCollection(collectionName, partitionName);
 
-            var hasP = MilvusClient.HasPartition(HasPartitionParam.Create(collectionName, partitionName));
-            if (!hasP.Data)
-            {
-                var createP = MilvusClient.CreatePartition(CreatePartitionParam.Create(collectionName, partitionName));
-                AssertRpcStatus(createP);
-            }
+        var r = MilvusClient.Delete(DeleteParam.Create(collectionName, $"book_id in [2]"));
 
-            var data = PrepareData(collectionName, partitionName);
-            var loadCollectionResult = MilvusClient.LoadCollection(new LoadCollectionParam
-            {
-                CollectionName = collectionName
-            });
+        r.ShouldSuccess();
+        r.Data.DeleteCnt.Should().BeGreaterThan(0);
+    }
 
-            var insertResult = MilvusClient.Insert(data);
+    [Fact]
+    public async Task GetCompactionStateTest()
+    {
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
+        InsertDataToBookCollection(collectionName, partitionName);
 
-            var r = MilvusClient.Delete(DeleteParam.Create(collectionName, $"bookIds > 2"));
+        var r = MilvusClient.ManualCompaction(collectionName);
 
-            ThenDropCollection(collectionName);
-            Assert.IsNotNull(r);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.SuccIndex.Count > 0);
-        }
+        r.ShouldSuccess();
 
-        [TestMethod()]
-        [DataRow(Book)]
-        public void GetCompactionStateTest(string collectionName)
-        {
-            var r = MilvusClient.ManualCompaction(collectionName);
-
-            Assert.IsNotNull(r);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-
-            var stateR = MilvusClient.GetCompactionState(r.Data.CompactionID);
-            Assert.IsNotNull(stateR);
-            Assert.IsTrue(stateR.Status == Status.Success, stateR.Exception?.ToString());
-        }
+        var stateR = MilvusClient.GetCompactionState(r.Data.CompactionID);
+        stateR.ShouldSuccess();
     }
 }

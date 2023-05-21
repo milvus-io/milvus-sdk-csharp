@@ -1,51 +1,71 @@
-﻿using IO.Milvus.Param;
-using IO.Milvus.Param.Collection;
+﻿using FluentAssertions;
 using IO.Milvus.Param.Dml;
-using IO.Milvus.Param.Partition;
 using IO.MilvusTests.Client.Base;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using IO.MilvusTests.Helpers;
+using Xunit;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client;
+
+public class QueryTest : MilvusServiceClientTestsBase, IAsyncLifetime
 {
-    [TestClass]
-    public class QueryTest : MilvusServiceClientTestsBase
+    private string collectionName;
+    private string aliasName;
+    private string partitionName;
+
+
+    public async Task InitializeAsync()
     {
-        [TestMethod()]
-        [DataRow("bookIds > 0 && bookIds < 2000")]
-        public void QueryDataTest(string expr)
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+        collectionName = $"test{random.Next()}";
 
+        aliasName = collectionName + "_aliasName";
+        partitionName = collectionName + "_partitionName";
 
-            var partitionName = "_default";
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
+        this.GivenPartition(collectionName, partitionName);
+    }
 
-            var hasP = MilvusClient.HasPartition(HasPartitionParam.Create(collectionName, partitionName));
-            if (!hasP.Data)
-            {
-                var createP = MilvusClient.CreatePartition(CreatePartitionParam.Create(collectionName, partitionName));
-                AssertRpcStatus(createP);
-            }
+    public async Task DisposeAsync()
+    {
+        this.ThenDropCollection(collectionName);
 
-            var loadCollectionResult = MilvusClient.LoadCollection(new LoadCollectionParam
-            {
-                CollectionName = collectionName
-            });
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
+    }
 
+    [Theory]
+    [InlineData("book_id > 0 && book_id < 2000", 1999)]
+    [InlineData("book_id in [1, 2, 3]", 3)]
+    public async Task QueryDataTestWithDefaultPartition(string expr, int records)
+    {
+        InsertDataToBookCollection(collectionName, "_default");
+        await this.GivenLoadCollectionAsync(collectionName);
 
-            var data = PrepareData(collectionName, partitionName);
-            var insertResult = MilvusClient.Insert(data);
+        var r = MilvusClient.Query(QueryParam.Create(
+            collectionName,
+            new List<string> { "_default" },
+            outFields: new List<string>() { "book_id", "book_name" },
+            expr: expr));
 
-            var r = MilvusClient.Query(QueryParam.Create(
-                collectionName,
-                new List<string> { partitionName },
-                outFields: new List<string>() { "bookIds" },
-                expr: expr));
+        r.Assert();
+        r.Data.FieldsData[0].Scalars.LongData.Data.Count.Should().Be(records);
+    }
 
-            Assert.IsNotNull(r);
-            Assert.IsTrue(r.Status == Status.Success);
-        }
+    [Theory]
+    [InlineData("book_id > 0 && book_id < 2000", 1999)]
+    [InlineData("book_id in [1, 2, 3]", 3)]
+    public async Task QueryDataTestWithCustomPartition(string expr, int records)
+    {
+        InsertDataToBookCollection(collectionName, partitionName);
+        await this.GivenLoadCollectionAsync(collectionName);
+
+        var r = MilvusClient.Query(QueryParam.Create(
+            collectionName,
+            new List<string> { partitionName },
+            outFields: new List<string>() { "book_id", "book_name" },
+            expr: expr));
+
+        r.Assert();
+        r.Data.FieldsData[0].Scalars.LongData.Data.Count.Should().Be(records);
     }
 }

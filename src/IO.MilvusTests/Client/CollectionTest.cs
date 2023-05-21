@@ -1,194 +1,184 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using FluentAssertions;
 using IO.Milvus.Param;
 using IO.Milvus.Param.Collection;
 using IO.MilvusTests.Client.Base;
-using IO.MilvusTests;
+using IO.MilvusTests.Helpers;
+using Xunit;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client;
+
+public sealed class CollectionTest : MilvusServiceClientTestsBase, IAsyncLifetime
 {
-    [TestClass]
-    public class CollectionTest : MilvusServiceClientTestsBase
+    private string collectionName;
+    private string aliasName;
+
+    public async Task InitializeAsync()
     {
-        [TestMethod]
-        [DataRow(HostConfig.DefaultTestCollectionName, true)]
-        [DataRow("test2", false)]
-        public void HasCollectionTest(string collectionName, bool exist)
-        {
-            var r = MilvusClient.HasCollection(collectionName);
+        collectionName = $"test{random.Next()}";
 
-            Assert.IsTrue(r.Status == Status.Success);
-            Assert.IsTrue(r.Data == exist);
-        }
+        aliasName = collectionName + "_aliasName";
+    }
 
-        [TestMethod]
-        public void HasCollectionErrorTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+    public async Task DisposeAsync()
+    {
+        this.ThenDropCollection(collectionName);
 
-            var r = MilvusClient.HasCollection(collectionName);
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
+    }
 
-            ThenDropCollection(collectionName);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-        }
+    [Fact]
+    public async Task HasCollectionTest()
+    {
+        await this.GivenCollection(collectionName);
 
-        [TestMethod]
-        public void CreateCollectionTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            var r = CreateBookCollection(collectionName);
+        var r = MilvusClient.HasCollection(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsNotNull(r.Data);
+        r.ShouldSuccess();
+        r.Data.Should().BeTrue();
+    }
 
-            var hasR = MilvusClient.HasCollection(HasCollectionParam.Create(collectionName));
-            Assert.IsTrue(hasR.Status == Status.Success);
-            Assert.IsTrue(hasR.Data);
+    [Fact]
+    public void NotHasCollectionTest()
+    {
+        var r = MilvusClient.HasCollection("xxxxxxx");
 
-            ThenDropCollection(collectionName);
+        r.ShouldSuccess();
+        r.Data.Should().BeFalse();
+    }
 
-            hasR = MilvusClient.HasCollection(HasCollectionParam.Create(collectionName));
-            Assert.IsTrue(hasR.Status == Status.Success);
-            Assert.IsTrue(!hasR.Data);
-        }
+    [Fact]
+    public async Task CreateCollectionTest()
+    {
+        var r = await CreateBookCollectionAsync(collectionName);
+        r.ShouldSuccess();
 
-        [TestMethod]
-        public void ShowCollectionsTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+        var hasR = MilvusClient.HasCollection(HasCollectionParam.Create(collectionName));
+        r.ShouldSuccess();
+        hasR.Data.Should().BeTrue();
+    }
 
-            var r = MilvusClient.ShowCollections(ShowCollectionsParam.Create(null));
+    [Fact]
+    public async Task ShowCollectionsTest()
+    {
+        this.GivenNoCollection(collectionName);
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.CollectionNames.Contains(collectionName));
+        var r = MilvusClient.ShowCollections(ShowCollectionsParam.Create(null));
 
-            ThenDropCollection(collectionName);
-        }
+        r.ShouldSuccess();
+        r.Data.CollectionNames.Should().Contain(collectionName);
+    }
 
-        [TestMethod]
-        public void DescribeCollectionTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+    [Fact]
+    public async Task DescribeCollectionTest()
+    {
+        this.GivenNoCollection(collectionName);
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            var r = MilvusClient.DescribeCollection(DescribeCollectionParam.Create(collectionName));
+        var r = MilvusClient.DescribeCollection(DescribeCollectionParam.Create(collectionName));
 
-            ThenDropCollection(collectionName);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Schema.Name == collectionName);
-        }
+        r.ShouldSuccess();
+        r.Data.Schema.Name.Should().Be(collectionName);
+    }
 
-        [TestMethod]
-        public void DescribeCollectionWithNameTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+    [Fact]
+    public async Task DescribeCollectionWithNameTest()
+    {
+        this.GivenNoCollection(collectionName);
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            var r = MilvusClient.DescribeCollection(collectionName);
+        var r = MilvusClient.DescribeCollection(collectionName);
 
-            ThenDropCollection(collectionName);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Schema.Name == collectionName);
-        }
+        r.ShouldSuccess();
+        r.Data.Schema.Name.Should().Be(collectionName);
+    }
 
-        [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public void GetCollectionStatisticsTest(bool isFlushCollection)
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetCollectionStatisticsTest(bool isFlushCollection)
+    {
+        this.GivenNoCollection(collectionName);
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            var r = MilvusClient.GetCollectionStatistics(
-                GetCollectionStatisticsParam.Create(collectionName, isFlushCollection));
+        var r = MilvusClient.GetCollectionStatistics(
+            GetCollectionStatisticsParam.Create(collectionName, isFlushCollection));
 
-            ThenDropCollection(collectionName);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Stats.First().Key == "row_count");
-        }
+        r.ShouldSuccess();
+        r.Data.Stats.First().Key.Should().Be("row_count");
+    }
 
-        [TestMethod]
-        public void LoadCollectionTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+    [Fact]
+    public async Task LoadCollectionTest()
+    {
+        this.GivenNoCollection(collectionName);
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            var r = MilvusClient.LoadCollection(LoadCollectionParam.Create(collectionName));
+        var r = MilvusClient.LoadCollection(LoadCollectionParam.Create(collectionName));
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
 
-            r = MilvusClient.ReleaseCollection(ReleaseCollectionParam.Create(collectionName));
+        r = MilvusClient.ReleaseCollection(ReleaseCollectionParam.Create(collectionName));
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
+    }
 
+    [Fact]
+    public async Task LoadCollectionWithNameTest()
+    {
+        this.GivenNoCollection(collectionName);
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            ThenDropCollection(collectionName);
-        }
+        var r = MilvusClient.LoadCollection(collectionName);
 
-        [TestMethod]
-        public void LoadCollectionWithNameTest()
-        {
-            var collectionName = $"test{rd.Next()}";
-            GivenNoCollection(collectionName);
-            GivenCollection(collectionName);
-            GivenBookIndex(collectionName);
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
 
-            var r = MilvusClient.LoadCollection(collectionName);
+        r = MilvusClient.ReleaseCollection(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
+    }
 
-            r = MilvusClient.ReleaseCollection(collectionName);
+    [Fact]
+    public async Task LoadCollectionAsyncTestAsync()
+    {
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+        var r = await MilvusClient.LoadCollectionAsync(collectionName);
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
 
-            ThenDropCollection(collectionName);
-        }
+        r = await MilvusClient.ReleaseCollectionAsync(collectionName);
 
-        //[TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public async Task LoadCollectionAsyncTestAsync(string collectionName)
-        {
-            var r = await MilvusClient.LoadCollectionAsync(collectionName);
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
+    }
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
+    [Fact]
+    public async Task LoadCollectionAsyncWithNameTestAsync()
+    {
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
 
-            r = await MilvusClient.ReleaseCollectionAsync(collectionName);
+        var r = await MilvusClient.LoadCollectionAsync(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
-        }
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
 
-        //[TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName)]
-        public async Task LoadCollectionAsyncWithNameTestAsync(string collectionName)
-        {
-            var r = await MilvusClient.LoadCollectionAsync(collectionName);
+        r = await MilvusClient.ReleaseCollectionAsync(collectionName);
 
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
-
-            r = await MilvusClient.ReleaseCollectionAsync(collectionName);
-
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Msg == RpcStatus.SUCCESS_MSG);
-        }
+        r.ShouldSuccess();
+        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
     }
 }

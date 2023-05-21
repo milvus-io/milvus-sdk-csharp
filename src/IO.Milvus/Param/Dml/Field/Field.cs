@@ -1,13 +1,13 @@
-﻿using Google.Protobuf;
-using IO.Milvus.Exception;
-using IO.Milvus.Utils;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Google.Protobuf;
+using IO.Milvus.Exception;
 using IO.Milvus.Grpc;
+using IO.Milvus.Utils;
 
-namespace IO.Milvus.Param.Dml
+namespace IO.Milvus.Param.Dml.Field
 {
     public abstract class Field
     {
