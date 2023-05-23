@@ -12,17 +12,32 @@ namespace IO.MilvusTests;
 /// </summary>
 public sealed class HostConfig
 {
-    public const string Host = "localhost";
+    public static string Host = "localhost";
 
-    public const int Port = 19530;
+    public static int Port = 19530;
 
     public static ConnectParam ConnectParam
     {
         get
         {
-            var connect = ConnectParam.Create(Host, Port, "root", "milvus", false);
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("Milvus_Host")) == false)
+            {
+                Host = Environment.GetEnvironmentVariable("Milvus_Host")!;
+                Port = int.Parse(Environment.GetEnvironmentVariable("Milvus_Port")!);
+                var username = Environment.GetEnvironmentVariable("Milvus_Username");
+                var password = Environment.GetEnvironmentVariable("Milvus_Password");
+                var useHttps = bool.Parse(Environment.GetEnvironmentVariable("Milvus_UseHttps")!);
 
-            return connect;
+                var connect = ConnectParam.Create(Host, Port, username, password, useHttps);
+
+                return connect;
+            }
+            else
+            {
+                var connect = ConnectParam.Create(Host, Port, "root", "milvus", false);
+
+                return connect;
+            }
         }
     }
 }
