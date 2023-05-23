@@ -1,33 +1,48 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.Exception;
 using IO.Milvus.Param;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using IO.Milvus.ApiSchema;
+using System.Text.Json.Serialization;
+using IO.Milvus.Diagnostics;
 
 namespace IO.Milvus;
 
 /// <summary>
 /// Represents a milvus field/
 /// </summary>
+[JsonPolymorphic(
+    UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
+[JsonDerivedType(typeof(BinaryVectorField))]
+[JsonDerivedType(typeof(ByteStringField))]
+[JsonDerivedType(typeof(Field<bool>))]
+[JsonDerivedType(typeof(Field<Int16>))]
+[JsonDerivedType(typeof(Field<int>))]
+[JsonDerivedType(typeof(Field<long>))]
+[JsonDerivedType(typeof(Field<float>))]
+[JsonDerivedType(typeof(Field<double>))]
+[JsonDerivedType(typeof(Field<string>))]
 public abstract class Field
 {
     #region Properties
     /// <summary>
     /// Field name
     /// </summary>
+    [JsonPropertyName("field_name")]
     public string FieldName { get; private set; }
 
     /// <summary>
     /// Row count
     /// </summary>
+    [JsonIgnore]
     public abstract int RowCount { get; }
 
     /// <summary>
     /// <see cref="MilvusDataType"/>
     /// </summary>
+    [JsonPropertyName("type")]
     public MilvusDataType DataType { get; protected set; }
 
     /// <summary>
@@ -52,6 +67,18 @@ public abstract class Field
     {
         return new Field<TData>()
         {
+            FieldName = fieldName,
+            Data = data
+        };
+    }
+
+    public static Field CreateVarChar(
+        string fieldName,
+        IList<string> data)
+    {
+        return new Field<string>()
+        {
+            DataType = MilvusDataType.VarChar,
             FieldName = fieldName,
             Data = data
         };
@@ -145,11 +172,13 @@ public class Field<TData> : Field
     /// <summary>
     /// Vector data
     /// </summary>
+    [JsonPropertyName("field")]
     public IList<TData> Data { get; set; }
 
     /// <summary>
     /// Row count
     /// </summary>
+    [JsonIgnore]
     public override int RowCount => Data?.Count ?? 0;
 
     ///<inheritdoc/>
@@ -228,7 +257,7 @@ public class Field<TData> : Field
                 {
                     var doubleData = new Grpc.DoubleArray();
                     doubleData.Data.AddRange(Data as IList<double>);
-
+                    
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
                         DoubleData = doubleData
@@ -246,8 +275,19 @@ public class Field<TData> : Field
                     };
                 }
                 break;
+            case MilvusDataType.VarChar:
+                {
+                    var stringData = new Grpc.StringArray();
+                    stringData.Data.AddRange(Data as IList<string>);
+
+                    fieldData.Scalars = new Grpc.ScalarField()
+                    {
+                        StringData = stringData
+                    };
+                }
+                break;
             default:
-                throw new MilvusException($"DataType Error:{DataType}");
+                throw new MilvusException($"DataType Error:{DataType}, not supported");
         }
 
         return fieldData;
@@ -255,7 +295,7 @@ public class Field<TData> : Field
 
     internal void Check()
     {
-        ParamUtils.CheckNullEmptyString(FieldName, nameof(FieldName));
+        Verify.ArgNotNullOrEmpty(FieldName, $"FieldName cannot be null or empth");
         if (Data?.Any() != true)
         {
             throw new MilvusException($"{nameof(Field)}.{nameof(Data)} is empty");

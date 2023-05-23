@@ -1,8 +1,11 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
+using IO.Milvus.Exception;
+using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
@@ -36,7 +39,7 @@ internal sealed class CreateCollectionRequest:
     /// </list>
     /// </remarks>
     [JsonPropertyName("consistency_level")]
-    public ConsistencyLevel ConsistencyLevel { get; set; }
+    public MilvusConsistencyLevel ConsistencyLevel { get; set; }
 
     /// <summary>
     /// Once set, no modification is allowed (Optional)
@@ -73,7 +76,7 @@ internal sealed class CreateCollectionRequest:
         return this;
     }
 
-    public CreateCollectionRequest WithConsistencyLevel(ConsistencyLevel consistencyLevel)
+    public CreateCollectionRequest WithConsistencyLevel(MilvusConsistencyLevel consistencyLevel)
     {
         ConsistencyLevel = consistencyLevel;
         return this;
@@ -82,7 +85,14 @@ internal sealed class CreateCollectionRequest:
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.True(Schema.Fields?.Any() == true, "FieldTypes cannot be null or empty");
+        Verify.True(Schema.Fields?.Count(p => p.IsPrimaryKey) == 1, "FieldTypes need only one primary key field type");
 
+        FieldType firstField = Schema.Fields.First();
+        if (!firstField.IsPrimaryKey || (firstField.DataType != (MilvusDataType)DataType.Int64 && firstField.DataType != (MilvusDataType)DataType.VarChar))
+        {
+            throw new ParamException("The first filedType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
+        }
     }
 
     public HttpRequestMessage BuildRest()

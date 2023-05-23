@@ -77,7 +77,7 @@ public partial class MilvusRestClient
     public async Task CreateCollectionAsync(
         string collectionName, 
         IList<FieldType> fieldTypes,
-        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session, 
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session, 
         int shards_num = 1,
         CancellationToken cancellationToken = default)
     {

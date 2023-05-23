@@ -16,7 +16,7 @@ public sealed class CollectionSchema
     /// deprecated later, keep compatible with c++ part now
     /// </remarks>
     [JsonPropertyName("autoID")]
-    public bool AutoId { get; set; } = true;
+    public bool AutoId { get; set; } = false;
 
     /// <summary>
     /// Collection description

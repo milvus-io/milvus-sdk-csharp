@@ -1,15 +1,13 @@
 ﻿using Google.Protobuf;
-using Google.Protobuf.WellKnownTypes;
 using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Param;
 using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace IO.Milvus;
 
@@ -71,7 +69,7 @@ public class SearchParameters:
     /// If the consistency level is not specified, 
     /// the default level is ConsistencyLevelEnum.BOUNDED.
     /// </summary>
-    public ConsistencyLevel ConsistencyLevel { get; private set; } = ConsistencyLevel.Bounded;
+    public MilvusConsistencyLevel ConsistencyLevel { get; private set; } = MilvusConsistencyLevel.Bounded;
 
     /// <summary>
     /// The name list of output fields.
@@ -219,7 +217,7 @@ public class SearchParameters:
     /// the default level is ConsistencyLevelEnum.BOUNDED.
     /// </summary>
     /// <param name="consistencyLevel">The consistency level used in the query.</param>
-    public SearchParameters WithConsistencyLevel(ConsistencyLevel consistencyLevel)
+    public SearchParameters WithConsistencyLevel(MilvusConsistencyLevel consistencyLevel)
     {
         this.ConsistencyLevel = consistencyLevel;
         return this;
@@ -413,6 +411,39 @@ public class SearchParameters:
     {
         this.Validate();
 
+        Grpc.SearchRequest request = InitSearchRequest();
+
+        //Prepare target vectors
+        PrepareTargetVectors(request);
+
+        //Prepare parameters
+        PrepareParameters(request);
+
+        //dsl
+        SetDsl(request);
+
+        return request;
+    }
+
+    /// <summary>
+    /// Validate search parameter.
+    /// </summary>
+    public void Validate()
+    {
+        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.True(GuaranteeTimestamp > 0, "The guarantee timestamp must be greater than 0");
+        Verify.True(MetricType != MetricType.Invalid, "Metric type is invalid");
+        Verify.True(MilvusVectors.Count > 0, "Target vectors can not be empty");
+    }
+
+    #region Private =======================================================================
+    private SearchParameters(string collectionName) 
+    {
+        CollectionName = collectionName;
+    }
+
+    private Grpc.SearchRequest InitSearchRequest()
+    {
         var request = new Grpc.SearchRequest()
         {
             CollectionName = this.CollectionName,
@@ -437,19 +468,20 @@ public class SearchParameters:
                 new Grpc.KeyValuePair() { Key = parameter.Key, Value = parameter.Value });
         }
 
-        //Prepare target vectors
-        Grpc.PlaceholderGroup placeholderGroup = new();
-        foreach (var milvusVector in MilvusVectors)
+        return request;
+    }
+
+    private void SetDsl(Grpc.SearchRequest request)
+    {
+        request.DslType = Grpc.DslType.BoolExprV1;
+        if (!string.IsNullOrEmpty(this.Expr))
         {
-            var plType = Grpc.PlaceholderType.None;
-            //TODO Convert vector.
-
-            Grpc.PlaceholderValue placeholderValue = new Grpc.PlaceholderValue();
-
-            placeholderGroup.Placeholders.Add(placeholderValue);
+            request.Dsl = this.Expr;
         }
-        request.PlaceholderGroup = placeholderGroup.ToByteString();
+    }
 
+    private void PrepareParameters(Grpc.SearchRequest request)
+    {
         request.SearchParams.AddRange(
             new[]
             {
@@ -459,32 +491,38 @@ public class SearchParameters:
                 new Grpc.KeyValuePair() { Key = Constant.ROUND_DECIMAL, Value = RoundDecimal.ToString() },
                 new Grpc.KeyValuePair() { Key = Constant.IGNORE_GROWING, Value = IgnoreGrowing.ToString()},
             });
-
-        //dsl
-        request.DslType = Grpc.DslType.BoolExprV1;
-        if (!string.IsNullOrEmpty(this.Expr))
+        if (Parameters?.Any() == true)
         {
-            request.Dsl = this.Expr;
+            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constant.PARAMS, Value = JsonSerializer.Serialize(Parameters) });
+        }
+    }
+
+    private void PrepareTargetVectors(Grpc.SearchRequest request)
+    {
+        Grpc.PlaceholderGroup placeholderGroup = new();
+        foreach (var milvusVector in MilvusVectors)
+        {
+            if (milvusVector is IList<float> floatVector)
+            {
+                var placeholderValue = new PlaceholderValue
+                {
+                    Type = PlaceholderType.FloatVector,
+                    Tag = "$0"
+                };
+
+                using (var memoryStream = new MemoryStream(floatVector.Count * sizeof(float)))
+                using (var binaryWriter = new BinaryWriter(memoryStream))
+                {
+                    for (int i = 0; i < floatVector.Count; i++)
+                        binaryWriter.Write(floatVector[i]);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    placeholderValue.Values.Add(ByteString.FromStream(memoryStream));
+                }
+                placeholderGroup.Placeholders.Add(placeholderValue);
+            }
         }
 
-        return request;
-    }
-
-    /// <summary>
-    /// Validate search parameter.
-    /// </summary>
-    public void Validate()
-    {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(GuaranteeTimestamp > 0, "The guarantee timestamp must be greater than 0");
-        Verify.True(MetricType != MetricType.Invalid, "Metric type is invalid");
-        Verify.True(MilvusVectors.Count > 0, "Target vectors can not be empty");
-    }
-
-    #region Private ======================================================
-    private SearchParameters(string collectionName) 
-    {
-        CollectionName = collectionName;
+        request.PlaceholderGroup = placeholderGroup.ToByteString();
     }
     #endregion
 }

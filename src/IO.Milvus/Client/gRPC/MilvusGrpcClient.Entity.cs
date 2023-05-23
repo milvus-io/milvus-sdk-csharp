@@ -1,5 +1,6 @@
 ﻿using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -18,6 +19,7 @@ public partial class MilvusGrpcClient
     {
         this._log.LogDebug("Insert entities to {0}", collectionName);
         Verify.ArgNotNullOrEmpty(collectionName, "Milvus collection name cannot be null or empty");
+        Verify.True(fields?.Any() == true, "Fields cannot be null or empty");
 
         Grpc.InsertRequest request = new Grpc.InsertRequest()
         {
@@ -28,8 +30,13 @@ public partial class MilvusGrpcClient
         {
             request.PartitionName = partitionName;
         }
+        
+        var count = fields.First().RowCount;
+        Verify.True(fields.All(p => p.RowCount == count), "Fields length is not same");
 
         request.FieldsData.AddRange(fields.Select(p => p.ToGrpcFieldData()));
+
+        request.NumRows = (uint)fields.First().RowCount;
 
         Grpc.MutationResult response = await _grpcClient.InsertAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 

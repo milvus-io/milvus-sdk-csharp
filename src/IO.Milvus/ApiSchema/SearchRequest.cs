@@ -70,7 +70,7 @@ internal sealed class SearchRequest
     /// Search parameters
     /// </summary>
     [JsonPropertyName("search_params")]
-    public IList<KeyValuePair<string, string>> SearchParams { get; set; }
+    public Dictionary<string, string> SearchParams { get; set; }
 
     /// <summary>
     /// Travel timestamp

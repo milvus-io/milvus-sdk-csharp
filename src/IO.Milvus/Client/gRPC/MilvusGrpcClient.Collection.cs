@@ -17,7 +17,7 @@ public partial class MilvusGrpcClient
     public async Task CreateCollectionAsync(
         string collectionName,
         IList<FieldType> fieldTypes, 
-        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
         CancellationToken cancellationToken = default)
     {
@@ -61,7 +61,7 @@ public partial class MilvusGrpcClient
             response.Aliases,
             response.CollectionName,
             response.CollectionID,
-            (ConsistencyLevel)response.ConsistencyLevel,
+            (MilvusConsistencyLevel)response.ConsistencyLevel,
             TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamp),
             response.Schema.ToCollectioSchema(),
             response.ShardsNum,

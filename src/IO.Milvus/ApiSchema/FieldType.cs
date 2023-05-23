@@ -76,26 +76,42 @@ public enum MilvusDataType
 public sealed class FieldType
 {
     /// <summary>
-    /// Construct a fieldtype
+    /// Construct a field type.
     /// </summary>
-    /// <param name="name">名称</param>
-    /// <param name="dataType"></param>
+    /// <param name="name">name</param>
+    /// <param name="dataType"><see cref="MilvusDataType"/></param>
     /// <param name="isPrimaryKey"></param>
+    /// <param name="autoId">Can not assign primary field data when auto id set as true.</param>
     public FieldType(
         string name,
         MilvusDataType dataType,
-        bool isPrimaryKey)
+        bool isPrimaryKey,
+        bool autoId = false)
     {
         Name = name;
         DataType = dataType;
         IsPrimaryKey = isPrimaryKey;
+        AutoId = autoId;
+    }
+
+    public static FieldType CreateVarchar(
+        string name,
+        bool isPrimaryKey, 
+        long maxLength,
+        bool autoId = false)
+    {
+        var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId);
+
+        field.TypeParams.Add("max_length",maxLength.ToString());
+
+        return field;
     }
 
     /// <summary>
     /// Auto id.
     /// </summary>
     [JsonPropertyName("autoID")]
-    public bool AutoId { get; set; } = true;
+    public bool AutoId { get; set; } = false;
 
     /// <summary>
     /// Data type.
@@ -119,7 +135,8 @@ public sealed class FieldType
     /// Index params.
     /// </summary>
     [JsonPropertyName("index_params")]
-    public Dictionary<string,string> IndexParams { get; set; }
+    [JsonConverter(typeof(MilvusDictionaryConverter))]
+    public IDictionary<string, string> IndexParams { get; } = new Dictionary<string,string>();
 
     /// <summary>
     /// Is primary key.
@@ -131,11 +148,12 @@ public sealed class FieldType
     /// Name.
     /// </summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public string Name { get; }
 
     /// <summary>
     /// Type params.
     /// </summary>
     [JsonPropertyName("type_params")]
-    public Dictionary<string,string> TypeParams { get; set; }
+    [JsonConverter(typeof(MilvusDictionaryConverter))]
+    public IDictionary<string, string> TypeParams { get; } = new Dictionary<string,string>();
 }

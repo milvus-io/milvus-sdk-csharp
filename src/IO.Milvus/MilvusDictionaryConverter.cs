@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
-internal class MilvusDictionaryConverter : JsonConverter<IDictionary<string, string>>
+public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, string>>
 {
     public override IDictionary<string, string> Read(
         ref Utf8JsonReader reader, 
@@ -64,7 +65,12 @@ internal class MilvusDictionaryConverter : JsonConverter<IDictionary<string, str
             writer.WriteStartObject();
 
             writer.WritePropertyName("key");
-            writer.WriteString(JsonEncodedText.Encode(keyValue.Key),keyValue.Key);
+            writer.WriteStringValue(keyValue.Key);
+
+            writer.WritePropertyName("value");
+            writer.WriteStringValue(keyValue.Value);
+
+            writer.WriteEndObject();
         }
 
         writer.WriteEndArray();

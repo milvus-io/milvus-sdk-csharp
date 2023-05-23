@@ -35,7 +35,7 @@ internal class DescribeCollectionResponse
     /// The consistency level that the collection used, modification is not supported now.
     /// </remarks>
     [JsonPropertyName("consistency_level")]
-    public ConsistencyLevel ConsistencyLevel { get; set; }
+    public MilvusConsistencyLevel ConsistencyLevel { get; set; }
 
     /// <summary>
     /// Hybrid timestamp in milvus.
@@ -97,7 +97,7 @@ public class DetailedMilvusCollection
         IReadOnlyList<string> aliases, 
         string collectionName, 
         long collectionId, 
-        ConsistencyLevel consistencyLevel,
+        MilvusConsistencyLevel consistencyLevel,
         DateTime createdUtcTime,
         CollectionSchema schema,
         int shardsNum,
@@ -134,7 +134,7 @@ public class DetailedMilvusCollection
     /// <remarks>
     /// The consistency level that the collection used, modification is not supported now.
     /// </remarks>
-    public ConsistencyLevel ConsistencyLevel { get; }
+    public MilvusConsistencyLevel ConsistencyLevel { get; }
 
     /// <summary>
     /// The utc timestamp calculated by created_timestamp.

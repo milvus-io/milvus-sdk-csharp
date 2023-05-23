@@ -42,7 +42,7 @@ public interface IMilvusClient2
     public Task CreateCollectionAsync(
         string collectionName, 
         IList<FieldType> fieldTypes,
-        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
         CancellationToken cancellationToken = default);
 
@@ -233,6 +233,76 @@ public interface IMilvusClient2
     public Task<CompactionState> GetCompactionStateAsync(
         long compactionId, 
         CancellationToken cancellationToken = default);
+
+    //TODO:
+    //1.GetCompactionState
+    //2.LoadBalance
+    //3.GetReplicas
+    #endregion
+
+    #region Import
+    //TODO:
+    //1.ListImportTasks
+    //2.Import
+    //3.GetImportState
+
+    #endregion
+
+    #region Credential
+    //TODO:
+    //1.DeleteCredential
+    //2.UpdateCredential
+    //3.CreateCredential
+    //4.ListCredUsers
+    #endregion
+
+    #region Entity
+    /// <summary>
+    /// Insert rows of data entities into a collection.
+    /// </summary>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="fields">Fields</param>
+    /// <param name="partitionName">Partition name.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    public Task<MilvusMutationResult> InsertAsync(
+        string collectionName,
+        IList<Field> fields,
+        string partitionName = "",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Delete rows of data entities from a collection by given expression.
+    /// </summary>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="expr">Expression.</param>
+    /// <param name="partitionName">Partition name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    public Task<MilvusMutationResult> DeleteAsync(
+        string collectionName,
+        string expr,
+        string partitionName = "",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Do a k nearest neighbors search with bool expression.
+    /// </summary>
+    /// <param name="searchParameters"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<MilvusSearchResult> SearchAsync(
+        SearchParameters searchParameters, 
+        CancellationToken cancellationToken = default);
+
+    //TODO:
+    //1.CalcDistance
+    //2.Flush
+    //3.GetPersistentSegmentInfo
+    //4.GetFlushState
+    //5.Query
+    //6.GetQuerySegmentInfo
+
     #endregion
 
     #region Index
@@ -298,46 +368,6 @@ public interface IMilvusClient2
         string collectionName,
         string fieldName,
         CancellationToken cancellationToken = default);
-    #endregion
-
-    #region Entity
-    /// <summary>
-    /// Insert rows of data entities into a collection.
-    /// </summary>
-    /// <param name="collectionName">Collection name.</param>
-    /// <param name="fields">Fields</param>
-    /// <param name="partitionName">Partition name.</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns></returns>
-    public Task<MilvusMutationResult> InsertAsync(
-        string collectionName,
-        IList<Field> fields,
-        string partitionName = "",
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Delete rows of data entities from a collection by given expression.
-    /// </summary>
-    /// <param name="collectionName">Collection name.</param>
-    /// <param name="expr">Expression.</param>
-    /// <param name="partitionName">Partition name.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
-    public Task<MilvusMutationResult> DeleteAsync(
-        string collectionName,
-        string expr,
-        string partitionName = "",
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Do a k nearest neighbors search with bool expression.
-    /// </summary>
-    /// <param name="searchParameters"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public Task<MilvusSearchResult> SearchAsync(
-        SearchParameters searchParameters, 
-        CancellationToken cancellationToken = default); 
     #endregion
 
     #region Metric

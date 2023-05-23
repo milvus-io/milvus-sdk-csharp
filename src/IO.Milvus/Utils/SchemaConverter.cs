@@ -60,7 +60,7 @@ internal static class SchemaConverter
     }
 
     private static void ToParams(
-        Dictionary<string, string> typeParams, 
+        IDictionary<string, string> typeParams, 
         RepeatedField<Grpc.KeyValuePair> indexParams)
     {
         if (indexParams == null)

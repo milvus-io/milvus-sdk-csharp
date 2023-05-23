@@ -3,7 +3,7 @@
 /// <summary>
 /// consistency level
 /// </summary>
-public enum ConsistencyLevel
+public enum MilvusConsistencyLevel
 {
     /// <summary>
     /// Strong
