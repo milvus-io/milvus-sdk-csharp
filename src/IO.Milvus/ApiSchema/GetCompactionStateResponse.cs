@@ -8,7 +8,7 @@ internal sealed class GetCompactionStateResponse
     public ResponseStatus Status { get; set; }
 
     [JsonPropertyName("state")]
-    public CompactionState State { get; set; }
+    public MilvusCompactionState State { get; set; }
 
     [JsonPropertyName("executingPlanNo")]
     public long ExecutingPlanNo { get; set; }

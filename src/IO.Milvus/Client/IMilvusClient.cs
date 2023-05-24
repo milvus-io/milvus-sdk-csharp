@@ -1,4 +1,5 @@
 ﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Param;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -11,6 +12,13 @@ namespace IO.Milvus.Client;
 /// </summary>
 public interface IMilvusClient2
 {
+    /// <summary>
+    /// Ensure to connect to Milvus server before any operations.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<bool> Health(CancellationToken cancellationToken = default);
+
     #region Collection
     /// <summary>
     /// Drop a collection.
@@ -230,14 +238,23 @@ public interface IMilvusClient2
     /// <param name="compactionId">Collection id</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    public Task<CompactionState> GetCompactionStateAsync(
+    public Task<MilvusCompactionState> GetCompactionStateAsync(
         long compactionId, 
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Get the plans of a compaction.
+    /// </summary>
+    /// <param name="compactionID">Compaction id.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<MilvusCompactionPlans> GetCompactionPlans(
+        long compactionID,
+        CancellationToken cancellationToken = default);
+
     //TODO:
-    //1.GetCompactionState
-    //2.LoadBalance
-    //3.GetReplicas
+    //1.LoadBalance
+    //2.GetReplicas
     #endregion
 
     #region Import
@@ -249,11 +266,48 @@ public interface IMilvusClient2
     #endregion
 
     #region Credential
-    //TODO:
-    //1.DeleteCredential
-    //2.UpdateCredential
-    //3.CreateCredential
-    //4.ListCredUsers
+    /// <summary>
+    /// Delete a user.
+    /// </summary>
+    /// <param name="username">Username.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task DeleteCredential(string username,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Update password for a user.
+    /// </summary>
+    /// <param name="username">Usernmae.</param>
+    /// <param name="oldPassword">Old password.</param>
+    /// <param name="newPassword">New password.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task UpdateCredentialAsync(
+        string username,
+        string oldPassword,
+        string newPassword,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Create a user.
+    /// </summary>
+    /// <param name="username">Username.</param>
+    /// <param name="password">Password.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task CreateCredentialAsync(
+        string username,
+        string password,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// List all users in milvus.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IList<string>> ListCredUsersAsync(
+        CancellationToken cancellationToken = default);
     #endregion
 
     #region Entity
@@ -292,17 +346,93 @@ public interface IMilvusClient2
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public Task<MilvusSearchResult> SearchAsync(
-        SearchParameters searchParameters, 
+        MilvusSearchParameters searchParameters, 
         CancellationToken cancellationToken = default);
 
-    //TODO:
-    //1.CalcDistance
-    //2.Flush
-    //3.GetPersistentSegmentInfo
-    //4.GetFlushState
-    //5.Query
-    //6.GetQuerySegmentInfo
+    /// <summary>
+    /// Calculate distance between vectors with Milvus.
+    /// </summary>
+    /// <param name="leftVectors">Vectors on the left side of the operator</param>
+    /// <param name="rightVectors">Vectors on the right side of the operator</param>
+    /// <param name="milvusMetricType"><see cref="MilvusMetricType"/>
+    /// For floating-point vectors:
+    /// <list type="bullet">
+    /// <item>L2 (Euclidean distance)</item>
+    /// <item>IP (Inner product)</item>
+    /// </list>
+    /// For binary vectors:
+    /// <list type="bullet">
+    /// <item>JACCARD (Jaccard distance)</item>
+    /// <item>TANIMOTO (Tanimoto distance)</item>
+    /// <item>HAMMING (Hamming distance)</item>
+    /// <item>SUPERSTRUCTURE (Superstructure)</item>
+    /// </list>
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<IList<object>> CalDiatanceAsync(
+        MilvusVectors leftVectors,
+        MilvusVectors rightVectors,
+        MilvusMetricType milvusMetricType,
+        CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Flush a collection's data to disk. Milvus's data will be auto flushed.
+    /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism.
+    /// It will be removed in the future.
+    /// </summary>
+    /// <param name="collectionNames">Collectio names.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<MilvusFlushResult> FlushAsync(
+        IList<string> collectionNames,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns sealed segments's information of a collection.
+    /// </summary>
+    /// <param name="collectionName">Milvus collection name.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get the flush state of multiple segments.
+    /// </summary>
+    /// <param name="segmentIds">Segment ids</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>If segments flushed.</returns>
+    Task<bool> GetFlushStateAsync(
+        IList<int> segmentIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Do a explicit record query by given expression. 
+    /// For example when you want to query by primary key.
+    /// </summary>
+    /// <param name="collectionName"></param>
+    /// <param name="expr"></param>
+    /// <param name="outputFields"></param>
+    /// <param name="partitionNames">Partitions names.(Optional)</param>
+    /// <param name="guarantee_timestamp">guarantee_timestamp.(Optional)</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<MilvusQueryResult> QueryAsync(
+        string collectionName,
+        string expr,
+        IList<string> outputFields,
+        IList<string> partitionNames = null,
+        long guarantee_timestamp = 0,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get query segment information.
+    /// </summary>
+    /// <param name="collectionName">Collection name</param>
+    /// <returns><see cref="MilvusQuerySegmentResult"/></returns>
+    Task<MilvusQuerySegmentResult> GetQuerySegmentInfoAsync(string collectionName);
     #endregion
 
     #region Index
@@ -311,7 +441,8 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="collectionName">The particular collection name you want to create index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
-    /// <param name="indexName">Version before 2.0.2 doesn't contain index_name, we use default index name.</param>
+    /// <param name="indexType">Type of index used to accelerate the vector search.</param>
+    /// <param name="milvusMetricType"></param>
     /// <param name="extraParams">
     /// Support keys: index_type,metric_type, params. 
     /// Different index_type may has different params.</param>
@@ -319,6 +450,8 @@ public interface IMilvusClient2
     public Task CreateIndexAsync(
         string collectionName,
         string fieldName,
+        MilvusIndexType indexType,
+        MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams,
         CancellationToken cancellationToken = default);
 

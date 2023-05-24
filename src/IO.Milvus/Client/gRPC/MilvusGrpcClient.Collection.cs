@@ -63,7 +63,7 @@ public partial class MilvusGrpcClient
             response.CollectionID,
             (MilvusConsistencyLevel)response.ConsistencyLevel,
             TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamp),
-            response.Schema.ToCollectioSchema(),
+            response.Schema.ToCollectionSchema(),
             response.ShardsNum,
             response.StartPositions.ToKeyDataPairs()
             );

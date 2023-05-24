@@ -15,6 +15,8 @@ public partial class MilvusRestClient
     public async Task CreateIndexAsync(
         string collectionName,
         string fieldName,
+        MilvusIndexType indexType,
+        MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams,
         CancellationToken cancellationToken = default)
     {

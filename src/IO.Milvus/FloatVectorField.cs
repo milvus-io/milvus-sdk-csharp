@@ -1,0 +1,39 @@
+﻿using IO.Milvus.Grpc;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace IO.Milvus;
+
+/// <summary>
+/// Float vector field
+/// </summary>
+public class FloatVectorField:Field<List<float>>
+{
+    public override int RowCount => Data?.Count ?? 0;
+
+    public override FieldData ToGrpcFieldData()
+    {
+        var floatArray = new Grpc.FloatArray();
+
+        var dim = Data.First().Count;
+        if (!Data.All(p => p.Count == dim))
+        {
+            throw new Diagnostics.MilvusException("Row count of fields must be equal");
+        }
+        foreach (var value in Data)
+        {
+            floatArray.Data.AddRange(value);
+        }
+
+        return new Grpc.FieldData()
+        {
+            FieldName = FieldName,
+            Type = (Grpc.DataType)DataType,
+            Vectors = new Grpc.VectorField()
+            {
+                FloatVector = floatArray,
+                Dim = dim,
+            },
+        };
+    }
+}

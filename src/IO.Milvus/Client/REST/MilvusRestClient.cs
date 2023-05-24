@@ -3,6 +3,7 @@ using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -46,6 +47,34 @@ public partial class MilvusRestClient : IMilvusClient2
                 "Basic", 
                 authToken
             );
+    }
+
+    ///<inheritdoc/>
+    public async Task<bool> Health(CancellationToken cancellationToken = default)
+    {
+        this._log.LogDebug("Ensure to connect to Milvus server {0}",BaseAddress);
+
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/health");
+
+        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException e)
+        {
+            this._log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
+            throw;
+        }
+
+        if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
+            return true;
+
+        var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
+        this._log.LogWarning(status.Reason);
+        return status.ErrorCode ==  Grpc.ErrorCode.Success;
     }
 
     #region Properties

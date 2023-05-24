@@ -55,6 +55,23 @@ public partial class MilvusGrpcClient : IMilvusClient2
     }
 
     ///<inheritdoc/>
+    public async Task<bool> Health(CancellationToken cancellationToken)
+    {
+        _log.LogDebug("Check if connection is health");
+
+        var response = await _grpcClient.CheckHealthAsync(new CheckHealthRequest(), _callOptions.WithCancellationToken(cancellationToken));
+        if (!response.IsHealthy)
+        {
+            foreach (var reason in response.Reasons)
+            {
+                _log.LogWarning(reason);
+            }
+        }
+
+        return response.IsHealthy;
+    }
+
+    ///<inheritdoc/>
     public override string ToString()
     {
         return $"{nameof(MilvusGrpcClient)}({_grpcChannel.Target})";

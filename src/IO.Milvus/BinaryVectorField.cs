@@ -1,5 +1,5 @@
-﻿using IO.Milvus.Exception;
-using System.Collections.Generic;
+﻿using Google.Protobuf;
+using System.IO;
 using System.Linq;
 
 namespace IO.Milvus;
@@ -7,12 +7,12 @@ namespace IO.Milvus;
 /// <summary>
 /// Binary Field
 /// </summary>
-public class BinaryVectorField : Field
+public class BinaryVectorField : Field<byte[]>
 {
-    /// <summary>
-    /// Vector data
-    /// </summary>
-    public IList<IList<float>> Data { get; set; }
+    internal BinaryVectorField()
+    {
+        DataType = ApiSchema.MilvusDataType.BinaryVector;
+    }
 
     ///<inheritdoc/>
     public override int RowCount => Data?.Count ?? 0;
@@ -22,24 +22,29 @@ public class BinaryVectorField : Field
     {
         var floatArray = new Grpc.FloatArray();
 
-        var count = Data.First().Count;
-        if (!Data.All(p => p.Count == count))
+        var dim = Data.First().Length;
+        if (!Data.All(p => p.Length == dim))
         {
-            throw new ParamException("Row count of fields must be equal");
+            throw new Diagnostics.MilvusException("Row count of fields must be equal");
         }
-        foreach (var data in Data)
+        
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream);       
+        foreach (var value in Data)
         {
-            floatArray.Data.AddRange(data);
+            writer.Write(value);
         }
+
+        var byteString = ByteString.CopyFrom(stream.ToArray());
 
         return new Grpc.FieldData()
         {
             FieldName = FieldName,
-            Type = (Grpc.DataType)DataType,
+            Type = (Grpc.DataType)DataType,            
             Vectors = new Grpc.VectorField()
             {
-                FloatVector = floatArray,
-                Dim = count,
+                BinaryVector = byteString,
+                Dim = dim,
             },
         };
     }

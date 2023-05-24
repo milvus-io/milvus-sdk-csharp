@@ -50,7 +50,7 @@ public class MilvusMutationResult
             mutationResult.SuccIndex.ToList(),
             mutationResult.ErrIndex.ToList(),
             TimestampUtils.GetTimeFromTimstamp((long)mutationResult.Timestamp),
-            Convert(mutationResult.IDs),
+            MilvusIds.From(mutationResult.IDs),
             mutationResult
             );
     }
@@ -114,9 +114,20 @@ public class MilvusMutationResult
     /// Ids
     /// </summary>
     public MilvusIds Ids { get; set; }
+}
+
+/// <summary>
+/// Ids
+/// </summary>
+public class MilvusIds
+{
+    /// <summary>
+    /// Id field
+    /// </summary>
+    public IdField IdField { get; set; }
 
     #region Private =========================================================
-    private static MilvusIds Convert(IDs ids)
+    internal static MilvusIds From(IDs ids)
     {
         if (ids == null) return null;
 
@@ -147,17 +158,6 @@ public class MilvusMutationResult
         };
     }
     #endregion
-}
-
-/// <summary>
-/// Ids
-/// </summary>
-public class MilvusIds
-{
-    /// <summary>
-    /// Id field
-    /// </summary>
-    public IdField IdField { get; set; }
 }
 
 /// <summary>

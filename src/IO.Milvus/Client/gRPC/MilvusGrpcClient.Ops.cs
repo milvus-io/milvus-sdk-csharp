@@ -4,6 +4,7 @@ using System.Threading;
 using Microsoft.Extensions.Logging;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.ApiSchema;
+using System.Collections.Generic;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -34,7 +35,7 @@ public partial class MilvusGrpcClient
     }
 
     ///<inheritdoc/>
-    public async Task<CompactionState> GetCompactionStateAsync(
+    public async Task<MilvusCompactionState> GetCompactionStateAsync(
         long compactionId, 
         CancellationToken cancellationToken = default)
     {
@@ -52,6 +53,13 @@ public partial class MilvusGrpcClient
             throw new MilvusException(response.Status);
         }
 
-        return (CompactionState)response.State;
+        return (MilvusCompactionState)response.State;
+    }
+
+    public async Task<MilvusCompactionPlans> GetCompactionPlans(
+        long compactionID,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

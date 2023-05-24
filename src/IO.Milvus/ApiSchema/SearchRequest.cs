@@ -4,22 +4,6 @@ using System.Text.Json.Serialization;
 namespace IO.Milvus.ApiSchema;
 
 /// <summary>
-/// Dsl type
-/// </summary>
-public enum DslType
-{
-    /// <summary>
-    /// 
-    /// </summary>
-    Dsl = 0,
-
-    /// <summary>
-    /// 
-    /// </summary>
-    BoolExprV1 = 1,
-}
-
-/// <summary>
 /// Do a k nearest neighbors search with bool expression
 /// </summary>
 internal sealed class SearchRequest
@@ -46,7 +30,7 @@ internal sealed class SearchRequest
     /// Guarantee timestamp
     /// </summary>
     [JsonPropertyName("guarantee_timestamp")]
-    public int GuaranteeTimestamp { get; set; }
+    public long GuaranteeTimestamp { get; set; }
 
     /// <summary>
     /// Output fields
@@ -63,14 +47,14 @@ internal sealed class SearchRequest
     /// <summary>
     /// Placeholder group
     /// </summary>
-    [JsonPropertyName("placeholder_group")]
-    public IList<int> PlaceholderGroup { get; set; }
+    [JsonPropertyName("vectors")]
+    public IList<IList<float>> SearchVectors { get; set; }
 
     /// <summary>
     /// Search parameters
     /// </summary>
     [JsonPropertyName("search_params")]
-    public Dictionary<string, string> SearchParams { get; set; }
+    public IDictionary<string, string> SearchParams { get; set; }
 
     /// <summary>
     /// Travel timestamp

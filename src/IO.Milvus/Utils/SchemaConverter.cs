@@ -28,7 +28,7 @@ internal static class SchemaConverter
         return grpcCollectionSchema;
     }
 
-    internal static CollectionSchema ToCollectioSchema(this Grpc.CollectionSchema collectionSchema)
+    internal static CollectionSchema ToCollectionSchema(this Grpc.CollectionSchema collectionSchema)
     {
         var milvusCollectionSchema = new CollectionSchema()
         {

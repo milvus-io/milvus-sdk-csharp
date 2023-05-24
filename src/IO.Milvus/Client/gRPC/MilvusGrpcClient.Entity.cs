@@ -76,7 +76,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<MilvusSearchResult> SearchAsync(
-        SearchParameters searchParameters, 
+        MilvusSearchParameters searchParameters, 
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Search: {0}", searchParameters.ToString());
@@ -86,5 +86,57 @@ public partial class MilvusGrpcClient
         var searchResponse = await _grpcClient.SearchAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         return MilvusSearchResult.From(searchResponse);
+    }
+
+    ///<inheritdoc/>
+    public async Task<MilvusFlushResult> FlushAsync(
+        IList<string> collectionNames,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    ///<inheritdoc/>
+    public async Task<IList<object>> CalDiatanceAsync(
+        MilvusVectors leftVectors, 
+        MilvusVectors rightVectors, 
+        MilvusMetricType milvusMetricType, 
+        CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    ///<inheritdoc/>
+    public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
+        string collectionName, 
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    ///<inheritdoc/>
+    public async Task<bool> GetFlushStateAsync(
+        IList<int> segmentIds, 
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    ///<inheritdoc/>
+    public async Task<MilvusQueryResult> QueryAsync(
+        string collectionName, 
+        string expr,
+        IList<string> outputFields, 
+        IList<string> partitionNames = null, 
+        long guarantee_timestamp = 0, 
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<MilvusQuerySegmentResult> GetQuerySegmentInfoAsync(
+        string collectionName)
+    {
+        throw new NotImplementedException();
     }
 }

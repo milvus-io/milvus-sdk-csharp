@@ -6,27 +6,6 @@ using System.Text.Json.Serialization;
 namespace IO.Milvus.ApiSchema;
 
 /// <summary>
-/// Compaction state.
-/// </summary>
-public enum CompactionState
-{
-    /// <summary>
-    /// Unknown.
-    /// </summary>
-    UndefiedState = 0,
-
-    /// <summary>
-    /// Executing.
-    /// </summary>
-    Executing = 1,
-
-    /// <summary>
-    /// Completed.
-    /// </summary>
-    Completed = 2,
-}
-
-/// <summary>
 /// Get the state of a compaction
 /// </summary>
 internal sealed class GetCompactionStateRequest:

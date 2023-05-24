@@ -47,7 +47,7 @@ public partial class MilvusRestClient
     }
 
     ///<inheritdoc/>
-    public async Task<CompactionState> GetCompactionStateAsync(
+    public async Task<MilvusCompactionState> GetCompactionStateAsync(
         long compactionId, 
         CancellationToken cancellationToken = default)
     {
@@ -78,5 +78,10 @@ public partial class MilvusRestClient
         }
 
         return data.State;
+    }
+
+    public Task<MilvusCompactionPlans> GetCompactionPlans(long compactionID, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

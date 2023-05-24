@@ -20,11 +20,15 @@ internal sealed class CreateIndexRequest:
 
     [JsonPropertyName("extra_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string,string> ExtraParams { get; set; }
+    public IDictionary<string, string> ExtraParams { get; set; }
 
-    public static CreateIndexRequest Create(string collectionName,string fieldName)
+    public static CreateIndexRequest Create(
+        string collectionName,
+        string fieldName,
+        MilvusIndexType milvusIndexType,
+        MilvusMetricType milvusMetricType)
     {
-        return new CreateIndexRequest(collectionName, fieldName);
+        return new CreateIndexRequest(collectionName, fieldName,milvusIndexType,milvusMetricType);
     }
 
     public CreateIndexRequest WithExtraParams(IDictionary<string,string> extraParams)
@@ -73,10 +77,15 @@ internal sealed class CreateIndexRequest:
     }
 
     #region Private ====================================================================
-    private CreateIndexRequest(string collectionName, string fieldName)
+    private CreateIndexRequest(
+        string collectionName, 
+        string fieldName, 
+        MilvusIndexType milvusIndexType, 
+        MilvusMetricType milvusMetricType)
     {
         this.CollectionName = collectionName;
         this.FieldName = fieldName;
+        
     }
     #endregion
 }

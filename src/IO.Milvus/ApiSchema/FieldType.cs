@@ -94,6 +94,14 @@ public sealed class FieldType
         AutoId = autoId;
     }
 
+    /// <summary>
+    /// Create a varchar.
+    /// </summary>
+    /// <param name="name">Name.</param>
+    /// <param name="isPrimaryKey">Is primary key.</param>
+    /// <param name="maxLength">Max length</param>
+    /// <param name="autoId">Auto id</param>
+    /// <returns></returns>
     public static FieldType CreateVarchar(
         string name,
         bool isPrimaryKey, 
@@ -103,6 +111,23 @@ public sealed class FieldType
         var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId);
 
         field.TypeParams.Add("max_length",maxLength.ToString());
+
+        return field;
+    }
+
+    /// <summary>
+    /// Create a float vector.
+    /// </summary>
+    /// <param name="name">Name.</param>
+    /// <param name="dim">Dimension.</param>
+    /// <returns></returns>
+    public static FieldType CreateFloatVector(
+        string name,
+        long dim)
+    {
+        var field = new FieldType(name, MilvusDataType.FloatVector, false, false);
+
+        field.TypeParams.Add("dim", dim.ToString());
 
         return field;
     }

@@ -17,6 +17,7 @@ namespace IO.Milvus;
     UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
 [JsonDerivedType(typeof(BinaryVectorField))]
 [JsonDerivedType(typeof(ByteStringField))]
+[JsonDerivedType(typeof(FloatVectorField))]
 [JsonDerivedType(typeof(Field<bool>))]
 [JsonDerivedType(typeof(Field<Int16>))]
 [JsonDerivedType(typeof(Field<int>))]
@@ -106,14 +107,29 @@ public abstract class Field
     /// Create a binary vectors
     /// </summary>
     /// <param name="fieldName"></param>
-    /// <param name="datas"></param>
+    /// <param name="data"></param>
     /// <returns></returns>
-    public static Field CreateBinaryVectors(string fieldName, IList<IList<float>> datas)
+    public static Field CreateBinaryVectors(string fieldName, List<byte[]> data)
     {
         return new BinaryVectorField()
         {
             FieldName = fieldName,
-            Data = datas,
+            Data = data,
+        };
+    }
+
+    /// <summary>
+    /// Create a float vector.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data</param>
+    /// <returns></returns>
+    public static Field CreateFloatVector(string fieldName, List<List<float>> data)
+    {
+        return new FloatVectorField()
+        {
+            FieldName = fieldName,
+            Data = data
         };
     }
 
@@ -129,7 +145,7 @@ public abstract class Field
         var field = new ByteStringField()
         {
             FieldName = name,
-            ByteString = byteString
+            ByteString = byteString,
         };
 
         return field;
@@ -153,6 +169,73 @@ public abstract class Field
         return field;
     }
     #endregion
+
+    internal static Field FromGrpcFieldData(Grpc.FieldData fieldData)
+    {
+        if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Vectors)
+        {
+            int dim = (int)fieldData.Vectors.Dim;
+
+            if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.FloatVector)
+            {
+                List<List<float>> floatVectors = new();
+                for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i++)
+                {
+                    var list = new List<float>(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
+                    floatVectors.Add(list);
+                    i += dim;
+                }
+                var vector = fieldData.Vectors.FloatVector.Data.ToList();
+
+                var field = fieldData.Vectors.DataCase switch
+                {
+                    Grpc.VectorField.DataOneofCase.FloatVector => Field.CreateFloatVector(fieldData.FieldName, floatVectors)
+                };
+
+                return field;
+            }
+            else if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.BinaryVector)
+            {
+                var bytes = fieldData.Vectors.BinaryVector.ToByteArray();
+
+                List<byte[]> byteArray = new();
+
+                using var stream = new MemoryStream(bytes);
+                using var reader = new BinaryReader(stream);
+
+                Byte[] subBytes = reader.ReadBytes(bytes.Length);
+                while (subBytes?.Any() == true)
+                {
+                    byteArray.Add(subBytes);
+                    subBytes = reader.ReadBytes(bytes.Length);
+                }
+
+                return Field.CreateBinaryVectors(fieldData.FieldName, byteArray);
+            }
+            else
+            {
+                throw new NotSupportedException("VectorField.DataOneofCase.None not support");
+            }
+
+        }
+        else if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Scalars)
+        {
+            var field = fieldData.Scalars.DataCase switch
+            {
+                Grpc.ScalarField.DataOneofCase.BoolData => Field.Create<bool>(fieldData.FieldName, fieldData.Scalars.BoolData.Data),
+                Grpc.ScalarField.DataOneofCase.FloatData => Field.Create<float>(fieldData.FieldName, fieldData.Scalars.FloatData.Data),
+                Grpc.ScalarField.DataOneofCase.IntData => Field.Create<int>(fieldData.FieldName, fieldData.Scalars.IntData.Data),
+                Grpc.ScalarField.DataOneofCase.LongData => Field.Create<long>(fieldData.FieldName, fieldData.Scalars.LongData.Data),
+                Grpc.ScalarField.DataOneofCase.StringData => Field.CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
+                Grpc.ScalarField.DataOneofCase.ArrayData or Grpc.ScalarField.DataOneofCase.BytesData or Grpc.ScalarField.DataOneofCase.JsonData or Grpc.ScalarField.DataOneofCase.None => throw new NotSupportedException("Array data not support"),
+            };
+            return field;
+        }
+        else
+        {
+            throw new NotSupportedException("Cannot convert None FieldData to Field");
+        }
+    }
 }
 
 /// <summary>
