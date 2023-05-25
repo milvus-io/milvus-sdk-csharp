@@ -13,14 +13,19 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task CreateIndexAsync(
         string collectionName, 
-        string fieldName, 
+        string fieldName,
+        string indexName,
+        MilvusIndexType milvusIndexType,
+        MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams, 
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create index {0}", collectionName);
 
         Grpc.CreateIndexRequest request = CreateIndexRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType)
+            .WithIndexName(indexName)
+            .WithExtraParams(extraParams)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.CreateIndexAsync(request, _callOptions.WithCancellationToken(cancellationToken));

@@ -1,4 +1,5 @@
 ﻿using IO.Milvus.ApiSchema;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -26,6 +27,15 @@ public class MilvusCompactionPlans:List<MilvusCompactionPlan>
         return new MilvusCompactionPlans(getCompactionPlansResponse.MergeInfos, getCompactionPlansResponse.State);
     }
 
+    internal static MilvusCompactionPlans From(Grpc.GetCompactionPlansResponse response)
+    {
+        return new MilvusCompactionPlans(response.MergeInfos.Select(x => new MilvusCompactionPlan()
+        {
+            Sources = x.Sources,
+            Target = x.Target
+        }), (MilvusCompactionState)response.State);
+    }
+
     #region Private =========================================================================================================
     private MilvusCompactionPlans(
     IEnumerable<MilvusCompactionPlan> collection,
@@ -46,11 +56,11 @@ public class MilvusCompactionPlan
     /// Sources
     /// </summary>
     [JsonPropertyName("sources")]
-    public IList<long> Sources { get; }
+    public IList<long> Sources { get; set; }
 
     /// <summary>
     /// Target
     /// </summary>
     [JsonPropertyName("target")]
-    public long Target { get; }
+    public long Target { get; set; }
 }

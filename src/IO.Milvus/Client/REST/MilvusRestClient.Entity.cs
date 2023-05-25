@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using IO.Milvus.ApiSchema;
 using System.Text.Json;
-using Grpc.Core;
 
 namespace IO.Milvus.Client.REST;
 
@@ -120,7 +119,7 @@ public partial class MilvusRestClient
     }
 
     ///<inheritdoc/>
-    public async Task<IList<object>> CalDiatanceAsync(
+    public async Task<MilvusCalDistanceResult> CalDiatanceAsync(
         MilvusVectors leftVectors, 
         MilvusVectors rightVectors, 
         MilvusMetricType milvusMetricType, 
@@ -147,7 +146,7 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<bool> GetFlushStateAsync(
-        IList<int> segmentIds, 
+        IList<long> segmentIds, 
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
@@ -158,14 +157,17 @@ public partial class MilvusRestClient
         string collectionName, 
         string expr, 
         IList<string> outputFields, 
-        IList<string> partitionNames = null, long guarantee_timestamp = 0, CancellationToken cancellationToken = default)
+        IList<string> partitionNames = null, 
+        long guarantee_timestamp = 0, 
+        CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     ///<inheritdoc/>
-    public async Task<MilvusQuerySegmentResult> GetQuerySegmentInfoAsync(
-        string collectionName)
+    public async Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

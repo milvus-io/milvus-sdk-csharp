@@ -85,7 +85,7 @@ public sealed class FieldType
     public FieldType(
         string name,
         MilvusDataType dataType,
-        bool isPrimaryKey,
+        bool isPrimaryKey = false,
         bool autoId = false)
     {
         Name = name;

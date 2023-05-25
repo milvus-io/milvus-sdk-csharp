@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using IO.Milvus.Grpc;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace IO.Milvus;
@@ -17,4 +18,18 @@ public class MilvusQueryResult
     /// Field data.
     /// </summary>
     public IList<Field> FieldsData { get; }
+
+    internal static MilvusQueryResult From(QueryResults response)
+    {
+        var fields = response.FieldsData.Select(p => Field.FromGrpcFieldData(p)).ToList();
+        return new MilvusQueryResult(response.CollectionName, fields);
+    }
+
+    #region Private ==========================================================================
+    private MilvusQueryResult(string collectionName, List<Field> fields)
+    {
+        CollectionName = collectionName;
+        FieldsData = fields;
+    }
+    #endregion
 }

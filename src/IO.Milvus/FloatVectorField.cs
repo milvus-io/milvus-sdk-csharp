@@ -9,8 +9,16 @@ namespace IO.Milvus;
 /// </summary>
 public class FloatVectorField:Field<List<float>>
 {
+    /// <summary>
+    /// Row count.
+    /// </summary>
     public override int RowCount => Data?.Count ?? 0;
 
+    /// <summary>
+    /// Convert to grpc field data
+    /// </summary>
+    /// <returns>Field data</returns>
+    /// <exception cref="Diagnostics.MilvusException"></exception>
     public override FieldData ToGrpcFieldData()
     {
         var floatArray = new Grpc.FloatArray();

@@ -44,7 +44,7 @@ public class MilvusSearchParameters:
     /// <summary>
     /// An absolute timestamp value.
     /// </summary>
-    public DateTime? TravelTime { get; private set; }
+    public long TravelTimestamp { get; private set; }
 
     /// <summary>
     /// the expression to filter scalar fields before searching.
@@ -82,7 +82,7 @@ public class MilvusSearchParameters:
     /// <summary>
     /// The decimal place of the returned results.
     /// </summary>
-    public long RoundDecimal { get;private set; }
+    public long RoundDecimal { get; private set; } = -1;
 
     /// <summary>
     /// Parameters
@@ -108,9 +108,12 @@ public class MilvusSearchParameters:
     /// Create a search parameters
     /// </summary>
     /// <returns><see cref="MilvusSearchParameters"/></returns>
-    public static MilvusSearchParameters Create(string collectionName)
+    public static MilvusSearchParameters Create(
+        string collectionName,
+        string vectorFieldName,
+        IList<string> outFields)
     {
-        return new MilvusSearchParameters(collectionName);
+        return new MilvusSearchParameters(collectionName,vectorFieldName,outFields);
     }
 
     /// <summary>
@@ -215,9 +218,9 @@ public class MilvusSearchParameters:
     /// <see href="https://milvus.io/docs/v2.1.x/timetravel.md"/>
     /// </remarks>
     /// <param name="travelTimestamp"></param>
-    public MilvusSearchParameters WithTravelTimestamp(DateTime? travelTimestamp)
+    public MilvusSearchParameters WithTravelTimestamp(long travelTimestamp)
     {
-        this.TravelTime = travelTimestamp;
+        this.TravelTimestamp = travelTimestamp;
         return this;
     }
 
@@ -421,7 +424,7 @@ public class MilvusSearchParameters:
             DslType = (int)MilvusDslType.BoolExprV1,
             PartitionNames = this.PartitionNames,
             OutputFields = this.OutputFields,
-            GuaranteeTimestamp = this.GuaranteeTimestamp,
+            //GuaranteeTimestamp = this.GuaranteeTimestamp,
         };
 
         PrepareRestTargetVectors(request);
@@ -439,18 +442,25 @@ public class MilvusSearchParameters:
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(GuaranteeTimestamp > 0, "The guarantee timestamp must be greater than 0");
+        Verify.ArgNotNullOrEmpty(VectorFieldName, "Vector field name cannot be null or empty");
+        Verify.True(OutputFields?.Any() == true, "Output fields cannot be null or empty");
+        Verify.True(GuaranteeTimestamp >= 0, "The guarantee timestamp must be greater than 0");
         Verify.True(MetricType != MilvusMetricType.Invalid, "Metric type is invalid");
         Verify.True(MilvusFloatVectors.Count > 0, "Target vectors can not be empty");
     }
 
     #region Private =======================================================================
-    private MilvusSearchParameters(string collectionName) 
+    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields) 
     {
         CollectionName = collectionName;
+        VectorFieldName = vectorFieldName;
+        OutputFields = outFields;
     }
 
-    private static long getGuaranteeTimestamp(MilvusConsistencyLevel? consistencyLevel,                                          long guaranteeTimestamp, long gracefulTime)
+    private static long GetGuaranteeTimestamp(
+        MilvusConsistencyLevel? consistencyLevel,
+        long guaranteeTimestamp,
+        long gracefulTime)
     {
         if (consistencyLevel == null)
         {
@@ -478,7 +488,7 @@ public class MilvusSearchParameters:
         var request = new Grpc.SearchRequest()
         {
             CollectionName = this.CollectionName,
-            TravelTimestamp = this.TravelTime == null ? 0 : (ulong)this.TravelTime.Value.ToUtcTimestamp(),
+            TravelTimestamp = (ulong)TravelTimestamp,
         };
 
         if (this.PartitionNames?.Any() == true)
@@ -491,7 +501,7 @@ public class MilvusSearchParameters:
             request.OutputFields.AddRange(this.OutputFields);
         }
 
-        request.GuaranteeTimestamp = (ulong)GuaranteeTimestamp;
+        request.GuaranteeTimestamp = (ulong)GetGuaranteeTimestamp(ConsistencyLevel,GuaranteeTimestamp,0);
 
         return request;
     }
@@ -510,12 +520,12 @@ public class MilvusSearchParameters:
         request.SearchParams[Constant.VECTOR_FIELD] = VectorFieldName;
         request.SearchParams[Constant.TOP_K] = TopK.ToString();
         request.SearchParams[Constant.METRIC_TYPE] = MetricType.ToString();
-        request.SearchParams[Constant.ROUND_DECIMAL] = RoundDecimal.ToString();
+        request.SearchParams[Constant.ROUND_DECIMAL] = RoundDecimal.ToString();        
         request.SearchParams[Constant.IGNORE_GROWING] = IgnoreGrowing.ToString();
 
         if (Parameters?.Any() == true)
         {
-            request.SearchParams[Constant.PARAMS] = JsonSerializer.Serialize(Parameters);
+            request.SearchParams[Constant.PARAMS] = Parameters.Combine();
         }
     }
 
@@ -527,12 +537,13 @@ public class MilvusSearchParameters:
                 new Grpc.KeyValuePair() { Key = Constant.VECTOR_FIELD, Value = VectorFieldName },
                 new Grpc.KeyValuePair() { Key = Constant.TOP_K, Value = TopK.ToString() },
                 new Grpc.KeyValuePair() { Key = Constant.METRIC_TYPE, Value = MetricType.ToString().ToUpper() },
-                new Grpc.KeyValuePair() { Key = Constant.ROUND_DECIMAL, Value = RoundDecimal.ToString() },
                 new Grpc.KeyValuePair() { Key = Constant.IGNORE_GROWING, Value = IgnoreGrowing.ToString() },
+                new Grpc.KeyValuePair() { Key = Constant.ROUND_DECIMAL, Value = RoundDecimal.ToString() }
             });
+
         if (Parameters?.Any() == true)
         {
-            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constant.PARAMS, Value = JsonSerializer.Serialize(Parameters) });
+            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constant.PARAMS, Value = Parameters.Combine() });
         }
     }
 
@@ -540,39 +551,36 @@ public class MilvusSearchParameters:
     {
         Grpc.PlaceholderGroup placeholderGroup = new();
 
+        var placeholderValue = new Grpc.PlaceholderValue()
+        {
+            Tag = Constant.VECTOR_TAG
+        };
+
         if (MilvusFloatVectors != null)
         {
+            placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
             foreach (var milvusVector in MilvusFloatVectors)
             {
-                var placeholderValue = new Grpc.PlaceholderValue
-                {
-                    Type = Grpc.PlaceholderType.FloatVector,
-                };
 
                 using var memoryStream = new MemoryStream(milvusVector.Count * sizeof(float));
                 using var binaryWriter = new BinaryWriter(memoryStream);
-
+                
                 for (int i = 0; i < milvusVector.Count; i++)
                     binaryWriter.Write(milvusVector[i]);
                 memoryStream.Seek(0, SeekOrigin.Begin);
                 placeholderValue.Values.Add(ByteString.FromStream(memoryStream));
-
-                placeholderGroup.Placeholders.Add(placeholderValue);
             }
         }else if(MilvusBinaryVectors  != null)
         {
+            placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
+
             foreach (var milvusVector in MilvusBinaryVectors)
             {
-                var placeholderValue = new Grpc.PlaceholderValue
-                {
-                    Type = Grpc.PlaceholderType.BinaryVector,
-                };
-
                 placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector));
-                placeholderGroup.Placeholders.Add(placeholderValue);
             }
         }
 
+        placeholderGroup.Placeholders.Add(placeholderValue);
         request.PlaceholderGroup = placeholderGroup.ToByteString();
     }
 

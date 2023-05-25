@@ -1,12 +1,12 @@
-﻿using IO.MilvusTests;
+﻿using IO.Milvus.Client.REST;
 using Xunit;
 
-namespace IO.Milvus.Client.REST.Tests;
+namespace IO.MilvusTests.Client.gRPC;
 
-public class MilvusRestClientTests
+public class MilvusGrpcClientTests
 {
     [Fact]
-    public void MilvusRestClientTest()
+    public void MilvusGrpcClientTest()
     {
         var client = new MilvusRestClient(HostConfig.Host, HostConfig.RestPort);
         Assert.NotNull(client);

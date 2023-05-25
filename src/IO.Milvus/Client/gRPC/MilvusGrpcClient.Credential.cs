@@ -1,39 +1,93 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.Logging;
+using IO.Milvus.ApiSchema;
+using IO.Milvus.Diagnostics;
 
 namespace IO.Milvus.Client.gRPC;
 
 public partial class MilvusGrpcClient
 {
+    ///<inheritdoc/>
     public async Task DeleteCredential(
-        string username, 
-        CancellationToken cancellationToken = default)
+    string username,
+    CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Delete credential {0}, {1}", username);
+
+        Grpc.DeleteCredentialRequest request = DeleteCredentialRequest
+            .Create(username)
+            .BuildGrpc();
+
+        Grpc.Status response = await _grpcClient.DeleteCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Create credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            throw new MilvusException(response);
+        }
     }
 
+    ///<inheritdoc/>
     public async Task UpdateCredentialAsync(
         string username,
         string oldPassword, 
         string newPassword, 
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Update credential {0}, {1}", username);
+
+        Grpc.UpdateCredentialRequest request = UpdateCredentialRequest
+            .Create(username,oldPassword,newPassword)
+            .BuildGrpc();
+
+        Grpc.Status response = await _grpcClient.UpdateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Update credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            throw new MilvusException(response);
+        }
     }
 
+    ///<inheritdoc/>
     public async Task CreateCredentialAsync(
         string username, 
         string password, 
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Create credential {0}, {1}", username);
+
+        Grpc.CreateCredentialRequest request = CreateCredentialRequest
+            .Create(username, password)
+            .BuildGrpc();
+
+        Grpc.Status response = await _grpcClient.CreateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Create credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            throw new MilvusException(response);
+        }
     }
 
+    ///<inheritdoc/>
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("List credential users");
+
+        Grpc.ListCredUsersRequest request = new Grpc.ListCredUsersRequest();
+
+        Grpc.ListCredUsersResponse response = await _grpcClient.ListCredUsersAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("List credential users failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return response.Usernames;
     }
 }

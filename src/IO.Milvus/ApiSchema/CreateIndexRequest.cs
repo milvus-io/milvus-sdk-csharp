@@ -1,8 +1,10 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
+using IO.Milvus.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -18,9 +20,12 @@ internal sealed class CreateIndexRequest:
     [JsonPropertyName("field_name")]
     public string FieldName { get; set; }
 
+    [JsonPropertyName("index_name")]
+    public string IndexName { get; set; }
+
     [JsonPropertyName("extra_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string, string> ExtraParams { get; set; }
+    public IDictionary<string, string> ExtraParams { get; set; } = new Dictionary<string, string>();
 
     public static CreateIndexRequest Create(
         string collectionName,
@@ -29,6 +34,15 @@ internal sealed class CreateIndexRequest:
         MilvusMetricType milvusMetricType)
     {
         return new CreateIndexRequest(collectionName, fieldName,milvusIndexType,milvusMetricType);
+    }
+
+    public CreateIndexRequest WithIndexName(string indexName)
+    {
+        if (!string.IsNullOrEmpty(indexName))
+        {
+            IndexName = indexName;
+        }
+        return this;
     }
 
     public CreateIndexRequest WithExtraParams(IDictionary<string,string> extraParams)
@@ -47,14 +61,30 @@ internal sealed class CreateIndexRequest:
             FieldName = this.FieldName,
         };
 
+        if (!string.IsNullOrEmpty(IndexName))
+        {
+            request.IndexName = IndexName;
+        }
+
+        request.ExtraParams.Add(new Grpc.KeyValuePair()
+        {
+            Key = "metric_type",
+            Value = _milvusMetricType.ToString()
+        });
+
+        request.ExtraParams.Add(new Grpc.KeyValuePair()
+        {
+            Key = "index_type",
+            Value = _milvusIndexType.ToString()
+        });
+
         if (ExtraParams?.Any() == true)
         {
-            request.ExtraParams.AddRange(ExtraParams.Select(p =>
-                new Grpc.KeyValuePair()
-                {
-                    Key = p.Key,
-                    Value = p.Value
-                }));
+            request.ExtraParams.Add(new Grpc.KeyValuePair()
+            {
+                Key = "params",
+                Value = ExtraParams.Combine()
+            });
         }
 
         return request;
@@ -63,6 +93,9 @@ internal sealed class CreateIndexRequest:
     public HttpRequestMessage BuildRest()
     {
         this.Validate();
+
+        ExtraParams["metric_type"] = _milvusMetricType.ToString();
+        ExtraParams["index_type"] = _milvusIndexType.ToString();
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/index",
@@ -76,16 +109,20 @@ internal sealed class CreateIndexRequest:
         Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
     }
 
-    #region Private ====================================================================
+    #region Private ==================================================================================
+    private MilvusMetricType _milvusMetricType;
+    private MilvusIndexType _milvusIndexType;
+
     private CreateIndexRequest(
         string collectionName, 
-        string fieldName, 
-        MilvusIndexType milvusIndexType, 
+        string fieldName,
+        MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType)
     {
         this.CollectionName = collectionName;
         this.FieldName = fieldName;
-        
+        this._milvusMetricType = milvusMetricType;
+        this._milvusIndexType = milvusIndexType;
     }
     #endregion
 }

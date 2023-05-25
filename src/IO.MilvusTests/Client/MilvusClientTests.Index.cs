@@ -1,14 +1,14 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus;
 using IO.Milvus.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [TestMethod]
-    [TestClientProvider]
+    [Theory]
+    [ClassData(typeof(TestClients))]
     public async Task IndexTest(IMilvusClient2 milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
@@ -46,7 +46,7 @@ public partial class MilvusClientTests
         );
 
         bool exist = await milvusClient.HasCollectionAsync(collectionName);
-        Assert.IsTrue(exist, "Create collection failed");
+        Assert.True(exist, "Create collection failed");
 
         MilvusMutationResult result = await milvusClient.InsertAsync(collectionName,
             new[]
@@ -56,11 +56,15 @@ public partial class MilvusClientTests
                 Field.CreateFloatVector("book_intro",book_intro_array),
             });
 
-        Assert.IsTrue(result.InsertCount == 2000, "Insert data failed");
-        Assert.IsTrue(result.SuccessIndex.Count == 2000, "Insert data failed");
+        Assert.True(result.InsertCount == 2000, "Insert data failed");
+        Assert.True(result.SuccessIndex.Count == 2000, "Insert data failed");
 
-        await milvusClient.CreateIndexAsync(collectionName, "book_id", new Dictionary<string, string> { { "nlist", "1024" } });
+        await milvusClient.CreateIndexAsync(collectionName, "book_id","default" ,MilvusIndexType.IVF_FLAT, MilvusMetricType.L2, new Dictionary<string, string> { { "nlist", "1024" } });
 
-        var indexBuildProgress = await milvusClient.GetIndexBuildProgress(collectionName, "book_id");
+        var indexs = await milvusClient.DescribeIndexAsync(collectionName, "book_id");
+
+        Assert.Equal(1,indexs.Count);
+
+        await milvusClient.DropCollectionAsync(collectionName);
     }
 }

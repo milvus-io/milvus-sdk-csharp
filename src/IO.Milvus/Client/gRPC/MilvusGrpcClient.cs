@@ -55,7 +55,7 @@ public partial class MilvusGrpcClient : IMilvusClient2
     }
 
     ///<inheritdoc/>
-    public async Task<bool> Health(CancellationToken cancellationToken)
+    public async Task<bool> HealthAsync(CancellationToken cancellationToken)
     {
         _log.LogDebug("Check if connection is health");
 

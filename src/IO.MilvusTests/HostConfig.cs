@@ -12,11 +12,12 @@ namespace IO.MilvusTests;
 /// </summary>
 public class HostConfig
 {
+
     public const string Host = "http://192.168.100.139";
 
     public const int Port = 19530;
 
-    public const int RestPort = 9091;
+    public const int RestPort = 443;
 
     public const string DefaultTestCollectionName = "test";
 

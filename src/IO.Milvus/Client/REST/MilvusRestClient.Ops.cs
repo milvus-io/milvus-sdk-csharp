@@ -80,8 +80,37 @@ public partial class MilvusRestClient
         return data.State;
     }
 
-    public Task<MilvusCompactionPlans> GetCompactionPlans(long compactionID, CancellationToken cancellationToken = default)
+    ///<inheritdoc/>
+    public async Task<MilvusCompactionPlans> GetCompactionPlans(
+        long compactionId, 
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Get compaction plans: {1}", compactionId);
+
+        using HttpRequestMessage request = GetCompactionPlansRequest
+            .Create(compactionId)
+            .BuildRest();
+
+        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException e)
+        {
+            this._log.LogError("Failed get compaction state: {0}, {1}", e.Message, responseContent);
+            throw;
+        }
+
+        var data = JsonSerializer.Deserialize<GetCompactionPlansResponse>(responseContent);
+
+        if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Failed get compaction state: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            throw new MilvusException(data.Status);
+        }
+
+        return MilvusCompactionPlans.From(data);
     }
 }

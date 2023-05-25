@@ -1,11 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using IO.Milvus.Grpc;
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
 /// <summary>
 /// Milvus query segment result.
 /// </summary>
-public class MilvusQuerySegmentResult
+public class MilvusQuerySegmentInfoResult
 {
     /// <summary>
     /// Collection id.
@@ -23,7 +26,7 @@ public class MilvusQuerySegmentResult
     /// Index id.
     /// </summary>
     [JsonPropertyName("indexID")]
-    public string IndexId { get; set; }
+    public long IndexId { get; set; }
 
     /// <summary>
     /// Memory size.
@@ -59,5 +62,25 @@ public class MilvusQuerySegmentResult
     /// State.
     /// </summary>
     [JsonPropertyName("state")]
-    public long State { get; set; }
+    public MilvusSegmentState State { get; set; }
+
+    internal static IEnumerable<MilvusQuerySegmentInfoResult> From(
+        GetQuerySegmentInfoResponse response)
+    {
+        foreach (var info in response.Infos)
+        {
+            yield return new MilvusQuerySegmentInfoResult()
+            {
+                CollectionId = info.CollectionID,
+                IndexName = info.IndexName,
+                IndexId = info.IndexID,
+                MemSize = info.MemSize,
+                NodeId = info.NodeID,
+                NumRows = info.NumRows,
+                PartitionId = info.PartitionID,
+                SegmentId = info.SegmentID,
+                State = (MilvusSegmentState)info.State
+            };
+        }
+    }
 }

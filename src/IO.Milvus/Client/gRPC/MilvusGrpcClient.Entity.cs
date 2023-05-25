@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Diagnostics;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -83,9 +84,15 @@ public partial class MilvusGrpcClient
 
         var request = searchParameters.BuildGrpc();
 
-        var searchResponse = await _grpcClient.SearchAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+        var response = await _grpcClient.SearchAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
-        return MilvusSearchResult.From(searchResponse);
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Delete entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return MilvusSearchResult.From(response);
     }
 
     ///<inheritdoc/>
@@ -93,17 +100,47 @@ public partial class MilvusGrpcClient
         IList<string> collectionNames,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Flush: {0}", collectionNames.ToString());
+        Verify.True(collectionNames?.Any() == true, "Milvus collection names cannot be null or empty");
+
+        Grpc.FlushRequest request = new Grpc.FlushRequest();
+        request.CollectionNames.AddRange(collectionNames);
+
+        var response = await _grpcClient.FlushAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Flush failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return MilvusFlushResult.From(response);
     }
 
     ///<inheritdoc/>
-    public async Task<IList<object>> CalDiatanceAsync(
+    public async Task<MilvusCalDistanceResult> CalDiatanceAsync(
         MilvusVectors leftVectors, 
         MilvusVectors rightVectors, 
         MilvusMetricType milvusMetricType, 
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Cal Diatance: {0}", leftVectors.ToString());
+
+        Grpc.CalcDistanceRequest request = CalcDistanceRequest
+            .Create(milvusMetricType)
+            .WithLeftVectors(leftVectors)
+            .WithRightVectors(rightVectors)
+            .BuildGrpc();
+
+        Grpc.CalcDistanceResults response = await _grpcClient.CalcDistanceAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Cal Diatance failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return MilvusCalDistanceResult.From(response);
     }
 
     ///<inheritdoc/>
@@ -111,15 +148,44 @@ public partial class MilvusGrpcClient
         string collectionName, 
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Get persistent segment infos: {0}", collectionName);
+
+        Grpc.GetPersistentSegmentInfoRequest request = new Grpc.GetPersistentSegmentInfoRequest()
+        {
+            CollectionName = collectionName,
+        };
+
+        Grpc.GetPersistentSegmentInfoResponse response = await _grpcClient.GetPersistentSegmentInfoAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get persistent segment infos: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return MilvusPersistentSegmentInfo.From(response.Infos);
     }
 
     ///<inheritdoc/>
     public async Task<bool> GetFlushStateAsync(
-        IList<int> segmentIds, 
+        IList<long> segmentIds, 
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Get flush state: {0}", segmentIds.ToString());
+        Verify.True(segmentIds?.Any() == true, "Milvus segment ids cannot be null or empty");
+
+        Grpc.GetFlushStateRequest request = new Grpc.GetFlushStateRequest();
+        request.SegmentIDs.AddRange(segmentIds);
+
+        Grpc.GetFlushStateResponse response = await _grpcClient.GetFlushStateAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get flush state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return response.Flushed;
     }
 
     ///<inheritdoc/>
@@ -128,15 +194,47 @@ public partial class MilvusGrpcClient
         string expr,
         IList<string> outputFields, 
         IList<string> partitionNames = null, 
-        long guarantee_timestamp = 0, 
+        long guaranteeTimestamp = 0,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Query: {0}", collectionName);
+
+        Grpc.QueryRequest request = QueryRequest.Create(collectionName, expr)
+            .WithOutputFields(outputFields)
+            .WithPartitionNames(partitionNames)
+            .WithGuaranteeTimestamp(guaranteeTimestamp)
+            .BuildGrpc();
+
+        Grpc.QueryResults response = await _grpcClient.QueryAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return MilvusQueryResult.From(response);
     }
 
-    public async Task<MilvusQuerySegmentResult> GetQuerySegmentInfoAsync(
-        string collectionName)
+    ///<inheritdoc/>
+    public async Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        this._log.LogDebug("Get query segment info: {0}", collectionName);
+
+        Grpc.GetQuerySegmentInfoRequest request = GetQuerySegmentInfoRequest
+            .Create(collectionName)
+            .BuildGrpc();
+
+        Grpc.GetQuerySegmentInfoResponse response = await _grpcClient.GetQuerySegmentInfoAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+        
+        return MilvusQuerySegmentInfoResult.From(response).ToList();
     }
 }

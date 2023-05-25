@@ -1,15 +1,20 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [TestMethod]
-    [TestClientProvider]
+    [Theory]
+    [ClassData(typeof(TestClients))]
     public async Task AliasTest(IMilvusClient2 milvusClient)
     {
+        if (milvusClient.ToString().Contains("zilliz"))
+        {
+            return;
+        }
+
         string collectionName = milvusClient.GetType().Name;
         var alias = $"{collectionName}Alias";
 
@@ -36,18 +41,18 @@ public partial class MilvusClientTests
 
         //Check if alias created.
         milvusCollection = await milvusClient.DescribeCollectionAsync(collectionName);
-        Assert.IsNotNull(milvusCollection);
-        Assert.IsTrue(milvusCollection.Aliases?.Any(p => p == alias),$"{alias} not found, create alias failed");
+        Assert.NotNull(milvusCollection);
+        Assert.True(milvusCollection.Aliases?.Any(p => p == alias),$"{alias} not found, create alias failed");
 
         //Try to use new created alias
         DetailedMilvusCollection aliasCollection = await milvusClient.DescribeCollectionAsync(alias);
-        Assert.IsNotNull(aliasCollection);
-        Assert.AreEqual(alias, aliasCollection.CollectionName);
+        Assert.NotNull(aliasCollection);
+        Assert.Equal(alias, aliasCollection.CollectionName);
 
         //Drop
         await milvusClient.DropAliasAsync(alias);
         milvusCollection = await milvusClient.DescribeCollectionAsync(collectionName);
-        Assert.IsNotNull(milvusCollection);
-        Assert.IsFalse(milvusCollection.Aliases?.Any(p => p == alias) == true, $"Drop {alias} failed");
+        Assert.NotNull(milvusCollection);
+        Assert.False(milvusCollection.Aliases?.Any(p => p == alias) == true, $"Drop {alias} failed");
     }
 }

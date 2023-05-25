@@ -1,6 +1,4 @@
 ﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Grpc;
-using System;
 using System.Runtime.Serialization;
 
 namespace IO.Milvus.Diagnostics;
@@ -25,14 +23,14 @@ public class MilvusException : System.Exception
     /// </summary>
     /// <param name="errorCode"><see cref="ErrorCode"/></param>
     /// <param name="reason"><see cref="ResponseStatus.Reason"/></param>
-    internal MilvusException(ErrorCode errorCode,string reason = ""):base(GetErrorMsg(errorCode,reason))
+    internal MilvusException(Grpc.ErrorCode errorCode,string reason = ""):base(GetErrorMsg(errorCode,reason))
     {
-
+        ErrorCode = errorCode;
     }
 
-    internal MilvusException(ResponseStatus responseStatus):base(GetErrorMsg(responseStatus.ErrorCode,responseStatus.Reason))
+    internal MilvusException(ResponseStatus status):base(GetErrorMsg(status.ErrorCode,status.Reason))
     {
-            
+        ErrorCode = status.ErrorCode;
     }
 
     /// <summary>
@@ -41,7 +39,7 @@ public class MilvusException : System.Exception
     /// <param name="status">Status.</param>
     public MilvusException(Grpc.Status status) : base(GetErrorMsg(status.ErrorCode, status.Reason))
     {
-
+        ErrorCode = status.ErrorCode;
     }
 
     ///<inheritdoc/>
@@ -54,8 +52,15 @@ public class MilvusException : System.Exception
     {
     }
 
-    private static string GetErrorMsg(ErrorCode errorCode, string reason)
+    /// <summary>
+    /// Error code.
+    /// </summary>
+    public Grpc.ErrorCode ErrorCode { get; }
+
+    #region Private =====================================================================================
+    private static string GetErrorMsg(Grpc.ErrorCode errorCode, string reason)
     {
         return $"ErrorCode: {errorCode} Reason: {reason}";
     }
+    #endregion
 }

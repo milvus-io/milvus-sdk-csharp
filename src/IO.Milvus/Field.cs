@@ -227,7 +227,7 @@ public abstract class Field
                 Grpc.ScalarField.DataOneofCase.IntData => Field.Create<int>(fieldData.FieldName, fieldData.Scalars.IntData.Data),
                 Grpc.ScalarField.DataOneofCase.LongData => Field.Create<long>(fieldData.FieldName, fieldData.Scalars.LongData.Data),
                 Grpc.ScalarField.DataOneofCase.StringData => Field.CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
-                Grpc.ScalarField.DataOneofCase.ArrayData or Grpc.ScalarField.DataOneofCase.BytesData or Grpc.ScalarField.DataOneofCase.JsonData or Grpc.ScalarField.DataOneofCase.None => throw new NotSupportedException("Array data not support"),
+                /*Grpc.ScalarField.DataOneofCase.ArrayData or Grpc.ScalarField.DataOneofCase.BytesData or Grpc.ScalarField.DataOneofCase.JsonData or */Grpc.ScalarField.DataOneofCase.None => throw new NotSupportedException("Array data not support"),
             };
             return field;
         }

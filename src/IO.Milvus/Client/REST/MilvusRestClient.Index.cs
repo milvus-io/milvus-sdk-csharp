@@ -15,7 +15,8 @@ public partial class MilvusRestClient
     public async Task CreateIndexAsync(
         string collectionName,
         string fieldName,
-        MilvusIndexType indexType,
+        string indexName,
+        MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams,
         CancellationToken cancellationToken = default)
@@ -23,8 +24,9 @@ public partial class MilvusRestClient
         this._log.LogDebug("Create index {0}", collectionName);
 
         using HttpRequestMessage request = CreateIndexRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType)
             .WithExtraParams(extraParams)
+            .WithIndexName(indexName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

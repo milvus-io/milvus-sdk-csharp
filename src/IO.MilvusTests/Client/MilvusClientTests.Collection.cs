@@ -1,14 +1,14 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-[TestClass]
+
 public partial class MilvusClientTests
 {
-    [TestMethod()]
-    [TestClientProvider]
+    [Theory]
+    [ClassData(typeof(TestClients))]
     public async Task CollectionTest(IMilvusClient2 milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
@@ -27,16 +27,16 @@ public partial class MilvusClientTests
             );
 
         IList<MilvusCollection> collections = await milvusClient.ShowCollectionsAsync();
-        Assert.IsTrue(collections.Any(p => p.Name == collectionName));
+        Assert.Contains(collections, p => p.Name == collectionName);
 
         IDictionary<string,string> statistics  = await milvusClient.GetCollectionStatisticsAsync(collectionName);
-        Assert.IsTrue(statistics.Count == 1);
+        Assert.True(statistics.Count == 1);
 
         DetailedMilvusCollection detailedMilvusCollection = await milvusClient.DescribeCollectionAsync(collectionName);
-        Assert.AreEqual(collectionName, detailedMilvusCollection.CollectionName);
+        Assert.Equal(collectionName, detailedMilvusCollection.CollectionName);
 
         collectionExist = await milvusClient.HasCollectionAsync(collectionName);
-        Assert.IsTrue(collectionExist);
+        Assert.True(collectionExist);
 
         await milvusClient.DropCollectionAsync(collectionName);
     }

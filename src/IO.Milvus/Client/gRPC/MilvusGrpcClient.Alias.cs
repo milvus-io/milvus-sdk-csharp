@@ -20,7 +20,7 @@ public partial class MilvusGrpcClient
             .Create(collectionName,alias)
             .BuildGrpc();
 
-        Grpc.Status response = await _grpcClient.CreateAliasAsync(request);
+        Grpc.Status response = await _grpcClient.CreateAliasAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {

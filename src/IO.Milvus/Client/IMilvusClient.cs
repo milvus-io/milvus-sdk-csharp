@@ -17,7 +17,7 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    Task<bool> Health(CancellationToken cancellationToken = default);
+    Task<bool> HealthAsync(CancellationToken cancellationToken = default);
 
     #region Collection
     /// <summary>
@@ -249,7 +249,7 @@ public interface IMilvusClient2
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<MilvusCompactionPlans> GetCompactionPlans(
-        long compactionID,
+        long compactionId,
         CancellationToken cancellationToken = default);
 
     //TODO:
@@ -370,7 +370,7 @@ public interface IMilvusClient2
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<IList<object>> CalDiatanceAsync(
+    public Task<MilvusCalDistanceResult> CalDiatanceAsync(
         MilvusVectors leftVectors,
         MilvusVectors rightVectors,
         MilvusMetricType milvusMetricType,
@@ -405,7 +405,7 @@ public interface IMilvusClient2
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>If segments flushed.</returns>
     Task<bool> GetFlushStateAsync(
-        IList<int> segmentIds,
+        IList<long> segmentIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -416,7 +416,7 @@ public interface IMilvusClient2
     /// <param name="expr"></param>
     /// <param name="outputFields"></param>
     /// <param name="partitionNames">Partitions names.(Optional)</param>
-    /// <param name="guarantee_timestamp">guarantee_timestamp.(Optional)</param>
+    /// <param name="guaranteeTimestamp">guarantee_timestamp.(Optional)</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusQueryResult> QueryAsync(
@@ -424,15 +424,18 @@ public interface IMilvusClient2
         string expr,
         IList<string> outputFields,
         IList<string> partitionNames = null,
-        long guarantee_timestamp = 0,
+        long guaranteeTimestamp = 0,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get query segment information.
     /// </summary>
-    /// <param name="collectionName">Collection name</param>
-    /// <returns><see cref="MilvusQuerySegmentResult"/></returns>
-    Task<MilvusQuerySegmentResult> GetQuerySegmentInfoAsync(string collectionName);
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns><see cref="MilvusQuerySegmentInfoResult"/></returns>
+    Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
     #endregion
 
     #region Index
@@ -441,7 +444,8 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="collectionName">The particular collection name you want to create index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
-    /// <param name="indexType">Type of index used to accelerate the vector search.</param>
+    /// <param name="indexName">Index name</param>
+    /// <param name="milvusIndexType">Milvus index type.</param>
     /// <param name="milvusMetricType"></param>
     /// <param name="extraParams">
     /// Support keys: index_type,metric_type, params. 
@@ -450,7 +454,8 @@ public interface IMilvusClient2
     public Task CreateIndexAsync(
         string collectionName,
         string fieldName,
-        MilvusIndexType indexType,
+        string indexName,
+        MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams,
         CancellationToken cancellationToken = default);

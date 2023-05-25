@@ -1,87 +1,114 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using IO.MilvusTests.Client.Base;
+﻿using FluentAssertions;
+using IO.Milvus.Grpc;
 using IO.Milvus.Param.Partition;
-using IO.MilvusTests;
-using IO.Milvus.Param;
+using IO.MilvusTests.Client.Base;
+using IO.MilvusTests.Helpers;
+using Xunit;
+using Status = IO.Milvus.Param.Status;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client;
+
+public sealed class PartitionTest : MilvusServiceClientTestsBase, IAsyncLifetime
 {
-    [TestClass()]
-    public class PartitionTest:MilvusServiceClientTestsBase
+    private string collectionName;
+    private string aliasName;
+    private string partitionName;
+
+    public async Task InitializeAsync()
     {
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName,HostConfig.DefaultTestPartitionName)]
-        public void ACreatePartitionTest(string collectionName,string partitionName)
-        {
-            var r = MilvusClient.CreatePartition(CreatePartitionParam.Create(
-                collectionName, partitionName));
+        collectionName = $"test{random.Next()}";
 
-            AssertRpcStatus(r);
-        }
+        aliasName = collectionName + "_aliasName";
+        partitionName = collectionName + "_partitionName";
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void BLoadPartitionsTest(string collectionName, string partitionName)
-        {
-            var r = MilvusClient.LoadPartitions(LoadPartitionsParam.Create(
-                collectionName, partitionName));
+        await this.GivenCollection(collectionName);
+        this.GivenBookIndex(collectionName);
+        InsertDataToBookCollection(collectionName, partitionName);
+    }
 
-            AssertRpcStatus(r);
-        }
+    public async Task DisposeAsync()
+    {
+        this.ThenDropCollection(collectionName);
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void CHasPartitionTest(string collectionName, string partitionName)
-        {
-            var r = MilvusClient.HasPartition(HasPartitionParam.Create(
-                collectionName, partitionName));
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
+    }
 
-            AssertRBool(r);
-        }
+    [Fact]
+    public void ACreatePartitionTest()
+    {
+        var r = MilvusClient.CreatePartition(CreatePartitionParam.Create(
+            collectionName, partitionName));
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void DGetPartitionStatisticsTest(string collectionName, string partitionName)
-        {
-            var r = MilvusClient.GetPartitionStatistics(GetPartitionStatisticsParam.Create(
-                        collectionName, partitionName));
+        r.AssertRpcStatus();
+    }
 
-            Assert.IsNotNull(r);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Stats.Count > 0);
-        }
+    [Fact]
+    public void BLoadPartitionsTest()
+    {
+        this.GivenPartition(collectionName, partitionName);
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void EShowPartitionsTest(string collectionName, string partitionName)
-        {
-            var r = MilvusClient.ShowPartitions(ShowPartitionsParam.Create(
-            collectionName,null));
+        var r = MilvusClient.LoadPartitions(LoadPartitionsParam.Create(
+            collectionName, partitionName));
 
-            Assert.IsNotNull(r);
-            Assert.IsTrue(r.Status == Status.Success, r.Exception?.ToString());
-            Assert.IsTrue(r.Data.Status.ErrorCode == Grpc.ErrorCode.Success);
-        }
+        r.AssertRpcStatus();
+    }
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void FReleasePartitionsTest(string collectionName, string partitionName)
-        {
-            var r = MilvusClient.ReleasePartitions(ReleasePartitionsParam.Create(
-                collectionName, partitionName));
+    [Fact]
+    public void CHasPartitionTest()
+    {
+        this.GivenPartition(collectionName, partitionName);
 
-            AssertRpcStatus(r);
-        }
+        var r = MilvusClient.HasPartition(HasPartitionParam.Create(
+            collectionName, partitionName));
 
-        [TestMethod()]
-        [DataRow(HostConfig.DefaultTestCollectionName, HostConfig.DefaultTestPartitionName)]
-        public void GDropPartitionTest(string collectionName, string partitionName)
-        {
-            var r = MilvusClient.DropPartition(DropPartitionParam.Create(
-                    collectionName, partitionName));
+        r.Status.Should().Be(Status.Success);
+        r.Data.Should().BeTrue();
+    }
 
-            AssertRpcStatus(r);
-        }
-        
+    [Fact]
+    public void DGetPartitionStatisticsTest()
+    {
+        this.GivenPartition(collectionName, partitionName);
+
+        var r = MilvusClient.GetPartitionStatistics(GetPartitionStatisticsParam.Create(
+            collectionName, partitionName));
+
+        r.ShouldSuccess();
+        r.Data.Stats.Count.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void EShowPartitionsTest()
+    {
+        this.GivenPartition(collectionName, partitionName);
+
+        var r = MilvusClient.ShowPartitions(ShowPartitionsParam.Create(
+            collectionName, null));
+
+        r.ShouldSuccess();
+        r.Data.Status.ErrorCode.Should().Be(ErrorCode.Success);
+    }
+
+    [Fact]
+    public void FReleasePartitionsTest()
+    {
+        this.GivenPartition(collectionName, partitionName);
+
+        var r = MilvusClient.ReleasePartitions(ReleasePartitionsParam.Create(
+            collectionName, partitionName));
+
+        r.AssertRpcStatus();
+    }
+
+    [Fact]
+    public void GDropPartitionTest()
+    {
+        this.GivenPartition(collectionName, partitionName);
+
+        var r = MilvusClient.DropPartition(DropPartitionParam.Create(
+            collectionName, partitionName));
+
+        r.AssertRpcStatus();
     }
 }

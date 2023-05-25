@@ -16,7 +16,6 @@ namespace IO.Milvus.Param.Dml
             string name,
             List<TData> datas
             )
-            where TData : struct
         {
             return new Field<TData>()
             {
@@ -80,7 +79,6 @@ namespace IO.Milvus.Param.Dml
     }
 
     public class Field<TData>:Field
-        where TData:struct
     {
         public Field()
         {

@@ -28,12 +28,18 @@ internal sealed class DescribeIndexRequest :
     {
         this.Validate();
 
-        return new Grpc.DescribeIndexRequest()
+        var request = new Grpc.DescribeIndexRequest()
         {
             CollectionName = this.CollectionName,
             FieldName = this.FieldName,
-            IndexName = this.IndexName
         };
+
+        if (!string.IsNullOrEmpty(this.IndexName))
+        {
+            request.IndexName = this.IndexName;
+        }
+
+        return request;
     }
 
     public HttpRequestMessage BuildRest()
@@ -50,7 +56,6 @@ internal sealed class DescribeIndexRequest :
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(IndexName, "Index name cannot be null or empty.");
     }
 
     #region Private =========================================================================================

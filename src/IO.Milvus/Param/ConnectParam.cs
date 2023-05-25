@@ -17,13 +17,15 @@ namespace IO.Milvus.Param
             string host,
             int port = 19530,
             string name = "root",
-            string password = "milvus")
+            string password = "milvus",
+            bool useHttps = false)
         {
             var param = new ConnectParam()
             {
                 Host = host,
                 Port = port,
                 Authorization = $"{name}:{password}",
+                UseHttps = useHttps,
             };
 
             param.Check();

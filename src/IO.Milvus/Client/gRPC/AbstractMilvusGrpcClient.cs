@@ -1,8 +1,6 @@
-﻿using Google.Protobuf;
-using Grpc.Core;
+﻿using Grpc.Core;
 using Grpc.Net.Client;
 using IO.Milvus.Exception;
-using IO.Milvus.Grpc;
 using IO.Milvus.Param;
 using IO.Milvus.Param.Alias;
 using IO.Milvus.Param.Collection;
@@ -14,24 +12,28 @@ using IO.Milvus.Param.Partition;
 using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using Google.Protobuf;
+using IO.Milvus.Grpc;
+using KeyValuePair = IO.Milvus.Grpc.KeyValuePair;
+using Status = IO.Milvus.Grpc.Status;
 
 namespace IO.Milvus.Client
 {
     public abstract class AbstractMilvusGrpcClient : IMilvusClient
     {
         #region Fields
+
         protected GrpcChannel channel;
         protected MilvusService.MilvusServiceClient client;
         protected CallOptions defaultCallOptions;
         private TimeSpan? defaultTimeOut;
+
         #endregion
 
         #region Public Methods
+
         public bool ClientIsReady()
         {
             return true;
@@ -55,23 +57,26 @@ namespace IO.Milvus.Client
 
             return this;
         }
+
         #endregion
 
         #region Private Methods
-        private List<Grpc.KeyValuePair> AssembleKvPair(Dictionary<string,string> sourceDic)
+
+        private List<KeyValuePair> AssembleKvPair(Dictionary<string, string> sourceDic)
         {
-            var result = new List<Grpc.KeyValuePair>();
+            var result = new List<KeyValuePair>();
             if (sourceDic.IsNotEmpty())
             {
                 foreach (var kv in sourceDic)
                 {
-                    result.Add(new Grpc.KeyValuePair()
+                    result.Add(new KeyValuePair()
                     {
                         Key = kv.Key,
                         Value = kv.Value
                     });
                 }
             }
+
             return result;
         }
 
@@ -82,30 +87,36 @@ namespace IO.Milvus.Client
                 var options = defaultCallOptions;
                 options.WithDeadline(DateTime.UtcNow.AddSeconds(defaultTimeOut.Value.TotalSeconds));
             }
+
             return defaultCallOptions;
         }
 
-        private R<T> FailedStatus<T>(string requestName, IO.Milvus.Grpc.Status status)
+        private R<T> FailedStatus<T>(string requestName, Status status)
         {
             var reason = status.Reason;
             if (string.IsNullOrEmpty(reason))
             {
                 reason = $"error code: {status.ErrorCode}";
             }
+
             //logError(requestName + " failed:\n{}", reason);
             return R<T>.Failed(status.ErrorCode, reason);
         }
+
         #endregion
 
         #region Api Methods
 
         #region Collection
+
         ///<inheritdoc/>
-        public R<ShowCollectionsResponse> ShowCollections(ShowCollectionsParam requestParam, CallOptions? callOptions = null)
+        public R<ShowCollectionsResponse> ShowCollections(ShowCollectionsParam requestParam,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<ShowCollectionsResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<ShowCollectionsResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -117,7 +128,7 @@ namespace IO.Milvus.Client
                 };
                 requestParam.CollectionNames.AddRange(requestParam.CollectionNames);
 
-                var response = client.ShowCollections(request,callOptions ?? WithInternalOptions());
+                var response = client.ShowCollections(request, callOptions ?? WithInternalOptions());
 
                 if (response.Status.ErrorCode == ErrorCode.Success)
                 {
@@ -125,7 +136,7 @@ namespace IO.Milvus.Client
                 }
                 else
                 {
-                    return FailedStatus<ShowCollectionsResponse>(nameof(ShowCollectionsRequest),response.Status);
+                    return FailedStatus<ShowCollectionsResponse>(nameof(ShowCollectionsRequest), response.Status);
                 }
             }
             catch (System.Exception e)
@@ -151,7 +162,7 @@ namespace IO.Milvus.Client
                 };
                 if (!string.IsNullOrEmpty(requestParam.Description))
                 {
-                    schema.Description = requestParam.Description;                  
+                    schema.Description = requestParam.Description;
                 }
 
                 long fieldID = 0;
@@ -163,7 +174,7 @@ namespace IO.Milvus.Client
                         Name = fieldType.Name,
                         IsPrimaryKey = fieldType.IsPrimaryKey,
                         DataType = fieldType.DataType,
-                        AutoID = fieldType.IsAutoID,                        
+                        AutoID = fieldType.IsAutoID,
                     };
                     if (!string.IsNullOrEmpty(fieldType.Description))
                     {
@@ -179,7 +190,7 @@ namespace IO.Milvus.Client
 
                     schema.Fields.Add(field);
                 }
-                
+
                 var request = new CreateCollectionRequest()
                 {
                     CollectionName = requestParam.CollectionName,
@@ -187,7 +198,7 @@ namespace IO.Milvus.Client
                     Schema = schema.ToByteString()
                 };
 
-                var response = client.CreateCollection(request,callOptions ?? WithInternalOptions());
+                var response = client.CreateCollection(request, callOptions ?? WithInternalOptions());
 
                 if (response.ErrorCode == ErrorCode.Success)
                 {
@@ -227,7 +238,7 @@ namespace IO.Milvus.Client
                     CollectionName = collectionName,
                 };
 
-                var response = client.DropCollection(request,callOptions ?? WithInternalOptions());
+                var response = client.DropCollection(request, callOptions ?? WithInternalOptions());
 
                 if (response.ErrorCode == ErrorCode.Success)
                 {
@@ -247,7 +258,7 @@ namespace IO.Milvus.Client
         ///<inheritdoc/>
         public R<bool> HasCollection(HasCollectionParam requestParam, CallOptions? callOptions = null)
         {
-            return HasCollection(requestParam.CollectionName,callOptions);
+            return HasCollection(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
@@ -267,7 +278,7 @@ namespace IO.Milvus.Client
                     CollectionName = collectionName,
                 };
 
-                var response = client.HasCollection(hasCollectionRequest);
+                var response = client.HasCollection(hasCollectionRequest, callOptions ?? WithInternalOptions());
 
                 if (response.Status.ErrorCode == ErrorCode.Success)
                 {
@@ -285,9 +296,10 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<DescribeCollectionResponse> DescribeCollection(DescribeCollectionParam requestParam, CallOptions? callOptions = null)
+        public R<DescribeCollectionResponse> DescribeCollection(DescribeCollectionParam requestParam,
+            CallOptions? callOptions = null)
         {
-            return DescribeCollection(requestParam.CollectionName,callOptions);
+            return DescribeCollection(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
@@ -295,7 +307,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<DescribeCollectionResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<DescribeCollectionResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -330,7 +343,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<GetCollectionStatisticsResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetCollectionStatisticsResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -338,10 +352,12 @@ namespace IO.Milvus.Client
                 requestParam.Check();
                 if (requestParam.IsFlushCollection)
                 {
-                    var flushResponse = Flush(FlushParam.Create(requestParam.CollectionName));
+                    var flushResponse = Flush(FlushParam.Create(requestParam.CollectionName),
+                        callOptions ?? WithInternalOptions());
                     if (flushResponse.Status != Param.Status.Success)
                     {
-                        return R<GetCollectionStatisticsResponse>.Failed((ErrorCode)flushResponse.Status, flushResponse.Exception?.Message);
+                        return R<GetCollectionStatisticsResponse>.Failed((ErrorCode)flushResponse.Status,
+                            flushResponse.Exception?.Message);
                     }
                 }
 
@@ -350,26 +366,28 @@ namespace IO.Milvus.Client
                     CollectionName = requestParam.CollectionName,
                 };
 
-                var response = client.GetCollectionStatistics(request);
+                var response = client.GetCollectionStatistics(request,
+                    callOptions ?? WithInternalOptions());
                 if (response.Status.ErrorCode == ErrorCode.Success)
                 {
                     return R<GetCollectionStatisticsResponse>.Sucess(response);
                 }
                 else
                 {
-                    return FailedStatus<GetCollectionStatisticsResponse>(nameof(GetCollectionStatisticsRequest), response.Status);
+                    return FailedStatus<GetCollectionStatisticsResponse>(nameof(GetCollectionStatisticsRequest),
+                        response.Status);
                 }
             }
             catch (System.Exception e)
             {
-               return R<GetCollectionStatisticsResponse>.Failed(e);
+                return R<GetCollectionStatisticsResponse>.Failed(e);
             }
         }
 
         ///<inheritdoc/>
         public R<RpcStatus> LoadCollection(LoadCollectionParam requestParam, CallOptions? callOptions = null)
         {
-            return LoadCollection(requestParam.CollectionName,callOptions);
+            return LoadCollection(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
@@ -382,14 +400,13 @@ namespace IO.Milvus.Client
 
             try
             {
-
                 ParamUtils.CheckNullEmptyString(collectionName, nameof(collectionName));
                 var request = new LoadCollectionRequest()
                 {
                     CollectionName = collectionName
                 };
 
-                var response = client.LoadCollection(request,callOptions ?? WithInternalOptions());
+                var response = client.LoadCollection(request, callOptions ?? WithInternalOptions());
                 if (response.ErrorCode == ErrorCode.Success)
                 {
                     return R<RpcStatus>.Sucess(new RpcStatus(RpcStatus.SUCCESS_MSG));
@@ -406,13 +423,14 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public async Task<R<RpcStatus>> LoadCollectionAsync(LoadCollectionParam requestParam, CallOptions? callOptions = null)
+        public async Task<R<RpcStatus>> LoadCollectionAsync(LoadCollectionParam requestParam,
+            CallOptions? callOptions = null)
         {
-            return await LoadCollectionAsync(requestParam.CollectionName,callOptions);
+            return await LoadCollectionAsync(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
-        public async Task<R<RpcStatus>> LoadCollectionAsync(string collectionName,CallOptions? callOptions = null)
+        public async Task<R<RpcStatus>> LoadCollectionAsync(string collectionName, CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
@@ -427,7 +445,7 @@ namespace IO.Milvus.Client
                     CollectionName = collectionName
                 };
 
-                var response = await client.LoadCollectionAsync(request,callOptions ?? WithInternalOptions());
+                var response = await client.LoadCollectionAsync(request, callOptions ?? WithInternalOptions());
                 if (response.ErrorCode == ErrorCode.Success)
                 {
                     return R<RpcStatus>.Sucess(new RpcStatus(RpcStatus.SUCCESS_MSG));
@@ -465,7 +483,7 @@ namespace IO.Milvus.Client
                     CollectionName = collectionName
                 };
 
-                var response = client.ReleaseCollection(request,callOptions ?? WithInternalOptions());
+                var response = client.ReleaseCollection(request, callOptions ?? WithInternalOptions());
                 if (response.ErrorCode == ErrorCode.Success)
                 {
                     return R<RpcStatus>.Sucess(new RpcStatus(RpcStatus.SUCCESS_MSG));
@@ -482,9 +500,10 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public async Task<R<RpcStatus>> ReleaseCollectionAsync(ReleaseCollectionParam requestParam, CallOptions? callOptions = null)
+        public async Task<R<RpcStatus>> ReleaseCollectionAsync(ReleaseCollectionParam requestParam,
+            CallOptions? callOptions = null)
         {
-            return await ReleaseCollectionAsync(requestParam.CollectionName,callOptions);
+            return await ReleaseCollectionAsync(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
@@ -503,7 +522,7 @@ namespace IO.Milvus.Client
                     CollectionName = collectionName
                 };
 
-                var response = await client.ReleaseCollectionAsync(request,callOptions ?? WithInternalOptions());
+                var response = await client.ReleaseCollectionAsync(request, callOptions ?? WithInternalOptions());
                 if (response.ErrorCode == ErrorCode.Success)
                 {
                     return R<RpcStatus>.Sucess(new RpcStatus(RpcStatus.SUCCESS_MSG));
@@ -518,9 +537,11 @@ namespace IO.Milvus.Client
                 return R<RpcStatus>.Failed(e);
             }
         }
+
         #endregion
 
         #region Partition
+
         ///<inheritdoc/>
         public R<RpcStatus> CreatePartition(CreatePartitionParam requestParam, CallOptions? callOptions = null)
         {
@@ -538,14 +559,14 @@ namespace IO.Milvus.Client
                     PartitionName = requestParam.PartitionName,
                 };
 
-                var response = client.CreatePartition(request,callOptions ?? WithInternalOptions());
+                var response = client.CreatePartition(request, callOptions ?? WithInternalOptions());
                 if (response.ErrorCode == ErrorCode.Success)
                 {
                     return R<RpcStatus>.Sucess(new RpcStatus(RpcStatus.SUCCESS_MSG));
                 }
                 else
                 {
-                    return FailedStatus<RpcStatus>(nameof(LoadCollectionRequest),response);
+                    return FailedStatus<RpcStatus>(nameof(LoadCollectionRequest), response);
                 }
             }
             catch (System.Exception e)
@@ -612,7 +633,7 @@ namespace IO.Milvus.Client
                 }
                 else
                 {
-                    return FailedStatus<bool>(nameof(LoadCollectionRequest),response.Status);
+                    return FailedStatus<bool>(nameof(LoadCollectionRequest), response.Status);
                 }
             }
             catch (System.Exception e)
@@ -645,9 +666,11 @@ namespace IO.Milvus.Client
                 }
                 else
                 {
-                    return FailedStatus<RpcStatus>(nameof(LoadCollectionRequest),new Grpc.Status() 
-                    { ErrorCode = response.ErrorCode,
-                        Reason = response.Reason});
+                    return FailedStatus<RpcStatus>(nameof(LoadCollectionRequest), new Status()
+                    {
+                        ErrorCode = response.ErrorCode,
+                        Reason = response.Reason
+                    });
                 }
             }
             catch (System.Exception e)
@@ -680,7 +703,7 @@ namespace IO.Milvus.Client
                 }
                 else
                 {
-                    return FailedStatus<RpcStatus>(nameof(LoadCollectionRequest), new Grpc.Status()
+                    return FailedStatus<RpcStatus>(nameof(LoadCollectionRequest), new Status()
                     {
                         ErrorCode = response.ErrorCode,
                         Reason = response.Reason
@@ -694,11 +717,13 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<GetPartitionStatisticsResponse> GetPartitionStatistics(GetPartitionStatisticsParam requestParam, CallOptions? callOptions = null)
+        public R<GetPartitionStatisticsResponse> GetPartitionStatistics(GetPartitionStatisticsParam requestParam,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<GetPartitionStatisticsResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetPartitionStatisticsResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -710,10 +735,11 @@ namespace IO.Milvus.Client
                     var flushResponse = Flush(FlushParam.Create(requestParam.CollectionName));
                     if (flushResponse.Status != Param.Status.Success)
                     {
-                        return R<GetPartitionStatisticsResponse>.Failed((ErrorCode)flushResponse.Status,flushResponse.Exception);
+                        return R<GetPartitionStatisticsResponse>.Failed((ErrorCode)flushResponse.Status,
+                            flushResponse.Exception);
                     }
                 }
-                
+
                 var request = new GetPartitionStatisticsRequest()
                 {
                     CollectionName = requestParam.CollectionName,
@@ -727,7 +753,8 @@ namespace IO.Milvus.Client
                 }
                 else
                 {
-                    return FailedStatus<GetPartitionStatisticsResponse>(nameof(GetPartitionStatisticsRequest),response.Status);
+                    return FailedStatus<GetPartitionStatisticsResponse>(nameof(GetPartitionStatisticsRequest),
+                        response.Status);
                 }
             }
             catch (System.Exception e)
@@ -737,11 +764,13 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<ShowPartitionsResponse> ShowPartitions(ShowPartitionsParam requestParam, CallOptions? callOptions = null)
+        public R<ShowPartitionsResponse> ShowPartitions(ShowPartitionsParam requestParam,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<ShowPartitionsResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<ShowPartitionsResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -772,9 +801,11 @@ namespace IO.Milvus.Client
                 return R<ShowPartitionsResponse>.Failed(e);
             }
         }
+
         #endregion
 
         #region Alias
+
         ///<inheritdoc/>
         public R<RpcStatus> CreateAlias(CreateAliasParam requestParam, CallOptions? callOptions = null)
         {
@@ -789,7 +820,7 @@ namespace IO.Milvus.Client
                 var request = new CreateAliasRequest()
                 {
                     CollectionName = requestParam.CollectionName,
-                    Alias = requestParam.Alias,                    
+                    Alias = requestParam.Alias,
                 };
 
                 var response = client.CreateAlias(request, callOptions ?? WithInternalOptions());
@@ -855,7 +886,7 @@ namespace IO.Milvus.Client
             {
                 requestParam.Check();
                 var request = new DropAliasRequest()
-                {                    
+                {
                     Alias = requestParam.Alias,
                 };
 
@@ -875,9 +906,11 @@ namespace IO.Milvus.Client
                 return R<RpcStatus>.Failed(e);
             }
         }
+
         #endregion
 
         #region Data
+
         ///<inheritdoc/>
         public R<MutationResult> Insert(InsertParam requestParam, CallOptions? callOptions = null)
         {
@@ -931,6 +964,7 @@ namespace IO.Milvus.Client
                 {
                     CollectionName = requestParam.CollectionName,
                     PartitionName = requestParam.PartitionName,
+                    NumRows = requestParam.RowCount
                 };
                 request.FieldsData.AddRange(requestParam.Fields.Select(p => p.ToGrpcFieldData()));
 
@@ -990,7 +1024,8 @@ namespace IO.Milvus.Client
             }
         }
 
-        public R<GetCompactionStateResponse> GetCompactionState(GetCompactionStateParam requestParam, CallOptions? callOptions = null)
+        public R<GetCompactionStateResponse> GetCompactionState(GetCompactionStateParam requestParam,
+            CallOptions? callOptions = null)
         {
             return GetCompactionState(requestParam.CompactionID);
         }
@@ -1000,7 +1035,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<GetCompactionStateResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetCompactionStateResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1030,17 +1066,20 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<GetCompactionPlansResponse> GetCompactionStateWithPlans(GetCompactionPlansParam requestParam, CallOptions? callOptions = null)
+        public R<GetCompactionPlansResponse> GetCompactionStateWithPlans(GetCompactionPlansParam requestParam,
+            CallOptions? callOptions = null)
         {
             return GetCompactionStateWithPlans(requestParam.CompactionID, callOptions);
         }
 
         ///<inheritdoc/>
-        public R<GetCompactionPlansResponse> GetCompactionStateWithPlans(long compactionID, CallOptions? callOptions = null)
+        public R<GetCompactionPlansResponse> GetCompactionStateWithPlans(long compactionID,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<GetCompactionPlansResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetCompactionPlansResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1084,7 +1123,8 @@ namespace IO.Milvus.Client
                 var request = new FlushRequest();
                 request.CollectionNames.AddRange(requestParam.CollectionNames);
 
-                var response = client.Flush(request);
+                var response = client.Flush(request,
+                    callOptions ?? WithInternalOptions());
                 if (response.Status.ErrorCode == ErrorCode.Success)
                 {
                     return R<FlushResponse>.Sucess(response);
@@ -1136,7 +1176,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<GetFlushStateResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetFlushStateResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1161,9 +1202,11 @@ namespace IO.Milvus.Client
                 return R<GetFlushStateResponse>.Failed(e);
             }
         }
+
         #endregion
 
         #region Index
+
         ///<inheritdoc/>
         public R<RpcStatus> CreateIndex(CreateIndexParam requestParam, CallOptions? callOptions = null)
         {
@@ -1179,8 +1222,9 @@ namespace IO.Milvus.Client
                 {
                     CollectionName = requestParam.CollectionName,
                     FieldName = requestParam.FieldName,
+                    IndexName = requestParam.IndexName
                 };
-                request.ExtraParams.AddRange(requestParam.ExtraDic.Select(p => new Grpc.KeyValuePair()
+                request.ExtraParams.AddRange(requestParam.ExtraDic.Select(p => new KeyValuePair()
                 {
                     Key = p.Key,
                     Value = p.Value
@@ -1242,7 +1286,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<DescribeIndexResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<DescribeIndexResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1272,11 +1317,13 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<GetIndexBuildProgressResponse> GetIndexBuildProgress(GetIndexBuildProgressParam requestParam, CallOptions? callOptions = null)
+        public R<GetIndexBuildProgressResponse> GetIndexBuildProgress(GetIndexBuildProgressParam requestParam,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<GetIndexBuildProgressResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetIndexBuildProgressResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1296,7 +1343,8 @@ namespace IO.Milvus.Client
                 }
                 else
                 {
-                    return FailedStatus<GetIndexBuildProgressResponse>(nameof(GetIndexBuildProgressRequest), response.Status);
+                    return FailedStatus<GetIndexBuildProgressResponse>(nameof(GetIndexBuildProgressRequest),
+                        response.Status);
                 }
             }
             catch (System.Exception e)
@@ -1304,9 +1352,11 @@ namespace IO.Milvus.Client
                 return R<GetIndexBuildProgressResponse>.Failed(e);
             }
         }
+
         #endregion
 
         #region Search and Query
+
         ///<inheritdoc/>
         public R<QueryResults> Query(QueryParam requestParam, CallOptions? callOptions = null)
         {
@@ -1323,7 +1373,7 @@ namespace IO.Milvus.Client
                     CollectionName = requestParam.CollectionName,
                     Expr = requestParam.Expr,
                     GuaranteeTimestamp = requestParam.GuaranteeTimestamp,
-                    TravelTimestamp = requestParam.TravelTimestamp,                   
+                    TravelTimestamp = requestParam.TravelTimestamp,
                 };
 
                 request.OutputFields.AddRange(requestParam.OutFields);
@@ -1422,7 +1472,8 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public async Task<R<SearchResults>> SearchAsync<TVector>(SearchParam<TVector> requestParam, CallOptions? callOptions = null)
+        public async Task<R<SearchResults>> SearchAsync<TVector>(SearchParam<TVector> requestParam,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
@@ -1458,7 +1509,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<CalcDistanceResults>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<CalcDistanceResults>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1489,9 +1541,11 @@ namespace IO.Milvus.Client
                 return R<CalcDistanceResults>.Failed(e);
             }
         }
+
         #endregion
 
         #region Credential
+
         [Obsolete]
         public R<RpcStatus> CreateCredential(CreateCredentialParam requestParam, CallOptions? callOptions = null)
         {
@@ -1509,9 +1563,11 @@ namespace IO.Milvus.Client
         {
             throw new NotImplementedException();
         }
+
         #endregion
 
         #region Others
+
         ///<inheritdoc/>
         public R<GetMetricsResponse> GetMetrics(GetMetricsParam requestParam, CallOptions? callOptions = null)
         {
@@ -1547,17 +1603,20 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<GetPersistentSegmentInfoResponse> GetPersistentSegmentInfo(GetPersistentSegmentInfoParam requestParam, CallOptions? callOptions = null)
+        public R<GetPersistentSegmentInfoResponse> GetPersistentSegmentInfo(GetPersistentSegmentInfoParam requestParam,
+            CallOptions? callOptions = null)
         {
-            return GetPersistentSegmentInfo(requestParam.CollectionName,callOptions);
+            return GetPersistentSegmentInfo(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
-        public R<GetPersistentSegmentInfoResponse> GetPersistentSegmentInfo(string collectionName, CallOptions? callOptions = null)
+        public R<GetPersistentSegmentInfoResponse> GetPersistentSegmentInfo(string collectionName,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<GetPersistentSegmentInfoResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetPersistentSegmentInfoResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1588,17 +1647,20 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(GetQuerySegmentInfoParam requestParam, CallOptions? callOptions = null)
+        public R<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(GetQuerySegmentInfoParam requestParam,
+            CallOptions? callOptions = null)
         {
-            return GetQuerySegmentInfo(requestParam.CollectionName,callOptions);
+            return GetQuerySegmentInfo(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
-        public R<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(string collectionName, CallOptions? callOptions = null)
+        public R<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(string collectionName,
+            CallOptions? callOptions = null)
         {
             if (!ClientIsReady())
             {
-                return R<GetQuerySegmentInfoResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<GetQuerySegmentInfoResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1664,9 +1726,10 @@ namespace IO.Milvus.Client
         }
 
         ///<inheritdoc/>
-        public R<ManualCompactionResponse> ManualCompaction(ManualCompactionParam requestParam, CallOptions? callOptions = null)
+        public R<ManualCompactionResponse> ManualCompaction(ManualCompactionParam requestParam,
+            CallOptions? callOptions = null)
         {
-            return ManualCompaction(requestParam.CollectionName,callOptions);
+            return ManualCompaction(requestParam.CollectionName, callOptions);
         }
 
         ///<inheritdoc/>
@@ -1674,7 +1737,8 @@ namespace IO.Milvus.Client
         {
             if (!ClientIsReady())
             {
-                return R<ManualCompactionResponse>.Failed(new ClientNotConnectedException("Client rpc channel is not ready"));
+                return R<ManualCompactionResponse>.Failed(
+                    new ClientNotConnectedException("Client rpc channel is not ready"));
             }
 
             try
@@ -1683,7 +1747,8 @@ namespace IO.Milvus.Client
                 var describleCollectionResponse = DescribeCollection(collectionName);
                 if (describleCollectionResponse.Status != Param.Status.Success)
                 {
-                    return R<ManualCompactionResponse>.Failed((ErrorCode)describleCollectionResponse.Status, describleCollectionResponse.Exception);
+                    return R<ManualCompactionResponse>.Failed((ErrorCode)describleCollectionResponse.Status,
+                        describleCollectionResponse.Exception);
                 }
 
                 var request = new ManualCompactionRequest()
@@ -1714,9 +1779,9 @@ namespace IO.Milvus.Client
         {
             throw new NotImplementedException();
         }
-        #endregion
 
         #endregion
 
+        #endregion
     }
 }

@@ -50,7 +50,7 @@ public partial class MilvusRestClient : IMilvusClient2
     }
 
     ///<inheritdoc/>
-    public async Task<bool> Health(CancellationToken cancellationToken = default)
+    public async Task<bool> HealthAsync(CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Ensure to connect to Milvus server {0}",BaseAddress);
 

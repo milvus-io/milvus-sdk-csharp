@@ -1,15 +1,14 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using IO.Milvus.Client;
-using System.Runtime.InteropServices;
+using Xunit;
 
 namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [TestMethod]
-    [TestClientProvider]
+    [Theory]
+    [ClassData(typeof(TestClients))]
     public async Task SearchTest(IMilvusClient2 milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
@@ -19,6 +18,7 @@ public partial class MilvusClientTests
         if (collectionExist)
         {
             await milvusClient.DropCollectionAsync(collectionName);
+            await Task.Delay(1000);
         }
 
         Random ran = new Random();
@@ -40,14 +40,14 @@ public partial class MilvusClientTests
         await milvusClient.CreateCollectionAsync(
             collectionName,
             new[] {
-                new FieldType("book_id",MilvusDataType.Int64,true),
-                new FieldType("word_count",MilvusDataType.Int64,false),
+                new FieldType("book_id",MilvusDataType.Int64,isPrimaryKey:true),
+                new FieldType("word_count",MilvusDataType.Int64),
                 FieldType.CreateFloatVector("book_intro",2),
             }
         );
 
         bool exist = await milvusClient.HasCollectionAsync(collectionName);
-        Assert.IsTrue(exist, "Create collection failed");
+        Assert.True(exist, "Create collection failed");
 
         MilvusMutationResult result = await milvusClient.InsertAsync(collectionName,
             new[]
@@ -57,29 +57,36 @@ public partial class MilvusClientTests
                 Field.CreateFloatVector("book_intro",book_intro_array),
             });
 
-        Assert.IsTrue(result.InsertCount == 2000, "Insert data failed");
-        Assert.IsTrue(result.SuccessIndex.Count == 2000, "Insert data failed");
+        Assert.True(result.InsertCount == 2000, "Insert data failed");
+        Assert.True(result.SuccessIndex.Count == 2000, "Insert data failed");
 
-        await milvusClient.CreateIndexAsync(collectionName, "book_id",new Dictionary<string,string> { { "nlist","1024"} });
+        await milvusClient.CreateIndexAsync(collectionName, "book_intro","default",MilvusIndexType.IVF_FLAT ,MilvusMetricType.L2, new Dictionary<string,string> { { "nlist","1024"} });
 
-        var indexBuildProgress = await milvusClient.GetIndexBuildProgress(collectionName, "book_id");
+        int indexCount = 0;
+        int count = 1;
+        while (indexCount == 0)
+        {
+            var indexes = await milvusClient.DescribeIndexAsync(collectionName, "book_intro");
+            indexCount = indexes.Count;
+            Thread.Sleep(1000);
+            if (count++ > 5) break;
+        }
 
         await milvusClient.LoadCollectionAsync(collectionName);
 
         //Search
-        List<String> search_output_fields = new (){ "book_id"};
+        List<string> search_output_fields = new() { "book_id" };
         List<List<float>> search_vectors = new() { new() { 0.1f, 0.2f } };
-        var searchResult = milvusClient.SearchAsync(
-            MilvusSearchParameters.Create(collectionName)
+        var searchResult = await milvusClient.SearchAsync(
+            MilvusSearchParameters.Create(collectionName, "book_intro", search_output_fields)
             .WithVectors(search_vectors)
-            .WithConsistencyLevel(MilvusConsistencyLevel.Strong)            
-            .WithMetricType(MilvusMetricType.L2)
-            .WithOutputFields(search_output_fields)
-            .WithTopK(topK:2)
-            .WithParameter("nprobe","10")
+            .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
+            .WithMetricType(MilvusMetricType.IP)
+            .WithTopK(topK: 2)
+            .WithParameter("nprobe", "10")
             .WithParameter("offset", "5")
             );
 
-        Assert.IsNotNull(searchResult);
+        Assert.Equal(1,searchResult.Results.FieldsData.Count);
     }
 }

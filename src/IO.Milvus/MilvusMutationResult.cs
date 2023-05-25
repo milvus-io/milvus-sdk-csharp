@@ -202,8 +202,15 @@ public enum MilvusIdFieldOneofCase
     StrId = 2,
 }
 
+/// <summary>
+/// Milvus id
+/// </summary>
+/// <typeparam name="TId"></typeparam>
 public class MilvusId<TId>
 {
+    /// <summary>
+    /// Value
+    /// </summary>
     [JsonPropertyName("data")]
     public IList<TId> Data { get; set;}
 }

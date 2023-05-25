@@ -16,4 +16,7 @@ internal class GetCompactionPlansResponse
     /// </summary>
     [JsonPropertyName("state")]
     public MilvusCompactionState State { get; set; }
+
+    [JsonPropertyName("status")]
+    public ResponseStatus Status { get; set; }
 }

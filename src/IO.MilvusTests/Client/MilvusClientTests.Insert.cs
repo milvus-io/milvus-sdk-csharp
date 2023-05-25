@@ -1,14 +1,14 @@
 ﻿using IO.Milvus;
 using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [TestMethod]
-    [TestClientProvider]
+    [Theory]
+    [ClassData(typeof(TestClients))]
     public async Task InsertTest(IMilvusClient2 milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
@@ -29,7 +29,7 @@ public partial class MilvusClientTests
         );
 
         bool exist = await milvusClient.HasCollectionAsync(collectionName);
-        Assert.IsTrue(exist, "Create collection failed");
+        Assert.True(exist, "Create collection failed");
 
         MilvusMutationResult result = await milvusClient.InsertAsync(collectionName,
             new[]
@@ -38,7 +38,7 @@ public partial class MilvusClientTests
                 Field.CreateVarChar("book_intro",new []{"book1","book2","book3"})
             });
         
-        Assert.IsTrue(result.InsertCount == 3, "Insert data failed");
-        Assert.IsTrue(result.SuccessIndex.Count == 3, "Insert data failed");
+        Assert.True(result.InsertCount == 3, "Insert data failed");
+        Assert.True(result.SuccessIndex.Count == 3, "Insert data failed");
     }
 }

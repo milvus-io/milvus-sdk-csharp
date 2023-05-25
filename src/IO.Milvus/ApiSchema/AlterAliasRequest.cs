@@ -50,7 +50,7 @@ internal class AlterAliasRequest:
         Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
     }
 
-    #region Private =============================================
+    #region Private ================================================================================
     private AlterAliasRequest(string collection, string alias)
     {
         CollectionName = collection;

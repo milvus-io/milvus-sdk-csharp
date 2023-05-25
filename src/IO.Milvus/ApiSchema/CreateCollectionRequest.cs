@@ -48,7 +48,7 @@ internal sealed class CreateCollectionRequest:
     /// <see href="https://github.com/milvus-io/milvus/issues/6690"/>
     /// </remarks>
     [JsonPropertyName("shards_num")]
-    public int ShardsNum { get; set; } = 5;
+    public int ShardsNum { get; set; } = 1;
 
     /// <summary>
     /// Collection schema
@@ -61,6 +61,12 @@ internal sealed class CreateCollectionRequest:
     public static CreateCollectionRequest Create(string collectionName)
     {
         return new CreateCollectionRequest(collectionName);
+    }
+
+    public CreateCollectionRequest WithShardsNum(int shardsNum)
+    {
+        ShardsNum = shardsNum;
+        return this;
     }
 
     public CreateCollectionRequest WithFieldTypes(IList<FieldType> fieldTypes)

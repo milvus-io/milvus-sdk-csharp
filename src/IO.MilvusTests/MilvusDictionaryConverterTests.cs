@@ -1,11 +1,9 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Text.Json;
+using Xunit;
 
 namespace IO.Milvus.Tests;
 
-
-[TestClass()]
 public class MilvusDictionaryConverterTests
 {
     internal class TestDic
@@ -16,7 +14,7 @@ public class MilvusDictionaryConverterTests
         public IDictionary<string, string>? KeyValuePairs { get; set; }
     }
 
-    [TestMethod()]
+    [Fact]
     public void ReadTest()
     {
         var data =
@@ -35,11 +33,11 @@ public class MilvusDictionaryConverterTests
 
         var dic = JsonSerializer.Deserialize<TestDic>(data);
 
-        Assert.IsNotNull(dic);
-        Assert.IsTrue(dic.KeyValuePairs.Any());
+        Assert.NotNull(dic);
+        Assert.True(dic.KeyValuePairs.Any());
     }
 
-    [TestMethod()]
+    [Fact]
     public void WriteTest()
     {
         var dic = new TestDic() { 
@@ -50,11 +48,11 @@ public class MilvusDictionaryConverterTests
 
         dic = JsonSerializer.Deserialize<TestDic>(data);
 
-        Assert.IsNotNull(dic);
-        Assert.IsTrue(dic.KeyValuePairs?.Any() == true);
+        Assert.NotNull(dic);
+        Assert.True(dic.KeyValuePairs?.Any() == true);
     }
 
-    [TestMethod()]
+    [Fact]
     public void WriteNullTest()
     {
         var dic = new TestDic();
@@ -63,10 +61,10 @@ public class MilvusDictionaryConverterTests
 
         dic = JsonSerializer.Deserialize<TestDic>(data);
 
-        Assert.IsNotNull(dic);
+        Assert.NotNull(dic);
     }
 
-    [TestMethod()]
+    [Fact]
     public void WriteNothinTest()
     {
         var dic = new TestDic() { KeyValuePairs = new Dictionary<string, string>() };
@@ -75,6 +73,6 @@ public class MilvusDictionaryConverterTests
 
         dic = JsonSerializer.Deserialize<TestDic>(data);
 
-        Assert.IsNotNull(dic);
+        Assert.NotNull(dic);
     }
 }

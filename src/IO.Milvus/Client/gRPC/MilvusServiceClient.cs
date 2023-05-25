@@ -1,9 +1,9 @@
-﻿
+﻿using System;
+using System.Text;
 using Grpc.Core;
 using Grpc.Net.Client;
 using IO.Milvus.Grpc;
 using IO.Milvus.Param;
-using System;
 #if NET461_OR_GREATER
 using System.Net.Http;
 #endif
@@ -11,30 +11,38 @@ using System.Net.Http;
 namespace IO.Milvus.Client
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <remarks>
     /// <see href="https://docs.microsoft.com/zh-cn/aspnet/core/grpc/?view=aspnetcore-6.0"/>
     /// </remarks>
-    public class MilvusServiceClient:AbstractMilvusGrpcClient
+    public class MilvusServiceClient : AbstractMilvusGrpcClient
     {
-        public MilvusServiceClient(ConnectParam connectParam)
+        public MilvusServiceClient(ConnectParam connectParam, GrpcChannel grpcChannel = null)
         {
             connectParam.Check();
-            defaultCallOptions = new CallOptions();
-            defaultCallOptions.WithHeaders(new Metadata()
-            {
-                {"authorization",connectParam.Authorization }
-            });
 
-#if NET461_OR_GREATER
-            var httpHandler = new HttpClientHandler();
-            httpHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            channel = GrpcChannel.ForAddress(connectParam.GetAddress(),new GrpcChannelOptions { HttpHandler = httpHandler });
-#else
-            channel = GrpcChannel.ForAddress(connectParam.GetAddress());
-#endif
-            
+            defaultCallOptions = new CallOptions();
+
+            if (string.IsNullOrEmpty(connectParam.Authorization) == false)
+            {
+                var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(connectParam.Authorization));
+
+                defaultCallOptions = defaultCallOptions.WithHeaders(new Metadata()
+                {
+                    { "authorization", authToken }
+                });
+            }
+
+            if (grpcChannel == null)
+            {
+                channel = GrpcChannel.ForAddress(connectParam.GetAddress());
+            }
+            else
+            {
+                channel = grpcChannel;
+            }
+
             client = new MilvusService.MilvusServiceClient(channel);
         }
 

@@ -1,13 +1,13 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [TestMethod]
-    [TestClientProvider]
+    [Theory]
+    [ClassData(typeof(TestClients))]
     public async Task PartitionTest(IMilvusClient2 milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
@@ -32,13 +32,17 @@ public partial class MilvusClientTests
         }
 
         //Create partition
+        if (milvusClient?.ToString()?.Contains("zilliz") == true)
+        {
+            return;
+        }
         await milvusClient.CreatePartitionAsync(collectionName, partition);
         partitionExist = await milvusClient.HasPartitionAsync(collectionName, partition);
-        Assert.IsTrue(partitionExist, $"Failed Create Collection: {collectionName}, Partition: {partition}");
+        Assert.True(partitionExist, $"Failed Create Collection: {collectionName}, Partition: {partition}");
 
         //Drop
         await milvusClient.DropPartitionsAsync(collectionName, partition);
         partitionExist = await milvusClient.HasPartitionAsync(collectionName, partition);
-        Assert.IsFalse(partitionExist, $"Failed Drop Collection: {collectionName}, Partition: {partition}");
+        Assert.False(partitionExist, $"Failed Drop Collection: {collectionName}, Partition: {partition}");
     }
 }

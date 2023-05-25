@@ -25,11 +25,12 @@ public partial class MilvusGrpcClient
 
         Grpc.CreateCollectionRequest request = CreateCollectionRequest
             .Create(collectionName)
+            .WithShardsNum(shards_num)
             .WithConsistencyLevel(consistencyLevel)
             .WithFieldTypes(fieldTypes)
             .BuildGrpc();
 
-        Grpc.Status response = await _grpcClient.CreateCollectionAsync(request);
+        Grpc.Status response = await _grpcClient.CreateCollectionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -49,7 +50,7 @@ public partial class MilvusGrpcClient
             .Create(collectionName)
             .BuildGrpc();
 
-        Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(request);
+        Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -80,7 +81,7 @@ public partial class MilvusGrpcClient
             .Create(collectionName)
             .BuildGrpc();
 
-        Grpc.Status response = await _grpcClient.DropCollectionAsync(request);
+        Grpc.Status response = await _grpcClient.DropCollectionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -100,7 +101,7 @@ public partial class MilvusGrpcClient
             .Create(collectionName)
             .BuildGrpc();
 
-        Grpc.GetCollectionStatisticsResponse response = await _grpcClient.GetCollectionStatisticsAsync(request);
+        Grpc.GetCollectionStatisticsResponse response = await _grpcClient.GetCollectionStatisticsAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -144,9 +145,10 @@ public partial class MilvusGrpcClient
 
         Grpc.LoadCollectionRequest request = LoadCollectionRequest
             .Create(collectionName)
+            .WithReplicaNumber(replicNumber)
             .BuildGrpc();
 
-        Grpc.Status response = await _grpcClient.LoadCollectionAsync(request);
+        Grpc.Status response = await _grpcClient.LoadCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -166,7 +168,7 @@ public partial class MilvusGrpcClient
             .Create(collectionName)
             .BuildGrpc();
 
-        Grpc.Status response = await _grpcClient.ReleaseCollectionAsync(request);
+        Grpc.Status response = await _grpcClient.ReleaseCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -189,7 +191,7 @@ public partial class MilvusGrpcClient
             .WithType(showType)
             .BuildGrpc();
 
-        Grpc.ShowCollectionsResponse response = await _grpcClient.ShowCollectionsAsync(request);
+        Grpc.ShowCollectionsResponse response = await _grpcClient.ShowCollectionsAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

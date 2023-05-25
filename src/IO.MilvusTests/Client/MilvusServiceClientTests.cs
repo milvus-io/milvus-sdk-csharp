@@ -1,49 +1,61 @@
-﻿using IO.Milvus.Client;
+﻿using FluentAssertions;
+using IO.Milvus.Client;
 using IO.Milvus.Param;
-using IO.MilvusTests;
 using IO.MilvusTests.Client.Base;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
-namespace IO.Milvus.Client.Tests
+namespace IO.MilvusTests.Client;
+
+public class MilvusServiceClientTests : MilvusServiceClientTestsBase
 {
-
-    [TestClass()]
-    public class MilvusServiceClientTests : MilvusServiceClientTestsBase
+    [Fact]
+    public void MilvusServiceClientTest()
     {
+        var service = DefaultClient();
 
-        [TestMethod()]
-        public void MilvusServiceClientTest()
-        {
-            var service = DefaultClient();
-
-            Assert.IsNotNull(service);
-            Assert.IsTrue(service.ClientIsReady());
-        }
-
-        [TestMethod()]
-        public void CloseTest()
-        {
-            var service = NewClient();
-            service.Close();
-        }
-
-        [TestMethod()]
-        public async Task CloseAsyncTest()
-        {
-            var service = NewClient();
-            await service.CloseAsync();
-        }
-
-        [TestMethod()]
-        public void CreateGrpcDefaultClientTest()
-        {
-            var defualtClient = MilvusServiceClient.CreateGrpcDefaultClient(ConnectParam.Create(
-                HostConfig.Host,
-                HostConfig.Port
-                ));
-
-            Assert.IsNotNull(defualtClient);
-        }
+        service.Should().NotBeNull();
+        service.ClientIsReady().Should().BeTrue();
     }
 
+    [Fact]
+    public void CloseTest()
+    {
+        var service = NewClient();
+        service.Close();
+    }
+
+    [Fact]
+    public async Task CloseAsyncTest()
+    {
+        var service = NewClient();
+        await service.CloseAsync();
+    }
+
+    [Fact]
+    public void CreateGrpcDefaultClientTest()
+    {
+        var defaultClient = MilvusServiceClient.CreateGrpcDefaultClient(ConnectParam.Create(
+            HostConfig.Host,
+            HostConfig.Port
+        ));
+
+        defaultClient.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ConnectParam_Create()
+    {
+        var connectParam = ConnectParam.Create(
+            "somehost",
+            11111,
+            name: "username",
+            password: "password",
+            useHttps: true
+        );
+
+        connectParam.Authorization.Should().Be("username:password");
+        connectParam.Host.Should().Be("somehost");
+        connectParam.Port.Should().Be(11111);
+        connectParam.UseHttps.Should().Be(true);
+    }
 }
