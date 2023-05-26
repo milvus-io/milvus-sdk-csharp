@@ -5,7 +5,7 @@
 /// </summary>
 public enum MilvusIndexType
 {
-    Invalid,
+    INVALID,
 
     FLAT,
 
@@ -33,4 +33,5 @@ public enum MilvusIndexType
     BIN_FLAT,
 
     BIN_IVF_FLAT,
+    TRIE,
 }

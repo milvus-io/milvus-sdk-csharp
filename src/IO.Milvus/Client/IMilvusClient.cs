@@ -370,11 +370,11 @@ public interface IMilvusClient2
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<MilvusCalDistanceResult> CalDiatanceAsync(
+    public Task<MilvusCalDistanceResult> CalDistanceAsync(
         MilvusVectors leftVectors,
         MilvusVectors rightVectors,
         MilvusMetricType milvusMetricType,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Flush a collection's data to disk. Milvus's data will be auto flushed.

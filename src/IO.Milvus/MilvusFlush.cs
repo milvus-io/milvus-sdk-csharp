@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.Collections;
 using IO.Milvus.Grpc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -27,17 +28,28 @@ public class MilvusFlushResult
 
     internal static MilvusFlushResult From(FlushResponse response)
     {
-        return new MilvusFlushResult(response.CollSegIDs, response.FlushCollSegIDs, response.CollSealTimes);
+        return new MilvusFlushResult(
+            response.CollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }), 
+            response.FlushCollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }), 
+            response.CollSealTimes);
+    }
+
+    internal static MilvusFlushResult From(ApiSchema.FlushResponse data)
+    {
+        return new MilvusFlushResult(
+            data.CollSegIDs.ToDictionary(p => p.Key, p => p.Value),
+            data.FlushCollSegIds,
+            data.CollSealTimes);
     }
 
     #region Private ==========================================================================================
     private MilvusFlushResult(
-        MapField<string, LongArray> collSegIDs,
-        MapField<string, LongArray> flushCollSegIDs, 
-        MapField<string, long> collSealTimes)
+        IDictionary<string, MilvusId<long>> collSegIDs,
+        IDictionary<string, MilvusId<long>> flushCollSegIDs, 
+        IDictionary<string, long> collSealTimes)
     {
-        this.CollSegIDs = collSegIDs.ToDictionary(p => p.Key ,p => new MilvusId<long>() { Data = p.Value.Data});
-        this.FlushCollSegIds = flushCollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data });
+        this.CollSegIDs = collSegIDs;
+        this.FlushCollSegIds = flushCollSegIDs;
         this.CollSealTimes = collSealTimes;
     }
     #endregion

@@ -118,13 +118,13 @@ public partial class MilvusGrpcClient
     }
 
     ///<inheritdoc/>
-    public async Task<MilvusCalDistanceResult> CalDiatanceAsync(
+    public async Task<MilvusCalDistanceResult> CalDistanceAsync(
         MilvusVectors leftVectors, 
         MilvusVectors rightVectors, 
         MilvusMetricType milvusMetricType, 
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Cal Diatance: {0}", leftVectors.ToString());
+        this._log.LogDebug("Cal distance: {0}", leftVectors.ToString());
 
         Grpc.CalcDistanceRequest request = CalcDistanceRequest
             .Create(milvusMetricType)
@@ -136,7 +136,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Cal Diatance failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            this._log.LogError("Cal distance failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -148,18 +148,16 @@ public partial class MilvusGrpcClient
         string collectionName, 
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get persistent segment infos: {0}", collectionName);
+        this._log.LogDebug("Get persistent segment infos failed: {0}", collectionName);
 
-        Grpc.GetPersistentSegmentInfoRequest request = new Grpc.GetPersistentSegmentInfoRequest()
-        {
-            CollectionName = collectionName,
-        };
+        Grpc.GetPersistentSegmentInfoRequest request = GetPersistentSegmentInfoRequest.Create(collectionName)
+            .BuildGrpc();
 
         Grpc.GetPersistentSegmentInfoResponse response = await _grpcClient.GetPersistentSegmentInfoAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get persistent segment infos: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            this._log.LogError("Get persistent segment infos failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -171,7 +169,7 @@ public partial class MilvusGrpcClient
         IList<long> segmentIds, 
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get flush state: {0}", segmentIds.ToString());
+        this._log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
         Verify.True(segmentIds?.Any() == true, "Milvus segment ids cannot be null or empty");
 
         Grpc.GetFlushStateRequest request = new Grpc.GetFlushStateRequest();

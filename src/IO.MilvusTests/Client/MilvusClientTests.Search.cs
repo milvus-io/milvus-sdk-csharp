@@ -60,17 +60,16 @@ public partial class MilvusClientTests
         Assert.True(result.InsertCount == 2000, "Insert data failed");
         Assert.True(result.SuccessIndex.Count == 2000, "Insert data failed");
 
-        await milvusClient.CreateIndexAsync(collectionName, "book_intro","default",MilvusIndexType.IVF_FLAT ,MilvusMetricType.L2, new Dictionary<string,string> { { "nlist","1024"} });
+        await milvusClient.CreateIndexAsync(
+            collectionName, 
+            "book_intro",
+            "default",
+            MilvusIndexType.IVF_FLAT ,
+            MilvusMetricType.L2, 
+            new Dictionary<string,string> { { "nlist","1024"} });
 
-        int indexCount = 0;
-        int count = 1;
-        while (indexCount == 0)
-        {
-            var indexes = await milvusClient.DescribeIndexAsync(collectionName, "book_intro");
-            indexCount = indexes.Count;
-            Thread.Sleep(1000);
-            if (count++ > 5) break;
-        }
+        var indexes = await milvusClient.DescribeIndexAsync(collectionName, "book_intro");
+        Assert.True(indexes.Count > 0, "Create index failed");
 
         await milvusClient.LoadCollectionAsync(collectionName);
 

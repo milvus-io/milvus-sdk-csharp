@@ -1,4 +1,6 @@
-﻿using IO.Milvus.Grpc;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Grpc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -25,8 +27,13 @@ public class MilvusQueryResult
         return new MilvusQueryResult(response.CollectionName, fields);
     }
 
+    internal static MilvusQueryResult From(QueryResponse data)
+    {
+        return new MilvusQueryResult(data.CollectionName, data.FieldsData);
+    }
+
     #region Private ==========================================================================
-    private MilvusQueryResult(string collectionName, List<Field> fields)
+    private MilvusQueryResult(string collectionName, IList<Field> fields)
     {
         CollectionName = collectionName;
         FieldsData = fields;

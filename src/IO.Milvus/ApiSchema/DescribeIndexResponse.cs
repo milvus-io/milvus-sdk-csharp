@@ -36,7 +36,7 @@ internal sealed class IndexDescription
     [JsonPropertyName("index_name")]
     public string IndexName { get; set; }
 
-    [JsonPropertyName("index_name")]
+    [JsonPropertyName("index_id")]
     public long IndexId { get; set; }
 
     [JsonPropertyName("params")]

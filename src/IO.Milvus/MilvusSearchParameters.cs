@@ -298,9 +298,8 @@ public class MilvusSearchParameters:
     /// Instructs server to see insert/delete operations performed before a provided timestamp.
     /// If no such timestamp is specified, the server will wait for the latest operation to finish and search.
     /// </item>
-    /// <item>
-    /// Note: The timestamp is not an absolute timestamp, it is a hybrid value combined by UTC time and internal flags.
-    /// We call it TSO, for more information please refer to: <see href="https://github.com/milvus-io/milvus/blob/master/docs/design_docs/milvus_hybrid_ts_en.md"/>
+    /// <item>Note: The timestamp is not an absolute timestamp, it is a hybrid value combined by UTC time and internal flags.
+    /// We call it TSO, for more information please refer to: <see href="https://github.com/milvus-io/milvus/blob/master/docs/design_docs/20211214-milvus_hybrid_ts.md"/>
     /// Use an operation's TSO to set this parameter, the server will execute search after this operation is finished.
     /// </item>
     /// <item>
@@ -424,8 +423,9 @@ public class MilvusSearchParameters:
             DslType = (int)MilvusDslType.BoolExprV1,
             PartitionNames = this.PartitionNames,
             OutputFields = this.OutputFields,
-            //GuaranteeTimestamp = this.GuaranteeTimestamp,
         };
+
+        request.GuaranteeTimestamp = GetGuaranteeTimestamp(ConsistencyLevel, GuaranteeTimestamp, 0);
 
         PrepareRestTargetVectors(request);
 
@@ -586,7 +586,7 @@ public class MilvusSearchParameters:
 
     private void PrepareRestTargetVectors(SearchRequest request)
     {
-        if (MilvusBinaryVectors != null)
+        if (MilvusFloatVectors != null)
         {
             foreach (var milvusVector in MilvusFloatVectors)
             {

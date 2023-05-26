@@ -17,7 +17,7 @@ public class HostConfig
 
     public const int Port = 19530;
 
-    public const int RestPort = 443;
+    public const int RestPort = 9091;
 
     public const string DefaultTestCollectionName = "test";
 

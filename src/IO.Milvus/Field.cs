@@ -19,7 +19,7 @@ namespace IO.Milvus;
 [JsonDerivedType(typeof(ByteStringField))]
 [JsonDerivedType(typeof(FloatVectorField))]
 [JsonDerivedType(typeof(Field<bool>))]
-[JsonDerivedType(typeof(Field<Int16>))]
+[JsonDerivedType(typeof(Field<short>))]
 [JsonDerivedType(typeof(Field<int>))]
 [JsonDerivedType(typeof(Field<long>))]
 [JsonDerivedType(typeof(Field<float>))]
@@ -35,10 +35,16 @@ public abstract class Field
     public string FieldName { get; private set; }
 
     /// <summary>
-    /// Row count
+    /// Row count.
     /// </summary>
     [JsonIgnore]
     public abstract int RowCount { get; }
+
+    /// <summary>
+    /// Field id.
+    /// </summary>
+    [JsonPropertyName("field_id")]
+    public long FieldId { get; }
 
     /// <summary>
     /// <see cref="MilvusDataType"/>

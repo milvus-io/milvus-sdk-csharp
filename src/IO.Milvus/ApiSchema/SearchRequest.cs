@@ -48,13 +48,13 @@ internal sealed class SearchRequest
     /// Placeholder group
     /// </summary>
     [JsonPropertyName("vectors")]
-    public IList<IList<float>> SearchVectors { get; set; }
+    public IList<List<float>> SearchVectors { get; set; } = new List<List<float>>();
 
     /// <summary>
     /// Search parameters
     /// </summary>
     [JsonPropertyName("search_params")]
-    public IDictionary<string, string> SearchParams { get; set; }
+    public IDictionary<string, string> SearchParams { get; set; } = new Dictionary<string, string> ();
 
     /// <summary>
     /// Travel timestamp

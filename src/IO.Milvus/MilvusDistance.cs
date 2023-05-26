@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Grpc;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Grpc;
 using System.Collections.Generic;
 
 namespace IO.Milvus;
@@ -8,8 +9,14 @@ namespace IO.Milvus;
 /// </summary>
 public class MilvusCalDistanceResult
 {
+    /// <summary>
+    /// Int distance value.
+    /// </summary>
     public IList<int> IntDistance { get; }
 
+    /// <summary>
+    /// Float distance value.
+    /// </summary>
     public IList<float> FloatDistance { get; }
 
     internal static MilvusCalDistanceResult From(Grpc.CalcDistanceResults calcDistanceResults)
@@ -17,11 +24,16 @@ public class MilvusCalDistanceResult
         return new MilvusCalDistanceResult(calcDistanceResults.IntDist, calcDistanceResults.FloatDist);
     }
 
-    #region Private =====================================================================================
-    private MilvusCalDistanceResult(IntArray intDist, FloatArray floatDist)
+    internal static MilvusCalDistanceResult From(CalDistanceResponse data)
     {
-        IntDistance = intDist.Data;
-        FloatDistance = floatDist.Data;
+        return new MilvusCalDistanceResult(null, null);
+    }
+
+    #region Private =======================================================================
+    private MilvusCalDistanceResult(IntArray intDistance, FloatArray floatDistance)
+    {
+        IntDistance = intDistance.Data;
+        FloatDistance = floatDistance.Data;
     }
     #endregion
 }

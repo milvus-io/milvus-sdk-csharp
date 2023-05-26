@@ -35,24 +35,29 @@ public enum MilvusSegmentState
 public class MilvusPersistentSegmentInfo
 {
     /// <summary>
+    /// MilvusPersistentSegmentInfo
+    /// </summary>
+    public MilvusPersistentSegmentInfo(){}
+
+    /// <summary>
     /// Collection id.
     /// </summary>
-    public long CollectionId { get; }
+    public long CollectionId { get; set; }
 
     /// <summary>
     /// Number of rows.
     /// </summary>
-    public long NumRows { get; }
+    public long NumRows { get; set; }
 
     /// <summary>
     /// Partition id.
     /// </summary>
-    public long PartitionId { get; }
+    public long PartitionId { get; set; }
 
     /// <summary>
     /// Segment id.
     /// </summary>
-    public long SegmentId { get; }
+    public long SegmentId { get; set; }
 
     /// <summary>
     /// State
@@ -73,14 +78,13 @@ public class MilvusPersistentSegmentInfo
                 );
         }
     }
-
     #region Private ===========================================================
     private MilvusPersistentSegmentInfo(
-    long collectionID,
-    long partitionID,
-    long segmentID,
-    long numRows,
-    SegmentState state)
+        long collectionID,
+        long partitionID,
+        long segmentID,
+        long numRows,
+        SegmentState state)
     {
         this.CollectionId = collectionID;
         this.PartitionId = partitionID;
