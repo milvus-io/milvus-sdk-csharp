@@ -51,7 +51,7 @@ public partial class MilvusGrpcClient
             .BuildGrpc();
 
         Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
-
+        
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             this._log.LogError("Describe collection failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
@@ -200,6 +200,55 @@ public partial class MilvusGrpcClient
         }
 
         return ToCollections(response).ToList();
+    }
+
+    ///<inheritdoc/>
+    public async Task<long> GetLoadingProgressAsync(
+       string collectionName,
+       IList<string> partitionNames,
+       CancellationToken cancellationToken)
+    {
+        this._log.LogDebug("Get loading progress for collection: {0}", collectionName);
+
+        Grpc.GetLoadingProgressRequest request = GetLoadingProgressRequest
+            .Create(collectionName)
+            .WithPartitionNames(partitionNames)
+            .BuildGrpc();
+        
+        Grpc.GetLoadingProgressResponse response = await _grpcClient.GetLoadingProgressAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get loading progress failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return response.Progress;
+    }
+
+    ///<inheritdoc/>
+    public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
+        string collectionName, 
+        string partitionName, 
+        CancellationToken cancellationToken = default)
+    {
+        this._log.LogDebug("Get partition statistics: {0}", collectionName);
+
+        Grpc.GetPartitionStatisticsRequest request = GetPartitionStatisticsRequest
+            .Create(collectionName,partitionName)
+            .BuildGrpc();
+
+        Grpc.GetPartitionStatisticsResponse response = await _grpcClient.GetPartitionStatisticsAsync(
+            request, 
+            _callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get partition statistics failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return response.Stats.ToDictionary(_ => _.Key, _ => _.Value);
     }
     #endregion
 

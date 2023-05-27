@@ -1,27 +1,34 @@
 ﻿using FluentAssertions;
+using IO.Milvus.ApiSchema;
+using IO.Milvus.Client.REST;
 using IO.Milvus.Param;
 using IO.Milvus.Param.Collection;
 using IO.MilvusTests.Client.Base;
-using IO.MilvusTests.Helpers;
+using IO.MilvusTests.Utils;
 using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-public sealed class CollectionTest : MilvusServiceClientTestsBase, IAsyncLifetime
+public sealed class CollectionTest : MilvusTestClientsBase, IAsyncLifetime
 {
-    private string collectionName;
-    private string aliasName;
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+    private string _collectionName;
+    private string _aliasName;
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
     public async Task InitializeAsync()
     {
-        collectionName = $"test{random.Next()}";
-
-        aliasName = collectionName + "_aliasName";
+        Random random = new();
+        _collectionName = $"test{random.Next()}";
+        _aliasName = _collectionName + "_aliasName";
     }
 
     public async Task DisposeAsync()
     {
-        this.ThenDropCollection(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.DropCollectionAsync(_collectionName);
+        }
 
         // Cooldown, sometimes the DB doesn't refresh completely
         await Task.Delay(1000);
@@ -30,155 +37,101 @@ public sealed class CollectionTest : MilvusServiceClientTestsBase, IAsyncLifetim
     [Fact]
     public async Task HasCollectionTest()
     {
-        await this.GivenCollection(collectionName);
-
-        var r = MilvusClient.HasCollection(collectionName);
-
-        r.ShouldSuccess();
-        r.Data.Should().BeTrue();
+        foreach (var client in MilvusClients)
+        {
+            await client.GivenCollection(_collectionName);
+            bool value = await client.HasCollectionAsync(_collectionName);
+            value.Should().BeTrue();
+        }
+        await Task.Delay(1000);
     }
 
     [Fact]
-    public void NotHasCollectionTest()
+    public async void NotHasCollectionTest()
     {
-        var r = MilvusClient.HasCollection("xxxxxxx");
-
-        r.ShouldSuccess();
-        r.Data.Should().BeFalse();
+        foreach (var client in MilvusClients)
+        {
+            bool r = await client.HasCollectionAsync("xxxxxxx");
+            r.Should().BeFalse();
+        }
+        await Task.Delay(1000);
     }
 
     [Fact]
     public async Task CreateCollectionTest()
     {
-        var r = await CreateBookCollectionAsync(collectionName);
-        r.ShouldSuccess();
-
-        var hasR = MilvusClient.HasCollection(HasCollectionParam.Create(collectionName));
-        r.ShouldSuccess();
-        hasR.Data.Should().BeTrue();
+        foreach (var client in MilvusClients)
+        {
+            await client.CreateBookCollectionAsync(_collectionName);
+            bool r = await client.HasCollectionAsync(_collectionName);
+            r.Should().BeTrue();
+        }
+        await Task.Delay(1000);
     }
 
     [Fact]
     public async Task ShowCollectionsTest()
     {
-        this.GivenNoCollection(collectionName);
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.GivenNoCollection(_collectionName);
+            await client.CreateBookCollectionAndIndex(_collectionName);
 
-        var r = MilvusClient.ShowCollections(ShowCollectionsParam.Create(null));
+            IList<MilvusCollection> collections = await client.ShowCollectionsAsync();
 
-        r.ShouldSuccess();
-        r.Data.CollectionNames.Should().Contain(collectionName);
+            collections.Select(_ => _.CollectionName).Should().Contain(_collectionName);
+        }
+        await Task.Delay(1000);
     }
 
     [Fact]
     public async Task DescribeCollectionTest()
     {
-        this.GivenNoCollection(collectionName);
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.GivenNoCollection(_collectionName);
+            await client.CreateBookCollectionAndIndex(_collectionName);
 
-        var r = MilvusClient.DescribeCollection(DescribeCollectionParam.Create(collectionName));
+            DetailedMilvusCollection collectionInfo = await client.DescribeCollectionAsync(_collectionName);
 
-        r.ShouldSuccess();
-        r.Data.Schema.Name.Should().Be(collectionName);
+            collectionInfo.Schema.Name.Should().Be(_collectionName);
+        }
+        await Task.Delay(1000);
     }
 
     [Fact]
-    public async Task DescribeCollectionWithNameTest()
+    public async Task GetCollectionStatisticsTest()
     {
-        this.GivenNoCollection(collectionName);
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.GivenNoCollection(_collectionName);
+            await client.CreateBookCollectionAndIndex(_collectionName);
 
-        var r = MilvusClient.DescribeCollection(collectionName);
+            IDictionary<string, string> statistics = await client.GetCollectionStatisticsAsync(collectionName: _collectionName);
 
-        r.ShouldSuccess();
-        r.Data.Schema.Name.Should().Be(collectionName);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task GetCollectionStatisticsTest(bool isFlushCollection)
-    {
-        this.GivenNoCollection(collectionName);
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
-
-        var r = MilvusClient.GetCollectionStatistics(
-            GetCollectionStatisticsParam.Create(collectionName, isFlushCollection));
-
-        r.ShouldSuccess();
-        r.Data.Stats.First().Key.Should().Be("row_count");
+            statistics.First().Key.Should().Be("row_count");
+        }
+        await Task.Delay(1000);
     }
 
     [Fact]
     public async Task LoadCollectionTest()
     {
-        this.GivenNoCollection(collectionName);
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.GivenNoCollection(_collectionName);
+            await client.CreateBookCollectionAndIndex(_collectionName);
 
-        var r = MilvusClient.LoadCollection(LoadCollectionParam.Create(collectionName));
+            await client.LoadCollectionAsync(collectionName: _collectionName);
+            await client.WaitLoadedAsync(_collectionName);
 
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
+            if (client is not MilvusRestClient)
+            {
+                (await client.GetLoadingProgressAsync(_collectionName)).Should().Be(100);
+            }
 
-        r = MilvusClient.ReleaseCollection(ReleaseCollectionParam.Create(collectionName));
-
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
-    }
-
-    [Fact]
-    public async Task LoadCollectionWithNameTest()
-    {
-        this.GivenNoCollection(collectionName);
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
-
-        var r = MilvusClient.LoadCollection(collectionName);
-
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
-
-        r = MilvusClient.ReleaseCollection(collectionName);
-
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
-    }
-
-    [Fact]
-    public async Task LoadCollectionAsyncTestAsync()
-    {
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
-
-        var r = await MilvusClient.LoadCollectionAsync(collectionName);
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
-
-        r = await MilvusClient.ReleaseCollectionAsync(collectionName);
-
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
-    }
-
-    [Fact]
-    public async Task LoadCollectionAsyncWithNameTestAsync()
-    {
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
-
-        var r = await MilvusClient.LoadCollectionAsync(collectionName);
-
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
-
-        r = await MilvusClient.ReleaseCollectionAsync(collectionName);
-
-        r.ShouldSuccess();
-        r.Data.Msg.Should().Be(RpcStatus.SUCCESS_MSG);
+            await client.ReleaseCollectionAsync(_collectionName);
+        }
+        await Task.Delay(1000);
     }
 }

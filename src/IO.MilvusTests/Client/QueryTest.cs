@@ -1,33 +1,30 @@
 ﻿using FluentAssertions;
-using IO.Milvus.Param.Dml;
+using IO.Milvus;
 using IO.MilvusTests.Client.Base;
-using IO.MilvusTests.Helpers;
+using IO.MilvusTests.Utils;
 using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-public class QueryTest : MilvusServiceClientTestsBase, IAsyncLifetime
+public class QueryTest : MilvusTestClientsBase, IAsyncLifetime
 {
-    private string collectionName;
-    private string aliasName;
-    private string partitionName;
+    private string _collectionName;
+    private string _partitionName;
 
 
     public async Task InitializeAsync()
     {
-        collectionName = $"test{random.Next()}";
-
-        aliasName = collectionName + "_aliasName";
-        partitionName = collectionName + "_partitionName";
-
-        await this.GivenCollection(collectionName);
-        this.GivenBookIndex(collectionName);
-        this.GivenPartition(collectionName, partitionName);
+        Random random = new();
+        _collectionName = $"test{random.Next()}";
+        _partitionName = _collectionName + "_partitionName";
     }
 
     public async Task DisposeAsync()
     {
-        this.ThenDropCollection(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.ThenDropCollectionAsync(_collectionName);
+        }
 
         // Cooldown, sometimes the DB doesn't refresh completely
         await Task.Delay(1000);
@@ -36,19 +33,25 @@ public class QueryTest : MilvusServiceClientTestsBase, IAsyncLifetime
     [Theory]
     [InlineData("book_id > 0 && book_id < 2000", 1999)]
     [InlineData("book_id in [1, 2, 3]", 3)]
-    public async Task QueryDataTestWithDefaultPartition(string expr, int records)
+    public async Task QueryDataTest(string expr, int records)
     {
-        InsertDataToBookCollection(collectionName, "_default");
-        await this.GivenLoadCollectionAsync(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            await client.GivenBookIndex(_collectionName);
+            await client.WaitLoadedAsync(_collectionName);
 
-        var r = MilvusClient.Query(QueryParam.Create(
-            collectionName,
-            new List<string> { "_default" },
-            outFields: new List<string>() { "book_id", "book_name" },
-            expr: expr));
+            MilvusQueryResult result = await client.QueryAsync(
+                _collectionName,
+                expr: expr,
+                new[] { "book_id", "book_name" });
 
-        r.Assert();
-        r.Data.FieldsData[0].Scalars.LongData.Data.Count.Should().Be(records);
+            var field = result.FieldsData[0];
+
+            var bookIdResult = (result.FieldsData[0] as Field<long>);
+
+            bookIdResult.Should().NotBeNull();
+            bookIdResult.Data.Count.Should().Be(records);
+        }
     }
 
     [Theory]
@@ -56,16 +59,26 @@ public class QueryTest : MilvusServiceClientTestsBase, IAsyncLifetime
     [InlineData("book_id in [1, 2, 3]", 3)]
     public async Task QueryDataTestWithCustomPartition(string expr, int records)
     {
-        InsertDataToBookCollection(collectionName, partitionName);
-        await this.GivenLoadCollectionAsync(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            if (client.IsZillizCloud())
+            {
+                return;
+            }
 
-        var r = MilvusClient.Query(QueryParam.Create(
-            collectionName,
-            new List<string> { partitionName },
-            outFields: new List<string>() { "book_id", "book_name" },
-            expr: expr));
+            await client.GivenBookIndex(_collectionName, _partitionName);
+            await client.WaitLoadedAsync(_collectionName);
 
-        r.Assert();
-        r.Data.FieldsData[0].Scalars.LongData.Data.Count.Should().Be(records);
+            MilvusQueryResult result = await client.QueryAsync(
+                _collectionName,
+                expr: expr,
+                new[] { "book_id", "book_name" },
+                partitionNames: new[] { _partitionName });
+
+            var bookIdResult = (result.FieldsData[0] as Field<long>);
+
+            bookIdResult.Should().NotBeNull();
+            bookIdResult.Data.Count.Should().Be(records);
+        }
     }
 }

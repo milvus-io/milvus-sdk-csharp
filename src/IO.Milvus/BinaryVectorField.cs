@@ -1,4 +1,6 @@
 ﻿using Google.Protobuf;
+using IO.Milvus.ApiSchema;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -9,13 +11,15 @@ namespace IO.Milvus;
 /// </summary>
 public class BinaryVectorField : Field<byte[]>
 {
-    internal BinaryVectorField()
+    /// <summary>
+    /// Construct a binary vector field
+    /// </summary>
+    /// <param name="fieldName"></param>
+    /// <param name="bytes"></param>
+    public BinaryVectorField(string fieldName, IList<byte[]> bytes)
+        : base(fieldName, bytes, MilvusDataType.BinaryVector)
     {
-        DataType = ApiSchema.MilvusDataType.BinaryVector;
     }
-
-    ///<inheritdoc/>
-    public override int RowCount => Data?.Count ?? 0;
 
     ///<inheritdoc/>
     public override Grpc.FieldData ToGrpcFieldData()

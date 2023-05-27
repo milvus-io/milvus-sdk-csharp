@@ -95,6 +95,37 @@ public sealed class FieldType
     }
 
     /// <summary>
+    /// Create a field type.
+    /// </summary>
+    /// <param name="name">name</param>
+    /// <param name="dataType"><see cref="MilvusDataType"/></param>
+    /// <param name="isPrimaryKey"></param>
+    /// <param name="autoId">Can not assign primary field data when auto id set as true.</param>
+    public static FieldType Create(
+        string name,
+        MilvusDataType dataType,
+        bool isPrimaryKey = false,
+        bool autoId = false)
+    {
+        return new FieldType(name,dataType,isPrimaryKey,autoId);
+    }
+
+    /// <summary>
+    /// Create a field type.
+    /// </summary>
+    /// <param name="name">name</param>
+    /// <param name="isPrimaryKey"></param>
+    /// <param name="autoId">Can not assign primary field data when auto id set as true.</param>
+    public static FieldType Create<TData>(
+        string name,
+        bool isPrimaryKey = false,
+        bool autoId = false)
+    {
+        MilvusDataType dataType = Field.EnsureDataType<TData>();
+        return new FieldType(name,dataType,isPrimaryKey,autoId);
+    }
+
+    /// <summary>
     /// Create a varchar.
     /// </summary>
     /// <param name="name">Name.</param>
@@ -104,8 +135,8 @@ public sealed class FieldType
     /// <returns></returns>
     public static FieldType CreateVarchar(
         string name,
-        bool isPrimaryKey, 
         long maxLength,
+        bool isPrimaryKey = false, 
         bool autoId = false)
     {
         var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId);

@@ -24,7 +24,7 @@ public partial class MilvusClientTests
             collectionName,
             new[] {
                 new FieldType("book",MilvusDataType.Int64,true),
-                FieldType.CreateVarchar("book_intro",false,100L,false),
+                FieldType.CreateVarchar("book_intro",100L),
             }
         );
 
@@ -32,7 +32,7 @@ public partial class MilvusClientTests
         Assert.True(exist, "Create collection failed");
 
         MilvusMutationResult result = await milvusClient.InsertAsync(collectionName,
-            new[]
+            new Field[]
             {
                 Field.Create<long>("book",new []{10L,10L,10L}),
                 Field.CreateVarChar("book_intro",new []{"book1","book2","book3"})
@@ -40,5 +40,8 @@ public partial class MilvusClientTests
         
         Assert.True(result.InsertCount == 3, "Insert data failed");
         Assert.True(result.SuccessIndex.Count == 3, "Insert data failed");
+
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
     }
 }

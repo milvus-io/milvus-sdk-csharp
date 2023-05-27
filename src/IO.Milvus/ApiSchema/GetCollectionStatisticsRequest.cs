@@ -34,7 +34,7 @@ internal sealed class GetCollectionStatisticsRequest:
 
         return new Grpc.GetCollectionStatisticsRequest()
         {
-            CollectionName = CollectionName,
+            CollectionName = CollectionName,            
         };
     }
 

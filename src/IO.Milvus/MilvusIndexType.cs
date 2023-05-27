@@ -5,6 +5,8 @@
 /// </summary>
 public enum MilvusIndexType
 {
+    AUTOINDEX,
+
     INVALID,
 
     FLAT,

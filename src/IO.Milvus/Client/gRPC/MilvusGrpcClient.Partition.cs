@@ -58,7 +58,7 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName, 
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Show {0} collection partitions", collectionName);
 

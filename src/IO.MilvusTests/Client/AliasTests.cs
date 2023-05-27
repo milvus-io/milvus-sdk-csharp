@@ -1,6 +1,5 @@
-﻿using IO.Milvus.Param.Alias;
-using IO.MilvusTests.Client.Base;
-using IO.MilvusTests.Helpers;
+﻿using IO.MilvusTests.Client.Base;
+using IO.MilvusTests.Utils;
 using Xunit;
 
 namespace IO.MilvusTests.Client;
@@ -8,60 +7,88 @@ namespace IO.MilvusTests.Client;
 /// <summary>
 /// unit test about alias
 /// the tests must be executed in order of alphabet. A -> B -> C
-///
 /// </summary>
 /// <remarks>
 /// <see cref="https://milvus.io/docs/v2.0.x/collection_alias.md"/>
 /// </remarks>
-public sealed class AliasTests : MilvusServiceClientTestsBase, IAsyncLifetime
+public sealed class AliasTests : MilvusTestClientsBase, IAsyncLifetime
 {
-    private string collectionName;
-    private string aliasName;
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+    private string _collectionName;
+    private string _aliasName;
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
     public async Task InitializeAsync()
     {
-        collectionName = $"test{random.Next()}";
+        Random random = new();
+        _collectionName = $"test{random.Next()}";
 
-        aliasName = collectionName + "_aliasName";
+        _aliasName = _collectionName + "_aliasName";
 
-        await CreateBookCollectionAsync(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            if (client.IsZillizCloud())
+            {
+                continue;
+            }
+            await client.CreateBookCollectionAsync(_collectionName);
+        }
     }
 
     public async Task DisposeAsync()
     {
-        DropAlias(collectionName, aliasName);
-
-        this.ThenDropCollection(collectionName);
+        foreach (var client in MilvusClients)
+        {
+            if (client.IsZillizCloud())
+            {
+                continue;
+            }
+            await client.DropAliasAsync(_aliasName);
+            await client.DropCollectionAsync(_collectionName);
+        }
 
         // Cooldown, sometimes the DB doesn't refresh completely
         await Task.Delay(1000);
     }
 
     [Fact]
-    public void ACreateAliasTest()
+    public async Task ACreateAliasTest()
     {
-        var r = CreateAlias(collectionName, aliasName);
-
-        r.AssertRpcStatus();
+        foreach (var client in MilvusClients)
+        {
+            if (client.IsZillizCloud())
+            {
+                continue;
+            }
+            await client.CreateAliasAsync(_collectionName,_aliasName);
+        }
     }
 
     [Fact]
-    public void BAlterAliasTest()
+    public async Task BAlterAliasTest()
     {
-        CreateAlias(collectionName, aliasName);
-
         //TODO: alter to another collection,not self.
-        var param = AlterAliasParam.Create(collectionName, aliasName);
-        var r = MilvusClient.AlterAlias(param);
-        r.AssertRpcStatus();
+        foreach (var client in MilvusClients)
+        {
+            if (client.IsZillizCloud())
+            {
+                continue;
+            }
+            await client.CreateAliasAsync(_collectionName, _aliasName);
+            await client.AlterAliasAsync(_collectionName, _aliasName);
+        }
     }
 
     [Fact]
-    public void CDropAliasTest()
+    public async Task CDropAliasTest()
     {
-        MilvusClient.CreateAlias(CreateAliasParam.Create(collectionName, aliasName));
-
-        var r = DropAlias(collectionName, aliasName);
-        r.AssertRpcStatus();
+        foreach (var client in MilvusClients)
+        {
+            if (client.IsZillizCloud())
+            {
+                continue;
+            }
+            await client.DropAliasAsync(_aliasName);
+        }
     }
 }

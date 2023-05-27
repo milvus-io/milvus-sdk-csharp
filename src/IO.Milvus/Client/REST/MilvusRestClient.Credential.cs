@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using IO.Milvus.ApiSchema;
 using System.Text.Json;
+using System.Text;
+using System;
 
 namespace IO.Milvus.Client.REST;
 
@@ -46,7 +48,7 @@ public partial class MilvusRestClient
         this._log.LogDebug("Update credential {0}", username);
 
         using HttpRequestMessage request = UpdateCredentialRequest
-            .Create(username,oldPassword,newPassword)
+            .Create(username,Base64Encode(oldPassword),Base64Encode(newPassword))
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -73,7 +75,7 @@ public partial class MilvusRestClient
         this._log.LogDebug("Create credential {0}", username);
 
         using HttpRequestMessage request = CreateCredentialRequest
-            .Create(username, password)
+            .Create(username, Base64Encode(password))
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -121,4 +123,11 @@ public partial class MilvusRestClient
 
         return data.Usernames;
     }
+
+    #region Private =================================================================================================
+    private string Base64Encode(string input)
+    {
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+    }
+    #endregion
 }

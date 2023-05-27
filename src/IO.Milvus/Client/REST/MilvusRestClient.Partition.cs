@@ -73,7 +73,7 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Show {0} partitions", collectionName);
 

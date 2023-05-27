@@ -54,5 +54,8 @@ public partial class MilvusClientTests
         milvusCollection = await milvusClient.DescribeCollectionAsync(collectionName);
         Assert.NotNull(milvusCollection);
         Assert.False(milvusCollection.Aliases?.Any(p => p == alias) == true, $"Drop {alias} failed");
+
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
     }
 }

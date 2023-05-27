@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Grpc;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Grpc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,9 +11,21 @@ namespace IO.Milvus;
 public class FloatVectorField:Field<List<float>>
 {
     /// <summary>
+    /// Create a float vector field.
+    /// </summary>
+    /// <param name="fieldName">Field name</param>
+    /// <param name="data">data</param>
+    public FloatVectorField(
+        string fieldName, 
+        IList<List<float>> data) : 
+        base(fieldName, data, MilvusDataType.FloatVector)
+    {
+    }
+
+    /// <summary>
     /// Row count.
     /// </summary>
-    public override int RowCount => Data?.Count ?? 0;
+    public override long RowCount => Data?.Count ?? 0;
 
     /// <summary>
     /// Convert to grpc field data

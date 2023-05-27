@@ -4,6 +4,9 @@ using System.Threading;
 using Microsoft.Extensions.Logging;
 using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
+using System.Text;
+using System.Xml.Linq;
+using System;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -39,7 +42,7 @@ public partial class MilvusGrpcClient
         this._log.LogDebug("Update credential {0}, {1}", username);
 
         Grpc.UpdateCredentialRequest request = UpdateCredentialRequest
-            .Create(username,oldPassword,newPassword)
+            .Create(username,oldPassword, Base64Encode(newPassword))
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.UpdateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -60,7 +63,7 @@ public partial class MilvusGrpcClient
         this._log.LogDebug("Create credential {0}, {1}", username);
 
         Grpc.CreateCredentialRequest request = CreateCredentialRequest
-            .Create(username, password)
+            .Create(username, Base64Encode(password))
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.CreateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -90,4 +93,11 @@ public partial class MilvusGrpcClient
 
         return response.Usernames;
     }
+
+    #region Private ====================================================================================
+    private string Base64Encode(string input)
+    {
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+    }
+    #endregion
 }

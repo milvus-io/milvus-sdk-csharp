@@ -1,8 +1,11 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -47,7 +50,23 @@ internal sealed class QueryRequest:
     /// Travel timestamp
     /// </summary>
     [JsonPropertyName("travel_timestamp")]
-    public int TravelTimestamp { get; set; }
+    public long TravelTimestamp { get; set; }
+
+    [JsonPropertyName("graceful_time")]
+    public long GracefulTime { get; private set; }
+
+    [JsonPropertyName("consistency_level")]
+    public MilvusConsistencyLevel ConsistencyLevel { get; private set; }
+
+    [JsonIgnore]
+    public long Offset { get; private set; }
+
+    [JsonIgnore]
+    public long Limit { get; private set; }
+
+    [JsonPropertyName("query_params")]
+    [JsonConverter(typeof(MilvusDictionaryConverter))]
+    public IDictionary<string,string> QueryParams = new Dictionary<string, string>();
 
     public static QueryRequest Create(string collectionName,string expr)
     {
@@ -63,7 +82,7 @@ internal sealed class QueryRequest:
             CollectionName = this.CollectionName,
             Expr = this.Expr,
             GuaranteeTimestamp = (ulong)this.GuaranteeTimestamp,
-            TravelTimestamp = (ulong)this.TravelTimestamp,            
+            TravelTimestamp = (ulong)this.TravelTimestamp,                        
         };
 
         request.OutputFields.AddRange(OutFields);
@@ -72,12 +91,38 @@ internal sealed class QueryRequest:
             request.PartitionNames.AddRange(PartitionNames);
         }
 
+        if (Offset > 0)
+        {
+            request.QueryParams.Add(new Grpc.KeyValuePair()
+            {
+                Key = "offset",
+                Value = Offset.ToString()
+            });
+        }
+        if (Limit > 0)
+        {
+            request.QueryParams.Add(new Grpc.KeyValuePair()
+            {
+                Key = "limit",
+                Value = Limit.ToString()
+            });
+        }
+
         return request;
     }
 
     public HttpRequestMessage BuildRest()
     {
         this.Validate();
+
+        if (Offset > 0)
+        {
+            QueryParams.Add("offset",Offset.ToString());
+        }
+        if (Limit > 0)
+        {
+            QueryParams.Add("limit",Limit.ToString());
+        }
 
         var request = HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/query",
@@ -91,11 +136,27 @@ internal sealed class QueryRequest:
         Verify.ArgNotNullOrEmpty(this.CollectionName, "Milvus collection name cannot be null or empty");
         Verify.True(this.OutFields?.Any() == true, "OutputFields cannot be null or empty");
         Verify.ArgNotNullOrEmpty(this.Expr, "Expr cannot be null or empty");
+        Verify.True(this.GuaranteeTimestamp >= 0, "GuaranteeTimestamp must be greater than 0");
+        Verify.True(this.TravelTimestamp >= 0, "TravelTimestamp must be greater than 0");
+        Verify.True(this.Offset >= 0, "Offset must be greater than 0");
+        Verify.True(this.Limit >= 0, "Limit must be greater than 0");
     }
 
     internal QueryRequest WithOutputFields(IList<string> outputFields)
     {
         this.OutFields = outputFields;
+        return this;
+    }
+
+    internal QueryRequest WithOffset(long offset)
+    {
+        this.Offset = offset;
+        return this;
+    }
+
+    internal QueryRequest WithLimit(long limit)
+    {
+        this.Limit = limit;
         return this;
     }
 
@@ -108,6 +169,24 @@ internal sealed class QueryRequest:
     internal QueryRequest WithGuaranteeTimestamp(long guarantee_timestamp)
     {
         GuaranteeTimestamp = guarantee_timestamp;
+        return this;
+    }
+
+    internal QueryRequest WithGracefulTimestamp(long gracefulTime)
+    {
+        this.GracefulTime = gracefulTime;
+        return this;
+    }
+
+    internal QueryRequest WithTravelTimestamp(long travelTimestamp)
+    {
+        TravelTimestamp = (int)travelTimestamp;
+        return this;
+    }
+
+    internal QueryRequest WithConsistencyLevel(MilvusConsistencyLevel consistencyLevel)
+    {
+        this.ConsistencyLevel = consistencyLevel;
         return this;
     }
 

@@ -23,7 +23,7 @@ public partial class MilvusGrpcClient
             .WithTimetracel(timetravel)
             .BuildGrpc();
 
-        Grpc.ManualCompactionResponse response = await _grpcClient.ManualCompactionAsync(request);
+        Grpc.ManualCompactionResponse response = await _grpcClient.ManualCompactionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -45,7 +45,7 @@ public partial class MilvusGrpcClient
             .Create(compactionId)
             .BuildGrpc();
 
-        Grpc.GetCompactionStateResponse response = await _grpcClient.GetCompactionStateAsync(request);
+        Grpc.GetCompactionStateResponse response = await _grpcClient.GetCompactionStateAsync(request,_callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -67,7 +67,7 @@ public partial class MilvusGrpcClient
             .Create(compactionId)
             .BuildGrpc();
 
-        Grpc.GetCompactionPlansResponse response = await _grpcClient.GetCompactionStateWithPlansAsync(request);
+        Grpc.GetCompactionPlansResponse response = await _grpcClient.GetCompactionStateWithPlansAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

@@ -14,11 +14,16 @@ public partial class MilvusClientTests
             return;
         }
 
-        await milvusClient.CreateCredentialAsync("a", "b");
-
         IList<string> users = await milvusClient.ListCredUsersAsync();
+
+        await milvusClient.CreateCredentialAsync("abb1bW", "bbbB1.,");
+
+        users = await milvusClient.ListCredUsersAsync();
 
         Assert.NotNull(users);
         Assert.True(users.Any());
+
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
     }
 }

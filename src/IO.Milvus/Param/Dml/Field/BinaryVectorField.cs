@@ -5,22 +5,34 @@ using System.Linq;
 
 namespace IO.Milvus.Param.Dml
 {
+    /// <summary>
+    /// Binary vector field.
+    /// </summary>
     public class BinaryVectorField : Field
     {
-        public List<List<float>> Datas { get; set; }
+        public BinaryVectorField(string name, List<List<float>> data)
+        {
+            FieldName = name;
+            Data = data;
+        }
 
-        public override int RowCount => Datas?.Count ?? 0;
+        /// <summary>
+        /// Float vector data.
+        /// </summary>
+        public List<List<float>> Data { get; set; }
+
+        public override int RowCount => Data?.Count ?? 0;
 
         public override FieldData ToGrpcFieldData()
         {
             var floatArray = new FloatArray();
 
-            var count = Datas.First().Count;
-            if (!Datas.All(p =>p.Count == count))
+            var count = Data.First().Count;
+            if (!Data.All(p =>p.Count == count))
             {
                 throw new ParamException("Row count of fields must be equal");
             }
-            foreach (var data in Datas)
+            foreach (var data in Data)
             {
                 floatArray.Data.AddRange(data);
             }

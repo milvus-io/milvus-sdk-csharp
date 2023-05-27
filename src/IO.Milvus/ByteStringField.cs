@@ -11,9 +11,14 @@ public class ByteStringField : Field
     /// <summary>
     /// Construct a ByteString field
     /// </summary>
-    public ByteStringField()
+    public ByteStringField(
+        string fieldName,
+        ByteString byteString,
+        long dimension):
+        base(fieldName,MilvusDataType.BinaryVector)
     {
         DataType = MilvusDataType.BinaryVector;
+        RowCount = dimension;
     }
 
     /// <summary>
@@ -22,7 +27,7 @@ public class ByteStringField : Field
     public ByteString ByteString { get; set; }
 
     ///<inheritdoc/>
-    public override int RowCount => 0;
+    public override long RowCount { get; protected set; }
 
     ///<inheritdoc/>
     public override Grpc.FieldData ToGrpcFieldData()
@@ -34,6 +39,7 @@ public class ByteStringField : Field
             Vectors = new Grpc.VectorField()
             {
                 BinaryVector = ByteString,
+                Dim = RowCount,
             }
         };
     }

@@ -36,7 +36,7 @@ internal class InsertRequest:
     /// Number of rows
     /// </summary>
     [JsonPropertyName("num_rows")]
-    public int NumRows { get; set; }
+    public long NumRows { get; set; }
 
     public static InsertRequest Create(string collectionName)
     {

@@ -18,6 +18,7 @@ public partial class MilvusClientTests
         if (collectionExist)
         {
             await milvusClient.DropCollectionAsync(collectionName);
+            await Task.Delay(100);//avaoid drop collection too frequently, cause error.
         }
 
         await milvusClient.CreateCollectionAsync(
@@ -27,7 +28,7 @@ public partial class MilvusClientTests
             );
 
         IList<MilvusCollection> collections = await milvusClient.ShowCollectionsAsync();
-        Assert.Contains(collections, p => p.Name == collectionName);
+        Assert.Contains(collections, p => p.CollectionName == collectionName);
 
         IDictionary<string,string> statistics  = await milvusClient.GetCollectionStatisticsAsync(collectionName);
         Assert.True(statistics.Count == 1);
@@ -39,5 +40,8 @@ public partial class MilvusClientTests
         Assert.True(collectionExist);
 
         await milvusClient.DropCollectionAsync(collectionName);
+
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
     }
 }

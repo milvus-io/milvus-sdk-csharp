@@ -1,5 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
+using IO.Milvus.Param;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -188,11 +189,15 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<MilvusQueryResult> QueryAsync(
-        string collectionName, 
+        string collectionName,
         string expr,
-        IList<string> outputFields, 
-        IList<string> partitionNames = null, 
-        long guaranteeTimestamp = 0,
+        IList<string> outputFields,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
+        IList<string> partitionNames = null,
+        long travelTimestamp = 0,
+        long guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
+        long offset = 0,
+        long limit = 0,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Query: {0}", collectionName);
@@ -200,7 +205,9 @@ public partial class MilvusGrpcClient
         Grpc.QueryRequest request = QueryRequest.Create(collectionName, expr)
             .WithOutputFields(outputFields)
             .WithPartitionNames(partitionNames)
+            .WithConsistencyLevel(consistencyLevel)
             .WithGuaranteeTimestamp(guaranteeTimestamp)
+            .WithTravelTimestamp(travelTimestamp)
             .BuildGrpc();
 
         Grpc.QueryResults response = await _grpcClient.QueryAsync(request, _callOptions.WithCancellationToken(cancellationToken));

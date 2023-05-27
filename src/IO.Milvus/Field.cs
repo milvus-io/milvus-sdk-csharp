@@ -7,6 +7,7 @@ using System.Linq;
 using IO.Milvus.ApiSchema;
 using System.Text.Json.Serialization;
 using IO.Milvus.Diagnostics;
+using System.Data;
 
 namespace IO.Milvus;
 
@@ -27,6 +28,17 @@ namespace IO.Milvus;
 [JsonDerivedType(typeof(Field<string>))]
 public abstract class Field
 {
+    /// <summary>
+    /// Construct a field.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="dataType">Field data type.</param>
+    protected Field(string fieldName,MilvusDataType dataType)
+    {
+        this.FieldName = fieldName;
+        this.DataType = dataType;
+    }
+
     #region Properties
     /// <summary>
     /// Field name
@@ -38,7 +50,7 @@ public abstract class Field
     /// Row count.
     /// </summary>
     [JsonIgnore]
-    public abstract int RowCount { get; }
+    public abstract long RowCount { get; protected set; }
 
     /// <summary>
     /// Field id.
@@ -51,132 +63,31 @@ public abstract class Field
     /// </summary>
     [JsonPropertyName("type")]
     public MilvusDataType DataType { get; protected set; }
+    #endregion
 
+    /// <summary>
+    /// Get string data.
+    /// </summary>
+    /// <returns>string data.</returns>
+    public override string ToString()
+    {
+        return $"{{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(RowCount)}: {RowCount}}}";
+    }
+
+    #region Converter
     /// <summary>
     /// Convert to a grpc generated field.
     /// </summary>
     /// <returns></returns>
     public abstract Grpc.FieldData ToGrpcFieldData();
-    #endregion
 
-    #region Creation
     /// <summary>
-    /// Create a field
+    /// Convert to field from <see cref="Grpc.FieldData"/>.
     /// </summary>
-    /// <typeparam name="TData">Data type</typeparam>
-    /// <param name="fieldName">Field name</param>
-    /// <param name="data">Data in this field</param>
+    /// <param name="fieldData">Field data.</param>
     /// <returns></returns>
-    public static Field Create<TData>(
-        string fieldName,
-        IList<TData> data
-        )
-    {
-        return new Field<TData>()
-        {
-            FieldName = fieldName,
-            Data = data
-        };
-    }
-
-    public static Field CreateVarChar(
-        string fieldName,
-        IList<string> data)
-    {
-        return new Field<string>()
-        {
-            DataType = MilvusDataType.VarChar,
-            FieldName = fieldName,
-            Data = data
-        };
-    }
-
-    /// <summary>
-    /// Create a field from <see cref="byte"/> array.
-    /// </summary>
-    /// <param name="fieldName">Field name</param>
-    /// <param name="bytes">Byte array data</param>
-    /// <returns></returns>
-    public static Field CreateFromBytes(string fieldName, byte[] bytes)
-    {
-        ParamUtils.CheckNullEmptyString(fieldName, nameof(FieldName));
-        var field = new ByteStringField()
-        {
-            FieldName = fieldName,
-            ByteString = ByteString.CopyFrom(bytes)
-        };
-
-        return field;
-    }
-
-    /// <summary>
-    /// Create a binary vectors
-    /// </summary>
-    /// <param name="fieldName"></param>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    public static Field CreateBinaryVectors(string fieldName, List<byte[]> data)
-    {
-        return new BinaryVectorField()
-        {
-            FieldName = fieldName,
-            Data = data,
-        };
-    }
-
-    /// <summary>
-    /// Create a float vector.
-    /// </summary>
-    /// <param name="fieldName">Field name.</param>
-    /// <param name="data">Data</param>
-    /// <returns></returns>
-    public static Field CreateFloatVector(string fieldName, List<List<float>> data)
-    {
-        return new FloatVectorField()
-        {
-            FieldName = fieldName,
-            Data = data
-        };
-    }
-
-    /// <summary>
-    /// Create a field from <see cref="ByteString"/>
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="byteString"><see cref="ByteString"/></param>
-    /// <returns></returns>
-    public static Field CreateFromByteString(string name, ByteString byteString)
-    {
-        ParamUtils.CheckNullEmptyString(name, nameof(FieldName));
-        var field = new ByteStringField()
-        {
-            FieldName = name,
-            ByteString = byteString,
-        };
-
-        return field;
-    }
-
-    /// <summary>
-    /// Create a field from stream
-    /// </summary>
-    /// <param name="fieldName">Field name</param>
-    /// <param name="stream"></param>
-    /// <returns>New created field</returns>
-    public static Field CreateFromStream(string fieldName, Stream stream)
-    {
-        ParamUtils.CheckNullEmptyString(fieldName, nameof(FieldName));
-        var field = new ByteStringField()
-        {
-            FieldName = fieldName,
-            ByteString = ByteString.FromStream(stream)
-        };
-
-        return field;
-    }
-    #endregion
-
-    internal static Field FromGrpcFieldData(Grpc.FieldData fieldData)
+    /// <exception cref="NotSupportedException"></exception>
+    public static Field FromGrpcFieldData(Grpc.FieldData fieldData)
     {
         if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Vectors)
         {
@@ -209,11 +120,11 @@ public abstract class Field
                 using var stream = new MemoryStream(bytes);
                 using var reader = new BinaryReader(stream);
 
-                Byte[] subBytes = reader.ReadBytes(bytes.Length);
+                Byte[] subBytes = reader.ReadBytes(dim);
                 while (subBytes?.Any() == true)
                 {
                     byteArray.Add(subBytes);
-                    subBytes = reader.ReadBytes(bytes.Length);
+                    subBytes = reader.ReadBytes(dim);
                 }
 
                 return Field.CreateBinaryVectors(fieldData.FieldName, byteArray);
@@ -226,14 +137,14 @@ public abstract class Field
         }
         else if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Scalars)
         {
-            var field = fieldData.Scalars.DataCase switch
+            Field field = fieldData.Scalars.DataCase switch
             {
                 Grpc.ScalarField.DataOneofCase.BoolData => Field.Create<bool>(fieldData.FieldName, fieldData.Scalars.BoolData.Data),
                 Grpc.ScalarField.DataOneofCase.FloatData => Field.Create<float>(fieldData.FieldName, fieldData.Scalars.FloatData.Data),
                 Grpc.ScalarField.DataOneofCase.IntData => Field.Create<int>(fieldData.FieldName, fieldData.Scalars.IntData.Data),
                 Grpc.ScalarField.DataOneofCase.LongData => Field.Create<long>(fieldData.FieldName, fieldData.Scalars.LongData.Data),
                 Grpc.ScalarField.DataOneofCase.StringData => Field.CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
-                /*Grpc.ScalarField.DataOneofCase.ArrayData or Grpc.ScalarField.DataOneofCase.BytesData or Grpc.ScalarField.DataOneofCase.JsonData or */Grpc.ScalarField.DataOneofCase.None => throw new NotSupportedException("Array data not support"),
+                _ => throw new NotSupportedException("Array data not support"),
             };
             return field;
         }
@@ -242,6 +153,180 @@ public abstract class Field
             throw new NotSupportedException("Cannot convert None FieldData to Field");
         }
     }
+
+    /// <summary>
+    /// Check data type
+    /// </summary>
+    /// <exception cref="NotSupportedException"></exception>
+    internal static MilvusDataType EnsureDataType<TDataType>()
+    {
+        var type = typeof(TDataType);
+        MilvusDataType dataType = MilvusDataType.Double;
+
+        if (type == typeof(bool))
+        {
+            dataType = MilvusDataType.Bool;
+        }
+        else if (type == typeof(Int16))
+        {
+            dataType = MilvusDataType.Int16;
+        }
+        else if (type == typeof(int) || type == typeof(Int32))
+        {
+            dataType = MilvusDataType.Int32;
+        }
+        else if (type == typeof(Int64) || type == typeof(long))
+        {
+            dataType = MilvusDataType.Int64;
+        }
+        else if (type == typeof(float))
+        {
+            dataType = MilvusDataType.Float;
+        }
+        else if (type == typeof(double))
+        {
+            dataType = MilvusDataType.Double;
+        }
+        else if (type == typeof(string))
+        {
+            dataType = MilvusDataType.VarChar;
+            //dataType = MilvusDataType.String;Not support now.
+        }
+        else if (type == typeof(List<float>) || type == typeof(Grpc.FloatArray))
+        {
+            dataType = MilvusDataType.FloatVector;
+        }
+        else
+        {
+            throw new NotSupportedException($"Not Support DataType:{dataType}");
+        }
+
+        return dataType;
+    }
+    #endregion
+
+    #region Creation
+    /// <summary>
+    /// Create a field
+    /// </summary>
+    /// <typeparam name="TData">
+    /// Data type:
+    /// <list type="bullet">
+    /// <item><see cref="bool"/> : int32</item>
+    /// <item><see cref="short"/> : int8</item>
+    /// <item><see cref="Int16"/> : int8</item>
+    /// <item><see cref="int"/> : int32</item>
+    /// <item><see cref="long"/> : int64</item>
+    /// <item><see cref="float"/> : float</item>
+    /// <item><see cref="double"/> : double</item>
+    /// <item><see cref="string"/> : string</item>
+    /// </list>
+    /// </typeparam>
+    /// <param name="fieldName">Field name</param>
+    /// <param name="data">Data in this field</param>
+    /// <returns></returns>
+    public static Field<TData> Create<TData>(
+        string fieldName,
+        IList<TData> data
+        )
+    {
+        return new Field<TData>(fieldName, data);
+    }
+
+    /// <summary>
+    /// Create a varchar field.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data.</param>
+    /// <returns></returns>
+    public static Field<string> CreateVarChar(
+        string fieldName,
+        IList<string> data)
+    {
+        return new Field<string>(fieldName, data,MilvusDataType.VarChar);
+    }
+
+    /// <summary>
+    /// Create a field from <see cref="byte"/> array.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="bytes">Byte array data.</param>
+    /// <param name="dimension">Dimension of data.</param>
+    /// <returns></returns>
+    public static BinaryVectorField CreateFromBytes(string fieldName, byte[] bytes,long dimension)
+    {
+        Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
+
+        List<byte[]> byteArray = new();
+
+        using var stream = new MemoryStream(bytes);
+        using var reader = new BinaryReader(stream);
+
+        Byte[] subBytes = reader.ReadBytes((int)dimension);
+        while (subBytes?.Any() == true)
+        {
+            byteArray.Add(subBytes);
+            subBytes = reader.ReadBytes((int)dimension);
+        }
+
+        var field = new BinaryVectorField(fieldName, byteArray) ;
+        return field;
+    }
+
+    /// <summary>
+    /// Create a binary vectors
+    /// </summary>
+    /// <param name="fieldName"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static BinaryVectorField CreateBinaryVectors(string fieldName, IList<byte[]> data)
+    {
+        Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
+        var field = new BinaryVectorField(fieldName, data);
+        return field;
+    }
+
+    /// <summary>
+    /// Create a float vector.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data</param>
+    /// <returns></returns>
+    public static FloatVectorField CreateFloatVector(string fieldName, List<List<float>> data)
+    {
+        return new FloatVectorField(fieldName, data);
+    }
+
+    /// <summary>
+    /// Create a field from <see cref="ByteString"/>
+    /// </summary>
+    /// <param name="fieldName"></param>
+    /// <param name="byteString"><see cref="ByteString"/></param>
+    /// <param name="dimension">Dimension of this field.</param>
+    /// <returns></returns>
+    public static ByteStringField CreateFromByteString(string fieldName, ByteString byteString,long dimension)
+    {
+        Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
+        var field = new ByteStringField(fieldName, byteString, dimension);
+
+        return field;
+    }
+
+    /// <summary>
+    /// Create a field from stream
+    /// </summary>
+    /// <param name="fieldName">Field name</param>
+    /// <param name="stream"></param>
+    /// <param name="dimension">Dimension of data</param>
+    /// <returns>New created field</returns>
+    public static Field CreateFromStream(string fieldName, Stream stream,long dimension)
+    {
+        ParamUtils.CheckNullEmptyString(fieldName, nameof(FieldName));
+        var field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
+
+        return field;
+    }
+    #endregion
 }
 
 /// <summary>
@@ -253,9 +338,27 @@ public class Field<TData> : Field
     /// <summary>
     /// Construct a field
     /// </summary>
-    public Field()
+    /// <param name="fieldName"></param>
+    /// <param name="data"></param>
+    public Field(string fieldName, IList<TData> data):
+        base(fieldName,EnsureDataType<TData>())
     {
-        CheckDataType();
+        Data = data;
+    }
+
+    /// <summary>
+    /// Construct a field
+    /// </summary>
+    /// <param name="fieldName"></param>
+    /// <param name="data"></param>
+    /// <param name="milvusDataType">Milvus data type.</param>
+    public Field(
+        string fieldName,
+        IList<TData> data,
+        MilvusDataType milvusDataType) : 
+        base(fieldName, milvusDataType)
+    {
+        Data = data;
     }
 
     /// <summary>
@@ -268,7 +371,14 @@ public class Field<TData> : Field
     /// Row count
     /// </summary>
     [JsonIgnore]
-    public override int RowCount => Data?.Count ?? 0;
+    public override long RowCount
+    {
+        get
+        {
+            return Data?.Count ?? 0;
+        }
+        protected set { }
+    }
 
     ///<inheritdoc/>
     public override Grpc.FieldData ToGrpcFieldData()
@@ -288,7 +398,7 @@ public class Field<TData> : Field
             case MilvusDataType.Bool:
                 {
                     var boolData = new Grpc.BoolArray();
-                    boolData.Data.AddRange(Data as List<bool>);
+                    boolData.Data.AddRange(Data as IEnumerable<bool>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -301,7 +411,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int16:
                 {
                     var intData = new Grpc.IntArray();
-                    intData.Data.AddRange((Data as List<Int16>).Select(p => (int)p));
+                    intData.Data.AddRange((Data as IEnumerable<Int16>).Select(p => (int)p));
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -312,7 +422,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int32:
                 {
                     var intData = new Grpc.IntArray();
-                    intData.Data.AddRange(Data as List<int>);
+                    intData.Data.AddRange(Data as IEnumerable<int>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -323,7 +433,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int64:
                 {
                     var longData = new Grpc.LongArray();
-                    longData.Data.AddRange(Data as IList<long>);
+                    longData.Data.AddRange(Data as IEnumerable<long>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -334,7 +444,7 @@ public class Field<TData> : Field
             case MilvusDataType.Float:
                 {
                     var floatData = new Grpc.FloatArray();
-                    floatData.Data.AddRange(Data as IList<float>);
+                    floatData.Data.AddRange(Data as IEnumerable<float>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -345,7 +455,7 @@ public class Field<TData> : Field
             case MilvusDataType.Double:
                 {
                     var doubleData = new Grpc.DoubleArray();
-                    doubleData.Data.AddRange(Data as IList<double>);
+                    doubleData.Data.AddRange(Data as IEnumerable<double>);
                     
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -356,7 +466,7 @@ public class Field<TData> : Field
             case MilvusDataType.String:
                 {
                     var stringData = new Grpc.StringArray();
-                    stringData.Data.AddRange(Data as IList<string>);
+                    stringData.Data.AddRange(Data as IEnumerable<string>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -367,7 +477,7 @@ public class Field<TData> : Field
             case MilvusDataType.VarChar:
                 {
                     var stringData = new Grpc.StringArray();
-                    stringData.Data.AddRange(Data as IList<string>);
+                    stringData.Data.AddRange(Data as IEnumerable<string>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -384,56 +494,10 @@ public class Field<TData> : Field
 
     internal void Check()
     {
-        Verify.ArgNotNullOrEmpty(FieldName, $"FieldName cannot be null or empth");
+        Verify.ArgNotNullOrEmpty(FieldName, $"FieldName cannot be null or empty");
         if (Data?.Any() != true)
         {
             throw new MilvusException($"{nameof(Field)}.{nameof(Data)} is empty");
-        }
-    }
-
-    /// <summary>
-    /// Check data type
-    /// </summary>
-    /// <exception cref="NotSupportedException"></exception>
-    protected void CheckDataType()
-    {
-        var type = typeof(TData);
-
-        if (type == typeof(bool))
-        {
-            DataType = MilvusDataType.Bool;
-        }
-        else if (type == typeof(Int16))
-        {
-            DataType = MilvusDataType.Int16;
-        }
-        else if (type == typeof(int) || type == typeof(Int32))
-        {
-            DataType = MilvusDataType.Int32;
-        }
-        else if (type == typeof(Int64) || type == typeof(long))
-        {
-            DataType = MilvusDataType.Int64;
-        }
-        else if (type == typeof(float))
-        {
-            DataType = MilvusDataType.Float;
-        }
-        else if (type == typeof(double))
-        {
-            DataType = MilvusDataType.Double;
-        }
-        else if (type == typeof(string))
-        {
-            DataType = MilvusDataType.String;
-        }
-        else if (type == typeof(List<float>) || type == typeof(Grpc.FloatArray))
-        {
-            DataType = MilvusDataType.FloatVector;
-        }
-        else
-        {
-            throw new NotSupportedException($"Not Support DataType:{DataType}");
         }
     }
 }

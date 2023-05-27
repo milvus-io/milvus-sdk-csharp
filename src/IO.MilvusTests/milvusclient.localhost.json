@@ -1,0 +1,9 @@
+{
+  "$schema": "./milvusclient-schema.json",
+  "endpoint": "https://localhost/",
+  "port": 9091,
+  "username": "root",
+  "password": "milvus",
+  "type": "rest",
+  "skip": true
+}

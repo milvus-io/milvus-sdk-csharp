@@ -55,7 +55,10 @@ public partial class MilvusGrpcClient : IMilvusClient2
     }
 
     ///<inheritdoc/>
-    public async Task<bool> HealthAsync(CancellationToken cancellationToken)
+    public string Address => _grpcChannel.Target;
+
+    ///<inheritdoc/>
+    public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken)
     {
         _log.LogDebug("Check if connection is health");
 
@@ -68,13 +71,13 @@ public partial class MilvusGrpcClient : IMilvusClient2
             }
         }
 
-        return response.IsHealthy;
+        return new MilvusHealthState(response.IsHealthy, response.Status.Reason,response.Status.ErrorCode);
     }
 
     ///<inheritdoc/>
     public override string ToString()
     {
-        return $"{nameof(MilvusGrpcClient)}({_grpcChannel.Target})";
+        return $"{{{nameof(MilvusGrpcClient)}:{Address}}}";
     }
 
     #region Private ===============================================================================

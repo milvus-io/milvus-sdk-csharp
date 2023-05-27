@@ -7,6 +7,7 @@ using System.Net.Http;
 using IO.Milvus.ApiSchema;
 using System.Text.Json;
 using System.Collections;
+using IO.Milvus.Param;
 
 namespace IO.Milvus.Client.REST;
 
@@ -261,11 +262,15 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusQueryResult> QueryAsync(
-        string collectionName, 
-        string expr, 
-        IList<string> outputFields, 
-        IList<string> partitionNames = null, 
-        long guaranteeTimestamp = 0, 
+        string collectionName,
+        string expr,
+        IList<string> outputFields,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
+        IList<string> partitionNames = null,
+        long travelTimestamp = 0,
+        long guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
+        long offset = 0,
+        long limit = 0,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Query: {0}", collectionName);
@@ -273,7 +278,11 @@ public partial class MilvusRestClient
         using HttpRequestMessage request = QueryRequest.Create(collectionName, expr)
             .WithOutputFields(outputFields)
             .WithPartitionNames(partitionNames)
+            .WithConsistencyLevel(consistencyLevel)
             .WithGuaranteeTimestamp(guaranteeTimestamp)
+            .WithTravelTimestamp(travelTimestamp)
+            .WithOffset(offset)
+            .WithLimit(limit)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

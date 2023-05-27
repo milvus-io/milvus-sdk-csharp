@@ -10,20 +10,48 @@ using System.Linq;
 
 namespace IO.Milvus.Param.Dml
 {
+    /// <summary>
+    /// Field in milvus.
+    /// </summary>
     public abstract class Field
     {
+        /// <summary>
+        /// Create a field from a list of data.
+        /// </summary>
+        /// <typeparam name="TData">
+        /// Data type:
+        /// <list type="bullet">
+        /// <item><see cref="bool"/> : int32</item>
+        /// <item><see cref="short"/> : int8</item>
+        /// <item><see cref="Int16"/> : int8</item>
+        /// <item><see cref="int"/> : int32</item>
+        /// <item><see cref="long"/> : int64</item>
+        /// <item><see cref="float"/> : float</item>
+        /// <item><see cref="double"/> : double</item>
+        /// <item><see cref="string"/> : string</item>
+        /// </list>
+        /// </typeparam>
+        /// <param name="name">Field name.</param>
+        /// <param name="data">data</param>
+        /// <returns></returns>
         public static Field Create<TData>(
             string name,
-            List<TData> datas
+            List<TData> data
             )
         {
             return new Field<TData>()
             {
                 FieldName = name,
-                Datas = datas
+                Data = data
             };
         }
 
+        /// <summary>
+        /// Create a binary field from bytes.
+        /// </summary>
+        /// <param name="name">Field name.</param>
+        /// <param name="bytes">bytes.</param>
+        /// <returns>A new created field.</returns>
         public static Field CreateFromBytes(string name, byte[] bytes)
         {
             ParamUtils.CheckNullEmptyString(name, nameof(FieldName));
@@ -36,13 +64,9 @@ namespace IO.Milvus.Param.Dml
             return field;
         }
 
-        public static Field CreateBinaryVectors(string name,List<List<float>> datas)
+        public static Field CreateBinaryVectors(string name,List<List<float>> data)
         {
-            return new BinaryVectorField()
-            {
-                FieldName = name,
-                Datas = datas,
-            };
+            return new BinaryVectorField(name, data);
         }
 
         public static Field CreateFromByteString(string name, ByteString bytestr)
@@ -85,9 +109,9 @@ namespace IO.Milvus.Param.Dml
             CheckDataType();
         }
 
-        public List<TData> Datas { get; set; }
+        public List<TData> Data { get; set; }
 
-        public override int RowCount => Datas?.Count ?? 0;
+        public override int RowCount => Data?.Count ?? 0;
 
         public override FieldData ToGrpcFieldData()
         {
@@ -102,11 +126,11 @@ namespace IO.Milvus.Param.Dml
             switch (DataType)
             {
                 case DataType.None:
-                //throw new MilvusException($"DataType Error:{DataType}");
+                    throw new MilvusException($"DataType Error:{DataType}");
                 case DataType.Bool:
                     {
                         var boolData = new BoolArray();
-                        boolData.Data.AddRange(Datas as List<bool>);
+                        boolData.Data.AddRange(Data as List<bool>);
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -115,11 +139,20 @@ namespace IO.Milvus.Param.Dml
                     }
                     break;
                 case DataType.Int8:
-                    throw new NotSupportedException("not support in .net");
+                    {
+                        var intData = new IntArray();
+                        intData.Data.AddRange((Data as List<short>).Select(p => (int)p));
+
+                        fieldData.Scalars = new ScalarField()
+                        {
+                            IntData = intData
+                        };
+                    }
+                    break;
                 case DataType.Int16:
                     {
                         var intData = new IntArray();
-                        intData.Data.AddRange((Datas as List<Int16>).Select(p => (int)p));
+                        intData.Data.AddRange((Data as List<Int16>).Select(p => (int)p));
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -130,7 +163,7 @@ namespace IO.Milvus.Param.Dml
                 case DataType.Int32:
                     {
                         var intData = new IntArray();
-                        intData.Data.AddRange(Datas as List<int>);
+                        intData.Data.AddRange(Data as List<int>);
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -141,7 +174,7 @@ namespace IO.Milvus.Param.Dml
                 case DataType.Int64:
                     {
                         var longData = new LongArray();
-                        longData.Data.AddRange(Datas as List<long>);
+                        longData.Data.AddRange(Data as List<long>);
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -152,7 +185,7 @@ namespace IO.Milvus.Param.Dml
                 case DataType.Float:
                     {
                         var floatData = new FloatArray();
-                        floatData.Data.AddRange(Datas as List<float>);
+                        floatData.Data.AddRange(Data as List<float>);
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -163,7 +196,7 @@ namespace IO.Milvus.Param.Dml
                 case DataType.Double:
                     {
                         var doubleData = new DoubleArray();
-                        doubleData.Data.AddRange(Datas as List<double>);
+                        doubleData.Data.AddRange(Data as List<double>);
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -174,7 +207,7 @@ namespace IO.Milvus.Param.Dml
                 case DataType.String:
                     {
                         var stringData = new StringArray();
-                        stringData.Data.AddRange(Datas as List<string>);
+                        stringData.Data.AddRange(Data as List<string>);
 
                         fieldData.Scalars = new ScalarField()
                         {
@@ -192,13 +225,13 @@ namespace IO.Milvus.Param.Dml
         internal void Check()
         {
             ParamUtils.CheckNullEmptyString(FieldName, nameof(FieldName));
-            if (Datas.IsEmpty())
+            if (Data.IsEmpty())
             {
-                throw new ParamException($"{nameof(Field)}.{nameof(Datas)} is empty");
+                throw new ParamException($"{nameof(Field)}.{nameof(Data)} is empty");
             }
         }
 
-        public void CheckDataType()
+        internal void CheckDataType()
         {
             var type = typeof(TData);
 

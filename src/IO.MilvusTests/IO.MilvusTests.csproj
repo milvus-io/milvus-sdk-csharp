@@ -38,4 +38,18 @@
         <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="milvusclient.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="milvusclient.localhost.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="milvusclient.zillizclound.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
+
 </Project>

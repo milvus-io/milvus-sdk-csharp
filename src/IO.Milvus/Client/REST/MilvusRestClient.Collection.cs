@@ -253,4 +253,75 @@ public partial class MilvusRestClient
 
         return data.ToCollections().ToList();
     }
+
+    ///<inheritdoc/>
+    public async Task<long> GetLoadingProgressAsync(
+        string collectionName, 
+        IList<string> partitionNames = null, 
+        CancellationToken cancellationToken = default)
+    {
+        this._log.LogDebug("Get loading progress for collection: {0}", collectionName);
+
+        using HttpRequestMessage request = GetLoadingProgressRequest
+            .Create(collectionName)
+            .WithPartitionNames(partitionNames)
+            .BuildRest();
+
+        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (System.Exception e)
+        {
+            this._log.LogError(e, "Failed get loading progress for collection: {0}, {1}", collectionName, e.Message, responseContent);
+            throw;
+        }
+
+        var data = JsonSerializer.Deserialize<GetLoadingProgressResponse>(responseContent);
+
+        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get loading progress for collection failed: {0}", data.Status.ErrorCode);
+            throw new Diagnostics.MilvusException(data.Status);
+        }
+
+        return data.Progress;
+    }
+
+    ///<inheritdoc/>
+    public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
+        string collectionName, 
+        string partitionName, 
+        CancellationToken cancellationToken = default)
+    {
+        this._log.LogDebug("Get partition statistics: {0}, {1}", collectionName, partitionName);
+
+        using HttpRequestMessage request = GetPartitionStatisticsRequest
+            .Create(collectionName,partitionName)
+            .BuildRest();
+
+        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+
+        try
+        {
+            response.EnsureSuccessStatusCode();
+        }
+        catch (System.Exception e)
+        {
+            this._log.LogError(e, "Get partition statistics: {0}, {1}", collectionName, e.Message, responseContent);
+            throw;
+        }
+
+        var data = JsonSerializer.Deserialize<GetPartitionStatisticsResponse>(responseContent);
+
+        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get partition statistics: {0}", data.Status.ErrorCode);
+            throw new Diagnostics.MilvusException(data.Status);
+        }
+
+        return data.Stats;
+    }
 }

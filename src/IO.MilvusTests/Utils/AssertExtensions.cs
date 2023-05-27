@@ -4,7 +4,7 @@ using IO.Milvus.Grpc;
 using IO.Milvus.Param;
 using Status = IO.Milvus.Param.Status;
 
-namespace IO.MilvusTests.Helpers;
+namespace IO.MilvusTests.Utils;
 
 public static class AssertExtensions
 {

@@ -3,7 +3,6 @@ using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -50,9 +49,9 @@ public partial class MilvusRestClient : IMilvusClient2
     }
 
     ///<inheritdoc/>
-    public async Task<bool> HealthAsync(CancellationToken cancellationToken = default)
+    public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Ensure to connect to Milvus server {0}",BaseAddress);
+        this._log.LogDebug("Ensure to connect to Milvus server {0}",Address);
 
         using HttpRequestMessage request = HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/health");
@@ -70,28 +69,38 @@ public partial class MilvusRestClient : IMilvusClient2
         }
 
         if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
-            return true;
+            return new MilvusHealthState(true,"None",Grpc.ErrorCode.Success);
 
         var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
         this._log.LogWarning(status.Reason);
-        return status.ErrorCode ==  Grpc.ErrorCode.Success;
+
+        return new MilvusHealthState(status.ErrorCode == Grpc.ErrorCode.Success, status.Reason, status.ErrorCode);
     }
 
     #region Properties
     /// <summary>
-    /// The endpoint for the Qdrant service.
+    /// The endpoint for the Milvus service.
+    /// </summary>
+    public string Address => SanitizeEndpoint(this._httpClient.BaseAddress.ToString(),Port).ToString();
+
+    /// <summary>
+    /// The endpoint for the Milvus service.
     /// </summary>
     public string BaseAddress => this._httpClient.BaseAddress.ToString();
 
     /// <summary>
-    /// The port for the Qdrant service.
+    /// The port for the Milvus service.
     /// </summary>
     public int Port => this._httpClient.BaseAddress.Port;
     #endregion
 
+    /// <summary>
+    /// Get the client msg;
+    /// </summary>
+    /// <returns></returns>
     public override string ToString()
     {
-        return $"{nameof(MilvusRestClient)}({_httpClient.BaseAddress})";
+        return $"{{{nameof(MilvusRestClient)};{_httpClient.BaseAddress}}}";
     }
 
     #region private ================================================================================

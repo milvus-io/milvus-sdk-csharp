@@ -1,6 +1,9 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Response;
+using IO.Milvus.Utils;
+using System;
+using System.Buffers.Text;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
@@ -18,15 +21,13 @@ internal sealed class CreateCredentialRequest:
     /// UTC timestamps
     /// </summary>
     [JsonPropertyName("created_utc_timestamps")]
-    [JsonIgnore]
-    public int CreatedUTCTimestamps { get; set; }
+    public long CreatedUtcTimestamps { get; set; }
 
     /// <summary>
     /// UTC timestamps
     /// </summary>
     [JsonPropertyName("modified_utc_timestamps")]
-    [JsonIgnore]
-    public int ModifiedUTCTimestamps { get; set; }
+    public long ModifiedUtcTimestamps { get; set; }
 
     /// <summary>
     /// Username
@@ -52,13 +53,18 @@ internal sealed class CreateCredentialRequest:
         return new Grpc.CreateCredentialRequest()
         {
             Username = this.Username,
-            Password = this.Password
+            Password = this.Password,
+            ModifiedUtcTimestamps = (ulong)TimestampUtils.GetNowUTCTimestamp(),
+            CreatedUtcTimestamps = (ulong)TimestampUtils.GetNowUTCTimestamp()
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
         this.Validate();
+
+        ModifiedUtcTimestamps = TimestampUtils.GetNowUTCTimestamp();
+        CreatedUtcTimestamps = TimestampUtils.GetNowUTCTimestamp();
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/credential",

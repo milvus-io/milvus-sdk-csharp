@@ -44,5 +44,8 @@ public partial class MilvusClientTests
         await milvusClient.DropPartitionsAsync(collectionName, partition);
         partitionExist = await milvusClient.HasPartitionAsync(collectionName, partition);
         Assert.False(partitionExist, $"Failed Drop Collection: {collectionName}, Partition: {partition}");
+
+        // Cooldown, sometimes the DB doesn't refresh completely
+        await Task.Delay(1000);
     }
 }

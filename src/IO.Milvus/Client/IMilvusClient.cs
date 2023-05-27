@@ -1,4 +1,5 @@
-﻿using IO.Milvus.ApiSchema;
+﻿using Google.Protobuf;
+using IO.Milvus.ApiSchema;
 using IO.Milvus.Param;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,12 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    Task<bool> HealthAsync(CancellationToken cancellationToken = default);
+    Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Base address of Milvus server.
+    /// </summary>
+    string Address { get; }
 
     #region Collection
     /// <summary>
@@ -25,7 +31,7 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.(Required).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task DropCollectionAsync(
+    Task DropCollectionAsync(
         string collectionName,
         CancellationToken cancellationToken = default);
 
@@ -34,7 +40,7 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="collectionName">collectionName</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task<DetailedMilvusCollection> DescribeCollectionAsync(
+    Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
         CancellationToken cancellationToken = default);
 
@@ -47,7 +53,7 @@ public interface IMilvusClient2
     /// <param name="fieldTypes">field types that represents this collection schema</param>
     /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task CreateCollectionAsync(
+    Task CreateCollectionAsync(
         string collectionName, 
         IList<FieldType> fieldTypes,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
@@ -64,7 +70,7 @@ public interface IMilvusClient2
     /// otherwise will return false.
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task<bool> HasCollectionAsync(
+    Task<bool> HasCollectionAsync(
         string collectionName, 
         DateTime? dateTime = null, 
         CancellationToken cancellationToken = default);
@@ -74,7 +80,7 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="collectionName">The collection name you want to release.</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public Task ReleaseCollectionAsync(
+    Task ReleaseCollectionAsync(
         string collectionName,
         CancellationToken cancellationToken= default);
 
@@ -94,7 +100,7 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="collectionName">The collection name you want get statistics</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
+    Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
         string collectionName,
         CancellationToken cancellationToken = default);
 
@@ -107,9 +113,21 @@ public interface IMilvusClient2
     /// <param name="showType">Decide return Loaded collections or All collections(Optional)</param>
     /// <param name="cancellationToken">Cancellation token.</param>
 
-    public Task<IList<MilvusCollection>> ShowCollectionsAsync(
+    Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null, 
         ShowType showType = ShowType.All,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get loading progress of a collection or it's partition.
+    /// </summary>
+    /// <param name="collectionName">Collection name of milvis.</param>
+    /// <param name="partitionNames">Partition names.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<long> GetLoadingProgressAsync(
+        string collectionName,
+        IList<string> partitionNames = null,
         CancellationToken cancellationToken = default);
     #endregion
 
@@ -120,7 +138,7 @@ public interface IMilvusClient2
     /// <param name="collectionName">Collection Name.</param>
     /// <param name="alias">Alias.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task CreateAliasAsync(
+    Task CreateAliasAsync(
         string collectionName,
         string alias, 
         CancellationToken cancellationToken = default);
@@ -130,7 +148,7 @@ public interface IMilvusClient2
     /// </summary>
     /// <param name="alias">Alias</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task DropAliasAsync(
+    Task DropAliasAsync(
         string alias,
         CancellationToken cancellationToken = default);
 
@@ -140,7 +158,7 @@ public interface IMilvusClient2
     /// <param name="collectionName">Collection name</param>
     /// <param name="alias">Alias</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task AlterAliasAsync(
+    Task AlterAliasAsync(
         string collectionName,
         string alias,
         CancellationToken cancellationToken = default);
@@ -178,7 +196,7 @@ public interface IMilvusClient2
     /// <returns></returns>
     Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Load a group of partitions for search.
@@ -217,6 +235,18 @@ public interface IMilvusClient2
         string collectionName,
         string partitionName, 
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get a partition's statistics.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionName">The partition name you want to collect statistics.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IDictionary<string,string>> GetPartitionStatisticsAsync(
+        string collectionName,
+        string partitionName,
+        CancellationToken cancellationToken = default);
     #endregion
 
     #region Ops
@@ -227,7 +257,7 @@ public interface IMilvusClient2
     /// <param name="timetravel">Time travel.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>CompactionId</returns>
-    public Task<long> ManualCompactionAsync(
+    Task<long> ManualCompactionAsync(
         long collectionId, 
         DateTime? timetravel = null,
         CancellationToken cancellationToken = default);
@@ -238,7 +268,7 @@ public interface IMilvusClient2
     /// <param name="compactionId">Collection id</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    public Task<MilvusCompactionState> GetCompactionStateAsync(
+    Task<MilvusCompactionState> GetCompactionStateAsync(
         long compactionId, 
         CancellationToken cancellationToken = default);
 
@@ -319,7 +349,7 @@ public interface IMilvusClient2
     /// <param name="partitionName">Partition name.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    public Task<MilvusMutationResult> InsertAsync(
+    Task<MilvusMutationResult> InsertAsync(
         string collectionName,
         IList<Field> fields,
         string partitionName = "",
@@ -333,7 +363,7 @@ public interface IMilvusClient2
     /// <param name="partitionName">Partition name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    public Task<MilvusMutationResult> DeleteAsync(
+    Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
         string expr,
         string partitionName = "",
@@ -345,7 +375,7 @@ public interface IMilvusClient2
     /// <param name="searchParameters"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<MilvusSearchResult> SearchAsync(
+    Task<MilvusSearchResult> SearchAsync(
         MilvusSearchParameters searchParameters, 
         CancellationToken cancellationToken = default);
 
@@ -370,7 +400,7 @@ public interface IMilvusClient2
     /// </param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<MilvusCalDistanceResult> CalDistanceAsync(
+    Task<MilvusCalDistanceResult> CalDistanceAsync(
         MilvusVectors leftVectors,
         MilvusVectors rightVectors,
         MilvusMetricType milvusMetricType,
@@ -415,16 +445,36 @@ public interface IMilvusClient2
     /// <param name="collectionName"></param>
     /// <param name="expr"></param>
     /// <param name="outputFields"></param>
+    /// <param name="consistencyLevel"></param>
     /// <param name="partitionNames">Partitions names.(Optional)</param>
-    /// <param name="guaranteeTimestamp">guarantee_timestamp.(Optional)</param>
+    /// <param name="guaranteeTimestamp">
+    /// guarantee_timestamp.
+    /// (Optional)Instructs server to see insert/delete operations performed before a provided timestamp.
+    /// If no such timestamp is specified, the server will wait for the latest operation to finish and query.
+    /// </param>
+    /// <param name="offset">
+    /// offset a value to define the position.
+    /// Specify a position to return results. Only take effect when the 'limit' value is specified.
+    /// Default value is 0, start from begin.
+    /// </param>
+    /// <param name="limit">
+    /// limit a value to define the limit of returned entities
+    /// Specify a value to control the returned number of entities. Must be a positive value.
+    /// Default value is 0, will return without limit.
+    /// </param>
+    /// <param name="travelTimestamp">Travel time.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusQueryResult> QueryAsync(
         string collectionName,
         string expr,
         IList<string> outputFields,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
         IList<string> partitionNames = null,
-        long guaranteeTimestamp = 0,
+        long travelTimestamp = 0,
+        long guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
+        long offset = 0,
+        long limit = 0,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -451,7 +501,7 @@ public interface IMilvusClient2
     /// Support keys: index_type,metric_type, params. 
     /// Different index_type may has different params.</param>
     /// <param name="cancellationToken"></param>
-    public Task CreateIndexAsync(
+    Task CreateIndexAsync(
         string collectionName,
         string fieldName,
         string indexName,
@@ -466,7 +516,7 @@ public interface IMilvusClient2
     /// <param name="collectionName">The particular collection name you want to drop index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public Task DropIndexAsync(
+    Task DropIndexAsync(
         string collectionName, 
         string fieldName, 
         CancellationToken cancellationToken = default);
@@ -478,7 +528,7 @@ public interface IMilvusClient2
     /// <param name="fieldName">The vector field name in this particular collection</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    public Task<IList<MilvusIndex>> DescribeIndexAsync(
+    Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName, 
         string fieldName, 
         CancellationToken cancellationToken = default);
@@ -490,7 +540,7 @@ public interface IMilvusClient2
     /// <param name="fieldName">The vector field name in this particular collection</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    public Task<IndexBuildProgress> GetIndexBuildProgress(
+    Task<IndexBuildProgress> GetIndexBuildProgress(
         string collectionName,
         string fieldName,
         CancellationToken cancellationToken = default);
@@ -502,7 +552,7 @@ public interface IMilvusClient2
     /// <param name="fieldName">The vector field name in this particular collection</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    public Task<IndexState> GetIndexState(
+    Task<IndexState> GetIndexState(
         string collectionName,
         string fieldName,
         CancellationToken cancellationToken = default);
@@ -515,7 +565,7 @@ public interface IMilvusClient2
     /// <param name="request">request is of jsonic format.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>metrics from which component.</returns>
-    public Task<MilvusMetrics> GetMetricsAsync(
+    Task<MilvusMetrics> GetMetricsAsync(
         string request,
         CancellationToken cancellationToken = default);
     #endregion
