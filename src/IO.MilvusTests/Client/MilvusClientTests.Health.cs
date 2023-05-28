@@ -10,7 +10,7 @@ public partial class MilvusClientTests
     [ClassData(typeof(TestClients))]
     public async Task HealthTest(IMilvusClient milvusClient)
     {
-        MilvusHealthState result =await milvusClient.HealthAsync();
+        MilvusHealthState result = await milvusClient.HealthAsync();
 
         Assert.True(result.IsHealthy,result.ToString());
     }

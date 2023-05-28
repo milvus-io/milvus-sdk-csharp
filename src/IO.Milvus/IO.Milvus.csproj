@@ -12,9 +12,15 @@
     <LangVersion>latest</LangVersion>
     <Version>2.1.0-alpha.1</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <UserSecretsId>5dc240d4-b675-4047-877c-ba4a5a515fab</UserSecretsId>
   </PropertyGroup>
   
   <ItemGroup>
+    <None Include="..\..\docs\readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\..\milvussharp.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
@@ -36,5 +42,4 @@
     </PackageReference>
     <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
-
 </Project>
