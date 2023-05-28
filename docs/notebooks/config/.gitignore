@@ -1,4 +1,4 @@
-*.json
+settings.json
 bin
 obj
 .ipy*
