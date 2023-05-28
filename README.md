@@ -58,15 +58,15 @@ You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 * Configure WinHttpHandler on the channel using GrpcChannelOptions.HttpHandler.
 
 ```c#
-        public GrpcChannel CreateChannel(ConnectParam connectParam)
+        public GrpcChannel CreateChannel(string address)
         {
 #if NET461_OR_GREATER
-            return GrpcChannel.ForAddress(connectParam.GetAddress(),new GrpcChannelOptions
+            return GrpcChannel.ForAddress(address,new GrpcChannelOptions
             {
                 HttpHandler = new WinHttpHandler()
             });
 #else
-            return GrpcChannel.ForAddress(connectParam.GetAddress());
+            return GrpcChannel.ForAddress(address);
 #endif
         }
 
@@ -76,7 +76,8 @@ You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
                 "{Endpoint}",
                 {Port},
                 "{Usename}",
-                "Password"
+                "Password",
+                grpcChannel:CreateChannel($"{Endpoint}:{Port}")
             );
         }
 ```
