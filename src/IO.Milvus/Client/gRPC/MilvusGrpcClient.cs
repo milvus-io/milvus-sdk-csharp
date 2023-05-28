@@ -85,6 +85,7 @@ public partial class MilvusGrpcClient : IMilvusClient
     private GrpcChannel _grpcChannel;
     private CallOptions _callOptions;
     private MilvusService.MilvusServiceClient _grpcClient;
+    private bool _disposedValue;
 
     private static Uri SanitizeEndpoint(string endpoint, int? port)
     {
@@ -94,6 +95,36 @@ public partial class MilvusGrpcClient : IMilvusClient
         if (port.HasValue) { builder.Port = port.Value; }
 
         return builder.Uri;
+    }
+
+    ///<inheritdoc/>/>
+    public void Close()
+    {
+        Dispose();
+    }
+
+    ///<inheritdoc/>/>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            if (disposing)
+            {
+                _grpcChannel?.Dispose();
+            }
+
+            _disposedValue = true;
+        }
+    }
+
+    /// <summary>
+    /// Close milvus connection.
+    /// </summary>
+    public void Dispose()
+    {
+        // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
     #endregion
 }

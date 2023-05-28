@@ -9,7 +9,7 @@ namespace IO.Milvus.Client;
 /// <summary>
 /// Milvus client
 /// </summary>
-public interface IMilvusClient
+public interface IMilvusClient : IDisposable
 {
     /// <summary>
     /// Ensure to connect to Milvus server before any operations.
@@ -565,4 +565,9 @@ public interface IMilvusClient
         string request,
         CancellationToken cancellationToken = default);
     #endregion
+
+    /// <summary>
+    /// Close milvus connection.
+    /// </summary>
+    void Close();
 }

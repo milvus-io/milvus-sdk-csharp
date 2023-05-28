@@ -106,6 +106,7 @@ public partial class MilvusRestClient : IMilvusClient
     #region private ================================================================================
     private ILogger _log;
     private HttpClient _httpClient;
+    private bool _disposedValue;
 
     private async Task<(HttpResponseMessage response, string responseContent)> ExecuteHttpRequestAsync(
         HttpRequestMessage request,
@@ -151,6 +152,37 @@ public partial class MilvusRestClient : IMilvusClient
         {
             throw new MilvusException(status);
         }
+    }
+    #endregion
+
+    #region IDisposable Support
+    ///<inheritdoc/>
+    public void Close()
+    {
+        Dispose();
+    }
+
+    ///<inheritdoc/>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            if (disposing)
+            {
+                _httpClient?.Dispose();
+            }
+
+            _disposedValue = true;
+        }
+    }
+
+    /// <summary>
+    /// Close milvus connection.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
     #endregion
 }
