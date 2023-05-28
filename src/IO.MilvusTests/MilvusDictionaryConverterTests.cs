@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
 using Xunit;
+using IO.Milvus.ApiSchema;
 
 namespace IO.Milvus.Tests;
 

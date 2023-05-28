@@ -1,6 +1,7 @@
 ﻿using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace IO.Milvus.Client.REST;
 
@@ -52,7 +53,7 @@ internal static class HttpRequest
         {
             return null;
         }
-
+        
         string strPayload = payload is string s ? s : JsonSerializer.Serialize(payload);
         return new StringContent(strPayload, Encoding.UTF8, "application/json");
     }

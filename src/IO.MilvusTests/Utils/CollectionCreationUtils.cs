@@ -63,7 +63,7 @@ internal static class CollectionCreationUtils
 
         if (milvusClient is MilvusRestClient)
         {
-            await Task.Delay(3000);
+            await Task.Delay(5000);
             return;
         }
         var progress = await milvusClient.GetLoadingProgressAsync(collectionName);

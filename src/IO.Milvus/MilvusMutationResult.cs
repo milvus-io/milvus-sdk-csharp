@@ -16,7 +16,7 @@ namespace IO.Milvus;
 /// </summary>
 public class MilvusMutationResult
 {
-    internal MilvusMutationResult(long insertCnt) { }
+    internal MilvusMutationResult() { }
 
     internal MilvusMutationResult(
         long insertCount, 
@@ -122,9 +122,43 @@ public class MilvusMutationResult
 public class MilvusIds
 {
     /// <summary>
+    /// Construct a new instance of <see cref="MilvusIds"/>
+    /// </summary>
+    public MilvusIds() { }
+
+    /// <summary>
+    /// Construct a new instance of <see cref="MilvusIds"/>
+    /// </summary>
+    /// <param name="idField"></param>
+    public MilvusIds(IdField idField)
+    {
+        this.IdField = idField;
+    }
+
+    /// <summary>
     /// Id field
     /// </summary>
     public IdField IdField { get; set; }
+
+    /// <summary>
+    /// Create a new instance of <see cref="MilvusIds"/> from string ids.
+    /// </summary>
+    /// <param name="stringIds"></param>
+    /// <returns></returns>
+    public static MilvusIds CreateStrIds(IList<string> stringIds)
+    {
+        return new MilvusIds(new IdField(stringIds));
+    }
+
+    /// <summary>
+    /// Create a new instance of <see cref="MilvusIds"/> from int ids.
+    /// </summary>
+    /// <param name="intIds"></param>
+    /// <returns></returns>
+    public static MilvusIds CreateIntIds(IList<long> intIds)
+    {
+        return new MilvusIds(new IdField(intIds));
+    }
 
     #region Private =========================================================
     internal static MilvusIds From(IDs ids)
@@ -152,10 +186,7 @@ public class MilvusIds
             };
         }
 
-        return new MilvusIds()
-        {
-            IdField = idField
-        };
+        return new MilvusIds(idField);
     }
     #endregion
 }
@@ -165,6 +196,31 @@ public class MilvusIds
 /// </summary>
 public class IdField
 {
+    /// <summary>
+    /// Construct a new instance of <see cref="IdField"/>
+    /// </summary>
+    public IdField(){}
+
+    /// <summary>
+    /// Construct a new instance of <see cref="IdField"/>
+    /// </summary>
+    /// <param name="stringIds"></param>
+    public IdField(IList<string> stringIds)
+    {
+        IdFieldCase = MilvusIdFieldOneofCase.StrId;
+        StrId = new MilvusId<string>(stringIds);
+    }
+
+    /// <summary>
+    /// Construct a new instance of <see cref="IdField"/>
+    /// </summary>
+    /// <param name="longIds"></param>
+    public IdField(IList<long> longIds)
+    {
+        IdFieldCase = MilvusIdFieldOneofCase.IntId;
+        IntId = new MilvusId<long>(longIds);
+    }
+
     /// <summary>
     /// Id field case.
     /// </summary>
@@ -205,9 +261,23 @@ public enum MilvusIdFieldOneofCase
 /// <summary>
 /// Milvus id
 /// </summary>
-/// <typeparam name="TId"></typeparam>
+/// <typeparam name="TId"><see cref="int"/> or <see cref="string"/></typeparam>
 public class MilvusId<TId>
 {
+    /// <summary>
+    /// Create a new instance of <see cref="MilvusId{TId}"/>
+    /// </summary>
+    public MilvusId(){}
+
+    /// <summary>
+    /// Create a int or string Milvus id.
+    /// </summary>
+    /// <param name="ids"></param>
+    public MilvusId(IList<TId> ids)
+    {
+        Data = ids;
+    }
+
     /// <summary>
     /// Value
     /// </summary>

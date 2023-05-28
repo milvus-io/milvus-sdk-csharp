@@ -2,6 +2,7 @@
 using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -26,6 +27,10 @@ internal class CalcDistanceRequest:
     /// </summary>
     [JsonPropertyName("op_right")]
     public MilvusVectors VectorsRight { get; set; }
+
+    [JsonPropertyName("params")]
+    [JsonConverter(typeof(MilvusDictionaryConverter))]
+    public IDictionary<string, string> Params { get; set; } = new Dictionary<string, string>();
 
     internal static CalcDistanceRequest Create(MilvusMetricType milvusMetricType)
     {
@@ -52,9 +57,9 @@ internal class CalcDistanceRequest:
 
         //Set left vectors
         request.OpLeft = VectorsLeft.ToVectorsArray();
-
+        
         //Set right vectors
-        request.OpRight = VectorsLeft.ToVectorsArray();
+        request.OpRight = VectorsRight.ToVectorsArray();
 
         //Set parameters
         request.Params.Add(new Grpc.KeyValuePair()
@@ -89,6 +94,7 @@ internal class CalcDistanceRequest:
     private CalcDistanceRequest(MilvusMetricType milvusMetricType)
     {
         this._milvusMetricType = milvusMetricType;
+        this.Params["metric"] = milvusMetricType.ToString().ToUpper();
     }
     #endregion
 }

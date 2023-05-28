@@ -127,7 +127,7 @@ public partial class MilvusRestClient
         MilvusMetricType milvusMetricType, 
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Cal distance: {0}", leftVectors.ToString());
+        this._log.LogDebug("Cal distance: {0}", leftVectors?.ToString());
 
         using HttpRequestMessage request = CalcDistanceRequest
             .Create(milvusMetricType)
