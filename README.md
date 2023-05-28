@@ -14,12 +14,6 @@ C# SDK for [Milvus](https://github.com/milvus-io/milvus).
 
 ## Getting Started
 
-This project use milvus proto as a git sub module. You can clone this project with the following command:
-
-```bash
-git clone --recurse-submodules git@github.com:milvus-io/milvus-sdk-csharp.git
-```
-
 **Visual Studio**
 
 Visual Studio 2019  or higher
