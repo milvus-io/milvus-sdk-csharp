@@ -6,8 +6,14 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
+/// <summary>
+/// Converter a default json format to a milvus dictionary format.
+/// </summary>
 public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, string>>
 {
+    /// <summary>
+    /// Read a milvus dictionary format to a default json format.
+    /// </summary>
     public override IDictionary<string, string> Read(
         ref Utf8JsonReader reader, 
         Type typeToConvert, 
@@ -48,6 +54,9 @@ public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, strin
         throw new JsonException();
     }
 
+    /// <summary>
+    /// Write a default json format to a milvus dictionary format.
+    /// </summary>
     public override void Write(
         Utf8JsonWriter writer,
         IDictionary<string, string> value,

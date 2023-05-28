@@ -1,9 +1,6 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
-using IO.Milvus.Response;
 using IO.Milvus.Utils;
-using System;
-using System.Buffers.Text;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 

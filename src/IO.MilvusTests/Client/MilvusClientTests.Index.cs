@@ -8,7 +8,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task IndexTest(IMilvusClient2 milvusClient)
+    public async Task IndexTest(IMilvusClient milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
 

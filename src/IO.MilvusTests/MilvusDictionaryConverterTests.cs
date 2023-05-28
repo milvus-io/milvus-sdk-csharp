@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Xunit;
 using IO.Milvus.ApiSchema;
+using FluentAssertions;
 
 namespace IO.Milvus.Tests;
 
@@ -35,7 +36,7 @@ public class MilvusDictionaryConverterTests
         var dic = JsonSerializer.Deserialize<TestDic>(data);
 
         Assert.NotNull(dic);
-        Assert.True(dic.KeyValuePairs.Any());
+        dic.KeyValuePairs.Should().NotBeNullOrEmpty();
     }
 
     [Fact]

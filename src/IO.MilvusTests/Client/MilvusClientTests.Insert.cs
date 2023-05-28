@@ -1,5 +1,4 @@
 ﻿using IO.Milvus;
-using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
 using Xunit;
 
@@ -9,7 +8,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task InsertTest(IMilvusClient2 milvusClient)
+    public async Task InsertTest(IMilvusClient milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
 

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-internal class TestClients : TheoryData<IMilvusClient2>
+internal class TestClients : TheoryData<IMilvusClient>
 {
     public TestClients()
     {

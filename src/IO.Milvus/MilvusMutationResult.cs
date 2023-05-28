@@ -4,13 +4,9 @@ using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
-
-//TODO: More properties support
-
 /// <summary>
 /// Mutation result wrapper
 /// </summary>

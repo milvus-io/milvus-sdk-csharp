@@ -8,16 +8,19 @@ namespace IO.MilvusTests.Client;
 
 public class QueryTest : MilvusTestClientsBase, IAsyncLifetime
 {
+#pragma warning disable CS8618 // nullable field is uninitialized. Consider declaring as nullable.
     private string _collectionName;
     private string _partitionName;
+#pragma warning restore CS8618 // 
 
-
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     public async Task InitializeAsync()
     {
         Random random = new();
         _collectionName = $"test{random.Next()}";
         _partitionName = _collectionName + "_partitionName";
     }
+#pragma warning restore CS1998 // 
 
     public async Task DisposeAsync()
     {
@@ -50,7 +53,7 @@ public class QueryTest : MilvusTestClientsBase, IAsyncLifetime
             var bookIdResult = (result.FieldsData[0] as Field<long>);
 
             bookIdResult.Should().NotBeNull();
-            bookIdResult.Data.Count.Should().Be(records);
+            bookIdResult?.Data.Count.Should().Be(records);
         }
     }
 
@@ -78,7 +81,7 @@ public class QueryTest : MilvusTestClientsBase, IAsyncLifetime
             var bookIdResult = (result.FieldsData[0] as Field<long>);
 
             bookIdResult.Should().NotBeNull();
-            bookIdResult.Data.Count.Should().Be(records);
+            bookIdResult?.Data.Count.Should().Be(records);
         }
     }
 }

@@ -7,8 +7,6 @@ namespace IO.Milvus.ApiSchema;
 /// </summary>
 internal sealed class GetReplicasRequest
 {
-    //TODO base
-
     /// <summary>
     /// CollectionID
     /// </summary>

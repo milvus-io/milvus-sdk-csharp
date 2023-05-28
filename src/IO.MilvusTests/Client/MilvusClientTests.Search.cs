@@ -10,7 +10,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task SearchTest(IMilvusClient2 milvusClient)
+    public async Task SearchTest(IMilvusClient milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
         await milvusClient.CreateBookCollectionAndIndex(collectionName);

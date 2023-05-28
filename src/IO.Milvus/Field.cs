@@ -1,13 +1,10 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.Param;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using IO.Milvus.ApiSchema;
 using System.Text.Json.Serialization;
 using IO.Milvus.Diagnostics;
-using System.Data;
 
 namespace IO.Milvus;
 
@@ -104,10 +101,7 @@ public abstract class Field
                 }
                 var vector = fieldData.Vectors.FloatVector.Data.ToList();
 
-                var field = fieldData.Vectors.DataCase switch
-                {
-                    Grpc.VectorField.DataOneofCase.FloatVector => Field.CreateFloatVector(fieldData.FieldName, floatVectors)
-                };
+                var field = Field.CreateFloatVector(fieldData.FieldName, floatVectors);
 
                 return field;
             }
@@ -321,7 +315,7 @@ public abstract class Field
     /// <returns>New created field</returns>
     public static Field CreateFromStream(string fieldName, Stream stream,long dimension)
     {
-        ParamUtils.CheckNullEmptyString(fieldName, nameof(FieldName));
+        Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
         var field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
 
         return field;

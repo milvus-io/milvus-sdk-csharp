@@ -12,19 +12,25 @@ namespace IO.MilvusTests.Client;
 /// </summary>
 public sealed class DataTests : MilvusTestClientsBase, IAsyncLifetime
 {
-    private string collectionName;
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+
+    private string _collectionName;
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously.
 
     public async Task InitializeAsync()
     {
         Random random = new();
-        collectionName = $"test{random.Next()}";
+        _collectionName = $"test{random.Next()}";
     }
+#pragma warning restore CS1998 //
 
     public async Task DisposeAsync()
     {
         foreach (var client in MilvusClients)
         {
-            await client.ThenDropCollectionAsync(collectionName);
+            await client.ThenDropCollectionAsync(_collectionName);
         }
         // Cooldown, sometimes the DB doesn't refresh completely
         await Task.Delay(1000);
@@ -35,7 +41,7 @@ public sealed class DataTests : MilvusTestClientsBase, IAsyncLifetime
     {
         foreach (var client in MilvusClients)
         {
-            await client.GivenBookIndex(collectionName);
+            await client.GivenBookIndex(_collectionName);
         }
 
         await Task.Delay(1000);
@@ -46,8 +52,8 @@ public sealed class DataTests : MilvusTestClientsBase, IAsyncLifetime
     {
         foreach (var client in MilvusClients)
         {
-            await client.GivenBookIndex(collectionName);
-            var r = await client.DeleteAsync(collectionName, $"book_id in [1,2]");
+            await client.GivenBookIndex(_collectionName);
+            var r = await client.DeleteAsync(_collectionName, $"book_id in [1,2]");
             r.DeleteCount.Should().BeGreaterThan(1);
         }
 
@@ -59,8 +65,8 @@ public sealed class DataTests : MilvusTestClientsBase, IAsyncLifetime
     {
         foreach (var client in MilvusClients)
         {
-            await client.GivenBookIndex(collectionName);
-            DetailedMilvusCollection collectionInfo = await client.DescribeCollectionAsync(collectionName);
+            await client.GivenBookIndex(_collectionName);
+            DetailedMilvusCollection collectionInfo = await client.DescribeCollectionAsync(_collectionName);
             long compactionId = await client.ManualCompactionAsync(collectionInfo.CollectionId);;
 
             compactionId.Should().NotBe(0);

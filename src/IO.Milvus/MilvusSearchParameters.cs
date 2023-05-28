@@ -2,7 +2,6 @@
 using IO.Milvus.ApiSchema;
 using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
-using IO.Milvus.Param;
 using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
@@ -72,7 +71,7 @@ public class MilvusSearchParameters:
     /// <summary>
     /// Guarantee timestamp
     /// </summary>
-    public long GuaranteeTimestamp { get; private set; } = Constant.GUARANTEE_EVENTUALLY_TS;
+    public long GuaranteeTimestamp { get; private set; } = Constants.GUARANTEE_EVENTUALLY_TS;
 
     /// <summary>
     /// Metric type of ANN searching.
@@ -303,7 +302,7 @@ public class MilvusSearchParameters:
     /// Use an operation's TSO to set this parameter, the server will execute search after this operation is finished.
     /// </item>
     /// <item>
-    /// Default value is <see cref="Constant.GUARANTEE_EVENTUALLY_TS"/> , server executes search immediately.
+    /// Default value is <see cref="Constants.GUARANTEE_EVENTUALLY_TS"/> , server executes search immediately.
     /// </item> 
     /// </list>
     /// </summary>
@@ -517,15 +516,15 @@ public class MilvusSearchParameters:
 
     private void PrepareRestParameters(SearchRequest request)
     {
-        request.SearchParams[Constant.VECTOR_FIELD] = VectorFieldName;
-        request.SearchParams[Constant.TOP_K] = TopK.ToString();
-        request.SearchParams[Constant.METRIC_TYPE] = MetricType.ToString();
-        request.SearchParams[Constant.ROUND_DECIMAL] = RoundDecimal.ToString();        
-        request.SearchParams[Constant.IGNORE_GROWING] = IgnoreGrowing.ToString();
+        request.SearchParams[Constants.VECTOR_FIELD] = VectorFieldName;
+        request.SearchParams[Constants.TOP_K] = TopK.ToString();
+        request.SearchParams[Constants.METRIC_TYPE] = MetricType.ToString();
+        request.SearchParams[Constants.ROUND_DECIMAL] = RoundDecimal.ToString();        
+        request.SearchParams[Constants.IGNORE_GROWING] = IgnoreGrowing.ToString();
 
         if (Parameters?.Any() == true)
         {
-            request.SearchParams[Constant.PARAMS] = Parameters.Combine();
+            request.SearchParams[Constants.PARAMS] = Parameters.Combine();
         }
     }
 
@@ -534,16 +533,16 @@ public class MilvusSearchParameters:
         request.SearchParams.AddRange (
             new[]
             {
-                new Grpc.KeyValuePair() { Key = Constant.VECTOR_FIELD, Value = VectorFieldName },
-                new Grpc.KeyValuePair() { Key = Constant.TOP_K, Value = TopK.ToString() },
-                new Grpc.KeyValuePair() { Key = Constant.METRIC_TYPE, Value = MetricType.ToString().ToUpper() },
-                new Grpc.KeyValuePair() { Key = Constant.IGNORE_GROWING, Value = IgnoreGrowing.ToString() },
-                new Grpc.KeyValuePair() { Key = Constant.ROUND_DECIMAL, Value = RoundDecimal.ToString() }
+                new Grpc.KeyValuePair() { Key = Constants.VECTOR_FIELD, Value = VectorFieldName },
+                new Grpc.KeyValuePair() { Key = Constants.TOP_K, Value = TopK.ToString() },
+                new Grpc.KeyValuePair() { Key = Constants.METRIC_TYPE, Value = MetricType.ToString().ToUpper() },
+                new Grpc.KeyValuePair() { Key = Constants.IGNORE_GROWING, Value = IgnoreGrowing.ToString() },
+                new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString() }
             });
 
         if (Parameters?.Any() == true)
         {
-            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constant.PARAMS, Value = Parameters.Combine() });
+            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = Parameters.Combine() });
         }
     }
 
@@ -553,7 +552,7 @@ public class MilvusSearchParameters:
 
         var placeholderValue = new Grpc.PlaceholderValue()
         {
-            Tag = Constant.VECTOR_TAG
+            Tag = Constants.VECTOR_TAG
         };
 
         if (MilvusFloatVectors != null)

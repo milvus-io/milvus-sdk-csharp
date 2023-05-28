@@ -7,7 +7,6 @@ using System.Net.Http;
 using IO.Milvus.ApiSchema;
 using System.Text.Json;
 using System.Collections;
-using IO.Milvus.Param;
 
 namespace IO.Milvus.Client.REST;
 
@@ -268,7 +267,7 @@ public partial class MilvusRestClient
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
         IList<string> partitionNames = null,
         long travelTimestamp = 0,
-        long guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
+        long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
         CancellationToken cancellationToken = default)

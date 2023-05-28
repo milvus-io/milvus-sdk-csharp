@@ -1,4 +1,5 @@
-﻿using IO.Milvus.ApiSchema;
+﻿using IO.Milvus;
+using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
 using Xunit;
 
@@ -8,8 +9,14 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task AliasTest(IMilvusClient2 milvusClient)
+    public async Task AliasTest(IMilvusClient milvusClient)
     {
+        if (milvusClient == null)
+        {
+            Assert.Fail("Client is null");
+            return;
+        }
+
         if (milvusClient.ToString().Contains("zilliz"))
         {
             return;

@@ -10,7 +10,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task DeleteTest(IMilvusClient2 milvusClient)
+    public async Task DeleteTest(IMilvusClient milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
 

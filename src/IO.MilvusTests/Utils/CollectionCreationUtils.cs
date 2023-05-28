@@ -1,5 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Client;
+﻿using IO.Milvus.Client;
 using IO.Milvus;
 using Xunit;
 using FluentAssertions;
@@ -10,7 +9,7 @@ namespace IO.MilvusTests.Utils;
 internal static class CollectionCreationUtils
 {
     internal static async Task CreateBookCollectionAndIndex(
-        this IMilvusClient2 milvusClient, 
+        this IMilvusClient milvusClient, 
         string collectionName,
         string partitionName = "")
     {
@@ -22,7 +21,7 @@ internal static class CollectionCreationUtils
     }
 
     internal static async Task CreateBookCollectionAsync(
-        this IMilvusClient2 milvusClient, 
+        this IMilvusClient milvusClient, 
         string collectionName, 
         string partitionName = "")
     {
@@ -56,7 +55,7 @@ internal static class CollectionCreationUtils
     }
 
     internal static async Task WaitLoadedAsync(
-    this IMilvusClient2 milvusClient,
+    this IMilvusClient milvusClient,
     string collectionName)
     {
         await milvusClient.LoadCollectionAsync(collectionName);
@@ -82,7 +81,7 @@ internal static class CollectionCreationUtils
 
     #region Private ===============================================================
     private static async Task CreateIndexAsync(
-        this IMilvusClient2 milvusClient, 
+        this IMilvusClient milvusClient, 
         string collectionName)
     {
         await milvusClient.CreateIndexAsync(
@@ -98,7 +97,7 @@ internal static class CollectionCreationUtils
     }
 
     private static async Task<MilvusMutationResult> InsertDataToBookCollection(
-        IMilvusClient2 milvusClient, 
+        IMilvusClient milvusClient, 
         string collectionName,
         string partitionName = "")
     {

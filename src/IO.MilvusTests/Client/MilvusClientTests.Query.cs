@@ -9,7 +9,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async void QueryTest(IMilvusClient2 milvusClient)
+    public async void QueryTest(IMilvusClient milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
 

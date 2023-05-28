@@ -53,6 +53,15 @@
       </None>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Client\gRPC\" />
+      <Folder Include="Client\REST\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\.editorconfig" Link=".editorconfig" />
+    </ItemGroup>
+
     <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

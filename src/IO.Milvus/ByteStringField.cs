@@ -1,5 +1,4 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.ApiSchema;
 
 namespace IO.Milvus;
 

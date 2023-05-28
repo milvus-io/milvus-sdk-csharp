@@ -1,6 +1,5 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.ApiSchema;
-using IO.Milvus.Param;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -11,7 +10,7 @@ namespace IO.Milvus.Client;
 /// <summary>
 /// Milvus client
 /// </summary>
-public interface IMilvusClient2
+public interface IMilvusClient
 {
     /// <summary>
     /// Ensure to connect to Milvus server before any operations.
@@ -275,16 +274,14 @@ public interface IMilvusClient2
     /// <summary>
     /// Get the plans of a compaction.
     /// </summary>
-    /// <param name="compactionID">Compaction id.</param>
+    /// <param name="compactionId">Compaction id.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<MilvusCompactionPlans> GetCompactionPlans(
         long compactionId,
         CancellationToken cancellationToken = default);
 
-    //TODO:
-    //1.LoadBalance
-    //2.GetReplicas
+    //TODO:1.LoadBalance; 2.GetReplicas
     #endregion
 
     #region Import
@@ -472,7 +469,7 @@ public interface IMilvusClient2
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
         IList<string> partitionNames = null,
         long travelTimestamp = 0,
-        long guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
+        long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
         CancellationToken cancellationToken = default);

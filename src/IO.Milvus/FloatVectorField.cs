@@ -1,5 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Grpc;
+﻿using IO.Milvus.Grpc;
 using System.Collections.Generic;
 using System.Linq;
 

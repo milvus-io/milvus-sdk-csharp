@@ -1,8 +1,6 @@
 ﻿using FluentAssertions;
 using IO.Milvus.ApiSchema;
 using IO.Milvus.Client.REST;
-using IO.Milvus.Param;
-using IO.Milvus.Param.Collection;
 using IO.MilvusTests.Client.Base;
 using IO.MilvusTests.Utils;
 using Xunit;
@@ -16,12 +14,14 @@ public sealed class CollectionTest : MilvusTestClientsBase, IAsyncLifetime
     private string _aliasName;
 #pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously.
     public async Task InitializeAsync()
     {
         Random random = new();
         _collectionName = $"test{random.Next()}";
         _aliasName = _collectionName + "_aliasName";
     }
+#pragma warning restore CS1998 //
 
     public async Task DisposeAsync()
     {

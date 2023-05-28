@@ -2,73 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace IO.Milvus.ApiSchema;
-
-/// <summary>
-/// Data type
-/// </summary>
-public enum MilvusDataType
-{
-    /// <summary>
-    /// None
-    /// </summary>
-    None = 0,
-
-    /// <summary>
-    /// Bool
-    /// </summary>
-    Bool = 1,
-
-    /// <summary>
-    /// Int8
-    /// </summary>
-    Int8 = 2,
-
-    /// <summary>
-    /// Int16
-    /// </summary>
-    Int16 = 3,
-
-    /// <summary>
-    /// Int32
-    /// </summary>
-    Int32 = 4,
-
-    /// <summary>
-    /// Int64
-    /// </summary>
-    Int64 = 5,
-
-    /// <summary>
-    /// Float
-    /// </summary>
-    Float = 10,
-
-    /// <summary>
-    /// Double
-    /// </summary>
-    Double = 11,
-
-    /// <summary>
-    /// String
-    /// </summary>
-    String = 20,
-
-    /// <summary>
-    /// VarChar
-    /// </summary>
-    VarChar = 21,
-
-    /// <summary>
-    /// BinaryVector
-    /// </summary>
-    BinaryVector = 100,
-
-    /// <summary>
-    /// FloatVector
-    /// </summary>
-    FloatVector = 101,
-}
+namespace IO.Milvus;
 
 /// <summary>
 /// Field type
@@ -107,7 +41,7 @@ public sealed class FieldType
         bool isPrimaryKey = false,
         bool autoId = false)
     {
-        return new FieldType(name,dataType,isPrimaryKey,autoId);
+        return new FieldType(name, dataType, isPrimaryKey, autoId);
     }
 
     /// <summary>
@@ -122,7 +56,7 @@ public sealed class FieldType
         bool autoId = false)
     {
         MilvusDataType dataType = Field.EnsureDataType<TData>();
-        return new FieldType(name,dataType,isPrimaryKey,autoId);
+        return new FieldType(name, dataType, isPrimaryKey, autoId);
     }
 
     /// <summary>
@@ -136,12 +70,12 @@ public sealed class FieldType
     public static FieldType CreateVarchar(
         string name,
         long maxLength,
-        bool isPrimaryKey = false, 
+        bool isPrimaryKey = false,
         bool autoId = false)
     {
         var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId);
 
-        field.TypeParams.Add("max_length",maxLength.ToString());
+        field.TypeParams.Add("max_length", maxLength.ToString());
 
         return field;
     }
@@ -192,7 +126,7 @@ public sealed class FieldType
     /// </summary>
     [JsonPropertyName("index_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string, string> IndexParams { get; } = new Dictionary<string,string>();
+    public IDictionary<string, string> IndexParams { get; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Is primary key.
@@ -211,5 +145,5 @@ public sealed class FieldType
     /// </summary>
     [JsonPropertyName("type_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string, string> TypeParams { get; } = new Dictionary<string,string>();
+    public IDictionary<string, string> TypeParams { get; } = new Dictionary<string, string>();
 }

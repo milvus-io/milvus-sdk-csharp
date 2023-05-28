@@ -1,7 +1,6 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
-using IO.Milvus.Exception;
 using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 using System.Collections.Generic;
@@ -97,7 +96,7 @@ internal sealed class CreateCollectionRequest:
         FieldType firstField = Schema.Fields.First();
         if (!firstField.IsPrimaryKey || (firstField.DataType != (MilvusDataType)DataType.Int64 && firstField.DataType != (MilvusDataType)DataType.VarChar))
         {
-            throw new ParamException("The first filedType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
+            throw new MilvusException("The first filedType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
         }
     }
 

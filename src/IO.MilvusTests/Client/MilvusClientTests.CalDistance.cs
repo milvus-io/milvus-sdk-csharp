@@ -10,7 +10,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task CalDistanceTest(IMilvusClient2 milvusClient)
+    public async Task CalDistanceTest(IMilvusClient milvusClient)
     {
         if (milvusClient.IsZillizCloud())
         {

@@ -16,7 +16,7 @@ namespace IO.Milvus.Client.gRPC;
 /// <summary>
 /// Milvus gRPC client
 /// </summary>
-public partial class MilvusGrpcClient : IMilvusClient2
+public partial class MilvusGrpcClient : IMilvusClient
 {
     /// <summary>
     /// The constructor for the <see cref="MilvusGrpcClient"/>

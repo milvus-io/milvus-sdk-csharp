@@ -1,13 +1,12 @@
 ﻿using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace IO.Milvus.Client.REST;
 
 internal static class HttpRequest
 {
-    public static HttpRequestMessage CreateGetRequest(string url, object? payload = null)
+    public static HttpRequestMessage CreateGetRequest(string url, object payload = null)
     {
         return new HttpRequestMessage(HttpMethod.Get, url)
         {
@@ -15,7 +14,7 @@ internal static class HttpRequest
         };
     }
 
-    public static HttpRequestMessage CreatePostRequest(string url, object? payload = null)
+    public static HttpRequestMessage CreatePostRequest(string url, object payload = null)
     {
         return new HttpRequestMessage(HttpMethod.Post, url)
         {
@@ -23,7 +22,7 @@ internal static class HttpRequest
         };
     }
 
-    public static HttpRequestMessage CreatePutRequest(string url, object? payload = null)
+    public static HttpRequestMessage CreatePutRequest(string url, object payload = null)
     {
         return new HttpRequestMessage(HttpMethod.Put, url)
         {
@@ -31,7 +30,7 @@ internal static class HttpRequest
         };
     }
 
-    public static HttpRequestMessage CreatePatchRequest(string url, object? payload = null)
+    public static HttpRequestMessage CreatePatchRequest(string url, object payload = null)
     {
         return new HttpRequestMessage(new HttpMethod("PATCH"), url)
         {
@@ -39,7 +38,7 @@ internal static class HttpRequest
         };
     }
 
-    public static HttpRequestMessage CreateDeleteRequest(string url,object? payload = null)
+    public static HttpRequestMessage CreateDeleteRequest(string url,object payload = null)
     {
         return new HttpRequestMessage(HttpMethod.Delete, url) 
         { 
@@ -47,7 +46,7 @@ internal static class HttpRequest
         };
     }
 
-    private static StringContent? GetJsonContent(object? payload)
+    private static StringContent GetJsonContent(object payload)
     {
         if (payload == null)
         {

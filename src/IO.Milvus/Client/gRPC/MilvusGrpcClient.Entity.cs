@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
-using IO.Milvus.Param;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -195,7 +194,7 @@ public partial class MilvusGrpcClient
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
         IList<string> partitionNames = null,
         long travelTimestamp = 0,
-        long guaranteeTimestamp = Constant.GUARANTEE_EVENTUALLY_TS,
+        long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
         CancellationToken cancellationToken = default)

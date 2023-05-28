@@ -1,6 +1,5 @@
 ﻿using Xunit;
 using FluentAssertions;
-using IO.Milvus.ApiSchema;
 
 namespace IO.Milvus.Tests;
 
@@ -42,10 +41,10 @@ public class FieldTests
 
         var field = Field.FromGrpcFieldData(grpcField) as Field<int>;
         field.Should().NotBeNull();
-        field.FieldName.Should().Be("Id");
-        field.DataType.Should().Be(MilvusDataType.Int32);
-        field.RowCount.Should().Be(3);
-        field.Data.Should().BeEquivalentTo(new[] {1,2,3});
+        field?.FieldName.Should().Be("Id");
+        field?.DataType.Should().Be(MilvusDataType.Int32);
+        field?.RowCount.Should().Be(3);
+        field?.Data.Should().BeEquivalentTo(new[] {1,2,3});
     }
 
     [Fact()]

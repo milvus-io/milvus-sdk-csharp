@@ -79,7 +79,7 @@ public sealed class MilvusConfig
 
 internal static class MilvusConfigExtensions
 {
-    public static IMilvusClient2 CreateClient(this MilvusConfig config)
+    public static IMilvusClient CreateClient(this MilvusConfig config)
     {
         if (string.Compare(config.ConnectionType,"rest",true) == 0)
         {

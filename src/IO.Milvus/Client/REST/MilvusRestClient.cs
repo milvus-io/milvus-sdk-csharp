@@ -16,7 +16,7 @@ namespace IO.Milvus.Client.REST;
 /// <summary>
 /// An implementation of a client for the Milvus VectorDB.
 /// </summary>
-public partial class MilvusRestClient : IMilvusClient2
+public partial class MilvusRestClient : IMilvusClient
 {
     /// <summary>
     /// The constructor for the <see cref="MilvusRestClient"/>.
