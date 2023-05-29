@@ -70,7 +70,7 @@ public partial class MilvusRestClient
             throw new MilvusException(data.Status);
         }
 
-        return data.ToDetaildedMilvusCollection();
+        return data.ToDetailedMilvusCollection();
     }
 
     ///<inheritdoc/>
@@ -184,7 +184,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed release collection: {0}, {1}", collectionName, e.Message, responseContent);
+            this._log.LogError(e, "Failed load collection: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
     }
@@ -194,7 +194,7 @@ public partial class MilvusRestClient
         string collectionName, 
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Load collection: {0}", collectionName);
+        this._log.LogDebug("Get collection statistics: {0}", collectionName);
 
         using HttpRequestMessage request = GetCollectionStatisticsRequest
             .Create(collectionName)
@@ -208,7 +208,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed release collection: {0}, {1}", collectionName, e.Message, responseContent);
+            this._log.LogError(e, "Failed get collection statistics: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
 

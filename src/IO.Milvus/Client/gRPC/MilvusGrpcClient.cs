@@ -1,12 +1,10 @@
 ﻿using Grpc.Core;
 using Grpc.Net.Client;
-using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -122,7 +120,6 @@ public partial class MilvusGrpcClient : IMilvusClient
     /// </summary>
     public void Dispose()
     {
-        // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }

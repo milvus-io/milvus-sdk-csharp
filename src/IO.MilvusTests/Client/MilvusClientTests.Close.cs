@@ -26,7 +26,7 @@ public partial class MilvusClientTests
             {
                 state = await client.HealthAsync();
             }
-            catch (ObjectDisposedException ex)
+            catch (ObjectDisposedException)
             {
                 exceptionThrown = true;
             }

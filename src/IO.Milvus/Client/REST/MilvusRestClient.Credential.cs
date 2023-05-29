@@ -117,7 +117,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed describe index: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            this._log.LogError("Failed list credential users: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 

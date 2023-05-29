@@ -11,11 +11,11 @@ namespace IO.Milvus.ApiSchema;
 /// Flush a collection's data to disk. 
 /// </summary>
 /// <remarks>
-/// Milvus's data will be auto flushed.
+/// Milvus data will be auto flushed.
 /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism. 
 /// It will be removed in the future.
 /// </remarks>
-internal class FlushRequest:
+internal sealed class FlushRequest:
     IValidatable,
     IRestRequest,
     IGrpcRequest<Grpc.FlushRequest>

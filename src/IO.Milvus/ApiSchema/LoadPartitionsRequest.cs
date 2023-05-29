@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
-using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -17,13 +16,6 @@ internal sealed class LoadPartitionsRequest :
     /// </summary>
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
-
-    /// <summary>
-    /// Database name
-    /// </summary>
-    [JsonPropertyName("db_name")]
-    [Obsolete("Not useful for now")]
-    public string DbName { get; set; }
 
     /// <summary>
     /// The partition names you want to load

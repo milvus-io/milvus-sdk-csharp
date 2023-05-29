@@ -60,5 +60,5 @@ internal sealed class SearchRequest
     /// Travel timestamp
     /// </summary>
     [JsonPropertyName("travel_timestamp")]
-    public int TravelTimestamp { get; set; }
+    public long TravelTimestamp { get; set; }
 }

@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace IO.Milvus.ApiSchema;
 
 /// <summary>
-/// Import data files(json, numpy, etc.) on MinIO/S3 storage, read and parse them into sealed segments
+/// Import data files(json, NumPy, etc.) on MinIO/S3 storage, read and parse them into sealed segments
 /// </summary>
 internal sealed class ImportRequest
 {

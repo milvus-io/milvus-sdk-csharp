@@ -1,5 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Client.REST;
+﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using System;
 using System.Collections.Generic;
@@ -9,7 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class CalcDistanceRequest:
+internal sealed class CalcDistanceRequest:
     IValidatable,
     IRestRequest,
     IGrpcRequest<Grpc.CalcDistanceRequest>
@@ -72,8 +71,8 @@ internal class CalcDistanceRequest:
 
     public void Validate()
     {
-        Verify.NotNull(this.VectorsLeft, nameof(this.VectorsLeft));
-        Verify.NotNull(this.VectorsRight, nameof(this.VectorsLeft));
+        Verify.NotNull(this.VectorsLeft, "VectorsLeft cannot be null or empty");
+        Verify.NotNull(this.VectorsRight, "VectorsRight cannot be null or empty");
         Verify.True(
             new[] {
                 MilvusMetricType.L2,

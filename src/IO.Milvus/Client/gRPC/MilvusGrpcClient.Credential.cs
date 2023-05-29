@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using System.Text;
-using System.Xml.Linq;
 using System;
 
 namespace IO.Milvus.Client.gRPC;
@@ -27,7 +26,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            this._log.LogError("Delete credential failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }

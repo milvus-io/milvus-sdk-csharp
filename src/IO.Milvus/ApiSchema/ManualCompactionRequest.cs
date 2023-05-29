@@ -56,7 +56,7 @@ internal sealed class ManualCompactionRequest:
         Verify.True(CollectionId > 0, "Invalid collection id");
     }
 
-    internal ManualCompactionRequest WithTimetracel(DateTime? timetravel)
+    internal ManualCompactionRequest WithTimetravel(DateTime? timetravel)
     {
         if (timetravel != null)
         {

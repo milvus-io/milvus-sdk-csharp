@@ -304,7 +304,7 @@ public interface IMilvusClient : IDisposable
     /// <summary>
     /// Update password for a user.
     /// </summary>
-    /// <param name="username">Usernmae.</param>
+    /// <param name="username">Username.</param>
     /// <param name="oldPassword">Old password.</param>
     /// <param name="newPassword">New password.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -407,7 +407,7 @@ public interface IMilvusClient : IDisposable
     /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism.
     /// It will be removed in the future.
     /// </summary>
-    /// <param name="collectionNames">Collectio names.</param>
+    /// <param name="collectionNames">Collection names.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusFlushResult> FlushAsync(
@@ -415,7 +415,7 @@ public interface IMilvusClient : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns sealed segments's information of a collection.
+    /// Returns sealed segments information of a collection.
     /// </summary>
     /// <param name="collectionName">Milvus collection name.</param>
     /// <param name="cancellationToken">Cancellation token</param>

@@ -9,7 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get the flush state of multiple segments
 /// </summary>
-internal class GetFlushStateRequest:
+internal sealed class GetFlushStateRequest:
     IValidatable,
     IRestRequest,
     IGrpcRequest<Grpc.GetFlushStateRequest>

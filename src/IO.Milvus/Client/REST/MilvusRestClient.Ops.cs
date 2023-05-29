@@ -21,7 +21,7 @@ public partial class MilvusRestClient
 
         using HttpRequestMessage request = ManualCompactionRequest
             .Create(collectionId)
-            .WithTimetracel(timetravel)
+            .WithTimetravel(timetravel)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -99,7 +99,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError("Failed get compaction state: {0}, {1}", e.Message, responseContent);
+            this._log.LogError("Failed get compaction plans: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -107,7 +107,7 @@ public partial class MilvusRestClient
 
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed get compaction state: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            this._log.LogError("Failed get compaction plans: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new MilvusException(data.Status);
         }
 

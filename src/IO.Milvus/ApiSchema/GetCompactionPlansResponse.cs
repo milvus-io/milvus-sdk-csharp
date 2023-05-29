@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class GetCompactionPlansResponse
+internal sealed class GetCompactionPlansResponse
 {
     /// <summary>
     /// Merge infos.

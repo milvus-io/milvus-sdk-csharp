@@ -1,5 +1,4 @@
 ﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json.Serialization;

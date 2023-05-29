@@ -1,7 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -225,7 +224,7 @@ public partial class MilvusGrpcClient
         string collectionName,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get query segment info: {0}", collectionName);
+        this._log.LogDebug("Query: {0}", collectionName);
 
         Grpc.GetQuerySegmentInfoRequest request = GetQuerySegmentInfoRequest
             .Create(collectionName)

@@ -1,6 +1,4 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.Utils;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -152,7 +150,7 @@ public class MilvusVectors
     public BinaryVectorField BinaryVectorField { get; }
 
     /// <summary>
-    /// Mivlus vectos type.
+    /// Milvus vectors type.
     /// </summary>
     [JsonIgnore]
     public MilvusVectorsType MilvusVectorsType { get; }

@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class ShowPartitionsResponse
+internal sealed class ShowPartitionsResponse
 {
     [JsonPropertyName("created_timestamps")]
     public IList<long> CreatedTimestamps { get; set; }

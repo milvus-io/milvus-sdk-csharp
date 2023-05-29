@@ -1,12 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Threading;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using IO.Milvus.ApiSchema;
 using System.Text.Json;
-using System.Collections;
 
 namespace IO.Milvus.Client.REST;
 
@@ -72,7 +70,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Delete index failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Delete data failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -80,7 +78,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed describe index: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            this._log.LogError("Failed Delete data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -210,7 +208,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Get persistent segment info failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Get persistent segment infos failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -218,7 +216,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get persistent segment info failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            this._log.LogError("Get persistent segment infos failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 

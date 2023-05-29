@@ -3,7 +3,6 @@ using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -48,6 +47,23 @@ public partial class MilvusRestClient : IMilvusClient
             );
     }
 
+    #region Properties
+    /// <summary>
+    /// The endpoint for the Milvus service.
+    /// </summary>
+    public string Address => SanitizeEndpoint(this._httpClient.BaseAddress.ToString(), Port).ToString();
+
+    /// <summary>
+    /// The endpoint for the Milvus service.
+    /// </summary>
+    public string BaseAddress => this._httpClient.BaseAddress.ToString();
+
+    /// <summary>
+    /// The port for the Milvus service.
+    /// </summary>
+    public int Port => this._httpClient.BaseAddress.Port;
+    #endregion
+
     ///<inheritdoc/>
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
@@ -64,7 +80,7 @@ public partial class MilvusRestClient : IMilvusClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Ensure to connect to Milvus server failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -76,23 +92,6 @@ public partial class MilvusRestClient : IMilvusClient
 
         return new MilvusHealthState(status.ErrorCode == Grpc.ErrorCode.Success, status.Reason, status.ErrorCode);
     }
-
-    #region Properties
-    /// <summary>
-    /// The endpoint for the Milvus service.
-    /// </summary>
-    public string Address => SanitizeEndpoint(this._httpClient.BaseAddress.ToString(),Port).ToString();
-
-    /// <summary>
-    /// The endpoint for the Milvus service.
-    /// </summary>
-    public string BaseAddress => this._httpClient.BaseAddress.ToString();
-
-    /// <summary>
-    /// The port for the Milvus service.
-    /// </summary>
-    public int Port => this._httpClient.BaseAddress.Port;
-    #endregion
 
     /// <summary>
     /// Get the client msg;

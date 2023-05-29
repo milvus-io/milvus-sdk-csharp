@@ -1,5 +1,4 @@
 ﻿using IO.Milvus;
-using IO.Milvus.ApiSchema;
 using IO.Milvus.Client;
 using Xunit;
 

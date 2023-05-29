@@ -4,7 +4,6 @@ using System.Threading;
 using Microsoft.Extensions.Logging;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.ApiSchema;
-using System.Collections.Generic;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -20,7 +19,7 @@ public partial class MilvusGrpcClient
 
         Grpc.ManualCompactionRequest request = ManualCompactionRequest
             .Create(collectionId)
-            .WithTimetracel(timetravel)
+            .WithTimetravel(timetravel)
             .BuildGrpc();
 
         Grpc.ManualCompactionResponse response = await _grpcClient.ManualCompactionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -71,7 +70,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed get compaction state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            this._log.LogError("Failed get compaction plans: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

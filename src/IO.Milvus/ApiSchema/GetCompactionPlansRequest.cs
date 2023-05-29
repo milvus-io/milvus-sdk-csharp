@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class GetCompactionPlansRequest :
+internal sealed class GetCompactionPlansRequest :
     IValidatable,
     IRestRequest,
     IGrpcRequest<Grpc.GetCompactionPlansRequest>

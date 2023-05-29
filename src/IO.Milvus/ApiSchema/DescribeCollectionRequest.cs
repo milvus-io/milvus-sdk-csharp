@@ -1,7 +1,5 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
-using IO.Milvus.Grpc;
-using System;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
@@ -10,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Describe a collection
 /// </summary>
-internal class DescribeCollectionRequest:
+internal sealed class DescribeCollectionRequest:
     IRestRequest,
     IGrpcRequest<Grpc.DescribeCollectionRequest>,
     IValidatable
@@ -37,7 +35,7 @@ internal class DescribeCollectionRequest:
     public long Timestamp { get; set; }
 
     /// <summary>
-    /// Create a descriptioncollection request.
+    /// Create a description collection request.
     /// </summary>
     /// <param name="collectionName">Milvus collection name.</param>
     public static DescribeCollectionRequest Create(string collectionName)

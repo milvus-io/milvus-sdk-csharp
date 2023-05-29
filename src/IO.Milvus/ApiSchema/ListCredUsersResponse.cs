@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class ListCredUsersResponse
+internal sealed class ListCredUsersResponse
 {
     [JsonPropertyName("usernames")]
     public IList<string> Usernames { get; set; }

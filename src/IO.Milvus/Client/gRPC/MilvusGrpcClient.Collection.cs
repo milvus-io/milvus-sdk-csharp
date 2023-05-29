@@ -85,7 +85,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Describe collection failed: {0}, {1}", response.ErrorCode, response.Reason);
+            this._log.LogError("Drop collection failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);   
         }
     }

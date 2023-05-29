@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class GetCollectionStatisticsResponse
+internal sealed class GetCollectionStatisticsResponse
 {
     [JsonPropertyName("status")]
     public ResponseStatus Status { get; set; }

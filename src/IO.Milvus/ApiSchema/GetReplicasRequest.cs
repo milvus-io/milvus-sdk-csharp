@@ -16,6 +16,6 @@ internal sealed class GetReplicasRequest
     /// <summary>
     /// With shard nodes
     /// </summary>
-    [JsonPropertyName("with_shard_ndoes")]
+    [JsonPropertyName("with_shard_nodes")]
     public bool WithShardNodes { get; set; }
 }

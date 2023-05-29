@@ -91,7 +91,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Drop index failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Describe index failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 

@@ -16,8 +16,7 @@ internal sealed class DropIndexRequest :
     [JsonPropertyName("field_name")]
     public string FieldName { get; set; }
 
-    //[JsonPropertyName("index_name")]
-    [JsonIgnore]
+    [JsonPropertyName("index_name")]
     public string IndexName { get; set; }
 
     public static DropIndexRequest Create(

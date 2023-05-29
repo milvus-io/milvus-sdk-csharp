@@ -24,7 +24,7 @@ public struct IndexBuildProgress
     /// <summary>
     /// Total rows.
     /// </summary>
-    public long TotalRows { get; set; }
+    public long TotalRows { get; }
 
     ///<inheritdoc/>
     public override string ToString()

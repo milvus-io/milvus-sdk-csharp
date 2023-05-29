@@ -27,7 +27,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Get metrics failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -35,7 +35,7 @@ public partial class MilvusRestClient
 
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed Describe collections: {0}", data.Status.ErrorCode);
+            this._log.LogError("Failed get metrics: {0}", data.Status.ErrorCode);
             throw new MilvusException(data.Status);
         }
 

@@ -8,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Alter an alias
 /// </summary>
-internal class AlterAliasRequest:
+internal sealed class AlterAliasRequest:
     IValidatable,
     IRestRequest,
     IGrpcRequest<Grpc.AlterAliasRequest>

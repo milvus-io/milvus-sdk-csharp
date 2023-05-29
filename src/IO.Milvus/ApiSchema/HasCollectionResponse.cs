@@ -2,7 +2,7 @@
 
 namespace IO.Milvus.ApiSchema;
 
-internal class HasCollectionResponse
+internal sealed class HasCollectionResponse
 {
     /// <summary>
     /// Response status.
