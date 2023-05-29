@@ -86,11 +86,11 @@ public interface IMilvusClient : IDisposable
     /// The collection name you want to load.
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
-    /// <param name="replicNumber">The replica number to load, default by 1.</param>
+    /// <param name="replicaNumber">The replica number to load, default by 1.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public Task LoadCollectionAsync(
         string collectionName, 
-        int replicNumber = 1, 
+        int replicaNumber = 1, 
         CancellationToken cancellationToken = default);
 
     /// <summary>

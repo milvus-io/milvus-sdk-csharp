@@ -138,14 +138,14 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task LoadCollectionAsync(
         string collectionName, 
-        int replicNumber = 1, 
+        int replicaNumber = 1, 
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Load collection {0}", collectionName);
 
         Grpc.LoadCollectionRequest request = LoadCollectionRequest
             .Create(collectionName)
-            .WithReplicaNumber(replicNumber)
+            .WithReplicaNumber(replicaNumber)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.LoadCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -214,7 +214,7 @@ public partial class MilvusGrpcClient
             .Create(collectionName)
             .WithPartitionNames(partitionNames)
             .BuildGrpc();
-        
+ 
         Grpc.GetLoadingProgressResponse response = await _grpcClient.GetLoadingProgressAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
