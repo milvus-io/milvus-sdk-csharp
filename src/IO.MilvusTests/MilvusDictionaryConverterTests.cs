@@ -1,14 +1,13 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
 using Xunit;
-using IO.Milvus.ApiSchema;
 using FluentAssertions;
 
 namespace IO.Milvus.Tests;
 
 public class MilvusDictionaryConverterTests
 {
-    internal class TestDic
+    internal class TestJsonEntity
     {
         public string Name { get; set; } = "Test";
 
@@ -33,7 +32,7 @@ public class MilvusDictionaryConverterTests
                 }
                 """;
 
-        var dic = JsonSerializer.Deserialize<TestDic>(data);
+        var dic = JsonSerializer.Deserialize<TestJsonEntity>(data);
 
         Assert.NotNull(dic);
         dic.KeyValuePairs.Should().NotBeNullOrEmpty();
@@ -42,13 +41,14 @@ public class MilvusDictionaryConverterTests
     [Fact]
     public void WriteTest()
     {
-        var dic = new TestDic() { 
-            KeyValuePairs = new Dictionary<string,string> { { "dim","128"} }
+        var dic = new TestJsonEntity()
+        {
+            KeyValuePairs = new Dictionary<string, string> { { "dim", "128" } }
         };
 
         var data = JsonSerializer.Serialize(dic);
 
-        dic = JsonSerializer.Deserialize<TestDic>(data);
+        dic = JsonSerializer.Deserialize<TestJsonEntity>(data);
 
         Assert.NotNull(dic);
         Assert.True(dic.KeyValuePairs?.Any() == true);
@@ -57,23 +57,23 @@ public class MilvusDictionaryConverterTests
     [Fact]
     public void WriteNullTest()
     {
-        var dic = new TestDic();
+        var dic = new TestJsonEntity();
 
         var data = JsonSerializer.Serialize(dic);
 
-        dic = JsonSerializer.Deserialize<TestDic>(data);
+        dic = JsonSerializer.Deserialize<TestJsonEntity>(data);
 
         Assert.NotNull(dic);
     }
 
     [Fact]
-    public void WriteNothinTest()
+    public void WriteNothingTest()
     {
-        var dic = new TestDic() { KeyValuePairs = new Dictionary<string, string>() };
+        var dic = new TestJsonEntity() { KeyValuePairs = new Dictionary<string, string>() };
 
         var data = JsonSerializer.Serialize(dic);
 
-        dic = JsonSerializer.Deserialize<TestDic>(data);
+        dic = JsonSerializer.Deserialize<TestJsonEntity>(data);
 
         Assert.NotNull(dic);
     }

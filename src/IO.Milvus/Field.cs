@@ -53,7 +53,7 @@ public abstract class Field
     /// Field id.
     /// </summary>
     [JsonPropertyName("field_id")]
-    public long FieldId { get; }
+    public long FieldId { get; internal set; }
 
     /// <summary>
     /// <see cref="MilvusDataType"/>
@@ -160,6 +160,10 @@ public abstract class Field
         if (type == typeof(bool))
         {
             dataType = MilvusDataType.Bool;
+        }
+        else if(type == typeof(sbyte))
+        {
+            dataType = MilvusDataType.Int8;
         }
         else if (type == typeof(Int16))
         {

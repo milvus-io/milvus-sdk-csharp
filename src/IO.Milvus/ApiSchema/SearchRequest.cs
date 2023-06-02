@@ -54,6 +54,7 @@ internal sealed class SearchRequest
     /// Search parameters
     /// </summary>
     [JsonPropertyName("search_params")]
+    [JsonConverter(typeof(MilvusDictionaryConverter))]
     public IDictionary<string, string> SearchParams { get; set; } = new Dictionary<string, string> ();
 
     /// <summary>

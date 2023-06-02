@@ -103,9 +103,12 @@ public class MilvusSearchParameters:
     public bool IgnoreGrowing { get; private set; } = false;
 
     /// <summary>
-    /// Create a search parameters
+    ///  Create a search parameters.
     /// </summary>
-    /// <returns><see cref="MilvusSearchParameters"/></returns>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="vectorFieldName">Vector field name.</param>
+    /// <param name="outFields">Out fields. Vector field is not supported.</param>
+    /// <returns></returns>
     public static MilvusSearchParameters Create(
         string collectionName,
         string vectorFieldName,

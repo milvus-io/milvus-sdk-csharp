@@ -62,9 +62,10 @@ internal static class CollectionCreationUtils
 
         if (milvusClient is MilvusRestClient)
         {
-            await Task.Delay(5000);
+            await Task.Delay(10000);
             return;
         }
+
         var progress = await milvusClient.GetLoadingProgressAsync(collectionName);
 
         int times = 0;
@@ -72,6 +73,7 @@ internal static class CollectionCreationUtils
         {
             await Task.Delay(1000);
             progress = await milvusClient.GetLoadingProgressAsync(collectionName);
+            
             if (times > 5)
             {
                 Assert.Fail("Out of times");

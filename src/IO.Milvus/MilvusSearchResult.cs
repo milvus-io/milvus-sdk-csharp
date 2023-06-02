@@ -62,6 +62,7 @@ public class MilvusSearchResultData
     /// Fields data
     /// </summary>
     [JsonPropertyName("fields_data")]
+    [JsonConverter(typeof(MilvusFieldConverter))]
     public IList<Field> FieldsData { get; set; }
 
     /// <summary>

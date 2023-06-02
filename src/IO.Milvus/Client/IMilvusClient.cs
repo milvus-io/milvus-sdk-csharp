@@ -119,7 +119,7 @@ public interface IMilvusClient : IDisposable
     /// <summary>
     /// Get loading progress of a collection or it's partition.
     /// </summary>
-    /// <param name="collectionName">Collection name of milvis.</param>
+    /// <param name="collectionName">Collection name of milvus.</param>
     /// <param name="partitionNames">Partition names.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>

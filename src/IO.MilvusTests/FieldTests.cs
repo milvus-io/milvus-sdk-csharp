@@ -82,7 +82,12 @@ public class FieldTests
     [Fact()]
     public void CreateBinaryVectorsTest()
     {
-        var field = Field.CreateBinaryVectors("byte",new List<byte[]>() { new byte[] { 1,2},new byte[] { 3,4} });
+        var field = Field.CreateBinaryVectors(
+            "byte"
+            ,new List<byte[]>() { 
+                new byte[] { 1,2},
+                new byte[] { 3,4} 
+            });
 
         field.Should().NotBeNull();
         field.RowCount.Should().Be(2);
@@ -93,7 +98,12 @@ public class FieldTests
     [Fact()]
     public void CreateFloatVectorTest()
     {
-        var field = Field.CreateFloatVector("vector", new List<List<float>>() { new List<float>() { 1, 2 }, new List<float>() { 3, 4 } });
+        var field = Field.CreateFloatVector(
+            "vector",
+            new List<List<float>>() { 
+                new List<float>() { 1, 2 }, 
+                new List<float>() { 3, 4 } 
+            });
 
         field.Should().NotBeNull();
         field.RowCount.Should().Be(2);

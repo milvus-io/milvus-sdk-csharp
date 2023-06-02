@@ -12,5 +12,6 @@ internal sealed class QueryResponse
     public ResponseStatus Status { get; set; }
 
     [JsonPropertyName("fields_data")]
+    [JsonConverter(typeof(MilvusFieldConverter))]
     public IList<Field> FieldsData { get; set; }
 }
