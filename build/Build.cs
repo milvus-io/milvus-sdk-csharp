@@ -1,17 +1,22 @@
 using System;
 using System.Linq;
+using LibGit2Sharp;
+using NuGet.Versioning;
 using Nuke.Common;
-using Nuke.Common.CI;
-using Nuke.Common.Execution;
+using Nuke.Common.CI.GitHubActions;
+using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
+using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.Tools.Xunit;
 using Nuke.Common.Utilities.Collections;
-using static Nuke.Common.EnvironmentInfo;
-using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
+using Nuke.Components;
+using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using static Serilog.Log;
 
-class Build : NukeBuild
+partial class Build : NukeBuild
 {
     /// Support plugins are available for:
     ///   - JetBrains ReSharper        https://nuke.build/resharper
@@ -19,26 +24,176 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main() => Execute<Build>(x => x.Push);
 
-    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-    readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+    GitHubActions GitHubActions => GitHubActions.Instance;
+
+    string BranchSpec => GitHubActions?.Ref;
+
+    string BuildNumber => GitHubActions?.RunNumber.ToString();
+
+    string PullRequestBase => GitHubActions?.BaseRef;
+
+    [Parameter("The key to push to Nuget")]
+    [Secret]
+    readonly string NuGetApiKey;
+
+    [Parameter("Pre release")]
+    readonly string PreReleaseSuffix;
+
+    [Solution(GenerateProjects = true)]
+    readonly Solution Solution;
+
+    [GitVersion(Framework = "net6.0",NoFetch = true)]
+    readonly GitVersion GitVersion;
+
+    [GitRepository]
+    readonly GitRepository GitRepository;
+
+    AbsolutePath ArtifactsDirectory => RootDirectory / "Artifacts";
+
+    AbsolutePath TestResultsDirectory => RootDirectory / "TestResults";
+
+    string Version;
 
     Target Clean => _ => _
-        .Before(Restore)
+        .OnlyWhenDynamic(() => RunAllTargets || HasSourceChanges)
         .Executes(() =>
         {
+            ArtifactsDirectory.CreateOrCleanDirectory();
+            TestResultsDirectory.CreateOrCleanDirectory();
         });
+
+    bool IsPullRequest => GitHubActions?.IsPullRequest ?? false;
 
     Target Restore => _ => _
+        .DependsOn(Clean)
+        .OnlyWhenDynamic(() => RunAllTargets || HasSourceChanges)
         .Executes(() =>
         {
+            DotNetRestore(s => s
+                .SetProjectFile(Solution)
+                .EnableNoCache());
         });
+
+    Target CalculateVersion => _ => _
+    .DependsOn(Restore)
+    .OnlyWhenDynamic(() => RunAllTargets || HasSourceChanges)
+    .Executes(() =>
+    {
+        Project mainProject = Solution.GetProject("IO.Milvus");
+        string projectVersionString = mainProject.GetProperty<string>("Version");
+        Information("ProjectVersion: {0}", projectVersionString);
+        ProjectVersion projectVersion = ProjectVersion.Parse(projectVersionString);
+
+        Information("GitVersion: {0}", GitVersion.MajorMinorPatch);
+        if (IsTag)
+        {
+            Version = GitVersion.MajorMinorPatch;
+        }
+        else
+        {
+            Version = projectVersion.ToString();
+        }
+
+        if (IsPullRequest)
+        {
+            Information(
+                "Branch spec {0} is a pull request. Adding build number {1}",
+                BranchSpec, BuildNumber);
+
+            if (!string.IsNullOrEmpty(PreReleaseSuffix))
+            {
+                Version = $"{Version}.{PreReleaseSuffix}.{BuildNumber}";
+            }
+            else
+            {
+                Version = $"{Version}.{BuildNumber}";
+            }
+        }
+
+        Information("Version = {0}", Version);
+    });
 
     Target Compile => _ => _
-        .DependsOn(Restore)
+        .DependsOn(CalculateVersion)
+        .OnlyWhenDynamic(() => RunAllTargets || HasSourceChanges)
         .Executes(() =>
         {
+            ReportSummary(s => s
+                .WhenNotNull(GitVersion, (_, o) => _
+                    .AddPair("Version", Version)));
+
+            DotNetBuild(s => s
+                .SetProjectFile(Solution)
+                .SetConfiguration(Configuration.Release)
+                .EnableNoLogo()
+                .EnableNoRestore()
+                .SetVersion(Version)
+                .SetInformationalVersion(Version));
         });
 
+    Target Pack => _ => _
+        .DependsOn(Compile)
+        .OnlyWhenDynamic(() => RunAllTargets || HasSourceChanges)
+        .Executes(() =>
+        {
+            ReportSummary(s => s
+                .WhenNotNull(Version, (_, semVer) => _
+                    .AddPair("Packed version", semVer)));
+
+            DotNetPack(s => s
+                .SetProject("IO.Milvus")
+                .SetOutputDirectory(ArtifactsDirectory)
+                .SetConfiguration(Configuration.Release)
+                .EnableNoLogo()
+                .EnableNoRestore()
+                .EnableContinuousIntegrationBuild() // Necessary for deterministic builds
+                .SetVersion(Version));
+        });
+
+    Target Push => _ => _
+        .DependsOn(Pack)
+        .OnlyWhenDynamic(() => IsTag || IsPullRequest)
+        .ProceedAfterFailure()
+        .Executes(() =>
+        {
+            var packages = ArtifactsDirectory.GlobFiles("*.nupkg");
+
+            Assert.NotEmpty(packages);
+
+            DotNetNuGetPush(s => s
+                .SetApiKey(NuGetApiKey)
+                .EnableSkipDuplicate()
+                .SetSource("https://api.nuget.org/v3/index.json")
+                .EnableNoSymbols()
+                .CombineWith(packages,
+                    (v, path) => v.SetTargetPath(path)));
+        });
+
+    static bool IsDocumentation(string x) =>
+        x.StartsWith("docs") ||
+        x.StartsWith("CONTRIBUTING.md") ||
+        x.StartsWith("LICENSE") ||
+        x.StartsWith("package.json") ||
+        x.StartsWith("README.md");
+
+    string[] Changes =>
+    Repository.Diff
+        .Compare<TreeChanges>(TargetBranch, SourceBranch)
+        .Where(x => x.Exists)
+        .Select(x => x.Path)
+        .ToArray();
+
+    bool HasSourceChanges => Changes.Any(x => !IsDocumentation(x));
+
+    Repository Repository => new(GitRepository.LocalDirectory);
+
+    Tree TargetBranch => Repository.Branches[PullRequestBase].Tip.Tree;
+
+    Tree SourceBranch => Repository.Branches[Repository.Head.FriendlyName].Tip.Tree;
+
+    bool RunAllTargets => true;
+
+    bool IsTag => BranchSpec != null && BranchSpec.Contains("refs/tags", StringComparison.OrdinalIgnoreCase);
 }
