@@ -30,26 +30,26 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # build on ubuntu
-  build-ubuntu:
-    runs-on: ubuntu-latest
+  #build-ubuntu:
+  #  runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
+  #  # Steps represent a sequence of tasks that will be executed as part of the job
+  #  steps:
     
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'recursive'
+  #  # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+  #  - uses: actions/checkout@v2
+  #    with:
+  #      submodules: 'recursive'
 
-    - name: Setup .NET SDKs
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: |
-          6.0.x
-          7.0.x
+  #  - name: Setup .NET SDKs
+  #    uses: actions/setup-dotnet@v3
+  #    with:
+  #      dotnet-version: |
+  #        6.0.x
+  #        7.0.x
      
-    - name: Run NUKE
-      run: ./src/build.sh
-      env:
-        NuGetApiKey: ${{ secrets.NugetKey }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #  - name: Run NUKE
+  #    run: ./src/build.sh
+  #    env:
+  #      NuGetApiKey: ${{ secrets.NugetKey }}
+  #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
