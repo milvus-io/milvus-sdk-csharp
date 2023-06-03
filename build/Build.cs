@@ -16,6 +16,13 @@ using Nuke.Components;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Serilog.Log;
 
+//[GitHubActions(
+//    "build-windows-latest",
+//    GitHubActionsImage.WindowsLatest,
+//    FetchDepth = 0,
+//    EnableGitHubToken = true,
+//    ImportSecrets = new[] {""},
+//    On = new[] { GitHubActionsTrigger.Push,GitHubActionsTrigger.PullRequest})]
 partial class Build : NukeBuild
 {
     /// Support plugins are available for:
