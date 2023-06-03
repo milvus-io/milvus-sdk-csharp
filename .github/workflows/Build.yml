@@ -22,7 +22,7 @@ jobs:
           7.0.x
      
     - name: Run NUKE
-      run: ./build.ps1
+      run: ./src/build.ps1
       env:
         NuGetApiKey: ${{ secrets.NugetKey }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
