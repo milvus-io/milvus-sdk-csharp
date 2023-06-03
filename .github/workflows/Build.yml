@@ -3,7 +3,9 @@ name: Build
 on: [push, pull_request]
 
 jobs:
-  build:
+
+  # build on windows
+  build-windows:
     runs-on: windows-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -22,15 +24,32 @@ jobs:
           7.0.x
      
     - name: Run NUKE
-      run: ./src/build.ps1
+      run: .\src\build.ps1
       env:
         NuGetApiKey: ${{ secrets.NugetKey }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Restore the application to populate the obj folder with RuntimeIdentifiers
-    - name: Restore the application
-      run: msbuild src\IO.Milvus.sln /t:Restore /p:Configuration=Release
+  # build on ubuntu
+  build-ubuntu:
+    runs-on: ubuntu-latest
 
-    # build release
-    - name: Build Relase
-      run: msbuild src\IO.Milvus.sln /p:Configuration=Release
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: Setup .NET SDKs
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          6.0.x
+          7.0.x
+     
+    - name: Run NUKE
+      run: ./src/build.sh
+      env:
+        NuGetApiKey: ${{ secrets.NugetKey }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

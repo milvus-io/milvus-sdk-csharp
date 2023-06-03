@@ -143,6 +143,7 @@ partial class Build : NukeBuild
                     .AddPair("Packed version", semVer)));
 
             DotNetPack(s => s
+                .SetProcessWorkingDirectory(RootDirectory / "src")
                 .SetProject("IO.Milvus")
                 .SetOutputDirectory(ArtifactsDirectory)
                 .SetConfiguration(Configuration.Release)
