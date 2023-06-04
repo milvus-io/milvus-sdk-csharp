@@ -22,7 +22,7 @@ internal sealed class ShowPartitionsResponse
     [JsonPropertyName("partitionIDs")]
     public IList<long> PartitionIds { get; set; }
 
-    [JsonPropertyName("")]
+    [JsonPropertyName("status")]
     public ResponseStatus Status { get; set; }
 
     public IEnumerable<MilvusPartition> ToMilvusPartitions()

@@ -51,6 +51,10 @@
       <None Include="..\.editorconfig" Link=".editorconfig" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Utils\" />
+    </ItemGroup>
+
     <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

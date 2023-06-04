@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using IO.Milvus.ApiSchema;
 
 namespace IO.Milvus;
 

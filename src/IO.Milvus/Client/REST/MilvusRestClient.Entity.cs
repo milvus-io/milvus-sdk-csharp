@@ -33,6 +33,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
+            e.Data["responseContent"] = responseContent;
             this._log.LogError(e, "Insert data failed: {0}, {1}", e.Message, responseContent);
             throw;
         }

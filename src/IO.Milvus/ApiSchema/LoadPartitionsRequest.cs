@@ -20,11 +20,13 @@ internal sealed class LoadPartitionsRequest :
     /// <summary>
     /// The partition names you want to load
     /// </summary>
+    [JsonPropertyName("partition_names")]
     public IList<string> PartitionNames { get; set; }
 
     /// <summary>
     /// The replicas number you would load, 1 by default
     /// </summary>
+    [JsonPropertyName("replica_number")]
     public int ReplicaNumber { get; set; } = 1;
 
     public Grpc.LoadPartitionsRequest BuildGrpc()
@@ -42,7 +44,7 @@ internal sealed class LoadPartitionsRequest :
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.True(PartitionNames.Count >= 1, "Partition names count must be greater than 1");
+        Verify.NotNullOrEmpty(PartitionNames, "Partition names count must be greater than 1");
         Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
     }
 

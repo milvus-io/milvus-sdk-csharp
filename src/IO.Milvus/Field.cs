@@ -17,6 +17,7 @@ namespace IO.Milvus;
 [JsonDerivedType(typeof(ByteStringField))]
 [JsonDerivedType(typeof(FloatVectorField))]
 [JsonDerivedType(typeof(Field<bool>))]
+[JsonDerivedType(typeof(Field<sbyte>))]
 [JsonDerivedType(typeof(Field<short>))]
 [JsonDerivedType(typeof(Field<int>))]
 [JsonDerivedType(typeof(Field<long>))]
@@ -405,7 +406,16 @@ public class Field<TData> : Field
                 }
                 break;
             case MilvusDataType.Int8:
-                throw new NotSupportedException("not support in .net");
+                {
+                    var intData = new Grpc.IntArray();
+                    intData.Data.AddRange((Data as IEnumerable<sbyte>).Select(p => (int)p));
+
+                    fieldData.Scalars = new Grpc.ScalarField()
+                    {
+                        IntData = intData
+                    };
+                }
+                break;
             case MilvusDataType.Int16:
                 {
                     var intData = new Grpc.IntArray();

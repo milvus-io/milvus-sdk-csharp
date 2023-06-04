@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace IO.Milvus.ApiSchema;
+namespace IO.Milvus;
 
 /// <summary>
 /// Collection Schema

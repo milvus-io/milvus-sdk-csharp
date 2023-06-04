@@ -1,5 +1,4 @@
 ﻿using Google.Protobuf.Collections;
-using IO.Milvus.ApiSchema;
 using System.Collections.Generic;
 using System.Linq;
 

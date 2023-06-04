@@ -56,7 +56,7 @@ public partial class MilvusGrpcClient : IMilvusClient
     public string Address => _grpcChannel.Target;
 
     ///<inheritdoc/>
-    public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken)
+    public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
         _log.LogDebug("Check if connection is health");
 

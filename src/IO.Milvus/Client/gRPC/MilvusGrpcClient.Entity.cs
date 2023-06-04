@@ -19,13 +19,12 @@ public partial class MilvusGrpcClient
     {
         this._log.LogDebug("Insert entities to {0}", collectionName);
         Verify.ArgNotNullOrEmpty(collectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(fields?.Any() == true, "Fields cannot be null or empty");
+        Verify.NotNullOrEmpty(fields, "Fields cannot be null or empty");
 
         Grpc.InsertRequest request = new Grpc.InsertRequest()
         {
             CollectionName = collectionName,
         };
-
         if (!string.IsNullOrEmpty(partitionName))
         {
             request.PartitionName = partitionName;
@@ -36,7 +35,7 @@ public partial class MilvusGrpcClient
 
         request.FieldsData.AddRange(fields.Select(p => p.ToGrpcFieldData()));
 
-        request.NumRows = (uint)fields.First().RowCount;
+        request.NumRows = (uint)count;
 
         Grpc.MutationResult response = await _grpcClient.InsertAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 

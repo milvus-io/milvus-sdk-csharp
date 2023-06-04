@@ -48,12 +48,13 @@ public partial class MilvusRestClient
     public async Task DropIndexAsync(
         string collectionName,
         string fieldName,
+        string indexName,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop index {0}", collectionName);
 
         using HttpRequestMessage request = DropIndexRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName, indexName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

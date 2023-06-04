@@ -41,12 +41,13 @@ public partial class MilvusGrpcClient
     public async Task DropIndexAsync(
         string collectionName, 
         string fieldName, 
+        string indexName,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop index {0}", collectionName);
 
         Grpc.DropIndexRequest request = DropIndexRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName, indexName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.DropIndexAsync(request, _callOptions.WithCancellationToken(cancellationToken));

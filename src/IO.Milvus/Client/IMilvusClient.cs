@@ -378,6 +378,9 @@ public interface IMilvusClient : IDisposable
     /// <summary>
     /// Calculate distance between vectors with Milvus.
     /// </summary>
+    /// <remarks>
+    /// It's a deny api for zilliz cloud.
+    /// </remarks>
     /// <param name="leftVectors">Vectors on the left side of the operator</param>
     /// <param name="rightVectors">Vectors on the right side of the operator</param>
     /// <param name="milvusMetricType"><see cref="MilvusMetricType"/>
@@ -511,10 +514,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name you want to drop index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
+    /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DEFAULT_INDEX_NAME"/></param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task DropIndexAsync(
         string collectionName, 
         string fieldName, 
+        string indexName,
         CancellationToken cancellationToken = default);
 
     /// <summary>
