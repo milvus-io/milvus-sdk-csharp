@@ -55,10 +55,6 @@
           "type": "boolean",
           "description": "Shows the execution plan (HTML)"
         },
-        "PreReleaseSuffix": {
-          "type": "string",
-          "description": "Pre release"
-        },
         "Profile": {
           "type": "array",
           "description": "Defines the profiles to load",

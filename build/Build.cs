@@ -13,6 +13,7 @@ using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
 using Nuke.Common.Utilities.Collections;
 using Nuke.Components;
+using YamlDotNet.Core;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Serilog.Log;
 
@@ -37,9 +38,6 @@ partial class Build : NukeBuild
     [Parameter("The key to push to Nuget")]
     [Secret]
     readonly string NuGetApiKey;
-
-    [Parameter("Pre release")]
-    readonly string PreReleaseSuffix;
 
     [Solution(GenerateProjects = true)]
     readonly Solution Solution;
@@ -96,15 +94,11 @@ partial class Build : NukeBuild
             Version = projectVersion.ToString();
         }
 
-        if (IsPullRequest)
+        if (!string.IsNullOrEmpty(BuildNumber))
         {
-            Information(
-                "Branch spec {0} is a pull request. Adding build number {1}",
-                BranchSpec, BuildNumber);
-
-            if (!string.IsNullOrEmpty(PreReleaseSuffix))
+            if (!string.IsNullOrEmpty(projectVersion.PreReleaseSuffix))
             {
-                Version = $"{Version}.{PreReleaseSuffix}.{BuildNumber}";
+                Version = $"{Version}.{projectVersion.PreReleaseSuffix}.{BuildNumber}";
             }
             else
             {
@@ -113,6 +107,7 @@ partial class Build : NukeBuild
         }
 
         Information("Version = {0}", Version);
+        ReportSummary(s => s.AddPair("NugetVersion", Version));
     });
 
     Target Compile => _ => _
@@ -155,7 +150,7 @@ partial class Build : NukeBuild
 
     Target Push => _ => _
         .DependsOn(Pack)
-        .OnlyWhenDynamic(() => IsTag || IsPullRequest)
+        .OnlyWhenDynamic(() => IsTag)
         .ProceedAfterFailure()
         .Executes(() =>
         {
