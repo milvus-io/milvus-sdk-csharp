@@ -428,6 +428,69 @@ public class MilvusFieldConverterTests
         """;
 
         var data = JsonSerializer.Deserialize<TestJsonFieldData>(responseData);
+        data.Should().NotBeNull();
+        data.FieldData.Count.Should().Be(3);
+        data.FieldData[1].FieldName.Should().Be("embedding");
+        data.FieldData[1].Should().BeOfType<FloatVectorField>();
+        (data.FieldData[1] as FloatVectorField).Data.Count.Should().Be(1);
+        (data.FieldData[1] as FloatVectorField).Data[0].Count.Should().Be(3);
+    }
 
+    [Fact]
+    public void SampleTest2()
+    {
+        var responseData =
+        """
+        {
+            "status": {},
+            "fields_data": [
+                {
+                    "type": 21,
+                    "field_name": "metadata",
+                    "Field": {
+                        "Scalars": {
+                            "Data": {
+                                "StringData": {}
+                            }
+                        }
+                    },
+                    "field_id": 102
+                },
+                {
+                    "type": 101,
+                    "field_name": "embedding",
+                    "Field": {
+                        "Vectors": {
+                            "dim": 3,
+                            "Data": {
+                                "FloatVector": {}
+                            }
+                        }
+                    },
+                    "field_id": 101
+                },
+                {
+                    "type": 21,
+                    "field_name": "Id",
+                    "Field": {
+                        "Scalars": {
+                            "Data": {
+                                "StringData": {}
+                            }
+                        }
+                    },
+                    "field_id": 100
+                }
+            ]
+        }
+
+        """;
+
+        var data = JsonSerializer.Deserialize<TestJsonFieldData>(responseData);
+        data.Should().NotBeNull();
+        data.FieldData.Count.Should().Be(3);
+        data.FieldData[1].FieldName.Should().Be("embedding");
+        data.FieldData[1].Should().BeOfType<FloatVectorField>();
+        (data.FieldData[1] as FloatVectorField).Data.Should().BeNullOrEmpty();
     }
 }

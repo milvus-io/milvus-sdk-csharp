@@ -141,7 +141,11 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                                     reader.Read();reader.Read();
                                     reader.Read();reader.Read();
                                     var scalarTypeName = reader.GetString();
-                                    reader.Read();reader.Read();
+                                    reader.Read(); reader.Read(); reader.Read();
+                                    if (reader.TokenType != JsonTokenType.StartArray) {
+                                        reader.Read(); reader.Read();
+                                        break;
+                                    };
                                     switch (scalarTypeName)
                                     {
                                         case "BoolData":
@@ -176,7 +180,6 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                                 {
                                     reader.Read(); reader.Read();
                                     dim = DeserializeVector(ref reader, floatVector,binaryVector);
-
                                     reader.Read();
                                 }
                                 break;
@@ -253,30 +256,27 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                         reader.Read();
 
                         var dataType = reader.GetString();
-
+                        reader.Read(); reader.Read(); reader.Read();
+                        if (reader.TokenType != JsonTokenType.StartArray)
+                        {
+                            break;
+                        };
                         switch (dataType)
                         {
                             case "FloatVector":
                                 {
-                                    reader.Read(); reader.Read();
-
                                     DeserializePropertyList<float>(ref reader, floatVector);
-
-                                    reader.Read(); reader.Read();
                                 }
                                 break;
                             case "BinaryVector":
                                 {
-                                    reader.Read(); reader.Read();
-
                                     DeserializePropertyList<byte>(ref reader, binaryVector);
-
-                                    reader.Read(); reader.Read();
                                 }
                                 break;
                             default:
                                 throw new JsonException($"Not support: {dataType}");
                         }
+                        reader.Read(); reader.Read();
                     }
                     break;
                 
