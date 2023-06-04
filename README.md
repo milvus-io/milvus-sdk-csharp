@@ -12,12 +12,6 @@
 
 C# SDK for [Milvus](https://github.com/milvus-io/milvus).
 
-## Getting Started
-
-**Visual Studio**
-
-Visual Studio 2019  or higher
-
 **Supported Net versions:**
 * .NET Core 2.1+
 * .NET Framework 4.6.1+
@@ -32,6 +26,11 @@ IO.Milvus is delivered via NuGet package manager.
 | --- | --- | --- | --- |
 | v2.2.1 | main | Support restfulapi and grpc | 2.2.x |
 | v2.2.0 | 2.2 | Support grpc only | 2.2.x |
+
+## Docs 📚
+
+* [Quick Start](./docs/readme.md)
+* [Milvus docs](https://milvus.io/docs)
 
 ### Jupyter Notebooks 📙
 
