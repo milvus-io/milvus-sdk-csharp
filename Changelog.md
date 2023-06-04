@@ -1,3 +1,5 @@
+- 2023-06-04 **2.2.1-alpha.6**
+  - Fix field json convert error when query
 - 2023-06-04 **2.2.1-alpha.5**
   - Support restful client and grpc client
   - Fix load partition error
