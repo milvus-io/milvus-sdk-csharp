@@ -10,7 +10,7 @@
     <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
     <PackageTags>milvus;vector database</PackageTags>
     <LangVersion>latest</LangVersion>
-    <Version>2.2.1-alpha.4</Version>
+    <Version>2.2.1-alpha.5</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>

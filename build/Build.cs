@@ -85,25 +85,31 @@ partial class Build : NukeBuild
         ProjectVersion projectVersion = ProjectVersion.Parse(projectVersionString);
 
         Information("GitVersion: {0}", GitVersion.MajorMinorPatch);
+        var tag = GitRepository.Tags.LastOrDefault();
+        Information("Tag: {0}", tag);
+        
         if (IsTag)
         {
-            Version = GitVersion.MajorMinorPatch;
+            if (!string.IsNullOrEmpty(tag))
+            {
+                if (tag.StartsWith('v'))
+                {
+                    Version = tag.Substring(1,tag.Length -1);
+                }
+                else
+                {
+                    Version = tag;
+                }
+            }
+
+            if (string.IsNullOrEmpty(Version))
+            {
+                Version = GitVersion.MajorMinorPatch;
+            }
         }
         else
         {
-            Version = projectVersion.ToString();
-        }
-
-        if (!string.IsNullOrEmpty(BuildNumber))
-        {
-            if (!IsTag && !string.IsNullOrEmpty(projectVersion.PreReleaseSuffix))
-            {
-                Version = $"{Version}-{projectVersion.PreReleaseSuffix}.{BuildNumber}";
-            }
-            else
-            {
-                Version = $"{Version}.{BuildNumber}";
-            }
+            Version = projectVersionString;
         }
 
         Information("Version = {0}", Version);
@@ -134,8 +140,7 @@ partial class Build : NukeBuild
         .Executes(() =>
         {
             ReportSummary(s => s
-                .WhenNotNull(Version, (_, semVer) => _
-                    .AddPair("Packed version", semVer)));
+                .AddPair("Packed version", Version));
 
             DotNetPack(s => s
                 .SetProcessWorkingDirectory(RootDirectory / "src")

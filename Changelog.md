@@ -1,0 +1,4 @@
+- 2023-06-04 **2.2.1-alpha.5**
+  - Support restful client and grpc client
+  - Fix load partition error
+  - Fix #14 about json format error when use restful client

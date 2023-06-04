@@ -21,10 +21,10 @@ partial class Build
 
     Target PublishGitHubRelease => _ => _
         .TriggeredBy(Push)
-        .OnlyWhenDynamic(() => IsTag)
         .Requires(() => GitHubToken)
         .Requires(() => GitRepository)
         .Requires(() => GitVersion)
+        .OnlyWhenStatic(() => IsTag)
         .OnlyWhenStatic(() => IsServerBuild)
         .Executes(() =>
         {
