@@ -1,8 +1,0 @@
-{
-  "endpoint": "your milvus server endpoint",
-  "port": 443,
-  "username": "root",
-  "password": "milvus",
-  "type": "grpc",
-  "skip": true
-}

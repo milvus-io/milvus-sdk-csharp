@@ -1,8 +1,0 @@
-{
-  "$schema": "./milvusclient-schema.json",
-  "endpoint": "https://{id}.{machineName}.vectordb.zillizcloud.com",
-  "port": 19536,
-  "username": "db_admin",
-  "password": "milvus",
-  "type": "grpc"
-}

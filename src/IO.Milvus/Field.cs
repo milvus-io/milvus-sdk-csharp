@@ -208,16 +208,16 @@ public abstract class Field
     /// Create a field
     /// </summary>
     /// <typeparam name="TData">
-    /// Data type:
+    /// Data type: If you use string , the data type will be <see cref="MilvusDataType.VarChar"/>
     /// <list type="bullet">
-    /// <item><see cref="bool"/> : int32</item>
-    /// <item><see cref="short"/> : int8</item>
-    /// <item><see cref="Int16"/> : int8</item>
-    /// <item><see cref="int"/> : int32</item>
-    /// <item><see cref="long"/> : int64</item>
-    /// <item><see cref="float"/> : float</item>
-    /// <item><see cref="double"/> : double</item>
-    /// <item><see cref="string"/> : string</item>
+    /// <item><see cref="bool"/> : bool <see cref="MilvusDataType.Bool"/></item>
+    /// <item><see cref="sbyte"/> : int8 <see cref="MilvusDataType.Int8"/></item>
+    /// <item><see cref="Int16"/> : int16 <see cref="MilvusDataType.Int16"/></item>
+    /// <item><see cref="int"/> : int32 <see cref="MilvusDataType.Int32"/></item>
+    /// <item><see cref="long"/> : int64 <see cref="MilvusDataType.Int64"/></item>
+    /// <item><see cref="float"/> : float <see cref="MilvusDataType.Float"/></item>
+    /// <item><see cref="double"/> : double <see cref="MilvusDataType.Double"/></item>
+    /// <item><see cref="string"/> : string <see cref="MilvusDataType.VarChar"/></item>
     /// </list>
     /// </typeparam>
     /// <param name="fieldName">Field name</param>

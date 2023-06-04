@@ -32,9 +32,6 @@ public sealed class MilvusConfig
     [JsonPropertyName("type")]
     public string? ConnectionType { get; set; }
 
-    [JsonIgnore]
-    public string? Name { get; private set; }
-
     [JsonPropertyName("skip")]
     public bool Skip { get; set; }
 
@@ -44,37 +41,29 @@ public sealed class MilvusConfig
 
         if (string.IsNullOrWhiteSpace(dir))
         {
-            yield break;
+            throw new DirectoryNotFoundException();
         }
 
-        var files = Directory.GetFiles(
+        var file = Path.Combine(
             dir, 
-            "milvusclient*.json", 
-            SearchOption.TopDirectoryOnly);
+            "milvusclients.json");
 
-        bool exist = false;
-        foreach (var file in files)
+        if (!File.Exists(file))
         {
-            string name = Path.GetFileNameWithoutExtension(file);
-            string data = File.ReadAllText(file);
-
-            var config = JsonSerializer.Deserialize<MilvusConfig>(data);
-
-            if (config == null || config.Skip)
-            {
-                continue;
-            }
-
-            exist = true;
-            config.Name = name;
-            yield return config;
+            throw new FileNotFoundException(file);
         }
 
-        if (!exist)
+        var configs = JsonSerializer.Deserialize<IList<MilvusConfig>>(File.ReadAllText(file));
+
+        if (configs == null)
         {
-            throw new Exception("Milvus server not found, please config your test server and remove {skip: true}");
+            throw new NullReferenceException("Cannot load milvusclients");
         }
+
+        return configs.Where(p => !p.Skip);
     }
+
+    public override string ToString() => $"{Endpoint}:{Port}";
 }
 
 internal static class MilvusConfigExtensions
