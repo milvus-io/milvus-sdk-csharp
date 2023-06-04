@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IO.MilvusTests", "IO.Milvus
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{F28B43AD-22FF-4892-AA86-762D978FA0A7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Build", "..\build\Build.csproj", "{76817E66-03F6-43DE-A3CC-AC7087CF290F}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9BA6CDDC-9D2A-429F-9244-B9615BB1B107}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -20,6 +22,8 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76817E66-03F6-43DE-A3CC-AC7087CF290F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76817E66-03F6-43DE-A3CC-AC7087CF290F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B580F531-D699-475D-AB09-9D6979DDE4D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B580F531-D699-475D-AB09-9D6979DDE4D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B580F531-D699-475D-AB09-9D6979DDE4D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
