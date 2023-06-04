@@ -298,6 +298,26 @@ public abstract class Field
     }
 
     /// <summary>
+    /// Create a float vector.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="floatVector">Float vector.</param>
+    /// <param name="dimension">Dimension.</param>
+    /// <returns></returns>
+    internal static FloatVectorField CreateFloatVector(string fieldName, List<float> floatVector, long dimension)
+    {
+        List<List<float>> floatVectors = new();
+
+        for (int i = 0; i < floatVector.Count; i += (int)dimension)
+        {
+            var subVector = floatVector.GetRange(i, (int)dimension);
+            floatVectors.Add(subVector);
+        }
+
+        return new FloatVectorField(fieldName, floatVectors);
+    }
+
+    /// <summary>
     /// Create a field from <see cref="ByteString"/>
     /// </summary>
     /// <param name="fieldName"></param>

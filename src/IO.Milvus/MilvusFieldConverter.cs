@@ -79,6 +79,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
         if (vtype == typeof(Single)) { value = reader.GetSingle(); return true; }
         if (vtype == typeof(Double)) { value = reader.GetDouble(); return true; }
         if (vtype == typeof(Decimal)) { value = reader.GetDecimal(); return true; }
+        if (vtype == typeof(byte)) { value = reader.GetByte(); return true; }
 
         if (vtype == typeof(Field))
         {
@@ -105,6 +106,10 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
         List<float> floatData = new();
         List<double> doubleData = new();
         List<string> stringData = new();
+
+        long dim = default;
+        List<float> floatVector = new();
+        List<byte> binaryVector = new();
 
         reader.Read();
         while (reader.TokenType != JsonTokenType.EndObject)
@@ -167,8 +172,16 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                                     reader.Read(); reader.Read();
                                 }
                                 break;
-                            default:
+                            case "Vectors":
+                                {
+                                    reader.Read(); reader.Read();
+                                    dim = DeserializeVector(ref reader, floatVector,binaryVector);
+
+                                    reader.Read();
+                                }
                                 break;
+                            default:
+                                throw new JsonException($"Unexpected property {fieldTypeName}");
                         }
                     }
                     break;
@@ -206,7 +219,11 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                 field = Field.CreateVarChar(fieldName, stringData);
                 break;
             case MilvusDataType.BinaryVector:
+                field = Field.CreateFromBytes(fieldName, binaryVector.ToArray(),dim);
+                break;
             case MilvusDataType.FloatVector:
+                field = Field.CreateFloatVector(fieldName, floatVector,dim);
+                break;
             case MilvusDataType.String:
             default:
                 throw new JsonException($"Unexpected milvus datatype {dataType}");
@@ -215,6 +232,62 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
         field.FieldId = fieldId;
 
         return field;
+    }
+
+    private static long DeserializeVector(ref Utf8JsonReader reader, List<float> floatVector, List<byte> binaryVector)
+    {
+        long dim = default;
+        while (reader.TokenType != JsonTokenType.EndObject)
+        {
+            var name = reader.GetString();
+
+            reader.Read();
+
+            switch (name)
+            {
+                case "dim":
+                    dim = reader.GetInt64();
+                    break;
+                case "Data":
+                    {
+                        reader.Read();
+
+                        var dataType = reader.GetString();
+
+                        switch (dataType)
+                        {
+                            case "FloatVector":
+                                {
+                                    reader.Read(); reader.Read();
+
+                                    DeserializePropertyList<float>(ref reader, floatVector);
+
+                                    reader.Read(); reader.Read();
+                                }
+                                break;
+                            case "BinaryVector":
+                                {
+                                    reader.Read(); reader.Read();
+
+                                    DeserializePropertyList<byte>(ref reader, binaryVector);
+
+                                    reader.Read(); reader.Read();
+                                }
+                                break;
+                            default:
+                                throw new JsonException($"Not support: {dataType}");
+                        }
+                    }
+                    break;
+                
+                default:
+                    throw new JsonException($"Not support: {name}");
+            }
+
+            reader.Read();
+        }
+
+        return dim;
     }
 
     private static Object DeserializeUnknownObject(ref Utf8JsonReader reader)

@@ -320,7 +320,41 @@ public class MilvusFieldConverterTests
     [Fact]
     public void ReadFloatVectorTest()
     {
+        string responseData =
+                    """
+            {
+                "fields_data": [
+                    {
+                        "type": 101,
+                        "field_name": "book_id",
+                        "Field": {
+                            "Vectors": {
+                                "dim": 3,
+                                "Data": {
+                                    "FloatVector": {
+                                        "data": [
+                                            1,
+                                            1,
+                                            1
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "field_id": 100
+                    }
+                ]
+            }
+            """;
 
+        var data = JsonSerializer.Deserialize<TestJsonFieldData>(responseData);
+
+        data.Should().NotBeNull();
+        data.FieldData.Count.Should().Be(1);
+        data.FieldData.First().FieldName.Should().Be("book_id");
+        data.FieldData.First().FieldId.Should().Be(100);
+        data.FieldData.First().Should().BeOfType<FloatVectorField>();
+        (data.FieldData.First() as FloatVectorField).Data[0].Count.Should().Be(3);
     }
 
     [Fact]
