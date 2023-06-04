@@ -19,20 +19,19 @@ C# SDK for [Milvus](https://github.com/milvus-io/milvus).
 Visual Studio 2019  or higher
 
 **Supported Net versions:**
-* .NET Core 2.1
-* .NET Framework 4.6.1
-* Mono 5.4
-* Xamarin.iOS 10.14
-* Xamarin.Android 8.0
-* Universal Windows Platform 10.0.16299
-* Unity 2018.1
+* .NET Core 2.1+
+* .NET Framework 4.6.1+
 
-**NuGet**
+**[NuGet](https://www.nuget.org/packages/IO.Milvus/)**
 
-IO.Milvus is delivered via NuGet package manager. You can find the package here:
-https://www.nuget.org/packages/IO.Milvus/
+IO.Milvus is delivered via NuGet package manager.
 
 *There are currently two implementations, one based on grpc on branch 2.2, and the other based on restfulapi and grpc.*
+
+| Nuget version | Branch | Description | Milvus version
+| --- | --- | --- | --- |
+| v2.2.1 | main | Support restfulapi and grpc | 2.2.x |
+| v2.2.0 | 2.2 | Support grpc only | 2.2.x |
 
 ### Jupyter Notebooks 📙
 
@@ -49,37 +48,3 @@ You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 * [08.Calculate Distance.ipynb](./docs/notebooks/08.Calculate%20Distance.ipynb)
 
 > Requirements: C# notebooks require .NET 7 and the VS Code Polyglot extension.
-
-
-### How to use in .net framework
-
-* Windows 11 or later, Windows Server 2022 or later.
-* A reference to System.Net.Http.WinHttpHandler version 6.0.1 or later.
-* Configure WinHttpHandler on the channel using GrpcChannelOptions.HttpHandler.
-
-```c#
-        public GrpcChannel CreateChannel(string address)
-        {
-#if NET461_OR_GREATER
-            return GrpcChannel.ForAddress(address,new GrpcChannelOptions
-            {
-                HttpHandler = new WinHttpHandler()
-            });
-#else
-            return GrpcChannel.ForAddress(address);
-#endif
-        }
-
-        public MilvusServiceClient CreateClient()
-        {
-            IMilvusClient client = new IO.Milvus.Client.gRPC.MilvusGrpcClient(
-                "{Endpoint}",
-                {Port},
-                "{Usename}",
-                "Password",
-                grpcChannel:CreateChannel($"{Endpoint}:{Port}")
-            );
-        }
-```
-
-[More details](https://learn.microsoft.com/en-us/aspnet/core/grpc/netstandard?view=aspnetcore-7.0)
