@@ -96,7 +96,7 @@ partial class Build : NukeBuild
 
         if (!string.IsNullOrEmpty(BuildNumber))
         {
-            if (!string.IsNullOrEmpty(projectVersion.PreReleaseSuffix))
+            if (!IsTag && !string.IsNullOrEmpty(projectVersion.PreReleaseSuffix))
             {
                 Version = $"{Version}.{projectVersion.PreReleaseSuffix}.{BuildNumber}";
             }
