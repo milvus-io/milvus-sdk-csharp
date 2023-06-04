@@ -113,7 +113,7 @@ public partial class MilvusRestClient
         int replicaNumber = 1,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create partition {0}", collectionName);
+        this._log.LogDebug("Load partition {0}", collectionName);
 
         using HttpRequestMessage request = LoadPartitionsRequest
             .Create(collectionName)
@@ -129,7 +129,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Create partition failed: {0}, {1}", e.Message, responseContent);
+            this._log.LogError(e, "Load partition failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 

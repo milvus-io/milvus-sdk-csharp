@@ -38,4 +38,12 @@ public class MilvusCollection
     /// Load percentage on query node when type is InMemory.
     /// </summary>
     public long InMemoryPercentage { get; }
+
+    /// <summary>
+    /// Return string value of <see cref="MilvusCollection"/>.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"MilvusCollection: {{{nameof(CollectionName)}: {CollectionName}, {nameof(CollectionId)}: {CollectionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
+    }
 }

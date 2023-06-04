@@ -26,17 +26,17 @@ public class MilvusPartition
     {
         PartitionId = partitionId;
         PartitionName = partitionName;
-        CreatedUtcTimestamp = createdUtcTimestamp;
+        CreatedUtcTime = createdUtcTimestamp;
         InMemoryPercentage = inMemoryPercentage;
     }
 
     /// <summary>
-    /// Partition id
+    /// Partition id.
     /// </summary>
     public long PartitionId { get; }
 
     /// <summary>
-    /// Partition name
+    /// Partition name.
     /// </summary>
     public string PartitionName { get; }
 
@@ -46,10 +46,18 @@ public class MilvusPartition
     public long InMemoryPercentage { get; }
 
     /// <summary>
-    /// Create utc time
+    /// Create utc time.
     /// </summary>
     /// <remarks>
-    /// If you want to get a local time, you can use <see cref="DateTime.ToLocalTime"/>
+    /// If you want to get a local time, you can use <see cref="DateTime.ToLocalTime"/>.
     /// </remarks>
-    public DateTime CreatedUtcTimestamp { get; }
+    public DateTime CreatedUtcTime { get; }
+
+    /// <summary>
+    /// Return string value of <see cref="MilvusPartition"/>.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
+    }
 }

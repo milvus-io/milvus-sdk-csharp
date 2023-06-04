@@ -3,12 +3,6 @@ using IO.Milvus;
 using IO.Milvus.Client;
 using IO.Milvus.Diagnostics;
 using IO.MilvusTests.Utils;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace IO.MilvusTests.Client;
@@ -17,7 +11,7 @@ public partial class MilvusClientTests
 {
     [Theory]
     [ClassData(typeof(TestClients))]
-    public async Task WithMilvusTest(IMilvusClient milvusClient)
+    public async Task SampleTest(IMilvusClient milvusClient)
     {
         string collectionName = milvusClient.GetType().Name;
 

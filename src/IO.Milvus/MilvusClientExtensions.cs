@@ -13,7 +13,7 @@ namespace IO.Milvus;
 public static class MilvusClientExtensions
 {
     /// <summary>
-    /// Use showCollection() to check loading percentages of the collection.
+    /// Use <see cref="IMilvusClient.ShowCollectionsAsync(IList{string}, ShowType, CancellationToken)"/> to check loading percentages of the collection.
     /// </summary>
     /// <remarks>
     /// If the inMemory percentage is 100, that means the collection has finished loading.

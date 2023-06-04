@@ -45,4 +45,13 @@ public class MilvusIndex
     /// Contains index_type, metric_type, params.
     /// </summary>
     public IDictionary<string, string> Params { get; }
+
+    /// <summary>
+    /// Get string data of <see cref="MilvusIndex"/>
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        return $"MilvusIndex: {{{nameof(FieldName)}: {FieldName}, {nameof(IndexName)}: {IndexName}, {nameof(IndexId)}: {IndexId}}}";
+    }
 }

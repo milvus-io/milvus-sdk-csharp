@@ -38,6 +38,14 @@ public class MilvusPersistentSegmentInfo
     /// </summary>
     public MilvusSegmentState State { get; }
 
+    /// <summary>
+    /// Returns a string that represents the current object.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"MilvusPersistentSegmentInfo {{{nameof(State)}: {State}, {nameof(SegmentId)}: {SegmentId}, {nameof(CollectionId)}: {CollectionId}, {nameof(PartitionId)}: {PartitionId}, {nameof(NumRows)}: {NumRows}}}";
+    }
+
     internal static IEnumerable<MilvusPersistentSegmentInfo> From(
         IEnumerable<PersistentSegmentInfo> infos)
     {

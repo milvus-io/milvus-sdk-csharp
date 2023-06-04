@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using IO.Milvus.Diagnostics;
+using System.Collections.Specialized;
 
 namespace IO.Milvus;
 
@@ -498,6 +499,15 @@ public class Field<TData> : Field
         }
 
         return fieldData;
+    }
+
+    /// <summary>
+    /// Return string value of <see cref="Field{TData}"/>
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        return $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data?.Count}, {nameof(RowCount)}: {RowCount}}}";
     }
 
     internal void Check()

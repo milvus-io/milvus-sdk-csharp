@@ -1,5 +1,4 @@
-﻿using IO.Milvus.Grpc;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace IO.Milvus;
@@ -31,7 +30,7 @@ public class FloatVectorField:Field<List<float>>
     /// </summary>
     /// <returns>Field data</returns>
     /// <exception cref="Diagnostics.MilvusException"></exception>
-    public override FieldData ToGrpcFieldData()
+    public override Grpc.FieldData ToGrpcFieldData()
     {
         var floatArray = new Grpc.FloatArray();
 

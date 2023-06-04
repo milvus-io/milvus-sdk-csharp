@@ -355,7 +355,7 @@ public interface IMilvusClient : IDisposable
     /// Delete rows of data entities from a collection by given expression.
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
-    /// <param name="expr">Expression.</param>
+    /// <param name="expr">A predicate expression outputs a boolean value. <see href="https://milvus.io/docs/boolean.md"/></param>
     /// <param name="partitionName">Partition name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
@@ -384,12 +384,16 @@ public interface IMilvusClient : IDisposable
     /// <param name="leftVectors">Vectors on the left side of the operator</param>
     /// <param name="rightVectors">Vectors on the right side of the operator</param>
     /// <param name="milvusMetricType"><see cref="MilvusMetricType"/>
-    /// For floating-point vectors:
+    /// <para>
+    /// <term>For floating-point vectors:</term> 
+    /// </para>
     /// <list type="bullet">
     /// <item>L2 (Euclidean distance)</item>
     /// <item>IP (Inner product)</item>
     /// </list>
-    /// For binary vectors:
+    /// <para>
+    /// <term>For binary vectors:</term> 
+    /// </para>
     /// <list type="bullet">
     /// <item>JACCARD (Jaccard distance)</item>
     /// <item>TANIMOTO (Tanimoto distance)</item>
@@ -406,7 +410,7 @@ public interface IMilvusClient : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Flush a collection's data to disk. Milvus's data will be auto flushed.
+    /// Flush a collection's data to disk. Milvus data will be auto flushed.
     /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism.
     /// It will be removed in the future.
     /// </summary>

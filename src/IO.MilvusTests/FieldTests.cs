@@ -10,7 +10,7 @@ public class FieldTests
     {
         var field = Field.Create<int>("Id", new[] {1,2,3});
         field.RowCount.Should().Be(3);
-        field.ToString().Should().Be("{FieldName: Id, DataType: Int32, RowCount: 3}");
+        field.ToString().Should().Be("Field: {FieldName: Id, DataType: Int32, Data: 3, RowCount: 3}");
     }
 
     [Fact()]

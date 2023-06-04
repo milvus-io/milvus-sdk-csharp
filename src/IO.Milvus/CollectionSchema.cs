@@ -37,4 +37,13 @@ public sealed class CollectionSchema
     /// </summary>
     [JsonPropertyName("name")]
     public string Name { get; set; }
+
+    /// <summary>
+    /// Return string value of <see cref="CollectionSchema"/>
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        return $"CollectionSchema: {{{nameof(AutoId)}: {AutoId}, {nameof(Description)}, {Description}, {nameof(Fields)}: {Fields?.Count}}}";
+    }
 }
