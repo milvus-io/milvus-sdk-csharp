@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>weigan</Authors>
     <Description>Milvus C# SDK</Description>
@@ -9,15 +9,17 @@
     <PackageIcon>milvussharp.png</PackageIcon>
     <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
     <PackageTags>milvus;vector database</PackageTags>
-    <Version>2.0.0-alpha.3</Version>
+    <LangVersion>latest</LangVersion>
+    <Version>2.2.1-alpha.5</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
   
   <ItemGroup>
+    <None Include="..\..\docs\readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\..\milvussharp.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
@@ -37,6 +39,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
-
 </Project>

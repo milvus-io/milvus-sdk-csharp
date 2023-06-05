@@ -1,0 +1,3650 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "contact": {},
+    "description": "The RESTful API Document for MilvusV2.1",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "title": "Milvus RESTful API",
+    "version": "v2.1"
+  },
+  "paths": {
+    "/alias": {
+      "delete": {
+        "description": "Delete an Alias",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.DropAliasRequest"
+              }
+            }
+          },
+          "description": "DropAliasRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DropAlias",
+        "tags": [
+          "Alias"
+        ]
+      },
+      "patch": {
+        "description": "Alter an alias",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.AlterAliasRequest"
+              }
+            }
+          },
+          "description": "AlterAliasRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "AlterAlias",
+        "tags": [
+          "Alias"
+        ]
+      },
+      "post": {
+        "description": "Create an alias for a collection name",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.CreateAliasRequest"
+              }
+            }
+          },
+          "description": "CreateAliasRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "CreateAlias",
+        "tags": [
+          "Alias"
+        ]
+      }
+    },
+    "/collection": {
+      "delete": {
+        "description": "Drop a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.DropCollectionRequest"
+              }
+            }
+          },
+          "description": "DropCollectionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DropCollection",
+        "tags": [
+          "Collection"
+        ]
+      },
+      "get": {
+        "description": "Describe a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.DescribeCollectionRequest"
+              }
+            }
+          },
+          "description": "DescribeCollectionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.DescribeCollectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DescribeCollection",
+        "tags": [
+          "Collection"
+        ]
+      },
+      "post": {
+        "description": "Create a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.CreateCollectionRequest"
+              }
+            }
+          },
+          "description": "CreateCollectionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "CreateCollection",
+        "tags": [
+          "Collection"
+        ]
+      }
+    },
+    "/collection/existence": {
+      "get": {
+        "description": "Get if a collection's existence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.HasCollectionRequest"
+              }
+            }
+          },
+          "description": "HasCollectionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.BoolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "HasCollection",
+        "tags": [
+          "Collection"
+        ]
+      }
+    },
+    "/collection/load": {
+      "delete": {
+        "description": "Release a collection loaded before",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.ReleaseCollectionRequest"
+              }
+            }
+          },
+          "description": "ReleaseCollectionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ReleaseCollection",
+        "tags": [
+          "Collection"
+        ]
+      },
+      "post": {
+        "description": "Load a collection for search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.LoadCollectionRequest"
+              }
+            }
+          },
+          "description": "LoadCollectionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "LoadCollection",
+        "tags": [
+          "Collection"
+        ]
+      }
+    },
+    "/collection/statistics": {
+      "get": {
+        "description": "Get a collection's statistics",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.GetCollectionStatisticsRequest"
+              }
+            }
+          },
+          "description": "GetCollectionStatisticsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetCollectionStatisticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetCollectionStatistics",
+        "tags": [
+          "Collection"
+        ]
+      }
+    },
+    "/collections": {
+      "get": {
+        "description": "Show all collections",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.ShowCollectionsRequest"
+              }
+            }
+          },
+          "description": "ShowCollectionsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.ShowCollectionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ShowCollections",
+        "tags": [
+          "Collection"
+        ]
+      }
+    },
+    "/compaction": {
+      "post": {
+        "description": "Do a mannual compaction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.ManualCompactionRequest"
+              }
+            }
+          },
+          "description": "ManualCompactionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.ManualCompactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ManualCompaction",
+        "tags": [
+          "Ops"
+        ]
+      }
+    },
+    "/compaction/plans": {
+      "get": {
+        "description": "Get the plans of a compaction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetCompactionPlansRequest"
+              }
+            }
+          },
+          "description": "GetCompactionPlansRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetCompactionPlansResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetCompactionPlans",
+        "tags": [
+          "Ops"
+        ]
+      }
+    },
+    "/compaction/state": {
+      "get": {
+        "description": "Get the state of a compaction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetCompactionStateRequest"
+              }
+            }
+          },
+          "description": "GetCompactionStateRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetCompactionStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetCompactionState",
+        "tags": [
+          "Ops"
+        ]
+      }
+    },
+    "/compaction/tasks": {
+      "get": {
+        "description": "List all import tasks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.ListImportTasksRequest"
+              }
+            }
+          },
+          "description": "ListImportTasksRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.ListImportTasksResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ListImportTasks",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
+    "/credential": {
+      "delete": {
+        "description": "Delete a Credential",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.DeleteCredentialRequest"
+              }
+            }
+          },
+          "description": "DeleteCredentialRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DeleteCredential",
+        "tags": [
+          "Credential"
+        ]
+      },
+      "patch": {
+        "description": "Update password for a user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.UpdateCredentialRequest"
+              }
+            }
+          },
+          "description": "UpdateCredential",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "UpdateCredential",
+        "tags": [
+          "Credential"
+        ]
+      },
+      "post": {
+        "description": "Create a new user and password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.CreateCredentialRequest"
+              }
+            }
+          },
+          "description": "CreateCredentialRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "CreateCredential",
+        "tags": [
+          "Credential"
+        ]
+      }
+    },
+    "/credential/users": {
+      "get": {
+        "description": "List all users",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.ListCredUsersRequest"
+              }
+            }
+          },
+          "description": "ListCredUsersRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.ListCredUsersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ListCredUsers",
+        "tags": [
+          "Credential"
+        ]
+      }
+    },
+    "/distance": {
+      "post": {
+        "description": "Calculate distance between specified vectors",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.CalcDistanceRequest"
+              }
+            }
+          },
+          "description": "CalcDistanceRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.CalcDistanceResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "CalcDistance",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/entities": {
+      "delete": {
+        "description": "Delete rows of data entities from a collection by given expresssion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.DeleteRequest"
+              }
+            }
+          },
+          "description": "DeleteRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete",
+        "tags": [
+          "Entity"
+        ]
+      },
+      "post": {
+        "description": "Insert rows of data entities into a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/main.InsertRequest"
+              }
+            }
+          },
+          "description": "InsertRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Insert",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/import": {
+      "post": {
+        "description": "Import data files(json, numpy, etc.) on MinIO/S3 storage, read and parse them into sealed segments",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.ImportRequest"
+              }
+            }
+          },
+          "description": "ImportRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.ImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Import",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
+    "/import/state": {
+      "get": {
+        "description": "Get the state of a import task",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetImportStateRequest"
+              }
+            }
+          },
+          "description": "GetImportStateRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetImportStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetImportState",
+        "tags": [
+          "Import"
+        ]
+      }
+    },
+    "/index": {
+      "delete": {
+        "description": "Drop an index",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.DropIndexRequest"
+              }
+            }
+          },
+          "description": "DropIndexRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DropIndex",
+        "tags": [
+          "Index"
+        ]
+      },
+      "get": {
+        "description": "Describe an index",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.DescribeIndexRequest"
+              }
+            }
+          },
+          "description": "DescribeIndexRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.DescribeIndexResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DescribeIndex",
+        "tags": [
+          "Index"
+        ]
+      },
+      "post": {
+        "description": "Create an Index",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.CreateIndexRequest"
+              }
+            }
+          },
+          "description": "CreateIndexRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "CreateIndex",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/progress": {
+      "get": {
+        "description": "Get the build progress of an index",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetIndexBuildProgressRequest"
+              }
+            }
+          },
+          "description": "GetIndexBuildProgressRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetIndexBuildProgressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetIndexBuildProgress",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/index/state": {
+      "get": {
+        "description": "Get the state of an index",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetIndexStateRequest"
+              }
+            }
+          },
+          "description": "GetIndexStateRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetIndexStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetIndexState",
+        "tags": [
+          "Index"
+        ]
+      }
+    },
+    "/load-balance": {
+      "post": {
+        "description": "Do a load balancing operation between query nodes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.LoadBalanceRequest"
+              }
+            }
+          },
+          "description": "LoadBalanceRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "LoadBalance",
+        "tags": [
+          "Ops"
+        ]
+      }
+    },
+    "/metrics": {
+      "get": {
+        "description": "Get metrics",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetMetricsRequest"
+              }
+            }
+          },
+          "description": "GetMetricsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetMetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetMetrics",
+        "tags": [
+          "Metrics"
+        ]
+      }
+    },
+    "/partition": {
+      "delete": {
+        "description": "Delete a partition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.DropPartitionRequest"
+              }
+            }
+          },
+          "description": "DropPartitionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "DropPartition",
+        "tags": [
+          "Partition"
+        ]
+      },
+      "post": {
+        "description": "Create a partition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.CreatePartitionRequest"
+              }
+            }
+          },
+          "description": "CreatePartitionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "CreatePartition",
+        "tags": [
+          "Partition"
+        ]
+      }
+    },
+    "/partition/existence": {
+      "get": {
+        "description": "Get if a partition exists",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.HasPartitionRequest"
+              }
+            }
+          },
+          "description": "HasPartitionRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.BoolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "HasPartition",
+        "tags": [
+          "Partition"
+        ]
+      }
+    },
+    "/partition/statistics": {
+      "get": {
+        "description": "Get a partition's statistics",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetPartitionStatisticsRequest"
+              }
+            }
+          },
+          "description": "GetPartitionStatisticsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetPartitionStatisticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetPartitionStatistics",
+        "tags": [
+          "Partition"
+        ]
+      }
+    },
+    "/partitions": {
+      "get": {
+        "description": "Show all partitions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.ShowPartitionsRequest"
+              }
+            }
+          },
+          "description": "ShowPartitionsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.ShowPartitionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ShowPartitions",
+        "tags": [
+          "Partition"
+        ]
+      }
+    },
+    "/partitions/load": {
+      "delete": {
+        "description": "Release a group of loaded paritions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.ReleasePartitionsRequest"
+              }
+            }
+          },
+          "description": "ReleasePartitionsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ReleasePartitions",
+        "tags": [
+          "Partition"
+        ]
+      },
+      "post": {
+        "description": "Load a group of paritions for search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.LoadPartitionsRequest"
+              }
+            }
+          },
+          "description": "LoadPartitionsRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "LoadPartitions",
+        "tags": [
+          "Partition"
+        ]
+      }
+    },
+    "/persist": {
+      "post": {
+        "description": "Flush a collection's data to disk. Milvus's data will be auto flushed. Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism. It will be removed in the future.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.FlushRequest"
+              }
+            }
+          },
+          "description": "FlushRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.FlushResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Flush",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/persist/segment-info": {
+      "get": {
+        "description": "Returns sealed segments's information of a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetPersistentSegmentInfoRequest"
+              }
+            }
+          },
+          "description": "GetPersistentSegmentInfoRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetPersistentSegmentInfoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetPersistentSegmentInfo",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/persist/state": {
+      "get": {
+        "description": "Get the flush state of multiple segments",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetFlushStateRequest"
+              }
+            }
+          },
+          "description": "GetFlushStateRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetFlushStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetFlushState",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/query": {
+      "post": {
+        "description": "do a explicit record query by given expression. For example when you want to query by primary key.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.QueryRequest"
+              }
+            }
+          },
+          "description": "QueryRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.QueryResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Query",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/query-segment-info": {
+      "get": {
+        "description": "Returns growing segments's information of a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetQuerySegmentInfoRequest"
+              }
+            }
+          },
+          "description": "GetQuerySegmentInfoRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetQuerySegmentInfoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetQuerySegmentInfo",
+        "tags": [
+          "Entity"
+        ]
+      }
+    },
+    "/replicas": {
+      "get": {
+        "description": "GetReplicas info of a collection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.GetReplicasRequest"
+              }
+            }
+          },
+          "description": "GetReplicasRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.GetReplicasResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "GetReplicas",
+        "tags": [
+          "Ops"
+        ]
+      }
+    },
+    "/search": {
+      "post": {
+        "description": "Do a k nearest neighbors search with bool expression",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/server.SearchRequest"
+              }
+            }
+          },
+          "description": "SearchRequest",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request accepted",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/server.SearchResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request format",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/common.Status"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search",
+        "tags": [
+          "Entity"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "//localhost:9091"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "common.KeyDataPair": {
+        "properties": {
+          "data": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "key": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "common.KeyValuePair": {
+        "properties": {
+          "key": {
+            "example": "dim",
+            "type": "string"
+          },
+          "value": {
+            "example": "128",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "common.MsgBase": {
+        "properties": {
+          "msg_type": {
+            "description": "Not useful for now",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "common.Status": {
+        "properties": {
+          "error_code": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "main.CalcDistanceRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "op_left": {
+            "$ref": "#/components/schemas/main.VectorsArray"
+          },
+          "op_right": {
+            "$ref": "#/components/schemas/main.VectorsArray"
+          },
+          "params": {
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "main.CreateCollectionRequest": {
+        "properties": {
+          "collection_name": {
+            "description": "The unique collection name in milvus.(Required)",
+            "example": "book",
+            "type": "string"
+          },
+          "consistency_level": {
+            "description": "The consistency level that the collection used, modification is not supported now.\n\"Strong\":     0,\n\"Session\":    1,\n\"Bounded\":    2,\n\"Eventually\": 3,\n\"Customized\": 4,",
+            "example": 1,
+            "type": "integer"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/schema.CollectionSchema"
+          },
+          "shards_num": {
+            "description": "Once set, no modification is allowed (Optional)\nhttps://github.com/milvus-io/milvus/issues/6690",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "collection_name",
+          "consistency_level",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "main.DescribeCollectionRequest": {
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "collectionID": {
+            "description": "The collection ID you want to describe",
+            "type": "integer"
+          },
+          "time_stamp": {
+            "description": "If time_stamp is not zero, will describe collection success when time_stamp >= created collection timestamp, otherwise will throw error.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "main.DropCollectionRequest": {
+        "properties": {
+          "collection_name": {
+            "description": "The unique collection name in milvus.(Required)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "main.FieldData": {
+        "properties": {
+          "field": {
+            "items": {},
+            "type": "array"
+          },
+          "field_id": {
+            "type": "integer"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "type": {
+            "description": "0:   \"None\",\n1:   \"Bool\",\n2:   \"Int8\",\n3:   \"Int16\",\n4:   \"Int32\",\n5:   \"Int64\",\n10:  \"Float\",\n11:  \"Double\",\n20:  \"String\",\n21:  \"VarChar\",\n100: \"BinaryVector\",\n101: \"FloatVector\",",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "main.GetCollectionStatisticsRequest": {
+        "properties": {
+          "collection_name": {
+            "description": "The collection name you want get statistics",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "main.HasCollectionRequest": {
+        "properties": {
+          "collection_name": {
+            "description": "The unique collection name in milvus.(Required)",
+            "type": "string"
+          },
+          "time_stamp": {
+            "description": "If time_stamp is not zero, will return true when time_stamp >= created collection timestamp, otherwise will return false.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "main.InsertRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "fields_data": {
+            "items": {
+              "$ref": "#/components/schemas/main.FieldData"
+            },
+            "type": "array"
+          },
+          "hash_keys": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "num_rows": {
+            "type": "integer"
+          },
+          "partition_name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "main.LoadCollectionRequest": {
+        "properties": {
+          "collection_name": {
+            "description": "The collection name you want to load",
+            "type": "string"
+          },
+          "replica_number": {
+            "description": "The replica number to load, default by 1",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "main.ReleaseCollectionRequest": {
+        "properties": {
+          "collection_name": {
+            "description": "The collection name you want to release",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "main.ShowCollectionsRequest": {
+        "properties": {
+          "collection_names": {
+            "description": "When type is InMemory, will return these collection's inMemory_percentages.(Optional)",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "description": "Decide return Loaded collections or All collections(Optional)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "main.VectorIDs": {
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "id_array": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "partition_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "main.VectorsArray": {
+        "properties": {
+          "binary_vectors": {
+            "description": "Vectors is an array of binary vector divided by given dim. Disabled when IDs is set",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "dim": {
+            "description": "Dim of vectors or binary_vectors, not needed when use ids",
+            "type": "integer"
+          },
+          "ids": {
+            "$ref": "#/components/schemas/main.VectorIDs"
+          },
+          "vectors": {
+            "description": "Vectors is an array of vector divided by given dim. Disabled when ids or binary_vectors is set",
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "schema.CollectionSchema": {
+        "properties": {
+          "autoID": {
+            "description": "deprecated later, keep compatible with c++ part now",
+            "example": false,
+            "type": "boolean"
+          },
+          "description": {
+            "example": "Test book search",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/schema.FieldSchema"
+            },
+            "type": "array"
+          },
+          "name": {
+            "example": "book",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "schema.FieldData": {
+        "properties": {
+          "field": {
+            "description": "Types that are assignable to Field:\n\t*FieldData_Scalars\n\t*FieldData_Vectors"
+          },
+          "field_id": {
+            "type": "integer"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "type": {
+            "description": "0:   \"None\",\n1:   \"Bool\",\n2:   \"Int8\",\n3:   \"Int16\",\n4:   \"Int32\",\n5:   \"Int64\",\n10:  \"Float\",\n11:  \"Double\",\n20:  \"String\",\n21:  \"VarChar\",\n100: \"BinaryVector\",\n101: \"FloatVector\",",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "schema.FieldSchema": {
+        "properties": {
+          "autoID": {
+            "type": "boolean"
+          },
+          "data_type": {
+            "description": "0:   \"None\",\n1:   \"Bool\",\n2:   \"Int8\",\n3:   \"Int16\",\n4:   \"Int32\",\n5:   \"Int64\",\n10:  \"Float\",\n11:  \"Double\",\n20:  \"String\",\n21:  \"VarChar\",\n100: \"BinaryVector\",\n101: \"FloatVector\",",
+            "example": 101,
+            "type": "integer"
+          },
+          "description": {
+            "example": "embedded vector of book introduction",
+            "type": "string"
+          },
+          "fieldID": {
+            "type": "integer"
+          },
+          "index_params": {
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "is_primary_key": {
+            "example": false,
+            "type": "boolean"
+          },
+          "name": {
+            "example": "book_intro",
+            "type": "string"
+          },
+          "type_params": {
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data_type",
+          "name"
+        ],
+        "type": "object"
+      },
+      "schema.IDs": {
+        "properties": {
+          "idField": {
+            "description": "Types that are assignable to IdField:\n\t*IDs_IntId\n\t*IDs_StrId"
+          }
+        },
+        "type": "object"
+      },
+      "schema.LongArray": {
+        "properties": {
+          "data": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "schema.SearchResultData": {
+        "properties": {
+          "fields_data": {
+            "items": {
+              "$ref": "#/components/schemas/schema.FieldData"
+            },
+            "type": "array"
+          },
+          "ids": {
+            "$ref": "#/components/schemas/schema.IDs"
+          },
+          "num_queries": {
+            "type": "integer"
+          },
+          "scores": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "top_k": {
+            "type": "integer"
+          },
+          "topks": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.AlterAliasRequest": {
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.BoolResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "value": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "server.CalcDistanceResults": {
+        "properties": {
+          "array": {
+            "description": "num(op_left)*num(op_right) distance values, \"HAMMIN\" return integer distance\n\nTypes that are assignable to Array:\n\t*CalcDistanceResults_IntDist\n\t*CalcDistanceResults_FloatDist"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.CompactionMergeInfo": {
+        "properties": {
+          "sources": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "target": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.CreateAliasRequest": {
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.CreateCredentialRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "created_utc_timestamps": {
+            "description": "create time",
+            "type": "integer"
+          },
+          "modified_utc_timestamps": {
+            "description": "modify time",
+            "type": "integer"
+          },
+          "password": {
+            "description": "ciphertext password",
+            "type": "string"
+          },
+          "username": {
+            "description": "username",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.CreateIndexRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The particular collection name you want to create index.",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "extra_params": {
+            "description": "Support keys: index_type,metric_type, params. Different index_type may has different params.",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "field_name": {
+            "description": "The vector field name in this particular collection",
+            "type": "string"
+          },
+          "index_name": {
+            "description": "Version before 2.0.2 doesn't contain index_name, we use default index name.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.CreatePartitionRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_name": {
+            "description": "The partition name you want to create.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.DeleteCredentialRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "username": {
+            "description": "Not useful for now",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.DeleteRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "expr": {
+            "type": "string"
+          },
+          "hash_keys": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "partition_name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.DescribeCollectionResponse": {
+        "properties": {
+          "aliases": {
+            "description": "The aliases of this collection",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "collection_name": {
+            "description": "The collection name",
+            "type": "string"
+          },
+          "collectionID": {
+            "description": "The collection id",
+            "type": "integer"
+          },
+          "consistency_level": {
+            "description": "The consistency level that the collection used, modification is not supported now.",
+            "type": "integer"
+          },
+          "created_timestamp": {
+            "description": "Hybrid timestamp in milvus",
+            "type": "integer"
+          },
+          "created_utc_timestamp": {
+            "description": "The utc timestamp calculated by created_timestamp",
+            "type": "integer"
+          },
+          "physical_channel_names": {
+            "description": "System design related, users should not perceive",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/schema.CollectionSchema"
+          },
+          "shards_num": {
+            "description": "The shards number you set.",
+            "type": "integer"
+          },
+          "start_positions": {
+            "description": "The message ID/posititon when collection is created",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyDataPair"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "virtual_channel_names": {
+            "description": "System design related, users should not perceive",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.DescribeIndexRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The particular collection name in Milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "field_name": {
+            "description": "The vector field name in this particular collection",
+            "type": "string"
+          },
+          "index_name": {
+            "description": "No need to set up for now @2021.06.30",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.DescribeIndexResponse": {
+        "properties": {
+          "index_descriptions": {
+            "description": "All index informations, for now only return tha latest index you created for the collection.",
+            "items": {
+              "$ref": "#/components/schemas/server.IndexDescription"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.DropAliasRequest": {
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "db_name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.DropIndexRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "must",
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "index_name": {
+            "description": "No need to set up for now @2021.06.30",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.DropPartitionRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_name": {
+            "description": "The partition name you want to drop",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.FlushRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "db_name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.FlushResponse": {
+        "properties": {
+          "coll_segIDs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/schema.LongArray"
+            },
+            "type": "object"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetCollectionStatisticsResponse": {
+        "properties": {
+          "stats": {
+            "description": "Collection statistics data",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetCompactionPlansRequest": {
+        "properties": {
+          "compactionID": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetCompactionPlansResponse": {
+        "properties": {
+          "mergeInfos": {
+            "items": {
+              "$ref": "#/components/schemas/server.CompactionMergeInfo"
+            },
+            "type": "array"
+          },
+          "state": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetCompactionStateRequest": {
+        "properties": {
+          "compactionID": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetCompactionStateResponse": {
+        "properties": {
+          "completedPlanNo": {
+            "type": "integer"
+          },
+          "executingPlanNo": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "timeoutPlanNo": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetFlushStateRequest": {
+        "properties": {
+          "segmentIDs": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetFlushStateResponse": {
+        "properties": {
+          "flushed": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetImportStateRequest": {
+        "properties": {
+          "task": {
+            "description": "id of an import task",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetImportStateResponse": {
+        "properties": {
+          "id": {
+            "description": "id of an import task",
+            "type": "integer"
+          },
+          "id_list": {
+            "description": "auto generated ids if the primary key is autoid",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "infos": {
+            "description": "more informations about the task, progress percent, file path, failed reason, etc.",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "row_count": {
+            "description": "if the task is finished, this value is how many rows are imported. if the task is not finished, this value is how many rows are parsed. return 0 if failed.",
+            "type": "integer"
+          },
+          "state": {
+            "description": "is this import task finished or not",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetIndexBuildProgressRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "field_name": {
+            "description": "The vector field name in this collection",
+            "type": "string"
+          },
+          "index_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetIndexBuildProgressResponse": {
+        "properties": {
+          "indexed_rows": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "total_rows": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetIndexStateRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "must",
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "index_name": {
+            "description": "No need to set up for now @2021.06.30",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetIndexStateResponse": {
+        "properties": {
+          "fail_reason": {
+            "type": "string"
+          },
+          "state": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetMetricsRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "request": {
+            "description": "request is of jsonic format",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetMetricsResponse": {
+        "properties": {
+          "component_name": {
+            "description": "metrics from which component",
+            "type": "string"
+          },
+          "response": {
+            "description": "response is of jsonic format",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetPartitionStatisticsRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_name": {
+            "description": "The partition name you want to collect statistics",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetPartitionStatisticsResponse": {
+        "properties": {
+          "stats": {
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetPersistentSegmentInfoRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collectionName": {
+            "description": "must",
+            "type": "string"
+          },
+          "dbName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetPersistentSegmentInfoResponse": {
+        "properties": {
+          "infos": {
+            "items": {
+              "$ref": "#/components/schemas/server.PersistentSegmentInfo"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetQuerySegmentInfoRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collectionName": {
+            "description": "must",
+            "type": "string"
+          },
+          "dbName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetQuerySegmentInfoResponse": {
+        "properties": {
+          "infos": {
+            "items": {
+              "$ref": "#/components/schemas/server.QuerySegmentInfo"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetReplicasRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collectionID": {
+            "type": "integer"
+          },
+          "with_shard_nodes": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "server.GetReplicasResponse": {
+        "properties": {
+          "replicas": {
+            "items": {
+              "$ref": "#/components/schemas/server.ReplicaInfo"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.HasPartitionRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_name": {
+            "description": "The partition name you want to check",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "server.ImportRequest": {
+        "properties": {
+          "channel_names": {
+            "description": "channel names for the collection",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "collection_name": {
+            "description": "target collection",
+            "type": "string"
+          },
+          "files": {
+            "description": "file paths to be imported",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "options": {
+            "description": "import options, bucket, etc.",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "partition_name": {
+            "description": "target partition",
+            "type": "string"
+          },
+          "row_based": {
+            "description": "the file is row-based or column-based",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "server.ImportResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "tasks": {
+            "description": "id array of import tasks",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.IndexDescription": {
+        "properties": {
+          "field_name": {
+            "description": "The vector field name",
+            "type": "string"
+          },
+          "index_name": {
+            "description": "Index name",
+            "type": "string"
+          },
+          "indexID": {
+            "description": "Index id",
+            "type": "integer"
+          },
+          "params": {
+            "description": "Will return index_type, metric_type, params(like nlist).",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.ListCredUsersRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          }
+        },
+        "type": "object"
+      },
+      "server.ListCredUsersResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "usernames": {
+            "description": "username array",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.ListImportTasksRequest": {
+        "type": "object"
+      },
+      "server.ListImportTasksResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          },
+          "tasks": {
+            "description": "list of all import tasks",
+            "items": {
+              "$ref": "#/components/schemas/server.GetImportStateResponse"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.LoadBalanceRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collectionName": {
+            "type": "string"
+          },
+          "dst_nodeIDs": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "sealed_segmentIDs": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "src_nodeID": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.LoadPartitionsRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_names": {
+            "description": "The partition names you want to load",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "replica_number": {
+            "description": "The replicas number you would load, 1 by default",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.ManualCompactionRequest": {
+        "properties": {
+          "collectionID": {
+            "type": "integer"
+          },
+          "timetravel": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.ManualCompactionResponse": {
+        "properties": {
+          "compactionID": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.PersistentSegmentInfo": {
+        "properties": {
+          "collectionID": {
+            "type": "integer"
+          },
+          "num_rows": {
+            "type": "integer"
+          },
+          "partitionID": {
+            "type": "integer"
+          },
+          "segmentID": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.QueryRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "expr": {
+            "type": "string"
+          },
+          "guarantee_timestamp": {
+            "description": "guarantee_timestamp",
+            "type": "integer"
+          },
+          "output_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "partition_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "travel_timestamp": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.QueryResults": {
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "fields_data": {
+            "items": {
+              "$ref": "#/components/schemas/schema.FieldData"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.QuerySegmentInfo": {
+        "properties": {
+          "collectionID": {
+            "type": "integer"
+          },
+          "index_name": {
+            "type": "string"
+          },
+          "indexID": {
+            "type": "integer"
+          },
+          "mem_size": {
+            "type": "integer"
+          },
+          "nodeID": {
+            "type": "integer"
+          },
+          "num_rows": {
+            "type": "integer"
+          },
+          "partitionID": {
+            "type": "integer"
+          },
+          "segmentID": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.ReleasePartitionsRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name in milvus",
+            "type": "string"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_names": {
+            "description": "The partition names you want to release",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.ReplicaInfo": {
+        "properties": {
+          "collectionID": {
+            "type": "integer"
+          },
+          "node_ids": {
+            "description": "include leaders",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "partition_ids": {
+            "description": "empty indicates to load collection",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "replicaID": {
+            "type": "integer"
+          },
+          "shard_replicas": {
+            "items": {
+              "$ref": "#/components/schemas/server.ShardReplica"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.SearchRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "must",
+            "type": "string"
+          },
+          "db_name": {
+            "type": "string"
+          },
+          "dsl": {
+            "description": "must",
+            "type": "string"
+          },
+          "dsl_type": {
+            "description": "must",
+            "type": "integer"
+          },
+          "guarantee_timestamp": {
+            "description": "guarantee_timestamp",
+            "type": "integer"
+          },
+          "output_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "partition_names": {
+            "description": "must",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "placeholder_group": {
+            "description": "serialized `PlaceholderGroup`",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "search_params": {
+            "description": "must",
+            "items": {
+              "$ref": "#/components/schemas/common.KeyValuePair"
+            },
+            "type": "array"
+          },
+          "travel_timestamp": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.SearchResults": {
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "results": {
+            "$ref": "#/components/schemas/schema.SearchResultData"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.ShardReplica": {
+        "properties": {
+          "dm_channel_name": {
+            "type": "string"
+          },
+          "leader_addr": {
+            "description": "IP:port",
+            "type": "string"
+          },
+          "leaderID": {
+            "type": "integer"
+          },
+          "node_ids": {
+            "description": "optional, DO NOT save it in meta, set it only for GetReplicas()\nif with_shard_nodes is true",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "server.ShowCollectionsResponse": {
+        "properties": {
+          "collection_ids": {
+            "description": "Collection Id array",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "collection_names": {
+            "description": "Collection name array",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "created_timestamps": {
+            "description": "Hybrid timestamps in milvus",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "created_utc_timestamps": {
+            "description": "The utc timestamp calculated by created_timestamp",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "inMemory_percentages": {
+            "description": "Load percentage on querynode when type is InMemory",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.ShowPartitionsRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "collection_name": {
+            "description": "The collection name you want to describe, you can pass collection_name or collectionID",
+            "type": "string"
+          },
+          "collectionID": {
+            "description": "The collection id in milvus",
+            "type": "integer"
+          },
+          "db_name": {
+            "description": "Not useful for now",
+            "type": "string"
+          },
+          "partition_names": {
+            "description": "When type is InMemory, will return these patitions's inMemory_percentages.(Optional)",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "description": "Decide return Loaded partitions or All partitions(Optional)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "server.ShowPartitionsResponse": {
+        "properties": {
+          "created_timestamps": {
+            "description": "All hybrid timestamps",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "created_utc_timestamps": {
+            "description": "All utc timestamps calculated by created_timestamps",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "inMemory_percentages": {
+            "description": "Load percentage on querynode",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "partition_names": {
+            "description": "All partition names for this collection",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "partitionIDs": {
+            "description": "All partition ids for this collection",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/common.Status"
+          }
+        },
+        "type": "object"
+      },
+      "server.UpdateCredentialRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/common.MsgBase"
+          },
+          "created_utc_timestamps": {
+            "description": "create time",
+            "type": "integer"
+          },
+          "modified_utc_timestamps": {
+            "description": "modify time",
+            "type": "integer"
+          },
+          "newPassword": {
+            "description": "new password",
+            "type": "string"
+          },
+          "oldPassword": {
+            "description": "old password",
+            "type": "string"
+          },
+          "username": {
+            "description": "username",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}

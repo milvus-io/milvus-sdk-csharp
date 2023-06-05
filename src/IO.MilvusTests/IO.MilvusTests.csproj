@@ -1,23 +1,62 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
 
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <LangVersion>latest</LangVersion>
 
-  <ItemGroup>
-    <!--<PackageReference Include="IO.Milvus" Version="2.0.0-alpha" />-->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-    <PackageReference Include="MSTest.TestAdapter" Version="2.2.8" />
-    <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
-    <PackageReference Include="coverlet.collector" Version="3.1.2" />
-  </ItemGroup>
+        <TargetFrameworks>net7.0</TargetFrameworks>
 
-  <ItemGroup>
-    <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj" />
-  </ItemGroup>
+        <PlatformTarget>x64</PlatformTarget>
+
+    </PropertyGroup>
+
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="8.0.0-preview.4.23259.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
+
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+        <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="3.2.0">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="FluentAssertions" Version="6.11.0" />
+        <PackageReference Include="System.Net.Http.WinHttpHandler" Version="8.0.0-preview.4.23259.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="milvusclients.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="xunit.runner.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\.editorconfig" Link=".editorconfig" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Utils\" />
+    </ItemGroup>
+
+    <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

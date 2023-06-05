@@ -1,432 +1,585 @@
-﻿using Grpc.Core;
-using IO.Milvus.Grpc;
-using IO.Milvus.Param;
-using IO.Milvus.Param.Alias;
-using IO.Milvus.Param.Collection;
-using IO.Milvus.Param.Control;
-using IO.Milvus.Param.Credential;
-using IO.Milvus.Param.Dml;
-using IO.Milvus.Param.Index;
-using IO.Milvus.Param.Partition;
+﻿using IO.Milvus.ApiSchema;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace IO.Milvus.Client
+namespace IO.Milvus.Client;
+
+/// <summary>
+/// Milvus client
+/// </summary>
+public interface IMilvusClient : IDisposable
 {
-    public interface IMilvusClient
-    {
-        /// <summary>
-        /// Time setting for rpc call
-        /// </summary>
-        /// <param name="timeSpan">time span</param>
-        /// <returns></returns>
-        IMilvusClient WithTimeout(TimeSpan timeSpan);
+    /// <summary>
+    /// Ensure to connect to Milvus server before any operations.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Disconnects from a Milvus server with configurable timeout.
-        /// </summary>
-        void Close();
+    /// <summary>
+    /// Base address of Milvus server.
+    /// </summary>
+    string Address { get; }
 
-        #region Collection
-        /// <summary>
-        /// Checks if a collection exists.
-        /// </summary>
-        /// <param name="hasCollectionParam"><see cref="HasCollectionParam"/></param>
-        /// <returns>{status:result code, data: boolean, whether if has collection or not}</returns>
-        R<bool> HasCollection(HasCollectionParam hasCollectionParam,CallOptions? callOptions = null);
+    #region Collection
+    /// <summary>
+    /// Drop a collection.
+    /// </summary>
+    /// <param name="collectionName">The unique collection name in milvus.(Required).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task DropCollectionAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        ///  Creates a collection in Milvus.
-        /// </summary>
-        /// <param name="requestParam"><see cref="CreateCollectionParam"/></param>
-        /// <returns>{status:result code, data:RpcStatus{msg: result message}}</returns>
-        R<RpcStatus> CreateCollection(CreateCollectionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Describe a collection.
+    /// </summary>
+    /// <param name="collectionName">collectionName</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<DetailedMilvusCollection> DescribeCollectionAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Drops a collection. Note that this method drops all data in the collection.
-        /// </summary>
-        /// <param name="requestParam"><see cref="DropCollectionParam"/> Use <see cref="DropCollectionParam.Create(string)"/></param>
-        /// <returns>{status:result code, data:RpcStatus{msg: result message}}</returns>
-        R<RpcStatus> DropCollection(DropCollectionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Create a collection.
+    /// </summary>
+    /// <param name="collectionName">The unique collection name in milvus.</param>
+    /// <param name="consistencyLevel">
+    /// The consistency level that the collection used, modification is not supported now.</param>
+    /// <param name="fieldTypes">field types that represents this collection schema</param>
+    /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task CreateCollectionAsync(
+        string collectionName, 
+        IList<FieldType> fieldTypes,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
+        int shards_num = 1,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Loads a collection to memory before search or query.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns>{status:result code, data:RpcStatus{msg: result message}}</returns>
-        R<RpcStatus> LoadCollection(LoadCollectionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get if a collection's existence
+    /// </summary>
+    /// <param name="collectionName">The unique collection name in milvus.</param>
+    /// <param name="dateTime">
+    /// If time_stamp is not zero,
+    /// will return true when time_stamp >= created collection timestamp,
+    /// otherwise will return false.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<bool> HasCollectionAsync(
+        string collectionName, 
+        DateTime? dateTime = null, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Releases a collection from memory to reduce memory usage. Note that you 
-        /// cannot search while the corresponding collection is released from memory.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> ReleaseCollection(ReleaseCollectionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Release a collection loaded before
+    /// </summary>
+    /// <param name="collectionName">The collection name you want to release.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task ReleaseCollectionAsync(
+        string collectionName,
+        CancellationToken cancellationToken= default);
 
-        /// <summary>
-        /// Shows the details of a collection, e.g. name, schema.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<DescribeCollectionResponse> DescribeCollection(DescribeCollectionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// The collection name you want to load.
+    /// </summary>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="replicaNumber">The replica number to load, default by 1.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public Task LoadCollectionAsync(
+        string collectionName, 
+        int replicaNumber = 1, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        ///  Shows the statistics information of a collection.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetCollectionStatisticsResponse> GetCollectionStatistics(GetCollectionStatisticsParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get a collection's statistics
+    /// </summary>
+    /// <param name="collectionName">The collection name you want get statistics</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Lists all collections or gets collection loading status.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<ShowCollectionsResponse> ShowCollections(ShowCollectionsParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Show all collections
+    /// </summary>
+    /// <param name="collectionNames">
+    /// When type is InMemory, will return these collection's inMemory_percentages.(Optional)
+    /// </param>
+    /// <param name="showType">Decide return Loaded collections or All collections(Optional)</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
 
-        /// <summary>
-        /// Checks if a collection exists.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<bool> HasCollection(string collectionName,CallOptions? callOptions = null);
+    Task<IList<MilvusCollection>> ShowCollectionsAsync(
+        IList<string> collectionNames = null, 
+        ShowType showType = ShowType.All,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        ///  Drops a collection. Note that this method drops all data in the collection.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<RpcStatus> DropCollection(string collectionName,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get loading progress of a collection or it's partition.
+    /// </summary>
+    /// <remarks>
+    /// Not support in restful api.
+    /// </remarks>
+    /// <param name="collectionName">Collection name of milvus.</param>
+    /// <param name="partitionNames">Partition names.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<long> GetLoadingProgressAsync(
+        string collectionName,
+        IList<string> partitionNames = null,
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        /// <summary>
-        /// Shows the details of a collection, e.g. name, schema.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<DescribeCollectionResponse> DescribeCollection(string collectionName,CallOptions? callOptions = null);
+    #region Alias
+    /// <summary>
+    /// Create an alias for a collection name.
+    /// </summary>
+    /// <param name="collectionName">Collection Name.</param>
+    /// <param name="alias">Alias.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task CreateAliasAsync(
+        string collectionName,
+        string alias, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Releases a collection from memory to reduce memory usage. Note that you 
-        /// cannot search while the corresponding collection is released from memory.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<RpcStatus> ReleaseCollection(string collectionName,CallOptions? callOptions = null);
+    /// <summary>
+    /// Delete an Alias
+    /// </summary>
+    /// <param name="alias">Alias</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task DropAliasAsync(
+        string alias,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Loads a collection to memory before search or query.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        Task<R<RpcStatus>> LoadCollectionAsync(string collectionName,CallOptions? callOptions = null);
+    /// <summary>
+    /// Alter an alias
+    /// </summary>
+    /// <param name="collectionName">Collection name</param>
+    /// <param name="alias">Alias</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task AlterAliasAsync(
+        string collectionName,
+        string alias,
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        /// <summary>
-        /// Loads a collection to memory before search or query.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<RpcStatus> LoadCollection(string collectionName,CallOptions? callOptions = null);
-        #endregion
+    #region Partition
+    /// <summary>
+    /// Create a partition.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionName">The partition name you want to create.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task CreatePartitionAsync(
+        string collectionName, 
+        string partitionName, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        ///  Flushes collections.
-        /// Currently we do not support this method on client since compaction is not supported on server.     
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<FlushResponse> Flush(FlushParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    ///  Get if a partition exists.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionName">The partition name you want to check.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<bool> HasPartitionAsync(
+        string collectionName, 
+        string partitionName, 
+        CancellationToken cancellationToken = default);
 
-        #region Partition
-        /// <summary>
-        /// Creates a partition in the specified collection.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> CreatePartition(CreatePartitionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Show all partitions.
+    /// </summary>
+    /// <param name="collectionName">The collection name you want to describe, 
+    /// you can pass collection_name or collectionID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IList<MilvusPartition>> ShowPartitionsAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Drops a partition. Note that this method drops all data in this partition 
-        /// and the _default partition cannot be dropped.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> DropPartition(DropPartitionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Load a group of partitions for search.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionNames">The partition names you want to load.</param>
+    /// <param name="replicaNumber">The replicas number you would load, 1 by default.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task LoadPartitionsAsync(
+        string collectionName, 
+        IList<string> partitionNames, 
+        int replicaNumber = 1, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Checks if a partition exists in the specified collection.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<bool> HasPartition(HasPartitionParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Release a group of loaded partitions.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionNames">The partition names you want to release.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task ReleasePartitionAsync(
+        string collectionName, 
+        IList<string> partitionNames, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Loads a partition into memory.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> LoadPartitions(LoadPartitionsParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Delete a partition.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionName">The partition name you want to drop.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task DropPartitionsAsync(
+        string collectionName,
+        string partitionName, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        ///  Releases a partition from memory.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> ReleasePartitions(ReleasePartitionsParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get a partition's statistics.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionName">The partition name you want to collect statistics.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IDictionary<string,string>> GetPartitionStatisticsAsync(
+        string collectionName,
+        string partitionName,
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        /// <summary>
-        /// Shows the statistics information of a partition.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetPartitionStatisticsResponse> GetPartitionStatistics(GetPartitionStatisticsParam requestParam,CallOptions? callOptions = null);
+    #region Ops
+    /// <summary>
+    /// Do a manual compaction.
+    /// </summary>
+    /// <param name="collectionId">Collection Id.</param>
+    /// <param name="timetravel">Time travel.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>CompactionId</returns>
+    Task<long> ManualCompactionAsync(
+        long collectionId, 
+        DateTime? timetravel = null,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Shows all partitions in the specified collection.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<ShowPartitionsResponse> ShowPartitions(ShowPartitionsParam requestParam,CallOptions? callOptions = null);
-        #endregion
+    /// <summary>
+    /// Get the state of a compaction
+    /// </summary>
+    /// <param name="compactionId">Collection id</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<MilvusCompactionState> GetCompactionStateAsync(
+        long compactionId, 
+        CancellationToken cancellationToken = default);
 
-        #region Alias
-        /// <summary>
-        /// Creates an alias for a collection.
-        /// Alias can be used in search or query to replace the collection name
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> CreateAlias(CreateAliasParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get the plans of a compaction.
+    /// </summary>
+    /// <param name="compactionId">Compaction id.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<MilvusCompactionPlans> GetCompactionPlans(
+        long compactionId,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Drops an alias for the specified collection.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> DropAlias(DropAliasParam requestParam,CallOptions? callOptions = null);
+    //TODO:1.LoadBalance; 2.GetReplicas
+    #endregion
 
-        /// <summary>
-        /// Alters alias from a collection to another.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> AlterAlias(AlterAliasParam requestParam,CallOptions? callOptions = null);
-        #endregion
+    #region Import
+    //TODO:
+    //1.ListImportTasks
+    //2.Import
+    //3.GetImportState
 
-        #region Index
-        /// <summary>
-        ///  Creates an index on a vector field in the specified collection.
-        ///  Note that index building is an async progress.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> CreateIndex(CreateIndexParam requestParam,CallOptions? callOptions = null);
+    #endregion
 
-        /// <summary>
-        /// Drops the index on a vector field in the specified collection.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> DropIndex(DropIndexParam requestParam,CallOptions? callOptions = null);
+    #region Credential
+    /// <summary>
+    /// Delete a user.
+    /// </summary>
+    /// <param name="username">Username.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task DeleteCredential(string username,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Shows the information of the specified index. Current release of Milvus 
-        /// only supports showing latest built index.    
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<DescribeIndexResponse> DescribeIndex(DescribeIndexParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Update password for a user.
+    /// </summary>
+    /// <param name="username">Username.</param>
+    /// <param name="oldPassword">Old password.</param>
+    /// <param name="newPassword">New password.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task UpdateCredentialAsync(
+        string username,
+        string oldPassword,
+        string newPassword,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        ///  Shows the index building state(in-progress/finished/failed), and the reason for failure (if any).
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetIndexStateResponse> getIndexState(GetIndexStateParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Create a user.
+    /// </summary>
+    /// <param name="username">Username.</param>
+    /// <param name="password">Password.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task CreateCredentialAsync(
+        string username,
+        string password,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Shows the index building progress, such as how many rows are indexed.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetIndexBuildProgressResponse> GetIndexBuildProgress(GetIndexBuildProgressParam requestParam,CallOptions? callOptions = null);
-        #endregion
+    /// <summary>
+    /// List all users in milvus.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IList<string>> ListCredUsersAsync(
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        #region Data
-        /// <summary>
-        /// Inserts entities into a specified collection . Note that you don't need to
-        /// input primary key field if auto_id is enabled.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        /// <remarks><see href="https://milvus.io/docs/v2.0.x/insert_data.md"/></remarks>
-        R<MutationResult> Insert(InsertParam requestParam,CallOptions? callOptions = null);
+    #region Entity
+    /// <summary>
+    /// Insert rows of data entities into a collection.
+    /// </summary>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="fields">Fields</param>
+    /// <param name="partitionName">Partition name.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<MilvusMutationResult> InsertAsync(
+        string collectionName,
+        IList<Field> fields,
+        string partitionName = "",
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Inserts entities into a specified collection . Note that you don't need to
-        /// input primary key field if auto_id is enabled.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        Task<R<MutationResult>> InsertAsync(InsertParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Delete rows of data entities from a collection by given expression.
+    /// </summary>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="expr">A predicate expression outputs a boolean value. <see href="https://milvus.io/docs/boolean.md"/></param>
+    /// <param name="partitionName">Partition name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<MilvusMutationResult> DeleteAsync(
+        string collectionName,
+        string expr,
+        string partitionName = "",
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Deletes entity(s) based on primary key(s) filtered by boolean expression. Current release 
-        /// of Milvus only supports expression in the format "pk_field in [1, 2, ...]"
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<MutationResult> Delete(DeleteParam requestParam,CallOptions? callOptions = null);
-        #endregion
+    /// <summary>
+    /// Do a k nearest neighbors search with bool expression.
+    /// </summary>
+    /// <param name="searchParameters"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<MilvusSearchResult> SearchAsync(
+        MilvusSearchParameters searchParameters, 
+        CancellationToken cancellationToken = default);
 
-        #region Search and Query
-        /// <summary>
-        /// Conducts ANN search on a vector field. Use expression to do filtering before search.
-        /// </summary>
-        /// <param name="requestParam"><see cref="SearchParam{TVector}"/></param>
-        /// <returns></returns>
-        Task<R<SearchResults>> SearchAsync<TVector>(SearchParam<TVector> requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Calculate distance between vectors with Milvus.
+    /// </summary>
+    /// <remarks>
+    /// It's a deny api for zilliz cloud.
+    /// </remarks>
+    /// <param name="leftVectors">Vectors on the left side of the operator</param>
+    /// <param name="rightVectors">Vectors on the right side of the operator</param>
+    /// <param name="milvusMetricType"><see cref="MilvusMetricType"/>
+    /// <para>
+    /// <term>For floating-point vectors:</term> 
+    /// </para>
+    /// <list type="bullet">
+    /// <item>L2 (Euclidean distance)</item>
+    /// <item>IP (Inner product)</item>
+    /// </list>
+    /// <para>
+    /// <term>For binary vectors:</term> 
+    /// </para>
+    /// <list type="bullet">
+    /// <item>JACCARD (Jaccard distance)</item>
+    /// <item>TANIMOTO (Tanimoto distance)</item>
+    /// <item>HAMMING (Hamming distance)</item>
+    /// <item>SUPERSTRUCTURE (Superstructure)</item>
+    /// </list>
+    /// </param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<MilvusCalDistanceResult> CalDistanceAsync(
+        MilvusVectors leftVectors,
+        MilvusVectors rightVectors,
+        MilvusMetricType milvusMetricType,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Conducts ANN search on a vector field. Use expression to do filtering before search.
-        /// </summary>
-        /// <param name="requestParam"><see cref="SearchParam{TVector}"/></param>
-        /// <returns></returns>
-        R<SearchResults> Search<TVector>(SearchParam<TVector> requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Flush a collection's data to disk. Milvus data will be auto flushed.
+    /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism.
+    /// It will be removed in the future.
+    /// </summary>
+    /// <param name="collectionNames">Collection names.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<MilvusFlushResult> FlushAsync(
+        IList<string> collectionNames,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Queries entity(s) based on scalar field(s) filtered by boolean expression. 
-        /// Note that the order of the returned entities cannot be guaranteed.     
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<QueryResults> Query(QueryParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Returns sealed segments information of a collection.
+    /// </summary>
+    /// <param name="collectionName">Milvus collection name.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Queries entity(s) based on scalar field(s) filtered by boolean expression. 
-        /// Note that the order of the returned entities cannot be guaranteed.     
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        Task<R<QueryResults>> QueryAsync(QueryParam requestParam,CallOptions? callOptions = null);
-        #endregion
+    /// <summary>
+    /// Get the flush state of multiple segments.
+    /// </summary>
+    /// <param name="segmentIds">Segment ids</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>If segments flushed.</returns>
+    Task<bool> GetFlushStateAsync(
+        IList<long> segmentIds,
+        CancellationToken cancellationToken = default);
 
-        #region Credential
-        //R<RpcStatus> CreateCredential(CreateCredentialParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Do a explicit record query by given expression. 
+    /// For example when you want to query by primary key.
+    /// </summary>
+    /// <param name="collectionName"></param>
+    /// <param name="expr"></param>
+    /// <param name="outputFields"></param>
+    /// <param name="consistencyLevel"></param>
+    /// <param name="partitionNames">Partitions names.(Optional)</param>
+    /// <param name="guaranteeTimestamp">
+    /// guarantee_timestamp.
+    /// (Optional)Instructs server to see insert/delete operations performed before a provided timestamp.
+    /// If no such timestamp is specified, the server will wait for the latest operation to finish and query.
+    /// </param>
+    /// <param name="offset">
+    /// offset a value to define the position.
+    /// Specify a position to return results. Only take effect when the 'limit' value is specified.
+    /// Default value is 0, start from begin.
+    /// </param>
+    /// <param name="limit">
+    /// limit a value to define the limit of returned entities
+    /// Specify a value to control the returned number of entities. Must be a positive value.
+    /// Default value is 0, will return without limit.
+    /// </param>
+    /// <param name="travelTimestamp">Travel time.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<MilvusQueryResult> QueryAsync(
+        string collectionName,
+        string expr,
+        IList<string> outputFields,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
+        IList<string> partitionNames = null,
+        long travelTimestamp = 0,
+        long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
+        long offset = 0,
+        long limit = 0,
+        CancellationToken cancellationToken = default);
 
-        //R<RpcStatus> UpdateCredential(UpdateCredentialParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get query segment information.
+    /// </summary>
+    /// <param name="collectionName">Collection name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns><see cref="MilvusQuerySegmentInfoResult"/></returns>
+    Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        //R<RpcStatus> DeleteCredential(DeleteCredentialParam requestParam,CallOptions? callOptions = null);
+    #region Index
+    /// <summary>
+    /// Create an index.
+    /// </summary>
+    /// <param name="collectionName">The particular collection name you want to create index.</param>
+    /// <param name="fieldName">The vector field name in this particular collection.</param>
+    /// <param name="indexName">Index name</param>
+    /// <param name="milvusIndexType">Milvus index type.</param>
+    /// <param name="milvusMetricType"></param>
+    /// <param name="extraParams">
+    /// Support keys: index_type,metric_type, params. 
+    /// Different index_type may has different params.</param>
+    /// <param name="cancellationToken"></param>
+    Task CreateIndexAsync(
+        string collectionName,
+        string fieldName,
+        string indexName,
+        MilvusIndexType milvusIndexType,
+        MilvusMetricType milvusMetricType,
+        IDictionary<string, string> extraParams,
+        CancellationToken cancellationToken = default);
 
-        //R<ListCredUsersResponse> listCredUsers(ListCredUsersParam requestParam,CallOptions? callOptions = null);
-        #endregion
+    /// <summary>
+    /// Drop an index.
+    /// </summary>
+    /// <param name="collectionName">The particular collection name you want to drop index.</param>
+    /// <param name="fieldName">The vector field name in this particular collection.</param>
+    /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DEFAULT_INDEX_NAME"/></param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task DropIndexAsync(
+        string collectionName, 
+        string fieldName, 
+        string indexName,
+        CancellationToken cancellationToken = default);
 
-        #region Others
-        /// <summary>
-        ///  Calculates the distance between the specified vectors.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<CalcDistanceResults> CalcDistance(CalcDistanceParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Describe an index
+    /// </summary>
+    /// <param name="collectionName">The particular collection name in Milvus</param>
+    /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IList<MilvusIndex>> DescribeIndexAsync(
+        string collectionName, 
+        string fieldName, 
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Gets the runtime metrics information of Milvus, returns the result in .json format.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetMetricsResponse> GetMetrics(GetMetricsParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get the build progress of an index.
+    /// </summary>
+    /// <param name="collectionName">The particular collection name in Milvus</param>
+    /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IndexBuildProgress> GetIndexBuildProgress(
+        string collectionName,
+        string fieldName,
+        CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Get flush state of specified segments.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetFlushStateResponse> GetFlushState(GetFlushStateParam requestParam,CallOptions? callOptions = null);
+    /// <summary>
+    /// Get the state of an index.
+    /// </summary>
+    /// <param name="collectionName">The particular collection name in Milvus</param>
+    /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IndexState> GetIndexState(
+        string collectionName,
+        string fieldName,
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        /// <summary>
-        ///  Gets the information of persistent segments from data node, including row count,
-        /// persistence state(growing or flushed), etc.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetPersistentSegmentInfoResponse> GetPersistentSegmentInfo(GetPersistentSegmentInfoParam requestParam,CallOptions? callOptions = null);
+    #region Metric
+    /// <summary>
+    /// Get metrics.
+    /// </summary>
+    /// <param name="request">request is of jsonic format.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>metrics from which component.</returns>
+    Task<MilvusMetrics> GetMetricsAsync(
+        string request,
+        CancellationToken cancellationToken = default);
+    #endregion
 
-        /// <summary>
-        ///  Gets the query information of segments in a collection from query node, including row count,
-        /// memory usage size, index name, etc.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(GetQuerySegmentInfoParam requestParam,CallOptions? callOptions = null);
-
-        //R<GetReplicasResponse> getReplicas(GetReplicasParam requestParam,CallOptions? callOptions = null);
-        /// <summary>
-        /// Moves segment from a query node to another to keep the load balanced.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<RpcStatus> LoadBalance(LoadBalanceParam requestParam,CallOptions? callOptions = null);
-
-        /// <summary>
-        /// Gets the compaction state by id.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetCompactionStateResponse> GetCompactionState(GetCompactionStateParam requestParam,CallOptions? callOptions = null);
-
-        /// <summary>
-        /// Performs a manual compaction.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<ManualCompactionResponse> ManualCompaction(ManualCompactionParam requestParam,CallOptions? callOptions = null);
-
-        /// <summary>
-        /// Gets compaction state with its plan.
-        /// </summary>
-        /// <param name="requestParam"></param>
-        /// <returns></returns>
-        R<GetCompactionPlansResponse> GetCompactionStateWithPlans(GetCompactionPlansParam requestParam,CallOptions? callOptions = null);
-
-        /// <summary>
-        /// Performs a manual compaction.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<ManualCompactionResponse> ManualCompaction(string collectionName,CallOptions? callOptions = null);
-
-        /// <summary>
-        ///  Gets the query information of segments in a collection from query node, including row count,
-        /// memory usage size, index name, etc.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(string collectionName,CallOptions? callOptions = null);
-
-        /// <summary>
-        /// Gets the information of persistent segments from data node, including row count,
-        /// persistence state(growing or flushed), etc.
-        /// </summary>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        R<GetPersistentSegmentInfoResponse> GetPersistentSegmentInfo(string collectionName,CallOptions? callOptions = null);
-
-        /// <summary>
-        ///  Gets compaction state with its plan.
-        /// </summary>
-        /// <param name="compactionID"></param>
-        /// <returns></returns>
-        R<GetCompactionPlansResponse> GetCompactionStateWithPlans(long compactionID,CallOptions? callOptions = null);
-
-        /// <summary>
-        /// Gets the compaction state by id.
-        /// </summary>
-        /// <param name="compactionID"></param>
-        /// <returns></returns>
-        R<GetCompactionStateResponse> GetCompactionState(long compactionID,CallOptions? callOptions = null);
-        #endregion
-
-    }
+    /// <summary>
+    /// Close milvus connection.
+    /// </summary>
+    void Close();
 }

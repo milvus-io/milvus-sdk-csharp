@@ -1,19 +1,39 @@
 ﻿using System;
 
-namespace IO.Milvus.Utils
+namespace IO.Milvus.Utils;
+
+/// <summary>
+/// Timestamps methods
+/// </summary>
+/// <remarks>
+/// <see href="https://www.epochconverter.com/"/>
+/// </remarks>
+internal static class TimestampUtils
 {
-    public static class TimeStampUtils
+    public static long GetNowUTCTimestamp()
     {
-        public static long GetTimeStamp(bool AccurateToMilliseconds = false)
+        return DateTimeOffset.Now.ToUnixTimeMilliseconds();
+    }
+
+    public static long ToUtcTimestamp(this DateTime dt)
+    {
+        return ToTimestamp(dt.ToUniversalTime());
+    }
+
+    public static long ToTimestamp(this DateTime dt)
+    {        
+        return (dt.Ticks - 621355968000000000) / 10000;
+    }
+
+    public static DateTime GetTimeFromTimstamp(long timestamp)
+    {        
+        if(timestamp > 253402300799999)
         {
-            if (AccurateToMilliseconds)
-            {
-                return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
-            }
-            else
-            {
-                return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
-            }
+            return DateTime.Now;
+        }
+        else
+        {                
+            return DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
         }
     }
 }
