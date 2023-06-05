@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using IO.Milvus;
 using IO.Milvus.Client;
+using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using IO.MilvusTests.Utils;
 using Xunit;
@@ -147,12 +148,18 @@ public partial class MilvusClientTests
         }
 
         //Wait loaded
-        await Task.Delay(TimeSpan.FromSeconds(10));
-        //await milvusClient.WaitForLoadingCollection(
-        //    collectionName,
-        //    string.IsNullOrEmpty(partitionName) ? null : new[] { partitionName },
-        //    TimeSpan.FromSeconds(1),
-        //    TimeSpan.FromSeconds(10));
+        if (milvusClient is MilvusRestClient milvusRestClient)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(10));
+        }
+        else
+        {
+            await milvusClient.WaitForLoadingProgressCollectionAsync(
+                collectionName,
+                string.IsNullOrEmpty(partitionName) ? null : new[] { partitionName },
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(20));
+        }
 
         //Search
         List<string> search_output_fields = new() { "book_id" };

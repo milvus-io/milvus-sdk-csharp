@@ -119,6 +119,9 @@ public interface IMilvusClient : IDisposable
     /// <summary>
     /// Get loading progress of a collection or it's partition.
     /// </summary>
+    /// <remarks>
+    /// Not support in restful api.
+    /// </remarks>
     /// <param name="collectionName">Collection name of milvus.</param>
     /// <param name="partitionNames">Partition names.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
