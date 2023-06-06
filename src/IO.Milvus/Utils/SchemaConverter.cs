@@ -79,7 +79,7 @@ internal static class SchemaConverter
             Name = fieldType.Name,
             DataType = ((Grpc.DataType)(int)fieldType.DataType),
             FieldID = fieldType.FieldId,
-            IsPrimaryKey = fieldType.IsPrimaryKey,
+            IsPrimaryKey = fieldType.IsPrimaryKey
         };
 
         grpcField.TypeParams.AddRange(ConverterParams(fieldType.TypeParams));
