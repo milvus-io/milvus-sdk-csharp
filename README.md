@@ -36,6 +36,8 @@ IO.Milvus is delivered via NuGet package manager.
 
 You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/milvus-io/milvus-sdk-csharp)
+
 * [00.Settings.ipynb](./docs/notebooks/00.Settings.ipynb)
 * [01.Connect to milvus.ipynb](./docs/notebooks/01.Connect%20to%20milvus.ipynb)
 * [02.Create a Collection.ipynb](./docs/notebooks/02.Create%20a%20Collection.ipynb)
