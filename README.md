@@ -45,5 +45,7 @@ You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 * [06.Search.ipynb](./docs/notebooks/06.Search.ipynb)
 * [07.Query.ipynb](./docs/notebooks/07.Query.ipynb)
 * [08.Calculate Distance.ipynb](./docs/notebooks/08.Calculate%20Distance.ipynb)
+---
+* [x1.OpenAISample.ipynb](./docs/notebooks/x1.OpenAISample.ipynb)
 
 > Requirements: C# notebooks require .NET 7 and the VS Code Polyglot extension.
