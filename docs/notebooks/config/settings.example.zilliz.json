@@ -1,0 +1,6 @@
+{
+  "endpoint": "https://{id}.{machinename}.vectordb.zillizcloud.com",
+  "port": "19536",
+  "username": "db_admin",
+  "password": "{password}"
+}
