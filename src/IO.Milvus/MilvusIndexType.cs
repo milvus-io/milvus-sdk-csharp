@@ -163,10 +163,16 @@ public enum MilvusIndexType
     TRIE,
 
     /// <summary>
+    /// <para>
     /// AUTOINDEX is a proprietary index type available on Zilliz Cloud for index auto-optimization.
+    /// </para>
+    /// <para>
+    /// And now, it can be used in milvus v2.2.9
+    /// </para>
     /// </summary>
     /// <remarks>
     /// Currently, Zilliz Cloud does not allow indexes on scalar fields.
+    /// <see href="https://github.com/milvus-io/milvus/pull/24443"/>
     /// </remarks>
     AUTOINDEX,
 }

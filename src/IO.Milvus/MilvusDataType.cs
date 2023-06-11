@@ -3,6 +3,9 @@
 /// <summary>
 /// Data type
 /// </summary>
+/// <remarks>
+/// <see cref="Grpc.DataType"/>
+/// </remarks>
 public enum MilvusDataType
 {
     /// <summary>
@@ -54,6 +57,16 @@ public enum MilvusDataType
     /// VarChar
     /// </summary>
     VarChar = 21,
+
+    /// <summary>
+    /// Array
+    /// </summary>
+    Array = 22,
+    
+    /// <summary>
+    /// Json
+    /// </summary>
+    Json = 23,
 
     /// <summary>
     /// BinaryVector
