@@ -95,13 +95,12 @@ public abstract class Field
             if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.FloatVector)
             {
                 List<List<float>> floatVectors = new();
-                for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i++)
+
+                for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i+=dim)
                 {
                     var list = new List<float>(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
                     floatVectors.Add(list);
-                    i += dim;
                 }
-                var vector = fieldData.Vectors.FloatVector.Data.ToList();
 
                 var field = Field.CreateFloatVector(fieldData.FieldName, floatVectors);
 

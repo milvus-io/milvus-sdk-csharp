@@ -180,8 +180,9 @@ public partial class MilvusClientTests
         var queryResult = await milvusClient.QueryAsync(
             collectionName,
             expr,
-            new[] { "book_id", "word_count" });
-        queryResult.FieldsData.Count.Should().Be(2);
+            new[] { "book_id", "word_count" , "book_intro" });
+        queryResult.FieldsData.Count.Should().Be(3);
+        Assert.All(queryResult.FieldsData, p => Assert.Equal(4, p.RowCount));
 
         //Cal distance
         if (!milvusClient.IsZillizCloud())
