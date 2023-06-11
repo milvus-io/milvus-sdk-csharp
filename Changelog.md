@@ -1,4 +1,7 @@
-- 2023-6-05 **2.2.1-alpha.7**
+- 2023-6-05 **2.2.1-alpha.8**
+  - Fix float vector field dim split error
+  - Add isdynamic and ispartitionkey to fieldType
+- - 2023-6-05 **2.2.1-alpha.7**
   - add WaitForLoadingProgressCollectionAsync and WaitForLoadingProgressCollectionValueAsync methods.
 - 2023-06-04 **2.2.1-alpha.6**
   - Fix field json convert error when query.
