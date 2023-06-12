@@ -26,13 +26,20 @@ internal sealed class CreateIndexRequest:
     [JsonConverter(typeof(MilvusDictionaryConverter))]
     public IDictionary<string, string> ExtraParams { get; set; } = new Dictionary<string, string>();
 
+    /// <summary>
+    /// Database name
+    /// </summary>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
     public static CreateIndexRequest Create(
         string collectionName,
         string fieldName,
         MilvusIndexType milvusIndexType,
-        MilvusMetricType milvusMetricType)
+        MilvusMetricType milvusMetricType,
+        string dbName)
     {
-        return new CreateIndexRequest(collectionName, fieldName,milvusIndexType,milvusMetricType);
+        return new CreateIndexRequest(collectionName, fieldName,milvusIndexType,milvusMetricType,dbName);
     }
 
     public CreateIndexRequest WithIndexName(string indexName)
@@ -58,6 +65,7 @@ internal sealed class CreateIndexRequest:
         {
             CollectionName = this.CollectionName,
             FieldName = this.FieldName,
+            DbName = this.DbName,
         };
 
         if (!string.IsNullOrEmpty(IndexName))
@@ -106,6 +114,7 @@ internal sealed class CreateIndexRequest:
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
+        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty.");
     }
 
     #region Private ==================================================================================
@@ -116,12 +125,14 @@ internal sealed class CreateIndexRequest:
         string collectionName, 
         string fieldName,
         MilvusIndexType milvusIndexType,
-        MilvusMetricType milvusMetricType)
+        MilvusMetricType milvusMetricType,
+        string dbName)
     {
         this.CollectionName = collectionName;
         this.FieldName = fieldName;
         this._milvusMetricType = milvusMetricType;
         this._milvusIndexType = milvusIndexType;
+        this.DbName = dbName;
     }
     #endregion
 }

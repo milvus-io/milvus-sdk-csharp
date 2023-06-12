@@ -512,6 +512,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="extraParams">
     /// Support keys: index_type,metric_type, params. 
     /// Different index_type may has different params.</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken"></param>
     Task CreateIndexAsync(
         string collectionName,
@@ -519,7 +520,8 @@ public interface IMilvusClient : IDisposable
         string indexName,
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
-        IDictionary<string, string> extraParams,
+        IDictionary<string, string> extraParams = null,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -528,11 +530,13 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">The particular collection name you want to drop index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
     /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DEFAULT_INDEX_NAME"/></param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task DropIndexAsync(
         string collectionName, 
         string fieldName, 
-        string indexName,
+        string indexName = Constants.DEFAULT_INDEX_NAME,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -540,11 +544,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName, 
         string fieldName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -552,11 +558,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
+    /// <returns>Index build progress.</returns>
     Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -564,11 +572,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
-    Task<IndexState> GetIndexState(
+    /// <returns>Index state.</returns>
+    Task<IndexState> GetIndexStateAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
     #endregion
 

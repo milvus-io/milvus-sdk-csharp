@@ -18,13 +18,14 @@ public partial class MilvusRestClient
         string indexName,
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
-        IDictionary<string, string> extraParams,
+        IDictionary<string, string> extraParams = null,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create index {0}", collectionName);
 
         using HttpRequestMessage request = CreateIndexRequest
-            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType)
+            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType,dbName)
             .WithExtraParams(extraParams)
             .WithIndexName(indexName)
             .BuildRest();
@@ -48,13 +49,14 @@ public partial class MilvusRestClient
     public async Task DropIndexAsync(
         string collectionName,
         string fieldName,
-        string indexName,
+        string indexName = Constants.DEFAULT_INDEX_NAME,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop index {0}", collectionName);
 
         using HttpRequestMessage request = DropIndexRequest
-            .Create(collectionName, fieldName, indexName)
+            .Create(collectionName, fieldName, indexName,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -76,12 +78,13 @@ public partial class MilvusRestClient
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Describe index {0}", collectionName);
 
         using HttpRequestMessage request = DescribeIndexRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName, dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -111,12 +114,13 @@ public partial class MilvusRestClient
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get index build progress {0}, {1}", collectionName, fieldName);
 
         using HttpRequestMessage request = GetIndexBuildProgressRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName, dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -143,15 +147,16 @@ public partial class MilvusRestClient
     }
 
     ///<inheritdoc/>
-    public async Task<IndexState> GetIndexState(
+    public async Task<IndexState> GetIndexStateAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
 
         using HttpRequestMessage request = GetIndexStateRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

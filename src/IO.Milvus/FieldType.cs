@@ -80,7 +80,8 @@ public sealed class FieldType:IValidatable
     /// <item><see cref="long"/> : int64 <see cref="MilvusDataType.Int64"/></item>
     /// <item><see cref="float"/> : float <see cref="MilvusDataType.Float"/></item>
     /// <item><see cref="double"/> : double <see cref="MilvusDataType.Double"/></item>
-    /// <item><see cref="string"/> : string <see cref="MilvusDataType.VarChar"/><see cref="FieldType.CreateVarchar(string, long, bool, bool)"/></item>
+    /// <item><see cref="string"/> : string <see cref="MilvusDataType.VarChar"/>
+    /// <see cref="FieldType.CreateVarchar(string, int, bool, bool, bool, bool)"/></item>
     /// </list>
     /// </typeparam>
     /// <param name="name">name</param>

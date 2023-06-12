@@ -19,12 +19,19 @@ internal sealed class DropIndexRequest :
     [JsonPropertyName("index_name")]
     public string IndexName { get; set; }
 
+    /// <summary>
+    /// Database name
+    /// </summary>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
     public static DropIndexRequest Create(
         string collectionName,
         string fieldName,
-        string indexName)
+        string indexName,
+        string dbName)
     {
-        return new DropIndexRequest(collectionName, fieldName, indexName);
+        return new DropIndexRequest(collectionName, fieldName, indexName, dbName);
     }
 
     public Grpc.DropIndexRequest BuildGrpc()
@@ -35,7 +42,8 @@ internal sealed class DropIndexRequest :
         {
             CollectionName = this.CollectionName,
             FieldName = this.FieldName,
-            IndexName = this.IndexName
+            IndexName = this.IndexName,
+            DbName = this.DbName
         };
 
         return request;
@@ -56,14 +64,16 @@ internal sealed class DropIndexRequest :
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
         Verify.ArgNotNullOrEmpty(IndexName, $"Index name cannot be null or empty.The default index name is Constants.DEFAULT_INDEX_NAME :{Constants.DEFAULT_INDEX_NAME}");
+        Verify.ArgNotNullOrEmpty(DbName, $"DbName cannot be null or empty.The default index name is Constants.DEFAULT_INDEX_NAME :{Constants.DEFAULT_DATABASE_NAME}");
     }
 
     #region Private ======================================================
-    public DropIndexRequest(string collectionName, string fieldName, string indexName)
+    public DropIndexRequest(string collectionName, string fieldName, string indexName, string dbName)
     {
-        CollectionName = collectionName;
-        FieldName = fieldName;
-        IndexName = indexName;
+        this.CollectionName = collectionName;
+        this.FieldName = fieldName;
+        this.IndexName = indexName;
+        this.DbName = dbName;
     }
     #endregion
 }
