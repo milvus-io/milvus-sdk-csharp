@@ -12,7 +12,7 @@ namespace IO.Milvus.Client.gRPC;
 public partial class MilvusGrpcClient
 {
     ///<inheritdoc/>
-    public async Task DeleteCredential(
+    public async Task DeleteCredentialAsync(
     string username,
     CancellationToken cancellationToken = default)
     {

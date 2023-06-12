@@ -255,12 +255,12 @@ public interface IMilvusClient : IDisposable
     /// Do a manual compaction.
     /// </summary>
     /// <param name="collectionId">Collection Id.</param>
-    /// <param name="timetravel">Time travel.</param>
+    /// <param name="timeTravel">Time travel.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>CompactionId</returns>
     Task<long> ManualCompactionAsync(
         long collectionId, 
-        DateTime? timetravel = null,
+        DateTime? timeTravel = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -279,7 +279,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="compactionId">Compaction id.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    Task<MilvusCompactionPlans> GetCompactionPlans(
+    Task<MilvusCompactionPlans> GetCompactionPlansAsync(
         long compactionId,
         CancellationToken cancellationToken = default);
 
@@ -301,7 +301,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="username">Username.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task DeleteCredential(string username,
+    Task DeleteCredentialAsync(string username,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -548,7 +548,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="fieldName">The vector field name in this particular collection</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task<IndexBuildProgress> GetIndexBuildProgress(
+    Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
         CancellationToken cancellationToken = default);
@@ -577,6 +577,69 @@ public interface IMilvusClient : IDisposable
         string request,
         CancellationToken cancellationToken = default);
     #endregion
+
+    #region Database
+    /// <summary>
+    /// Create a database in milvus.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="dbName">Database name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// List databases.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <returns>Databases</returns>
+    Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Drops a database. 
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// <para>
+    /// Note that this method drops all data in the database.
+    /// </para>
+    /// </remarks>
+    /// <param name="dbName">Database name.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default);
+    #endregion
+
+    /// <summary>
+    /// Get Milvus version.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Milvus version</returns>
+    Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Close milvus connection.

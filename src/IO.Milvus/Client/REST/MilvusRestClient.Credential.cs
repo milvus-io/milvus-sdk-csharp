@@ -13,7 +13,7 @@ namespace IO.Milvus.Client.REST;
 public partial class MilvusRestClient
 {
     ///<inheritdoc/>
-    public async Task DeleteCredential(
+    public async Task DeleteCredentialAsync(
         string username, 
         CancellationToken cancellationToken = default)
     {

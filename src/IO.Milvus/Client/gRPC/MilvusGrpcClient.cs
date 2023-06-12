@@ -5,6 +5,8 @@ using IO.Milvus.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -73,9 +75,40 @@ public partial class MilvusGrpcClient : IMilvusClient
     }
 
     ///<inheritdoc/>
+    public async Task<string> GetVersionAsync(CancellationToken cancellationToken)
+    {
+        this._log.LogDebug("Get milvus collection");
+
+        GetVersionResponse response = await _grpcClient.GetVersionAsync(new GetVersionRequest(),_callOptions.WithCancellationToken(cancellationToken));
+
+        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        {
+            this._log.LogError("Get milvus version failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            throw new MilvusException(response.Status);
+        }
+
+        return response.Version;
+    }
+
+    ///<inheritdoc/>
     public override string ToString()
     {
         return $"{{{nameof(MilvusGrpcClient)}:{Address}}}";
+    }
+
+    /// <summary>
+    /// Close milvus connection.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    ///<inheritdoc/>/>
+    public void Close()
+    {
+        Dispose();
     }
 
     #region Private ===============================================================================
@@ -95,11 +128,6 @@ public partial class MilvusGrpcClient : IMilvusClient
         return builder.Uri;
     }
 
-    ///<inheritdoc/>/>
-    public void Close()
-    {
-        Dispose();
-    }
 
     ///<inheritdoc/>/>
     protected virtual void Dispose(bool disposing)
@@ -113,15 +141,6 @@ public partial class MilvusGrpcClient : IMilvusClient
 
             _disposedValue = true;
         }
-    }
-
-    /// <summary>
-    /// Close milvus connection.
-    /// </summary>
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
     #endregion
 }

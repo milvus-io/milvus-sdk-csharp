@@ -108,7 +108,7 @@ public partial class MilvusRestClient
     }
 
     ///<inheritdoc/>
-    public async Task<IndexBuildProgress> GetIndexBuildProgress(
+    public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
         CancellationToken cancellationToken = default)

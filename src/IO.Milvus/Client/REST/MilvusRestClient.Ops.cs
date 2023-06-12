@@ -81,7 +81,7 @@ public partial class MilvusRestClient
     }
 
     ///<inheritdoc/>
-    public async Task<MilvusCompactionPlans> GetCompactionPlans(
+    public async Task<MilvusCompactionPlans> GetCompactionPlansAsync(
         long compactionId, 
         CancellationToken cancellationToken = default)
     {
