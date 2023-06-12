@@ -51,7 +51,7 @@ internal sealed class DropCollectionRequest:
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
     }
 
-    #region Private =================================================
+    #region Private =================================================================================
     public DropCollectionRequest(string collectionName)
     {
         CollectionName = collectionName;

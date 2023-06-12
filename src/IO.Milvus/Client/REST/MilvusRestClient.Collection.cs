@@ -79,6 +79,7 @@ public partial class MilvusRestClient
         IList<FieldType> fieldTypes,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session, 
         int shards_num = 1,
+        bool enableDynamicField = false,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create collection {0}, {1}",collectionName, consistencyLevel);
@@ -88,7 +89,7 @@ public partial class MilvusRestClient
             .WithConsistencyLevel(consistencyLevel)
             .WithFieldTypes(fieldTypes)
             .BuildRest();
-            
+
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
 
         try

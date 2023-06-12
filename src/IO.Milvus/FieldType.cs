@@ -2,6 +2,7 @@
 using IO.Milvus.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.Security;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
@@ -162,6 +163,20 @@ public sealed class FieldType:IValidatable
         field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString());
         field.Validate();
         return field;
+    }
+
+    /// <summary>
+    /// Create a json type field.
+    /// </summary>
+    /// <remarks>
+    /// 
+    /// </remarks>
+    /// <param name="name">Field name.</param>
+    /// <param name="isDynamic">Is dynamic.</param>
+    /// <returns></returns>
+    public static FieldType CreateJson(string name,bool isDynamic)
+    {
+        return new FieldType(name, MilvusDataType.Json, false,isDynamic:isDynamic);
     }
     #endregion
 

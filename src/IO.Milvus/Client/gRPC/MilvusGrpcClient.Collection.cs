@@ -19,6 +19,7 @@ public partial class MilvusGrpcClient
         IList<FieldType> fieldTypes, 
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
+        bool enableDynamicField = false,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);

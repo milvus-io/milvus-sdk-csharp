@@ -32,10 +32,12 @@ public abstract class Field
     /// </summary>
     /// <param name="fieldName">Field name.</param>
     /// <param name="dataType">Field data type.</param>
-    protected Field(string fieldName,MilvusDataType dataType)
+    /// <param name="isDynamic"></param>
+    protected Field(string fieldName,MilvusDataType dataType, bool isDynamic = false)
     {
         this.FieldName = fieldName;
         this.DataType = dataType;
+        this.IsDynamic = isDynamic;
     }
 
     #region Properties
@@ -62,6 +64,12 @@ public abstract class Field
     /// </summary>
     [JsonPropertyName("type")]
     public MilvusDataType DataType { get; protected set; }
+
+    /// <summary>
+    /// Is dynamic.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsDynamic { get; set; }
     #endregion
 
     /// <summary>
@@ -237,12 +245,14 @@ public abstract class Field
     /// </summary>
     /// <param name="fieldName">Field name.</param>
     /// <param name="data">Data.</param>
+    /// <param name="isDynamic"></param>
     /// <returns></returns>
     public static Field<string> CreateVarChar(
         string fieldName,
-        IList<string> data)
+        IList<string> data,
+        bool isDynamic = false)
     {
-        return new Field<string>(fieldName, data,MilvusDataType.VarChar);
+        return new Field<string>(fieldName, data,MilvusDataType.VarChar, isDynamic);
     }
 
     /// <summary>
@@ -345,6 +355,19 @@ public abstract class Field
 
         return field;
     }
+
+    /// <summary>
+    /// Create json field.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="json">json field.</param>
+    /// <param name="isDynamic"></param>
+    /// <returns></returns>
+    public static Field CreateJson(string fieldName,IList<string> json,bool isDynamic)
+    {
+        Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
+        return new Field<string>(fieldName, json,MilvusDataType.Json,isDynamic);
+    }
     #endregion
 }
 
@@ -359,8 +382,9 @@ public class Field<TData> : Field
     /// </summary>
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
-    public Field(string fieldName, IList<TData> data):
-        base(fieldName,EnsureDataType<TData>())
+    /// <param name="isDynamic"></param>
+    public Field(string fieldName, IList<TData> data,bool isDynamic = false):
+        base(fieldName,EnsureDataType<TData>(),isDynamic)
     {
         Data = data;
     }
@@ -371,11 +395,13 @@ public class Field<TData> : Field
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <param name="milvusDataType">Milvus data type.</param>
+    /// <param name="isDynamic"></param>
     public Field(
         string fieldName,
         IList<TData> data,
-        MilvusDataType milvusDataType) : 
-        base(fieldName, milvusDataType)
+        MilvusDataType milvusDataType,
+        bool isDynamic) : 
+        base(fieldName, milvusDataType,isDynamic)
     {
         Data = data;
     }
@@ -407,7 +433,8 @@ public class Field<TData> : Field
         var fieldData = new Grpc.FieldData()
         {
             FieldName = FieldName,
-            Type = (Grpc.DataType)DataType
+            Type = (Grpc.DataType)DataType,
+            IsDynamic = this.IsDynamic
         };
 
         switch (DataType)
@@ -510,6 +537,19 @@ public class Field<TData> : Field
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
                         StringData = stringData
+                    };
+                }
+                break;
+            case MilvusDataType.Json:
+                {
+                    Grpc.JSONArray jsonData = new Grpc.JSONArray();
+                    foreach (var jsonString in (Data as IList<string>))
+                    {
+                        jsonData.Data.Add(ByteString.CopyFromUtf8(jsonString));
+                    }
+                    fieldData.Scalars = new Grpc.ScalarField()
+                    {
+                        JsonData = jsonData,                        
                     };
                 }
                 break;

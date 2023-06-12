@@ -39,6 +39,15 @@ public sealed class CollectionSchema
     public string Name { get; set; }
 
     /// <summary>
+    /// Enable dynamic field.
+    /// </summary>
+    /// <remarks>
+    /// <see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/>
+    /// </remarks>
+    [JsonIgnore]
+    public bool EnableDynamicField { get; set; }
+
+    /// <summary>
     /// Return string value of <see cref="CollectionSchema"/>
     /// </summary>
     /// <returns></returns>

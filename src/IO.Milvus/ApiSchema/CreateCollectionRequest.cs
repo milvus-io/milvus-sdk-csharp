@@ -57,9 +57,9 @@ internal sealed class CreateCollectionRequest:
     #endregion
 
     #region Methods
-    public static CreateCollectionRequest Create(string collectionName)
+    public static CreateCollectionRequest Create(string collectionName, bool enableDynamicField = false)
     {
-        return new CreateCollectionRequest(collectionName);
+        return new CreateCollectionRequest(collectionName,enableDynamicField);
     }
 
     public CreateCollectionRequest WithShardsNum(int shardsNum)
@@ -124,10 +124,11 @@ internal sealed class CreateCollectionRequest:
     #endregion
 
     #region Private ======================================================================
-    private CreateCollectionRequest(string collectionName)
+    private CreateCollectionRequest(string collectionName, bool enableDynamicField)
     {
-        CollectionName = collectionName;
-        Schema.Name = collectionName;
+        this.CollectionName = collectionName;
+        this.Schema.Name = collectionName;
+        this.Schema.EnableDynamicField = enableDynamicField;
     }
     #endregion
 }

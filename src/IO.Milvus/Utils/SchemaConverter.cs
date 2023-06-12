@@ -13,6 +13,7 @@ internal static class SchemaConverter
         {
             Name = collectionSchema.Name,
             AutoID = collectionSchema.AutoId,
+            EnableDynamicField = collectionSchema.EnableDynamicField,
         };
         if (!string.IsNullOrEmpty(collectionSchema.Description))
         {

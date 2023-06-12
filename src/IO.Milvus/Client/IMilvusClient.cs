@@ -50,12 +50,14 @@ public interface IMilvusClient : IDisposable
     /// The consistency level that the collection used, modification is not supported now.</param>
     /// <param name="fieldTypes">field types that represents this collection schema</param>
     /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
+    /// <param name="enableDynamicField"><see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateCollectionAsync(
         string collectionName, 
         IList<FieldType> fieldTypes,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
+        bool enableDynamicField = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
