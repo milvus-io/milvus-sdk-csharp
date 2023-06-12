@@ -16,16 +16,23 @@ internal sealed class DropAliasRequest:
     [JsonPropertyName("alias")]
     public string Alias { get; set; }
 
-    public static DropAliasRequest Create(string alias)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static DropAliasRequest Create(string alias, string dbName)
     {
-        return new DropAliasRequest(alias);
+        return new DropAliasRequest(alias,dbName);
     }
 
     public Grpc.DropAliasRequest BuildGrpc()
     {
         return new Grpc.DropAliasRequest()
         {            
-            Alias = Alias
+            Alias = Alias,
+            DbName = DbName
         };
     }
 
@@ -43,9 +50,10 @@ internal sealed class DropAliasRequest:
     }
 
     #region Private ============================================================================
-    public DropAliasRequest(string alias)
+    public DropAliasRequest(string alias, string dbName)
     {
         Alias = alias;
+        DbName = dbName;
     }
     #endregion
 }

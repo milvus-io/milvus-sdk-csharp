@@ -138,19 +138,23 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">Collection Name.</param>
     /// <param name="alias">Alias.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateAliasAsync(
         string collectionName,
-        string alias, 
+        string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete an Alias
     /// </summary>
     /// <param name="alias">Alias</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task DropAliasAsync(
         string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -158,10 +162,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">Collection name</param>
     /// <param name="alias">Alias</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task AlterAliasAsync(
         string collectionName,
         string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
     #endregion
 

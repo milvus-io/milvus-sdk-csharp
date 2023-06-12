@@ -53,12 +53,13 @@ public partial class MilvusGrpcClient
     public async Task AlterAliasAsync(
         string collectionName, 
         string alias, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Alter alias {0}, {1}", collectionName);
 
         Grpc.AlterAliasRequest request = AlterAliasRequest
-            .Create(collectionName, alias)
+            .Create(collectionName, alias,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.AlterAliasAsync(request);

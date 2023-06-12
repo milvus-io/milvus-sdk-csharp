@@ -22,9 +22,15 @@ internal sealed class CreateAliasRequest:
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
 
-    public static CreateAliasRequest Create(string collection,string alias)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static CreateAliasRequest Create(string collection,string alias, string dbName)
     {
-        return new CreateAliasRequest(collection,alias);
+        return new CreateAliasRequest(collection,alias,dbName);
     }
 
     public Grpc.CreateAliasRequest BuildGrpc()
@@ -32,7 +38,8 @@ internal sealed class CreateAliasRequest:
         return new Grpc.CreateAliasRequest()
         {
             CollectionName = CollectionName,
-            Alias = Alias
+            Alias = Alias,
+            DbName = DbName
         };
     }
 
@@ -48,13 +55,15 @@ internal sealed class CreateAliasRequest:
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
         Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
+        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =============================================
-    private CreateAliasRequest(string collection, string alias)
+    private CreateAliasRequest(string collection, string alias, string dbName)
     {
         CollectionName = collection;
         Alias = alias;
+        DbName = dbName;
     }
     #endregion
 }
