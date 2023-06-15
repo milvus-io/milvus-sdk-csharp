@@ -53,7 +53,10 @@ internal sealed class CreateIndexRequest:
 
     public CreateIndexRequest WithExtraParams(IDictionary<string,string> extraParams)
     {
-        ExtraParams = extraParams;
+        foreach (var param in extraParams)
+        {
+            ExtraParams[param.Key] = param.Value;
+        }
         return this;
     }
 
