@@ -53,12 +53,13 @@ public partial class MilvusGrpcClient
         string collectionName, 
         string expr, 
         string partitionName = "", 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Delete entities: {0}", collectionName);
 
         Grpc.DeleteRequest request = ApiSchema.DeleteRequest
-            .Create(collectionName, expr)
+            .Create(collectionName, expr, dbName)
             .WithPartitionName(partitionName)
             .BuildGrpc();
 

@@ -28,18 +28,22 @@ public interface IMilvusClient : IDisposable
     /// Drop a collection.
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.(Required).</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task DropCollectionAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Describe a collection.
     /// </summary>
     /// <param name="collectionName">collectionName</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -51,6 +55,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="fieldTypes">field types that represents this collection schema</param>
     /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
     /// <param name="enableDynamicField"><see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/></param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateCollectionAsync(
         string collectionName, 
@@ -58,6 +63,7 @@ public interface IMilvusClient : IDisposable
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
         bool enableDynamicField = false,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -69,19 +75,23 @@ public interface IMilvusClient : IDisposable
     /// will return true when time_stamp >= created collection timestamp,
     /// otherwise will return false.
     /// </param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> HasCollectionAsync(
         string collectionName, 
         DateTime? dateTime = null, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Release a collection loaded before
     /// </summary>
     /// <param name="collectionName">The collection name you want to release.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task ReleaseCollectionAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken= default);
 
     /// <summary>
@@ -89,19 +99,23 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="replicaNumber">The replica number to load, default by 1.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public Task LoadCollectionAsync(
         string collectionName, 
         int replicaNumber = 1, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get a collection's statistics
     /// </summary>
     /// <param name="collectionName">The collection name you want get statistics</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -111,11 +125,13 @@ public interface IMilvusClient : IDisposable
     /// When type is InMemory, will return these collection's inMemory_percentages.(Optional)
     /// </param>
     /// <param name="showType">Decide return Loaded collections or All collections(Optional)</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
 
     Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null, 
         ShowType showType = ShowType.All,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -368,12 +384,14 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">Collection name.</param>
     /// <param name="expr">A predicate expression outputs a boolean value. <see href="https://milvus.io/docs/boolean.md"/></param>
     /// <param name="partitionName">Partition name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
         string expr,
         string partitionName = "",
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>

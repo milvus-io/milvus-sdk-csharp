@@ -35,12 +35,22 @@ internal sealed class DescribeCollectionRequest:
     public long Timestamp { get; set; }
 
     /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    /// <summary>
     /// Create a description collection request.
     /// </summary>
     /// <param name="collectionName">Milvus collection name.</param>
-    public static DescribeCollectionRequest Create(string collectionName)
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
+    public static DescribeCollectionRequest Create(string collectionName, string dbName)
     {
-        return new DescribeCollectionRequest(collectionName);
+        return new DescribeCollectionRequest(collectionName,dbName);
     }
 
     public DescribeCollectionRequest WithCollectionId(int collectionId)
@@ -71,22 +81,25 @@ internal sealed class DescribeCollectionRequest:
 
         return new Grpc.DescribeCollectionRequest()
         {
-            CollectionID = CollectionId,
-            CollectionName = CollectionName,
-            TimeStamp = (ulong)Timestamp
+            CollectionID = this.CollectionId,
+            CollectionName = this.CollectionName,
+            TimeStamp = (ulong)this.Timestamp,
+            DbName = this.DbName,
         };
     }
 
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region private ================================================================================
 
-    private DescribeCollectionRequest(string collectionName)
+    private DescribeCollectionRequest(string collectionName, string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }

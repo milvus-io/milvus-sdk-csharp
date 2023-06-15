@@ -53,13 +53,14 @@ public partial class MilvusRestClient
     public async Task<MilvusMutationResult> DeleteAsync(
         string collectionName, 
         string expr, 
-        string partitionName, 
-        CancellationToken cancellationToken)
+        string partitionName = "",
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Delete data {0}", collectionName);
 
         using HttpRequestMessage request = DeleteRequest
-            .Create(collectionName,expr)
+            .Create(collectionName,expr,dbName)
             .WithPartitionName(partitionName)
             .BuildRest();
 

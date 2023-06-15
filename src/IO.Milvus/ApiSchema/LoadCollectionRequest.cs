@@ -28,9 +28,18 @@ internal sealed class LoadCollectionRequest :
     [JsonPropertyName("replica_number")]
     public int ReplicaNumber { get; set; } = 1;
 
-    public static LoadCollectionRequest Create(string collectionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static LoadCollectionRequest Create(string collectionName,string dbName)
     {
-        return new LoadCollectionRequest(collectionName);
+        return new LoadCollectionRequest(collectionName, dbName);
     }
 
     public LoadCollectionRequest WithReplicaNumber(int replicaNumber)
@@ -45,8 +54,9 @@ internal sealed class LoadCollectionRequest :
 
         return new Grpc.LoadCollectionRequest()
         {
-            CollectionName = CollectionName,
-            ReplicaNumber = ReplicaNumber,
+            CollectionName = this.CollectionName,
+            ReplicaNumber = this.ReplicaNumber,
+            DbName = this.DbName
         };
     }
 
@@ -63,12 +73,14 @@ internal sealed class LoadCollectionRequest :
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =====================================================================================
-    private LoadCollectionRequest(string collectionName)
+    private LoadCollectionRequest(string collectionName,string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }

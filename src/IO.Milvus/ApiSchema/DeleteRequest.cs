@@ -31,9 +31,18 @@ internal sealed class DeleteRequest:
     [JsonPropertyName("partition_name")]
     public string PartitionName { get; set; }
 
-    public static DeleteRequest Create(string collectionName, string expr)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static DeleteRequest Create(string collectionName, string expr,string dbName)
     {
-        return new DeleteRequest(collectionName, expr);
+        return new DeleteRequest(collectionName, expr,dbName);
     }
 
     public DeleteRequest WithPartitionName(string partitionName)
@@ -52,6 +61,7 @@ internal sealed class DeleteRequest:
         {
             CollectionName = this.CollectionName,
             Expr = this.Expr,
+            DbName = this.DbName
         };
 
         if (!string.IsNullOrEmpty(PartitionName))
@@ -73,13 +83,15 @@ internal sealed class DeleteRequest:
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
         Verify.ArgNotNullOrEmpty(Expr, "Expr cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private ===========================================================
-    private DeleteRequest(string collectionName, string expr)
+    private DeleteRequest(string collectionName, string expr, string dbName)
     {
         CollectionName = collectionName;
         Expr = expr;
+        DbName = dbName;
     }
     #endregion
 }

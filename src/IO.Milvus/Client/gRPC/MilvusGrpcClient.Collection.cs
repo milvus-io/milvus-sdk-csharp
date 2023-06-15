@@ -20,12 +20,13 @@ public partial class MilvusGrpcClient
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
         bool enableDynamicField = false,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
 
         Grpc.CreateCollectionRequest request = CreateCollectionRequest
-            .Create(collectionName)
+            .Create(collectionName,dbName,enableDynamicField)
             .WithShardsNum(shards_num)
             .WithConsistencyLevel(consistencyLevel)
             .WithFieldTypes(fieldTypes)
@@ -43,12 +44,13 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Describe collection {0}", collectionName);
 
         Grpc.DescribeCollectionRequest request = DescribeCollectionRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .BuildGrpc();
 
         Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -74,12 +76,13 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task DropCollectionAsync(
         string collectionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop collection {0}", collectionName);
 
         Grpc.DropCollectionRequest request = DropCollectionRequest
-            .Create(collectionName)
+            .Create(collectionName,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.DropCollectionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -93,13 +96,14 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
-        string collectionName, 
+        string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get collection statistics {0}", collectionName);
 
         Grpc.GetCollectionStatisticsRequest request = GetCollectionStatisticsRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .BuildGrpc();
 
         Grpc.GetCollectionStatisticsResponse response = await _grpcClient.GetCollectionStatisticsAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -117,12 +121,13 @@ public partial class MilvusGrpcClient
     public async Task<bool> HasCollectionAsync(
         string collectionName, 
         DateTime? dateTime = null,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Check if a {0} exists", collectionName);
 
         Grpc.HasCollectionRequest request = HasCollectionRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .WithTimestamp(dateTime)
             .BuildGrpc();
 
@@ -140,12 +145,13 @@ public partial class MilvusGrpcClient
     public async Task LoadCollectionAsync(
         string collectionName, 
         int replicaNumber = 1, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Load collection {0}", collectionName);
 
         Grpc.LoadCollectionRequest request = LoadCollectionRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .WithReplicaNumber(replicaNumber)
             .BuildGrpc();
 
@@ -161,12 +167,13 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task ReleaseCollectionAsync(
         string collectionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Release collection {0}", collectionName);
 
         Grpc.ReleaseCollectionRequest request = ReleaseCollectionRequest
-            .Create(collectionName)
+            .Create(collectionName,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.ReleaseCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -182,12 +189,13 @@ public partial class MilvusGrpcClient
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null,
         ShowType showType = ShowType.All, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Show collections {0}", collectionNames?.ToString());
 
         Grpc.ShowCollectionsRequest request = ShowCollectionsRequest
-            .Create()
+            .Create(dbName)
             .WithCollectionNames(collectionNames)
             .WithType(showType)
             .BuildGrpc();

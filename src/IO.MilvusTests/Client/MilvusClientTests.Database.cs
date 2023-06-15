@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using IO.Milvus.Client;
+using IO.Milvus;
 using IO.Milvus.Client.REST;
 using IO.MilvusTests.Utils;
 using Xunit;
@@ -27,9 +28,8 @@ public partial class MilvusClientTests
         }
 
         //Not support below milvus 2.2.9
-        string version = await milvusClient.GetVersionAsync();
-        var milvusVersion = MilvusVersion.Parse(version);
-        if (milvusVersion.Minor <=2 && milvusVersion.Patch < 9)
+        MilvusVersion version = await milvusClient.GetMilvusVersionAsync();
+        if (!version.GreaterThan(2,2,8))
         {
             return;
         }
@@ -57,53 +57,5 @@ public partial class MilvusClientTests
         databases = await milvusClient.ListDatabasesAsync();
         databases.Should().NotBeNullOrEmpty();
         databases.Should().NotContain(databaseName);
-    }
-}
-
-internal class MilvusVersion
-{
-    public MilvusVersion(int major, int minor, int patch)
-    {
-        Major = major;
-        Minor = minor;
-        Patch = patch;
-    }
-
-    public int Major { get; }
-
-    public int Minor { get; }
-
-    public int Patch { get; }
-
-    public static MilvusVersion Parse(string version)
-    {
-        var versions = version[1..].Split('.');
-        return new MilvusVersion(
-            int.Parse(versions[0]),
-            int.Parse(versions[1]),
-            int.Parse(versions[2]));
-    }
-
-    public bool GreaterThan(int major, int minor, int patch)
-    {
-        if (Major > major)
-        {
-            return true;
-        }
-        else if (Minor > minor)
-        {
-            return true;
-        }
-        else if (Patch > patch)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    public override string ToString()
-    {
-        return $"{Major}.{Minor}.{Patch}";
     }
 }

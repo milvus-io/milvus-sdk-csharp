@@ -23,9 +23,18 @@ internal sealed class GetCollectionStatisticsRequest:
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
 
-    public static GetCollectionStatisticsRequest Create(string collectionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static GetCollectionStatisticsRequest Create(string collectionName, string dbName)
     {
-        return new GetCollectionStatisticsRequest(collectionName);
+        return new GetCollectionStatisticsRequest(collectionName,dbName);
     }
 
     public Grpc.GetCollectionStatisticsRequest BuildGrpc()
@@ -34,7 +43,8 @@ internal sealed class GetCollectionStatisticsRequest:
 
         return new Grpc.GetCollectionStatisticsRequest()
         {
-            CollectionName = CollectionName,            
+            CollectionName = this.CollectionName,
+            DbName = this.DbName
         };
     }
 
@@ -49,12 +59,14 @@ internal sealed class GetCollectionStatisticsRequest:
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private ==================================================
-    public GetCollectionStatisticsRequest(string collectionName)
+    public GetCollectionStatisticsRequest(string collectionName, string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }
