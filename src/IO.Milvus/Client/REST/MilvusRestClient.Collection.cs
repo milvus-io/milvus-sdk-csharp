@@ -275,13 +275,14 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string collectionName, 
-        string partitionName, 
+        string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get partition statistics: {0}, {1}", collectionName, partitionName);
 
         using HttpRequestMessage request = GetPartitionStatisticsRequest
-            .Create(collectionName,partitionName)
+            .Create(collectionName,partitionName, dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

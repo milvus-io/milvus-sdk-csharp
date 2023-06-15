@@ -15,12 +15,13 @@ public partial class MilvusGrpcClient
     public async Task CreatePartitionAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create partition {0}", collectionName);
 
         Grpc.CreatePartitionRequest request = CreatePartitionRequest
-            .Create(collectionName,partitionName)
+            .Create(collectionName,partitionName,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.CreatePartitionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -36,12 +37,13 @@ public partial class MilvusGrpcClient
     public async Task<bool> HasPartitionAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Check if partition {0} exists", collectionName);
 
         Grpc.HasPartitionRequest request = HasPartitionRequest
-            .Create(collectionName, partitionName)
+            .Create(collectionName, partitionName, dbName)
             .BuildGrpc();
 
         Grpc.BoolResponse response = await _grpcClient.HasPartitionAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -58,12 +60,13 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Show {0} collection partitions", collectionName);
 
         Grpc.ShowPartitionsRequest request = ShowPartitionsRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .BuildGrpc();
 
         Grpc.ShowPartitionsResponse response = await _grpcClient.ShowPartitionsAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -82,12 +85,13 @@ public partial class MilvusGrpcClient
         string collectionName, 
         IList<string> partitionNames, 
         int replicaNumber = 1, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Load partitions {0}", collectionName);
 
         Grpc.LoadPartitionsRequest request = LoadPartitionsRequest
-            .Create(collectionName)
+            .Create(collectionName,dbName)
             .WithPartitionNames(partitionNames)
             .WithReplicaNumber(replicaNumber)
             .BuildGrpc();
@@ -105,12 +109,13 @@ public partial class MilvusGrpcClient
     public async Task ReleasePartitionAsync(
         string collectionName, 
         IList<string> partitionNames, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Release partitions {0}", collectionName);
 
         Grpc.ReleasePartitionsRequest request = ReleasePartitionRequest
-            .Create(collectionName)
+            .Create(collectionName,dbName)
             .WithPartitionNames(partitionNames)
             .BuildGrpc();
 
@@ -127,12 +132,13 @@ public partial class MilvusGrpcClient
     public async Task DropPartitionsAsync(
         string collectionName, 
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop partition {0}", collectionName);
 
         Grpc.DropPartitionRequest request = DropPartitionRequest
-            .Create(collectionName,partitionName)
+            .Create(collectionName,partitionName, dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.DropPartitionAsync(request, _callOptions.WithCancellationToken(cancellationToken));

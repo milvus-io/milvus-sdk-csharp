@@ -15,12 +15,13 @@ public partial class MilvusRestClient
     public async Task CreatePartitionAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create partition {0}", collectionName);
 
         using HttpRequestMessage request = CreatePartitionRequest
-            .Create(collectionName, partitionName)
+            .Create(collectionName, partitionName, dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -42,12 +43,13 @@ public partial class MilvusRestClient
     public async Task<bool> HasPartitionAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Check if {0} partition exists", collectionName);
 
         using HttpRequestMessage request = HasPartitionRequest
-            .Create(collectionName, partitionName)
+            .Create(collectionName, partitionName, dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -73,12 +75,13 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Show {0} partitions", collectionName);
 
         using HttpRequestMessage request = ShowPartitionsRequest
-            .Create(collectionName)
+            .Create(collectionName,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -111,12 +114,13 @@ public partial class MilvusRestClient
         string collectionName,
         IList<string> partitionNames,
         int replicaNumber = 1,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Load partition {0}", collectionName);
 
         using HttpRequestMessage request = LoadPartitionsRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .WithPartitionNames(partitionNames)
             .WithReplicaNumber(replicaNumber)
             .BuildRest();
@@ -140,12 +144,13 @@ public partial class MilvusRestClient
     public async Task ReleasePartitionAsync(
         string collectionName,
         IList<string> partitionNames,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Release partitions {0}", collectionName);
 
         using HttpRequestMessage request = ReleasePartitionRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .WithPartitionNames(partitionNames)
             .BuildRest();
 
@@ -168,12 +173,13 @@ public partial class MilvusRestClient
     public async Task DropPartitionsAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop partition {0}", collectionName);
 
         using HttpRequestMessage request = DropPartitionRequest
-            .Create(collectionName, partitionName)
+            .Create(collectionName, partitionName,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

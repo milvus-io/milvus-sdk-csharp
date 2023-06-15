@@ -196,10 +196,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to create.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreatePartitionAsync(
         string collectionName, 
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -207,10 +209,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to check.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> HasPartitionAsync(
         string collectionName, 
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -218,10 +222,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name you want to describe, 
     /// you can pass collection_name or collectionID.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -230,12 +236,14 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionNames">The partition names you want to load.</param>
     /// <param name="replicaNumber">The replicas number you would load, 1 by default.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task LoadPartitionsAsync(
         string collectionName, 
         IList<string> partitionNames, 
         int replicaNumber = 1, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -243,11 +251,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionNames">The partition names you want to release.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task ReleasePartitionAsync(
         string collectionName, 
         IList<string> partitionNames, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -255,11 +265,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to drop.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task DropPartitionsAsync(
         string collectionName,
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -267,11 +279,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to collect statistics.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IDictionary<string,string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
     #endregion
 
@@ -672,6 +686,10 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation name.</param>
     /// <returns></returns>
     Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default);
+    #endregion
+
+    #region Role
+    
     #endregion
 
     /// <summary>
