@@ -62,4 +62,13 @@ internal sealed class SearchRequest
     /// </summary>
     [JsonPropertyName("travel_timestamp")]
     public long TravelTimestamp { get; set; }
+
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
 }

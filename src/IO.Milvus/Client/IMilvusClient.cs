@@ -1,6 +1,7 @@
 ﻿using IO.Milvus.ApiSchema;
 using System;
 using System.Collections.Generic;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -370,12 +371,14 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">Collection name.</param>
     /// <param name="fields">Fields</param>
     /// <param name="partitionName">Partition name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<MilvusMutationResult> InsertAsync(
         string collectionName,
         IList<Field> fields,
         string partitionName = "",
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -444,20 +447,24 @@ public interface IMilvusClient : IDisposable
     /// It will be removed in the future.
     /// </summary>
     /// <param name="collectionNames">Collection names.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns sealed segments information of a collection.
     /// </summary>
     /// <param name="collectionName">Milvus collection name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
+        string dbName =Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -495,6 +502,7 @@ public interface IMilvusClient : IDisposable
     /// Default value is 0, will return without limit.
     /// </param>
     /// <param name="travelTimestamp">Travel time.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusQueryResult> QueryAsync(
@@ -507,6 +515,7 @@ public interface IMilvusClient : IDisposable
         long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -19,9 +19,18 @@ internal sealed class GetPersistentSegmentInfoRequest:
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
 
-    public static GetPersistentSegmentInfoRequest Create(string collectionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static GetPersistentSegmentInfoRequest Create(string collectionName,string dbName)
     {
-        return new GetPersistentSegmentInfoRequest(collectionName);
+        return new GetPersistentSegmentInfoRequest(collectionName, dbName);
     }
 
     public HttpRequestMessage BuildRest()
@@ -39,17 +48,20 @@ internal sealed class GetPersistentSegmentInfoRequest:
 
         return new Grpc.GetPersistentSegmentInfoRequest()
         {
-            CollectionName = this.CollectionName
+            CollectionName = this.CollectionName,
+            DbName = this.DbName
         };
     }
 
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
-    private GetPersistentSegmentInfoRequest(string collectionName)
+    private GetPersistentSegmentInfoRequest(string collectionName,string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
 }

@@ -15,12 +15,13 @@ public partial class MilvusRestClient
         string collectionName, 
         IList<Field> fields, 
         string partitionName = "", 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Insert data {0}", collectionName);
 
         using HttpRequestMessage request = InsertRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .WithPartitionName(partitionName)
             .WithFields(fields)
             .BuildRest();
@@ -160,12 +161,13 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Flush: {0}");
 
         using HttpRequestMessage request = FlushRequest
-            .Create(collectionNames)
+            .Create(collectionNames,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -194,12 +196,13 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get persistent segment infos: {0}", collectionName);
 
         using HttpRequestMessage request = GetPersistentSegmentInfoRequest
-            .Create(collectionName)
+            .Create(collectionName, dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -270,11 +273,12 @@ public partial class MilvusRestClient
         long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Query: {0}", collectionName);
 
-        using HttpRequestMessage request = QueryRequest.Create(collectionName, expr)
+        using HttpRequestMessage request = QueryRequest.Create(collectionName, expr,dbName)
             .WithOutputFields(outputFields)
             .WithPartitionNames(partitionNames)
             .WithConsistencyLevel(consistencyLevel)
