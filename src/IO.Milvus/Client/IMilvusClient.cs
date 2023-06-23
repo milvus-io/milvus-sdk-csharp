@@ -1,7 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using System;
 using System.Collections.Generic;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -689,7 +688,216 @@ public interface IMilvusClient : IDisposable
     #endregion
 
     #region Role
-    
+    /// <summary>
+    /// Create a role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name that will be created.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task CreateRoleAsync(
+        string roleName, 
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Drop a role.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task DropRoleAsync(string roleName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Add user to role.
+    /// </summary>
+    /// <remarks>
+    ///<para>
+    /// The user will get permissions that the role are allowed to perform operations.
+    ///</para>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="username">Username.</param>
+    /// <param name="roleName">Role name.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task AddUserToRoleAsync(
+        string username,
+        string roleName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Remove user from role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The user will remove permissions that the role are allowed to perform operations.
+    /// </para>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="username">Username.</param>
+    /// <param name="roleName">RoleName.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task RemoveUserFromRoleAsync(
+        string username,
+        string roleName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all users who are added to the role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name.</param>
+    /// <param name="includeUserInfo">Include user information.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusRoleResult>> SelectRoleAsync(
+        string roleName,
+        bool includeUserInfo = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all roles the user has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="username">User name.</param>
+    /// <param name="includeRoleInfo">Include user information</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusUserResult>> SelectUserAsync(
+        string username,
+        bool includeRoleInfo = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Grant Role Privilege.
+    /// <see href="https://milvus.io/docs/users_and_roles.md"/>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name. </param>
+    /// <param name="object">object.</param>
+    /// <param name="objectName">object name.</param>
+    /// <param name="privilege">privilege.</param>
+    /// <param name="dbName">Database name.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task GrantRolePrivilegeAsync(
+        string roleName,
+        string @object,
+        string objectName, 
+        string privilege,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revoke Role Privilege.
+    /// <see href="https://milvus.io/docs/users_and_roles.md"/>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name. </param>
+    /// <param name="object">object.</param>
+    /// <param name="objectName">object name.</param>
+    /// <param name="privilege">privilege.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task RevokeRolePrivilegeAsync(
+        string roleName,
+        string @object,
+        string objectName,
+        string privilege,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///  List a grant info for the role and the specific object
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name. RoleName cannot be empty or null.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAsync(
+        string roleName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// List a grant info for the role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">RoleName cannot be empty or null.</param>
+    /// <param name="object">object. object cannot be empty or null.</param>
+    /// <param name="objectName">objectName. objectName cannot be empty or null.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
+        string roleName,
+        string @object,
+        string objectName, 
+        CancellationToken cancellationToken = default);
     #endregion
 
     /// <summary>
