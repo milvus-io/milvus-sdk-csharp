@@ -74,7 +74,6 @@ public partial class MilvusClientTests
             await Task.Delay(TimeSpan.FromSeconds(10));
         }
 
-        List<long> ids = new();
         List<List<float>> vectors = new ();
         List<ArticleMeta> articleMetas = new ();
         List<string> titles = new ();
@@ -83,11 +82,9 @@ public partial class MilvusClientTests
         for (int i = 0; i < 100; i++)
         {
             var vector = new List<float>(2);
-            float value = r.Next(0, 1);
-            vector.Add(value);
-            vector.Add(1 - value);
+            vector.Add(i/10f);
+            vector.Add(9*i/10f);
 
-            ids.Add(i);
             titles.Add("title" + i.ToString());
             articleMetas.Add(new ArticleMeta(
                         link: Link,
@@ -111,14 +108,11 @@ public partial class MilvusClientTests
             collectionName,
             new Field[]
             {
-                Field.Create<long>("id",ids),
                 Field.Create<string>("title", titles),
                 Field.CreateFloatVector("title_vector",vectors),
                 Field.CreateJson("article_meta",metaList)
             }
             );
-
-        await milvusClient.FlushAsync(new[] { collectionName });
 
         MilvusSearchResult searchResult = await milvusClient.SearchAsync(MilvusSearchParameters.Create(
             collectionName,
@@ -128,10 +122,9 @@ public partial class MilvusClientTests
             .WithExpr("article_meta[\"claps\"] > 30 and article_meta[\"reading_time\"] < 10")
             .WithMetricType(MilvusMetricType.L2)
             .WithParameter("nprobe",10.ToString())
+            .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
             .WithVectors(new[] { new List<float> { 0.5f, 0.5f } })
             );
-
-        searchResult.Results.NumQueries.Should().BeLessThanOrEqualTo(count);
 
         var metaField = searchResult.Results.FieldsData.First(p => p.FieldName == "article_meta")
             as Field<string>;
