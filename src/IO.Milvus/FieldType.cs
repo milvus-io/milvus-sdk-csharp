@@ -174,7 +174,7 @@ public sealed class FieldType:IValidatable
     /// <param name="name">Field name.</param>
     /// <param name="isDynamic">Is dynamic.</param>
     /// <returns></returns>
-    public static FieldType CreateJson(string name,bool isDynamic)
+    public static FieldType CreateJson(string name,bool isDynamic = false)
     {
         return new FieldType(name, MilvusDataType.Json, false,isDynamic:isDynamic);
     }

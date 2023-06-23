@@ -147,7 +147,8 @@ public abstract class Field
                 Grpc.ScalarField.DataOneofCase.IntData => Field.Create<int>(fieldData.FieldName, fieldData.Scalars.IntData.Data),
                 Grpc.ScalarField.DataOneofCase.LongData => Field.Create<long>(fieldData.FieldName, fieldData.Scalars.LongData.Data),
                 Grpc.ScalarField.DataOneofCase.StringData => Field.CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
-                _ => throw new NotSupportedException("Array data not support"),
+                Grpc.ScalarField.DataOneofCase.JsonData => Field.CreateJson(fieldData.FieldName,fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList()),
+                _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
             };
             return field;
         }
@@ -363,7 +364,7 @@ public abstract class Field
     /// <param name="json">json field.</param>
     /// <param name="isDynamic"></param>
     /// <returns></returns>
-    public static Field CreateJson(string fieldName,IList<string> json,bool isDynamic)
+    public static Field CreateJson(string fieldName,IList<string> json,bool isDynamic = false)
     {
         Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
         return new Field<string>(fieldName, json,MilvusDataType.Json,isDynamic);
