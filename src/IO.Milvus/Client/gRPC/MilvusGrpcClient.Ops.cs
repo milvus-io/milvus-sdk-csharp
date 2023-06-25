@@ -56,7 +56,7 @@ public partial class MilvusGrpcClient
     }
 
     ///<inheritdoc/>
-    public async Task<MilvusCompactionPlans> GetCompactionPlans(
+    public async Task<MilvusCompactionPlans> GetCompactionPlansAsync(
         long compactionId,
         CancellationToken cancellationToken = default)
     {

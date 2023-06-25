@@ -22,17 +22,27 @@ internal sealed class AlterAliasRequest:
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
 
-    public static AlterAliasRequest Create(string collectionName,string alias)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static AlterAliasRequest Create(string collectionName,string alias,string dbName)
     {
-        return new AlterAliasRequest(collectionName,alias);
+        return new AlterAliasRequest(collectionName,alias,dbName);
     }
 
     public Grpc.AlterAliasRequest BuildGrpc()
     {
         return new Grpc.AlterAliasRequest()
         {
-            CollectionName = CollectionName,
-            Alias = Alias
+            CollectionName = this.CollectionName,
+            Alias = this.Alias,
+            DbName = this.DbName
         };
     }
 
@@ -48,13 +58,15 @@ internal sealed class AlterAliasRequest:
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
         Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
+        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private ================================================================================
-    private AlterAliasRequest(string collection, string alias)
+    private AlterAliasRequest(string collection, string alias, string dbName)
     {
-        CollectionName = collection;
-        Alias = alias;
+        this.CollectionName = collection;
+        this.Alias = alias;
+        this.DbName = dbName;
     }
     #endregion
 }

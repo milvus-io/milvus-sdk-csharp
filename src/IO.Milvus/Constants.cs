@@ -91,6 +91,11 @@ public class Constants
     public const string IGNORE_GROWING = "ignore_growing";
 
     /// <summary>
+    /// Default database name.
+    /// </summary>
+    public const string DEFAULT_DATABASE_NAME = "default";
+
+    /// <summary>
     ///  max value for waiting loading collection/partition interval, unit: millisecond
     /// </summary>
     public const long MAX_WAITING_LOADING_INTERVAL = 2000L;

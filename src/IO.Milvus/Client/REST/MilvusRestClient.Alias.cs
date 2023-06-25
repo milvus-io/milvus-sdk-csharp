@@ -11,13 +11,14 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task CreateAliasAsync(
         string collectionName, 
-        string alias, 
+        string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create alias {0}", collectionName);
 
         using HttpRequestMessage request = CreateAliasRequest
-            .Create(collectionName, alias)            
+            .Create(collectionName, alias,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -37,13 +38,14 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task DropAliasAsync(
-        string alias, 
+        string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop alias {0}", alias);
 
         using HttpRequestMessage request = DropAliasRequest
-            .Create(alias)
+            .Create(alias,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
@@ -65,12 +67,13 @@ public partial class MilvusRestClient
     public async Task AlterAliasAsync(
         string collectionName,
         string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Alter alias {0}", alias);
 
         using HttpRequestMessage request = AlterAliasRequest
-            .Create(collectionName,alias)
+            .Create(collectionName,alias,dbName)
             .BuildRest();
 
         (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);

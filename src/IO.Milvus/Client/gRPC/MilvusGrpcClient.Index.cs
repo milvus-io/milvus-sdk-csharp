@@ -17,13 +17,14 @@ public partial class MilvusGrpcClient
         string indexName,
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
-        IDictionary<string, string> extraParams, 
+        IDictionary<string, string> extraParams,
+        string DbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create index {0}", collectionName);
 
         Grpc.CreateIndexRequest request = CreateIndexRequest
-            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType)
+            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType,DbName)
             .WithIndexName(indexName)
             .WithExtraParams(extraParams)
             .BuildGrpc();
@@ -41,13 +42,14 @@ public partial class MilvusGrpcClient
     public async Task DropIndexAsync(
         string collectionName, 
         string fieldName, 
-        string indexName,
+        string indexName = Constants.DEFAULT_INDEX_NAME,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop index {0}", collectionName);
 
         Grpc.DropIndexRequest request = DropIndexRequest
-            .Create(collectionName, fieldName, indexName)
+            .Create(collectionName, fieldName, indexName, dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.DropIndexAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -63,12 +65,13 @@ public partial class MilvusGrpcClient
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName, 
         string fieldName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Describe index {0}", collectionName);
 
         Grpc.DescribeIndexRequest request = DescribeIndexRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName,dbName)
             .BuildGrpc();
 
         Grpc.DescribeIndexResponse response = await _grpcClient.DescribeIndexAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -83,15 +86,16 @@ public partial class MilvusGrpcClient
     }
 
     ///<inheritdoc/>
-    public async Task<IndexBuildProgress> GetIndexBuildProgress(
+    public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName, 
         string fieldName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get index build progress {0}", collectionName);
 
         Grpc.GetIndexBuildProgressRequest request = GetIndexBuildProgressRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName,dbName)
             .BuildGrpc();
 
         Grpc.GetIndexBuildProgressResponse response = await _grpcClient.GetIndexBuildProgressAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -106,15 +110,16 @@ public partial class MilvusGrpcClient
     }
 
     ///<inheritdoc/>
-    public async Task<IndexState> GetIndexState(
+    public async Task<IndexState> GetIndexStateAsync(
         string collectionName, 
         string fieldName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
 
         Grpc.GetIndexStateRequest request = GetIndexStateRequest
-            .Create(collectionName, fieldName)
+            .Create(collectionName, fieldName,dbName)
             .BuildGrpc();
 
         Grpc.GetIndexStateResponse response = await _grpcClient.GetIndexStateAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -125,10 +130,10 @@ public partial class MilvusGrpcClient
             throw new MilvusException(response.Status);
         }
 
-        return (IndexState)response.State; ;
+        return (IndexState)response.State;
     }
 
-    #region Private ================================================================================================================================
+    #region Private =========================================================================
     private IEnumerable<MilvusIndex> ToMilvusIndexes(Grpc.DescribeIndexResponse response)
     {
         if (response.IndexDescriptions?.Any() != true)

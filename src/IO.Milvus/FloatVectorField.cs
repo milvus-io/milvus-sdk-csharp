@@ -16,7 +16,7 @@ public class FloatVectorField:Field<List<float>>
     public FloatVectorField(
         string fieldName, 
         IList<List<float>> data) : 
-        base(fieldName, data, MilvusDataType.FloatVector)
+        base(fieldName, data, MilvusDataType.FloatVector,false)
     {
     }
 

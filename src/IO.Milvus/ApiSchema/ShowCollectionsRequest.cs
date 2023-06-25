@@ -1,4 +1,5 @@
 ﻿using IO.Milvus.Client.REST;
+using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -28,9 +29,18 @@ internal sealed class ShowCollectionsRequest:
     [JsonPropertyName("type")]
     public ShowType Type { get; set; } = ShowType.All;
 
-    public static ShowCollectionsRequest Create()
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static ShowCollectionsRequest Create(string dbName)
     {
-        return new ShowCollectionsRequest();
+        return new ShowCollectionsRequest(dbName);
     }
 
     public ShowCollectionsRequest WithCollectionNames(IList<string> collectionNames)
@@ -51,7 +61,8 @@ internal sealed class ShowCollectionsRequest:
 
         var request = new Grpc.ShowCollectionsRequest()
         {
-            Type = (Grpc.ShowType)Type
+            Type = (Grpc.ShowType)this.Type,
+            DbName = this.DbName
         };
         if (CollectionNames != null)
             request.CollectionNames.AddRange(CollectionNames);
@@ -69,5 +80,15 @@ internal sealed class ShowCollectionsRequest:
             );
     }
 
-    public void Validate() { }
+    public void Validate() 
+    { 
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+    }
+
+    #region Private
+    private ShowCollectionsRequest(string dbName)
+    {
+        this.DbName = dbName;
+    }
+    #endregion
 }

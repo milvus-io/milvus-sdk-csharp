@@ -103,18 +103,25 @@ public class MilvusSearchParameters:
     public bool IgnoreGrowing { get; private set; } = false;
 
     /// <summary>
+    /// Database name.
+    /// </summary>
+    public string DbName { get; private set; }
+
+    /// <summary>
     ///  Create a search parameters.
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="vectorFieldName">Vector field name.</param>
     /// <param name="outFields">Out fields. Vector field is not supported.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <returns></returns>
     public static MilvusSearchParameters Create(
         string collectionName,
         string vectorFieldName,
-        IList<string> outFields)
+        IList<string> outFields,
+        string dbName = Constants.DEFAULT_DATABASE_NAME)
     {
-        return new MilvusSearchParameters(collectionName,vectorFieldName,outFields);
+        return new MilvusSearchParameters(collectionName,vectorFieldName,outFields,dbName);
     }
 
     /// <summary>
@@ -448,14 +455,16 @@ public class MilvusSearchParameters:
         Verify.True(GuaranteeTimestamp >= 0, "The guarantee timestamp must be greater than 0");
         Verify.True(MetricType != MilvusMetricType.Invalid, "Metric type is invalid");
         Verify.True(MilvusFloatVectors.Count > 0, "Target vectors can not be empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =======================================================================
-    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields) 
+    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields, string dbName) 
     {
-        CollectionName = collectionName;
-        VectorFieldName = vectorFieldName;
-        OutputFields = outFields;
+        this.CollectionName = collectionName;
+        this.VectorFieldName = vectorFieldName;
+        this.OutputFields = outFields;
+        this.DbName = dbName;
     }
 
     private static long GetGuaranteeTimestamp(

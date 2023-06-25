@@ -2,6 +2,7 @@
 using IO.Milvus.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.Security;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
@@ -80,7 +81,8 @@ public sealed class FieldType:IValidatable
     /// <item><see cref="long"/> : int64 <see cref="MilvusDataType.Int64"/></item>
     /// <item><see cref="float"/> : float <see cref="MilvusDataType.Float"/></item>
     /// <item><see cref="double"/> : double <see cref="MilvusDataType.Double"/></item>
-    /// <item><see cref="string"/> : string <see cref="MilvusDataType.VarChar"/><see cref="FieldType.CreateVarchar(string, long, bool, bool)"/></item>
+    /// <item><see cref="string"/> : string <see cref="MilvusDataType.VarChar"/>
+    /// <see cref="FieldType.CreateVarchar(string, int, bool, bool, bool, bool)"/></item>
     /// </list>
     /// </typeparam>
     /// <param name="name">name</param>
@@ -161,6 +163,20 @@ public sealed class FieldType:IValidatable
         field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString());
         field.Validate();
         return field;
+    }
+
+    /// <summary>
+    /// Create a json type field.
+    /// </summary>
+    /// <remarks>
+    /// 
+    /// </remarks>
+    /// <param name="name">Field name.</param>
+    /// <param name="isDynamic">Is dynamic.</param>
+    /// <returns></returns>
+    public static FieldType CreateJson(string name,bool isDynamic = false)
+    {
+        return new FieldType(name, MilvusDataType.Json, false,isDynamic:isDynamic);
     }
     #endregion
 

@@ -21,7 +21,7 @@ public partial class MilvusRestClient : IMilvusClient
     /// The constructor for the <see cref="MilvusRestClient"/>.
     /// </summary>
     /// <remarks>
-    /// If you are using milvus managed by zilliz cloud, please use grpc client.
+    /// If you are using milvus managed by zilliz cloud, please use <see cref="gRPC.MilvusGrpcClient"/>
     /// </remarks>
     public MilvusRestClient(
         string endpoint,
@@ -93,6 +93,13 @@ public partial class MilvusRestClient : IMilvusClient
         return new MilvusHealthState(status.ErrorCode == Grpc.ErrorCode.Success, status.Reason, status.ErrorCode);
     }
 
+
+    ///<inheritdoc/>
+    public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException("Not support in MilvusRestClient");
+    }
+
     /// <summary>
     /// Get the client msg;
     /// </summary>
@@ -156,12 +163,6 @@ public partial class MilvusRestClient : IMilvusClient
 
     #region IDisposable Support
     ///<inheritdoc/>
-    public void Close()
-    {
-        Dispose();
-    }
-
-    ///<inheritdoc/>
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposedValue)
@@ -182,6 +183,12 @@ public partial class MilvusRestClient : IMilvusClient
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    ///<inheritdoc/>
+    public void Close()
+    {
+        Dispose();
     }
     #endregion
 }

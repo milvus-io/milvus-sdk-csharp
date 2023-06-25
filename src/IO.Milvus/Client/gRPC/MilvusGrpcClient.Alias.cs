@@ -12,12 +12,13 @@ public partial class MilvusGrpcClient
     public async Task CreateAliasAsync(
         string collectionName, 
         string alias, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create alias {0}, {1}", collectionName);
 
         Grpc.CreateAliasRequest request = CreateAliasRequest
-            .Create(collectionName,alias)
+            .Create(collectionName,alias,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.CreateAliasAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -31,13 +32,14 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task DropAliasAsync(
-        string alias, 
+        string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Drop alias {0}, {1}", alias);
 
         Grpc.DropAliasRequest request = DropAliasRequest
-            .Create(alias)
+            .Create(alias,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.DropAliasAsync(request);
@@ -53,12 +55,13 @@ public partial class MilvusGrpcClient
     public async Task AlterAliasAsync(
         string collectionName, 
         string alias, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Alter alias {0}, {1}", collectionName);
 
         Grpc.AlterAliasRequest request = AlterAliasRequest
-            .Create(collectionName, alias)
+            .Create(collectionName, alias,dbName)
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.AlterAliasAsync(request);

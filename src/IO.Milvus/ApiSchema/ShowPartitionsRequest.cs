@@ -29,7 +29,6 @@ internal sealed class ShowPartitionsRequest:
     /// Database name
     /// </summary>
     [JsonPropertyName("db_name")]
-    [Obsolete("Not useful for now")]
     public string DbName { get; set; }
 
     /// <summary>
@@ -51,14 +50,15 @@ internal sealed class ShowPartitionsRequest:
     [JsonPropertyName("type")]
     public int Type { get; set; }
 
-    internal static ShowPartitionsRequest Create(string collectionName)
+    internal static ShowPartitionsRequest Create(string collectionName,string dbName)
     {
-        return new ShowPartitionsRequest(collectionName);
+        return new ShowPartitionsRequest(collectionName,dbName);
     }
 
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     public HttpRequestMessage BuildRest()
@@ -73,14 +73,16 @@ internal sealed class ShowPartitionsRequest:
     {
         return new Grpc.ShowPartitionsRequest()
         {
-            CollectionName = CollectionName
+            CollectionName = this.CollectionName,
+            DbName = this.DbName
         };
     }
 
     #region Private =============================================================
-    private ShowPartitionsRequest(string collectionName)
+    private ShowPartitionsRequest(string collectionName, string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }

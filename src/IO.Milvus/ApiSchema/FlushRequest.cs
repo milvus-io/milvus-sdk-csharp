@@ -26,9 +26,18 @@ internal sealed class FlushRequest:
     [JsonPropertyName("collection_names")]
     public IList<string> CollectionNames { get; set; }
 
-    public static FlushRequest Create(IList<string> collectionNames)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static FlushRequest Create(IList<string> collectionNames, string dbName)
     {
-        return new FlushRequest(collectionNames);
+        return new FlushRequest(collectionNames, dbName);
     }
 
     public Grpc.FlushRequest BuildGrpc()
@@ -53,12 +62,14 @@ internal sealed class FlushRequest:
     public void Validate()
     {
         Verify.True(CollectionNames?.Any() == true, "Collection names list cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private ===========================================================================================
-    private FlushRequest(IList<string> collectionNames)
+    private FlushRequest(IList<string> collectionNames, string dbName)
     {
-        CollectionNames = collectionNames;
+        this.CollectionNames = collectionNames;
+        this.DbName = dbName;
     }
     #endregion
 }

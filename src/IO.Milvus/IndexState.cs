@@ -1,4 +1,4 @@
-﻿namespace IO.Milvus.ApiSchema;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Index state.

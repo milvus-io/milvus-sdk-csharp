@@ -22,9 +22,18 @@ internal sealed class DropCollectionRequest:
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
 
-    public static DropCollectionRequest Create(string collectionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static DropCollectionRequest Create(string collectionName,string dbName)
     {
-        return new DropCollectionRequest(collectionName);
+        return new DropCollectionRequest(collectionName,dbName);
     }
 
     public Grpc.DropCollectionRequest BuildGrpc()
@@ -33,7 +42,8 @@ internal sealed class DropCollectionRequest:
 
         return new Grpc.DropCollectionRequest
         {
-            CollectionName = this.CollectionName
+            CollectionName = this.CollectionName,
+            DbName = this.DbName
         };
     }
 
@@ -49,12 +59,14 @@ internal sealed class DropCollectionRequest:
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
-    #region Private =================================================
-    public DropCollectionRequest(string collectionName)
+    #region Private =================================================================================
+    public DropCollectionRequest(string collectionName,string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }

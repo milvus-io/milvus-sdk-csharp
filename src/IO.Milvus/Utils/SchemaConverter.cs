@@ -13,6 +13,7 @@ internal static class SchemaConverter
         {
             Name = collectionSchema.Name,
             AutoID = collectionSchema.AutoId,
+            EnableDynamicField = collectionSchema.EnableDynamicField,
         };
         if (!string.IsNullOrEmpty(collectionSchema.Description))
         {
@@ -23,6 +24,8 @@ internal static class SchemaConverter
         {
             grpcCollectionSchema.Fields.Add(ConvertFieldSchema(field));
         }
+
+        grpcCollectionSchema.AutoID = collectionSchema.Fields.Any(p => p.AutoId);
 
         return grpcCollectionSchema;
     }
@@ -47,7 +50,7 @@ internal static class SchemaConverter
 
     private static FieldType ToFieldSchema(Grpc.FieldSchema fieldType)
     {
-        var milvusField = new FieldType(fieldType.Name,(MilvusDataType)fieldType.DataType,fieldType.IsPrimaryKey)
+        var milvusField = new FieldType(fieldType.Name,(MilvusDataType)fieldType.DataType,fieldType.IsPrimaryKey,fieldType.IsDynamic)
         {
             FieldId = fieldType.FieldID,
         };
@@ -79,7 +82,8 @@ internal static class SchemaConverter
             Name = fieldType.Name,
             DataType = ((Grpc.DataType)(int)fieldType.DataType),
             FieldID = fieldType.FieldId,
-            IsPrimaryKey = fieldType.IsPrimaryKey
+            IsPrimaryKey = fieldType.IsPrimaryKey,
+            AutoID = fieldType.AutoId,
         };
 
         grpcField.TypeParams.AddRange(ConverterParams(fieldType.TypeParams));

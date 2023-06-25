@@ -168,7 +168,7 @@ public partial class MilvusClientTests
             MilvusSearchParameters.Create(collectionName, "book_intro", search_output_fields)
             .WithVectors(search_vectors)
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
-            .WithMetricType(MilvusMetricType.IP)
+            .WithMetricType(MilvusMetricType.L2)
             .WithTopK(topK: 2)
             .WithParameter("nprobe", "10")
             .WithParameter("offset", "5")

@@ -23,9 +23,18 @@ internal sealed class ReleasePartitionRequest:
     [JsonPropertyName("partition_names")]
     public IList<string> PartitionNames { get; set; }
 
-    public static ReleasePartitionRequest Create(string collectionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static ReleasePartitionRequest Create(string collectionName, string dbName)
     {
-        return new ReleasePartitionRequest(collectionName);
+        return new ReleasePartitionRequest(collectionName, dbName);
     }
 
     public ReleasePartitionRequest WithPartitionNames(IList<string> partitionNames)
@@ -48,6 +57,7 @@ internal sealed class ReleasePartitionRequest:
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.True(PartitionNames.Count >= 1, "Partition names count must be greater than 1");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     public Grpc.ReleasePartitionsRequest BuildGrpc()
@@ -56,7 +66,8 @@ internal sealed class ReleasePartitionRequest:
 
         var request = new Grpc.ReleasePartitionsRequest()
         {
-            CollectionName = CollectionName,
+            CollectionName = this.CollectionName,
+            DbName = this.DbName
         };
         request.PartitionNames.AddRange(PartitionNames);
 
@@ -64,9 +75,10 @@ internal sealed class ReleasePartitionRequest:
     }
 
     #region Private ========================================================
-    public ReleasePartitionRequest(string collectionName)
+    public ReleasePartitionRequest(string collectionName, string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }
