@@ -38,6 +38,9 @@
             "VSCode"
           ]
         },
+        "MilvusYmlFileAddress": {
+          "type": "string"
+        },
         "NoLogo": {
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
@@ -75,10 +78,14 @@
               "CalculateVersion",
               "Clean",
               "Compile",
+              "ComposeDown",
+              "ComposeUp",
+              "DownloadYml",
               "Pack",
               "PublishGitHubRelease",
               "Push",
-              "Restore"
+              "Restore",
+              "RunUnitTests"
             ]
           }
         },
@@ -95,10 +102,14 @@
               "CalculateVersion",
               "Clean",
               "Compile",
+              "ComposeDown",
+              "ComposeUp",
+              "DownloadYml",
               "Pack",
               "PublishGitHubRelease",
               "Push",
-              "Restore"
+              "Restore",
+              "RunUnitTests"
             ]
           }
         },
