@@ -7,7 +7,7 @@ namespace IO.MilvusTests.Client;
 public partial class MilvusClientTests
 {
     [Fact]
-    public async Task CloseTest()
+    public async Task DisposeTest()
     {
         var clients = MilvusConfig
             .Load()
@@ -19,7 +19,7 @@ public partial class MilvusClientTests
             MilvusHealthState state = await client.HealthAsync();
             state.IsHealthy.Should().BeTrue();
 
-            client.Close();
+            client.Dispose();
 
             bool exceptionThrown = false;
             try
