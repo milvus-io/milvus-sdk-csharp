@@ -577,9 +577,4 @@ public interface IMilvusClient : IDisposable
         string request,
         CancellationToken cancellationToken = default);
     #endregion
-
-    /// <summary>
-    /// Close milvus connection.
-    /// </summary>
-    void Close();
 }
