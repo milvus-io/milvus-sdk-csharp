@@ -14,7 +14,7 @@ namespace IO.Milvus.Client.gRPC;
 /// <summary>
 /// Milvus gRPC client
 /// </summary>
-public partial class MilvusGrpcClient : IMilvusClient
+public sealed partial class MilvusGrpcClient : IMilvusClient
 {
     /// <summary>
     /// The constructor for the <see cref="MilvusGrpcClient"/>
@@ -40,13 +40,21 @@ public partial class MilvusGrpcClient : IMilvusClient
         var address = SanitizeEndpoint(endpoint,port);
 
         this._log = log ?? NullLogger<MilvusGrpcClient>.Instance;
-        this._grpcChannel = grpcChannel ?? GrpcChannel.ForAddress(address);
+        if (grpcChannel is not null)
+        {
+            this._grpcChannel = grpcChannel;
+            this._ownsGrpcChannel = false;
+        }
+        else
+        {
+            this._grpcChannel = GrpcChannel.ForAddress(address);
+            this._ownsGrpcChannel = true;
+        }
 
-        var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}"));
         _callOptions = callOptions ?? new CallOptions(
             new Metadata()
             {
-                { "authorization", authToken }
+                { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}")) }
             });
 
         _grpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
@@ -79,11 +87,11 @@ public partial class MilvusGrpcClient : IMilvusClient
     }
 
     #region Private ===============================================================================
-    private ILogger _log;
-    private GrpcChannel _grpcChannel;
-    private CallOptions _callOptions;
-    private MilvusService.MilvusServiceClient _grpcClient;
-    private bool _disposedValue;
+    private readonly ILogger _log;
+    private readonly GrpcChannel _grpcChannel;
+    private readonly CallOptions _callOptions;
+    private readonly MilvusService.MilvusServiceClient _grpcClient;
+    private readonly bool _ownsGrpcChannel;
 
     private static Uri SanitizeEndpoint(string endpoint, int? port)
     {
@@ -95,33 +103,15 @@ public partial class MilvusGrpcClient : IMilvusClient
         return builder.Uri;
     }
 
-    ///<inheritdoc/>/>
-    public void Close()
-    {
-        Dispose();
-    }
-
-    ///<inheritdoc/>/>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposedValue)
-        {
-            if (disposing)
-            {
-                _grpcChannel?.Dispose();
-            }
-
-            _disposedValue = true;
-        }
-    }
-
     /// <summary>
     /// Close milvus connection.
     /// </summary>
     public void Dispose()
     {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        if (_ownsGrpcChannel)
+        {
+            _grpcChannel.Dispose();
+        }
     }
     #endregion
 }
