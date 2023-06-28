@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -15,15 +16,18 @@ public partial class MilvusGrpcClient
         string collectionName, 
         IList<Field> fields,
         string partitionName = "", 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Insert entities to {0}", collectionName);
         Verify.ArgNotNullOrEmpty(collectionName, "Milvus collection name cannot be null or empty");
         Verify.NotNullOrEmpty(fields, "Fields cannot be null or empty");
+        Verify.NotNullOrEmpty(dbName, "DbName cannot be null or empty");
 
         Grpc.InsertRequest request = new Grpc.InsertRequest()
         {
             CollectionName = collectionName,
+            DbName = dbName
         };
         if (!string.IsNullOrEmpty(partitionName))
         {
@@ -53,12 +57,13 @@ public partial class MilvusGrpcClient
         string collectionName, 
         string expr, 
         string partitionName = "", 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Delete entities: {0}", collectionName);
 
         Grpc.DeleteRequest request = ApiSchema.DeleteRequest
-            .Create(collectionName, expr)
+            .Create(collectionName, expr, dbName)
             .WithPartitionName(partitionName)
             .BuildGrpc();
 
@@ -96,12 +101,17 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Flush: {0}", collectionNames.ToString());
         Verify.True(collectionNames?.Any() == true, "Milvus collection names cannot be null or empty");
+        Verify.NotNullOrEmpty(dbName, "DbName cannot be null or empty");
 
-        Grpc.FlushRequest request = new Grpc.FlushRequest();
+        Grpc.FlushRequest request = new Grpc.FlushRequest()
+        {
+            DbName = dbName
+        };
         request.CollectionNames.AddRange(collectionNames);
 
         var response = await _grpcClient.FlushAsync(request,_callOptions.WithCancellationToken(cancellationToken));
@@ -144,11 +154,12 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get persistent segment infos failed: {0}", collectionName);
 
-        Grpc.GetPersistentSegmentInfoRequest request = GetPersistentSegmentInfoRequest.Create(collectionName)
+        Grpc.GetPersistentSegmentInfoRequest request = GetPersistentSegmentInfoRequest.Create(collectionName, dbName)
             .BuildGrpc();
 
         Grpc.GetPersistentSegmentInfoResponse response = await _grpcClient.GetPersistentSegmentInfoAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -195,11 +206,12 @@ public partial class MilvusGrpcClient
         long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Query: {0}", collectionName);
 
-        Grpc.QueryRequest request = QueryRequest.Create(collectionName, expr)
+        Grpc.QueryRequest request = QueryRequest.Create(collectionName, expr, dbName)
             .WithOutputFields(outputFields)
             .WithPartitionNames(partitionNames)
             .WithConsistencyLevel(consistencyLevel)

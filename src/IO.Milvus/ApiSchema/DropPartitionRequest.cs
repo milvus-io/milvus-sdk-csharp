@@ -25,9 +25,18 @@ internal sealed class DropPartitionRequest :
     [JsonPropertyName("partition_name")]
     public string PartitionName { get; set; }
 
-    internal static DropPartitionRequest Create(string collectionName, string partitionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    internal static DropPartitionRequest Create(string collectionName, string partitionName, string dbName)
     {
-        return new DropPartitionRequest(collectionName, partitionName);
+        return new DropPartitionRequest(collectionName, partitionName, dbName);
     }
 
     public Grpc.DropPartitionRequest BuildGrpc()
@@ -53,13 +62,15 @@ internal sealed class DropPartitionRequest :
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.ArgNotNullOrEmpty(PartitionName, "Milvus partition name cannot be null or empty.");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =========================================================================
-    public DropPartitionRequest(string collectionName, string partitionName)
+    public DropPartitionRequest(string collectionName, string partitionName, string dbName)
     {
-        CollectionName = collectionName;
-        PartitionName = partitionName;
+        this.CollectionName = collectionName;
+        this.PartitionName = partitionName;
+        this.DbName = dbName;
     }
     #endregion
 }

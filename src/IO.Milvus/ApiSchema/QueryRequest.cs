@@ -1,6 +1,7 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -65,9 +66,18 @@ internal sealed class QueryRequest:
     [JsonConverter(typeof(MilvusDictionaryConverter))]
     public IDictionary<string,string> QueryParams = new Dictionary<string, string>();
 
-    public static QueryRequest Create(string collectionName,string expr)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static QueryRequest Create(string collectionName,string expr,string dbName)
     {
-        return new QueryRequest(collectionName, expr);
+        return new QueryRequest(collectionName, expr, dbName);
     }
 
     public Grpc.QueryRequest BuildGrpc()
@@ -79,7 +89,8 @@ internal sealed class QueryRequest:
             CollectionName = this.CollectionName,
             Expr = this.Expr,
             GuaranteeTimestamp = (ulong)this.GuaranteeTimestamp,
-            TravelTimestamp = (ulong)this.TravelTimestamp,                        
+            TravelTimestamp = (ulong)this.TravelTimestamp,
+            DbName = this.DbName
         };
 
         request.OutputFields.AddRange(OutFields);
@@ -137,6 +148,7 @@ internal sealed class QueryRequest:
         Verify.True(this.TravelTimestamp >= 0, "TravelTimestamp must be greater than 0");
         Verify.True(this.Offset >= 0, "Offset must be greater than 0");
         Verify.True(this.Limit >= 0, "Limit must be greater than 0");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     internal QueryRequest WithOutputFields(IList<string> outputFields)
@@ -188,10 +200,11 @@ internal sealed class QueryRequest:
     }
 
     #region Private ====================================================
-    private QueryRequest(string collectionName, string expr)
+    private QueryRequest(string collectionName, string expr, string dbName)
     {
         this.CollectionName = collectionName;
         this.Expr = expr;
+        this.DbName = dbName;
     }
     #endregion
 }

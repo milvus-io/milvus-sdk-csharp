@@ -29,12 +29,22 @@ internal sealed class LoadPartitionsRequest :
     [JsonPropertyName("replica_number")]
     public int ReplicaNumber { get; set; } = 1;
 
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
     public Grpc.LoadPartitionsRequest BuildGrpc()
     {
         var request = new Grpc.LoadPartitionsRequest()
         {
-            CollectionName = CollectionName,
-            ReplicaNumber = ReplicaNumber,
+            CollectionName = this.CollectionName,
+            ReplicaNumber = this.ReplicaNumber,
+            DbName = this.DbName
         };
         request.PartitionNames.AddRange(PartitionNames);
 
@@ -46,11 +56,12 @@ internal sealed class LoadPartitionsRequest :
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.NotNullOrEmpty(PartitionNames, "Partition names count must be greater than 1");
         Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
-    public static LoadPartitionsRequest Create(string collectionName)
+    public static LoadPartitionsRequest Create(string collectionName, string dbName)
     {
-        return new LoadPartitionsRequest(collectionName);
+        return new LoadPartitionsRequest(collectionName,dbName);
     }
 
     public LoadPartitionsRequest WithPartitionNames(IList<string> partitionNames)
@@ -73,9 +84,10 @@ internal sealed class LoadPartitionsRequest :
     }
 
     #region Private ==================================================
-    public LoadPartitionsRequest(string collectionName)
+    public LoadPartitionsRequest(string collectionName, string dbName)
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }

@@ -1,9 +1,11 @@
 ﻿using IO.Milvus.Client;
 using IO.Milvus.Client.REST;
+using IO.MilvusTests.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,7 +17,7 @@ namespace IO.Milvus;
 public static class MilvusClientExtensions
 {
     /// <summary>
-    /// Use <see cref="IMilvusClient.ShowCollectionsAsync(IList{string}, ShowType, CancellationToken)"/> to check loading percentages of the collection.
+    /// Use <see cref="IMilvusClient.ShowCollectionsAsync(IList{string}, ShowType,string ,CancellationToken)"/> to check loading percentages of the collection.
     /// </summary>
     /// <remarks>
     /// If the inMemory percentage is 100, that means the collection has finished loading.
@@ -167,5 +169,22 @@ public static class MilvusClientExtensions
             progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken);
             yield return progress;
         }
+    }
+
+    /// <summary>
+    /// Wrapper methods for <see cref="IMilvusClient.GetVersionAsync(CancellationToken)"/>.
+    /// </summary>
+    /// <remarks>
+    /// Return <see cref="MilvusVersion"/> instead of <see cref="string"/>.
+    /// </remarks>
+    /// <param name="milvusClient"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Milvus version</returns>
+    public static async Task<MilvusVersion> GetMilvusVersionAsync(
+        this IMilvusClient milvusClient, 
+        CancellationToken cancellationToken = default)
+    {
+        string version = await milvusClient.GetVersionAsync(cancellationToken);
+        return MilvusVersion.Parse(version);
     }
 }

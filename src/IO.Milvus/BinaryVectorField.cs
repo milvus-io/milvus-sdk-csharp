@@ -16,7 +16,7 @@ public class BinaryVectorField : Field<byte[]>
     /// <param name="fieldName"></param>
     /// <param name="bytes"></param>
     public BinaryVectorField(string fieldName, IList<byte[]> bytes)
-        : base(fieldName, bytes, MilvusDataType.BinaryVector)
+        : base(fieldName, bytes, MilvusDataType.BinaryVector,false)
     {
     }
 

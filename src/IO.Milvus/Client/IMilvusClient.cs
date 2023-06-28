@@ -28,18 +28,22 @@ public interface IMilvusClient : IDisposable
     /// Drop a collection.
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.(Required).</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task DropCollectionAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Describe a collection.
     /// </summary>
     /// <param name="collectionName">collectionName</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -50,12 +54,16 @@ public interface IMilvusClient : IDisposable
     /// The consistency level that the collection used, modification is not supported now.</param>
     /// <param name="fieldTypes">field types that represents this collection schema</param>
     /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
+    /// <param name="enableDynamicField"><see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/></param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateCollectionAsync(
         string collectionName, 
         IList<FieldType> fieldTypes,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shards_num = 1,
+        bool enableDynamicField = false,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -67,19 +75,23 @@ public interface IMilvusClient : IDisposable
     /// will return true when time_stamp >= created collection timestamp,
     /// otherwise will return false.
     /// </param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> HasCollectionAsync(
         string collectionName, 
         DateTime? dateTime = null, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Release a collection loaded before
     /// </summary>
     /// <param name="collectionName">The collection name you want to release.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task ReleaseCollectionAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken= default);
 
     /// <summary>
@@ -87,19 +99,23 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="replicaNumber">The replica number to load, default by 1.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public Task LoadCollectionAsync(
         string collectionName, 
         int replicaNumber = 1, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get a collection's statistics
     /// </summary>
     /// <param name="collectionName">The collection name you want get statistics</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -109,11 +125,13 @@ public interface IMilvusClient : IDisposable
     /// When type is InMemory, will return these collection's inMemory_percentages.(Optional)
     /// </param>
     /// <param name="showType">Decide return Loaded collections or All collections(Optional)</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
 
     Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null, 
         ShowType showType = ShowType.All,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -138,19 +156,23 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">Collection Name.</param>
     /// <param name="alias">Alias.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateAliasAsync(
         string collectionName,
-        string alias, 
+        string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete an Alias
     /// </summary>
     /// <param name="alias">Alias</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task DropAliasAsync(
         string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -158,10 +180,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">Collection name</param>
     /// <param name="alias">Alias</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task AlterAliasAsync(
         string collectionName,
         string alias,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
     #endregion
 
@@ -171,10 +195,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to create.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreatePartitionAsync(
         string collectionName, 
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -182,10 +208,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to check.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> HasPartitionAsync(
         string collectionName, 
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -193,10 +221,12 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name you want to describe, 
     /// you can pass collection_name or collectionID.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -205,12 +235,14 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionNames">The partition names you want to load.</param>
     /// <param name="replicaNumber">The replicas number you would load, 1 by default.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task LoadPartitionsAsync(
         string collectionName, 
         IList<string> partitionNames, 
         int replicaNumber = 1, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -218,11 +250,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionNames">The partition names you want to release.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task ReleasePartitionAsync(
         string collectionName, 
         IList<string> partitionNames, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -230,11 +264,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to drop.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task DropPartitionsAsync(
         string collectionName,
         string partitionName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -242,11 +278,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to collect statistics.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IDictionary<string,string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
     #endregion
 
@@ -255,12 +293,12 @@ public interface IMilvusClient : IDisposable
     /// Do a manual compaction.
     /// </summary>
     /// <param name="collectionId">Collection Id.</param>
-    /// <param name="timetravel">Time travel.</param>
+    /// <param name="timeTravel">Time travel.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>CompactionId</returns>
     Task<long> ManualCompactionAsync(
         long collectionId, 
-        DateTime? timetravel = null,
+        DateTime? timeTravel = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -279,7 +317,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="compactionId">Compaction id.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
-    Task<MilvusCompactionPlans> GetCompactionPlans(
+    Task<MilvusCompactionPlans> GetCompactionPlansAsync(
         long compactionId,
         CancellationToken cancellationToken = default);
 
@@ -301,7 +339,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="username">Username.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task DeleteCredential(string username,
+    Task DeleteCredentialAsync(string username,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -346,12 +384,14 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">Collection name.</param>
     /// <param name="fields">Fields</param>
     /// <param name="partitionName">Partition name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<MilvusMutationResult> InsertAsync(
         string collectionName,
         IList<Field> fields,
         string partitionName = "",
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -360,12 +400,14 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">Collection name.</param>
     /// <param name="expr">A predicate expression outputs a boolean value. <see href="https://milvus.io/docs/boolean.md"/></param>
     /// <param name="partitionName">Partition name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
         string expr,
         string partitionName = "",
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -418,20 +460,24 @@ public interface IMilvusClient : IDisposable
     /// It will be removed in the future.
     /// </summary>
     /// <param name="collectionNames">Collection names.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns sealed segments information of a collection.
     /// </summary>
     /// <param name="collectionName">Milvus collection name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
+        string dbName =Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -469,6 +515,7 @@ public interface IMilvusClient : IDisposable
     /// Default value is 0, will return without limit.
     /// </param>
     /// <param name="travelTimestamp">Travel time.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<MilvusQueryResult> QueryAsync(
@@ -481,6 +528,7 @@ public interface IMilvusClient : IDisposable
         long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,
         long limit = 0,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -506,6 +554,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="extraParams">
     /// Support keys: index_type,metric_type, params. 
     /// Different index_type may has different params.</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken"></param>
     Task CreateIndexAsync(
         string collectionName,
@@ -513,7 +562,8 @@ public interface IMilvusClient : IDisposable
         string indexName,
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
-        IDictionary<string, string> extraParams,
+        IDictionary<string, string> extraParams = null,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -522,11 +572,13 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">The particular collection name you want to drop index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
     /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DEFAULT_INDEX_NAME"/></param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task DropIndexAsync(
         string collectionName, 
         string fieldName, 
-        string indexName,
+        string indexName = Constants.DEFAULT_INDEX_NAME,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -534,11 +586,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName, 
         string fieldName, 
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -546,11 +600,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
-    Task<IndexBuildProgress> GetIndexBuildProgress(
+    /// <returns>Index build progress.</returns>
+    Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -558,11 +614,13 @@ public interface IMilvusClient : IDisposable
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
-    Task<IndexState> GetIndexState(
+    /// <returns>Index state.</returns>
+    Task<IndexState> GetIndexStateAsync(
         string collectionName,
         string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
     #endregion
 
@@ -577,6 +635,282 @@ public interface IMilvusClient : IDisposable
         string request,
         CancellationToken cancellationToken = default);
     #endregion
+
+    #region Database
+    /// <summary>
+    /// Create a database in milvus.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="dbName">Database name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// List databases.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <returns>Databases</returns>
+    Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Drops a database. 
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// <para>
+    /// Note that this method drops all data in the database.
+    /// </para>
+    /// </remarks>
+    /// <param name="dbName">Database name.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default);
+    #endregion
+
+    #region Role
+    /// <summary>
+    /// Create a role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name that will be created.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task CreateRoleAsync(
+        string roleName, 
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Drop a role.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task DropRoleAsync(string roleName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Add user to role.
+    /// </summary>
+    /// <remarks>
+    ///<para>
+    /// The user will get permissions that the role are allowed to perform operations.
+    ///</para>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="username">Username.</param>
+    /// <param name="roleName">Role name.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task AddUserToRoleAsync(
+        string username,
+        string roleName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Remove user from role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The user will remove permissions that the role are allowed to perform operations.
+    /// </para>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="username">Username.</param>
+    /// <param name="roleName">RoleName.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task RemoveUserFromRoleAsync(
+        string username,
+        string roleName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all users who are added to the role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name.</param>
+    /// <param name="includeUserInfo">Include user information.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusRoleResult>> SelectRoleAsync(
+        string roleName,
+        bool includeUserInfo = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all roles the user has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="username">User name.</param>
+    /// <param name="includeRoleInfo">Include user information</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusUserResult>> SelectUserAsync(
+        string username,
+        bool includeRoleInfo = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Grant Role Privilege.
+    /// <see href="https://milvus.io/docs/users_and_roles.md"/>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name. </param>
+    /// <param name="object">object.</param>
+    /// <param name="objectName">object name.</param>
+    /// <param name="privilege">privilege.</param>
+    /// <param name="dbName">Database name.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task GrantRolePrivilegeAsync(
+        string roleName,
+        string @object,
+        string objectName, 
+        string privilege,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revoke Role Privilege.
+    /// <see href="https://milvus.io/docs/users_and_roles.md"/>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name. </param>
+    /// <param name="object">object.</param>
+    /// <param name="objectName">object name.</param>
+    /// <param name="privilege">privilege.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task RevokeRolePrivilegeAsync(
+        string roleName,
+        string @object,
+        string objectName,
+        string privilege,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///  List a grant info for the role and the specific object
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">Role name. RoleName cannot be empty or null.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAsync(
+        string roleName,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// List a grant info for the role.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </para>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="roleName">RoleName cannot be empty or null.</param>
+    /// <param name="object">object. object cannot be empty or null.</param>
+    /// <param name="objectName">objectName. objectName cannot be empty or null.</param>
+    /// <param name="cancellationToken">Cancellation name.</param>
+    /// <returns></returns>
+    Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
+        string roleName,
+        string @object,
+        string objectName, 
+        CancellationToken cancellationToken = default);
+    #endregion
+
+    /// <summary>
+    /// Get Milvus version.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Not support <see cref="REST.MilvusRestClient"/>
+    /// </para>
+    /// </remarks>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Milvus version</returns>
+    Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Close milvus connection.

@@ -25,11 +25,21 @@ internal sealed class GetPartitionStatisticsRequest:
     [JsonPropertyName("partition_name")]
     public string PartitionName { get; set; }
 
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
     public static GetPartitionStatisticsRequest Create(
         string collectionName,
-        string partitionName)
+        string partitionName,
+        string dbName)
     {
-        return new GetPartitionStatisticsRequest(collectionName, partitionName);
+        return new GetPartitionStatisticsRequest(collectionName, partitionName, dbName);
     }
 
     public Grpc.GetPartitionStatisticsRequest BuildGrpc()
@@ -38,8 +48,9 @@ internal sealed class GetPartitionStatisticsRequest:
 
         return new Grpc.GetPartitionStatisticsRequest()
         {
-            CollectionName = CollectionName,
-            PartitionName = PartitionName
+            CollectionName = this.CollectionName,
+            PartitionName = this.PartitionName,
+            DbName = this.DbName
         };
     }
 
@@ -56,13 +67,15 @@ internal sealed class GetPartitionStatisticsRequest:
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
         Verify.ArgNotNullOrEmpty(PartitionName, "Milvus partition name cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private ================================================================================
-    public GetPartitionStatisticsRequest(string collectionName, string partitionName)
+    public GetPartitionStatisticsRequest(string collectionName, string partitionName,string dbName)
     {
         this.CollectionName = collectionName;
         this.PartitionName = partitionName;
+        this.DbName = dbName;
     }
     #endregion
 }

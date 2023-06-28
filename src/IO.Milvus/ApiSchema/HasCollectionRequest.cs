@@ -25,6 +25,15 @@ internal sealed class HasCollectionRequest:
     public string CollectionName { get; set; }
 
     /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    /// <summary>
     /// TimeStamp
     /// </summary>
     /// <remarks>
@@ -33,9 +42,9 @@ internal sealed class HasCollectionRequest:
     [JsonPropertyName("time_stamp")]
     public long Timestamp { get; set; }
 
-    public static HasCollectionRequest Create(string collectionName)
+    public static HasCollectionRequest Create(string collectionName,string dbName)
     {
-        return new HasCollectionRequest(collectionName);
+        return new HasCollectionRequest(collectionName,dbName);
     }
 
     public HasCollectionRequest WithTimestamp(DateTime? dateTime)
@@ -51,7 +60,8 @@ internal sealed class HasCollectionRequest:
         return new Grpc.HasCollectionRequest()
         {
             CollectionName = this.CollectionName,
-            TimeStamp = (ulong)this.Timestamp
+            TimeStamp = (ulong)this.Timestamp,
+            DbName = this.DbName
         };
     }
 
@@ -67,12 +77,14 @@ internal sealed class HasCollectionRequest:
     public void Validate()
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =========================================================================================================
-    private HasCollectionRequest(string collectionName)
+    private HasCollectionRequest(string collectionName, string dbName)
     {
         CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }

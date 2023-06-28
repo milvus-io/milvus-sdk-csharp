@@ -23,7 +23,7 @@ public partial class MilvusClientTests
         users.Should().NotBeNullOrEmpty();
         if (users.Contains(username))
         {
-            await milvusClient.DeleteCredential(username);
+            await milvusClient.DeleteCredentialAsync(username);
         }
 
         //Create
@@ -33,7 +33,7 @@ public partial class MilvusClientTests
         users.Should().Contain("abb1bW");
 
         //Delete
-        await milvusClient.DeleteCredential(username);
+        await milvusClient.DeleteCredentialAsync(username);
         users = await milvusClient.ListCredUsersAsync();
         users.Should().NotBeNullOrEmpty();
         users.Should().NotContain("abb1bW");

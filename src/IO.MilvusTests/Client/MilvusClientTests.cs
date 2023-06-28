@@ -168,7 +168,7 @@ public partial class MilvusClientTests
             MilvusSearchParameters.Create(collectionName, "book_intro", search_output_fields)
             .WithVectors(search_vectors)
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
-            .WithMetricType(MilvusMetricType.IP)
+            .WithMetricType(MilvusMetricType.L2)
             .WithTopK(topK: 2)
             .WithParameter("nprobe", "10")
             .WithParameter("offset", "5")
@@ -180,8 +180,9 @@ public partial class MilvusClientTests
         var queryResult = await milvusClient.QueryAsync(
             collectionName,
             expr,
-            new[] { "book_id", "word_count" });
-        queryResult.FieldsData.Count.Should().Be(2);
+            new[] { "book_id", "word_count" , "book_intro" });
+        queryResult.FieldsData.Count.Should().Be(3);
+        Assert.All(queryResult.FieldsData, p => Assert.Equal(4, p.RowCount));
 
         //Cal distance
         if (!milvusClient.IsZillizCloud())

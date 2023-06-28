@@ -50,6 +50,15 @@ internal sealed class CreateCollectionRequest:
     public int ShardsNum { get; set; } = 1;
 
     /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    /// <summary>
     /// Collection schema
     /// </summary>
     [JsonPropertyName("schema")]
@@ -57,9 +66,9 @@ internal sealed class CreateCollectionRequest:
     #endregion
 
     #region Methods
-    public static CreateCollectionRequest Create(string collectionName)
+    public static CreateCollectionRequest Create(string collectionName, string dbName,bool enableDynamicField = false)
     {
-        return new CreateCollectionRequest(collectionName);
+        return new CreateCollectionRequest(collectionName,dbName,enableDynamicField);
     }
 
     public CreateCollectionRequest WithShardsNum(int shardsNum)
@@ -92,7 +101,7 @@ internal sealed class CreateCollectionRequest:
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
         Verify.True(Schema.Fields?.Any() == true, "FieldTypes cannot be null or empty");
         Verify.True(Schema.Fields?.Count(p => p.IsPrimaryKey) == 1, "FieldTypes need only one primary key field type");
-
+        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
         FieldType firstField = Schema.Fields.First();
         if (!firstField.IsPrimaryKey || (firstField.DataType != (MilvusDataType)DataType.Int64 && firstField.DataType != (MilvusDataType)DataType.VarChar))
         {
@@ -118,16 +127,18 @@ internal sealed class CreateCollectionRequest:
             CollectionName = CollectionName,
             ConsistencyLevel = (Grpc.ConsistencyLevel)((int)ConsistencyLevel),
             ShardsNum = ShardsNum,
-            Schema = Schema.ConvertCollectionSchema().ToByteString(),
+            Schema = Schema.ConvertCollectionSchema().ToByteString()
         };
     }
     #endregion
 
     #region Private ======================================================================
-    private CreateCollectionRequest(string collectionName)
+    private CreateCollectionRequest(string collectionName, string dbName, bool enableDynamicField)
     {
-        CollectionName = collectionName;
-        Schema.Name = collectionName;
+        this.CollectionName = collectionName;
+        this.Schema.Name = collectionName;
+        this.DbName = dbName;
+        this.Schema.EnableDynamicField = enableDynamicField;
     }
     #endregion
 }

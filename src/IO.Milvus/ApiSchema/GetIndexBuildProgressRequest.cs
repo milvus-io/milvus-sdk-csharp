@@ -16,9 +16,15 @@ internal sealed class GetIndexBuildProgressRequest :
     [JsonPropertyName("field_name")]
     public string FieldName { get; set; }
 
-    public static GetIndexBuildProgressRequest Create(string collectionName, string fieldName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static GetIndexBuildProgressRequest Create(string collectionName, string fieldName, string dbName)
     {
-        return new GetIndexBuildProgressRequest(collectionName, fieldName);
+        return new GetIndexBuildProgressRequest(collectionName, fieldName, dbName);
     }
 
     public Grpc.GetIndexBuildProgressRequest BuildGrpc()
@@ -29,6 +35,7 @@ internal sealed class GetIndexBuildProgressRequest :
         {
             CollectionName = this.CollectionName,
             FieldName = this.FieldName,
+            DbName = this.DbName
         };
     }
 
@@ -46,13 +53,15 @@ internal sealed class GetIndexBuildProgressRequest :
     {
         Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
         Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
+        Verify.ArgNotNullOrEmpty(DbName, "DbName name cannot be null or empty.");
     }
 
     #region Private ===================================================================================
-    public GetIndexBuildProgressRequest(string collectionName, string fieldName)
+    public GetIndexBuildProgressRequest(string collectionName, string fieldName, string dbName)
     {
         CollectionName = collectionName;
         FieldName = fieldName;
+        this.DbName = dbName;
     }
     #endregion
 }

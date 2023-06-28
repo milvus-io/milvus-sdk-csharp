@@ -38,9 +38,18 @@ internal class InsertRequest:
     [JsonPropertyName("num_rows")]
     public long NumRows { get; set; }
 
-    public static InsertRequest Create(string collectionName)
+    /// <summary>
+    /// Database name
+    /// </summary>
+    /// <remarks>
+    /// available in <c>Milvus 2.2.9</c>
+    /// </remarks>
+    [JsonPropertyName("db_name")]
+    public string DbName { get; set; }
+
+    public static InsertRequest Create(string collectionName, string dbName)
     {
-        return new InsertRequest(collectionName);
+        return new InsertRequest(collectionName, dbName);
     }
 
     public InsertRequest WithPartitionName(string partitionName)
@@ -76,9 +85,10 @@ internal class InsertRequest:
     }
 
     #region Private ===============================================================
-    private InsertRequest(string collectionName) 
+    private InsertRequest(string collectionName, string dbName) 
     {
-        CollectionName = collectionName;
+        this.CollectionName = collectionName;
+        this.DbName = dbName;
     }
     #endregion
 }
