@@ -50,7 +50,7 @@ partial class Build
              });
             
             //Waiting milvus is ready
-            Thread.Sleep(TimeSpan.FromSeconds(40));
+            Thread.Sleep(TimeSpan.FromSeconds(50));
         });
 
     AbsolutePath TestDir => RootDirectory / "src" / "IO.MilvusTests" / "bin" / "Release" / "net7.0" / "milvusclients.json";
