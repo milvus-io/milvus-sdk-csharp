@@ -32,6 +32,7 @@ partial class Build
 
             await DownloadFileAsync(MilvusYmlFileAddress, MilvusYmlName);
 
+            file = new FileInfo(MilvusYmlName);
             if(file.Exists){                
                 Log.Information(file.FullName);
             }
@@ -49,7 +50,7 @@ partial class Build
              });
             
             //Waiting milvus is ready
-            Thread.Sleep(TimeSpan.FromSeconds(20));
+            Thread.Sleep(TimeSpan.FromSeconds(40));
         });
 
     AbsolutePath TestDir => RootDirectory / "src" / "IO.MilvusTests" / "bin" / "Release" / "net7.0" / "milvusclients.json";
@@ -62,14 +63,14 @@ partial class Build
                 new MilvusConfig(){
                     Endpoint = "http://localhost",
                     Port = 19530,
-                    ConnectionType = "grpc" ,
+                    ConnectionType = "grpc",
                     Username = "root",
                     Password = "milvus"
                 },
                 new MilvusConfig(){
                     Endpoint = "http://localhost",
                     Port = 9091,
-                    ConnectionType = "rest" ,
+                    ConnectionType = "rest",
                     Username = "root",
                     Password = "milvus"
                 },
