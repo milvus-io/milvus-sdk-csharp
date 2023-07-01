@@ -1,14 +1,18 @@
 using System.IO;
 using Nuke.Common;
-using Nuke.Common.Tools.Docker;
 using Serilog;
-using Nuke.DockerCompose;
 using Nuke.Common.Tools.DotNet;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using System.Threading;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using IO.MilvusTests;
+using System.Collections.Generic;
+using Nuke.Common.IO;
+using System.Text.Json;
+using System.Diagnostics;
+using Nuke.Common.Tooling;
 
 partial class Build
 {
@@ -20,9 +24,14 @@ partial class Build
     Target DownloadYml => _ => _ 
         .DependsOn(Compile)
         .Executes(async() =>{
+            var file = new FileInfo(MilvusYmlName);
+            if(file.Exists)
+            {
+                file.Delete();
+            }
+
             await DownloadFileAsync(MilvusYmlFileAddress, MilvusYmlName);
 
-            var file = new FileInfo(MilvusYmlName);
             if(file.Exists){                
                 Log.Information(file.FullName);
             }
@@ -32,30 +41,62 @@ partial class Build
         });
 
     Target ComposeUp => _ => _
-        .TriggeredBy(DownloadYml)
+        .DependsOn(DownloadYml)        
         .Executes(() =>{
-            DockerComposeTasks.Up(s => s.SetFile(MilvusYmlName));
-        });
-
-    Target RunUnitTests => _ => _
-        .TriggeredBy(DownloadYml)
-        .Executes(() =>{
-            //Generate milvus client config file
-
+            var process = Process.Start(new ProcessStartInfo(){
+                FileName = "docker-compose",
+                Arguments = $"-f {MilvusYmlName} up"
+             });
+            
             //Waiting milvus is ready
             Thread.Sleep(TimeSpan.FromSeconds(20));
+        });
+
+    AbsolutePath TestDir => RootDirectory / "src" / "IO.MilvusTests" / "bin" / "Release" / "net7.0" / "milvusclients.json";
+
+    Target Test => _ => _        
+        .DependsOn(ComposeUp)
+        .Executes(() =>{
+            //Generate milvus client config file
+            List<MilvusConfig> configs = new List<MilvusConfig>{
+                new MilvusConfig(){
+                    Endpoint = "http://localhost",
+                    Port = 19530,
+                    ConnectionType = "grpc" ,
+                    Username = "root",
+                    Password = "milvus"
+                },
+                new MilvusConfig(){
+                    Endpoint = "http://localhost",
+                    Port = 9091,
+                    ConnectionType = "rest" ,
+                    Username = "root",
+                    Password = "milvus"
+                },
+            };
+
+            string configText = JsonSerializer.Serialize(configs);
+            Log.Logger.Information(configText);
+            TestDir.WriteAllText(configText);
 
             DotNetTest(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration.Release)
-                .EnableNoBuild()
-                .SetResultsDirectory(TestResultsDirectory));
+                .EnableNoBuild()                
+                .When(true, _ => _
+                    .SetLoggers("trx")
+                    .SetResultsDirectory(TestResultsDirectory)));
         });
 
     Target ComposeDown => _ => _
-        .TriggeredBy(RunUnitTests)
+        .AssuredAfterFailure()
+        .TriggeredBy(Test)
+        .After(Test)
         .Executes(() =>{
-            DockerComposeTasks.Down(s => s.SetFile(MilvusYmlName));
+            var process = Process.Start(new ProcessStartInfo(){
+                FileName = "docker-compose",
+                Arguments = $"-f {MilvusYmlName} down"
+             });
         });
 
     private async Task DownloadFileAsync(string url, string fileName){

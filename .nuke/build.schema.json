@@ -85,7 +85,7 @@
               "PublishGitHubRelease",
               "Push",
               "Restore",
-              "RunUnitTests"
+              "Test"
             ]
           }
         },
@@ -109,7 +109,7 @@
               "PublishGitHubRelease",
               "Push",
               "Restore",
-              "RunUnitTests"
+              "Test"
             ]
           }
         },
