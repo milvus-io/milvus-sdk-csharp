@@ -911,9 +911,4 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Milvus version</returns>
     Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Close milvus connection.
-    /// </summary>
-    void Close();
 }

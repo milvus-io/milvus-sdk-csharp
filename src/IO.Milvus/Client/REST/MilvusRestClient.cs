@@ -15,7 +15,7 @@ namespace IO.Milvus.Client.REST;
 /// <summary>
 /// An implementation of a client for the Milvus VectorDB.
 /// </summary>
-public partial class MilvusRestClient : IMilvusClient
+public sealed partial class MilvusRestClient : IMilvusClient
 {
     /// <summary>
     /// The constructor for the <see cref="MilvusRestClient"/>.
@@ -35,15 +35,15 @@ public partial class MilvusRestClient : IMilvusClient
         Verify.ArgNotNullOrEmpty(endpoint, "Milvus client cannot be null or empty");
 
         this._log = log ?? NullLogger<MilvusRestClient>.Instance;
-        this._httpClient = httpClient ?? new HttpClient();
+        this._httpClient = httpClient ?? s_defaultHttpClient;
 
-        this._httpClient.BaseAddress = SanitizeEndpoint(endpoint, port);
-
-        var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}"));
-        _httpClient.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue(
-                "Basic", 
-                authToken
+        // Store the base address and auth header for all requests. These are added to each
+        // HttpRequestMessage rather than to _httpClient to avoid mutating a shared HttpClient instance,
+        // especially one that's provided by a consumer.
+        this._baseAddress = SanitizeEndpoint(endpoint, port);
+        this._authHeader = new AuthenticationHeaderValue(
+            "Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}"))
             );
     }
 
@@ -51,17 +51,12 @@ public partial class MilvusRestClient : IMilvusClient
     /// <summary>
     /// The endpoint for the Milvus service.
     /// </summary>
-    public string Address => SanitizeEndpoint(this._httpClient.BaseAddress.ToString(), Port).ToString();
-
-    /// <summary>
-    /// The endpoint for the Milvus service.
-    /// </summary>
-    public string BaseAddress => this._httpClient.BaseAddress.ToString();
+    public string Address => this._baseAddress.ToString();
 
     /// <summary>
     /// The port for the Milvus service.
     /// </summary>
-    public int Port => this._httpClient.BaseAddress.Port;
+    public int Port => this._baseAddress.Port;
     #endregion
 
     ///<inheritdoc/>
@@ -106,18 +101,32 @@ public partial class MilvusRestClient : IMilvusClient
     /// <returns></returns>
     public override string ToString()
     {
-        return $"{{{nameof(MilvusRestClient)};{_httpClient.BaseAddress}}}";
+        return $"{{{nameof(MilvusRestClient)};{this._baseAddress}}}";
     }
 
     #region private ================================================================================
-    private ILogger _log;
-    private HttpClient _httpClient;
-    private bool _disposedValue;
+
+    /// <summary>Default HttpClient instance used if none is provided to a <see cref="MilvusRestClient"/> instance.</summary>
+    private static readonly HttpClient s_defaultHttpClient = new HttpClient();
+
+    private readonly Uri _baseAddress;
+    private readonly AuthenticationHeaderValue _authHeader;
+    private readonly ILogger _log;
+    private readonly HttpClient _httpClient;
+    private bool _disposed;
 
     private async Task<(HttpResponseMessage response, string responseContent)> ExecuteHttpRequestAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken = default)
     {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(GetType().Name);
+        }
+
+        request.RequestUri = new Uri(this._baseAddress, request.RequestUri);
+        request.Headers.Authorization = this._authHeader;
+
         HttpResponseMessage response = await this._httpClient
             .SendAsync(request, cancellationToken)
             .ConfigureAwait(false);
@@ -162,33 +171,16 @@ public partial class MilvusRestClient : IMilvusClient
     #endregion
 
     #region IDisposable Support
-    ///<inheritdoc/>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposedValue)
-        {
-            if (disposing)
-            {
-                _httpClient?.Dispose();
-            }
-
-            _disposedValue = true;
-        }
-    }
-
     /// <summary>
     /// Close milvus connection.
     /// </summary>
     public void Dispose()
     {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    ///<inheritdoc/>
-    public void Close()
-    {
-        Dispose();
+        // The HttpClient provided to this MilvusRestClient is either externally owned, in which case
+        // we don't want to dispose of it here, or it's the static HttpClient instance shared by any
+        // number of MilvusRestClient instances, in which case we also don't want to dispose of it here.
+        // Simply mark this instance as no longer being usable.
+        _disposed = true;
     }
     #endregion
 }
