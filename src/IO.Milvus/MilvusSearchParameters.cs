@@ -555,6 +555,11 @@ public class MilvusSearchParameters:
         {
             request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = Parameters.Combine() });
         }
+        else
+        {
+            //Send an empty JSON object "{}" to the server-side when there are no parameters. #21
+            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = "{}" });
+        }
     }
 
     private void PrepareTargetVectors(Grpc.SearchRequest request)
