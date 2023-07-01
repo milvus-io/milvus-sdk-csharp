@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   # Test on ubuntu
-  build-ubuntu:
+  build-test-ubuntu:
    runs-on: ubuntu-latest
 
    # Steps represent a sequence of tasks that will be executed as part of the job
@@ -41,6 +41,6 @@ jobs:
        if: always()
        with:
          name: DotNET Tests
-         path: "**/test-results.trx"                            
+         path: "./TestResults/*.trx"                            
          reporter: dotnet-trx
          fail-on-error: true
