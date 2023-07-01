@@ -8,6 +8,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -43,6 +44,44 @@ public partial class MilvusGrpcClient : IMilvusClient
         this._grpcChannel = grpcChannel ?? GrpcChannel.ForAddress(address);
 
         var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}"));
+        _callOptions = callOptions ?? new CallOptions(
+            new Metadata()
+            {
+                { "authorization", authToken }
+            });
+
+        _grpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
+    }
+
+    /// <summary>
+    /// The constructor for the <see cref="MilvusGrpcClient"/>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Serverless Milvus may have some limitations, and some APIs may not be available.
+    /// </para>
+    /// <para>
+    /// <see href="https://docs.zilliz.com/docs/connect-to-cluster"/> 
+    /// </para>
+    /// </remarks>
+    /// <param name="endpoint"></param>
+    /// <param name="apikey"></param>
+    /// <param name="grpcChannel"></param>
+    /// <param name="callOptions"></param>
+    /// <param name="log"></param>
+    public MilvusGrpcClient(
+        string endpoint,
+        string apikey,
+        GrpcChannel grpcChannel = null,
+        CallOptions? callOptions = default,
+        ILogger log = null)
+    {
+        Verify.NotNull(endpoint, "Milvus client cannot be null or empty");
+
+        this._log = log ?? NullLogger<MilvusGrpcClient>.Instance;
+        this._grpcChannel = grpcChannel ?? GrpcChannel.ForAddress(endpoint);
+
+        var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(apikey));
         _callOptions = callOptions ?? new CallOptions(
             new Metadata()
             {

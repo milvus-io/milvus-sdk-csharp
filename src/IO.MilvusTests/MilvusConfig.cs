@@ -29,6 +29,9 @@ public sealed class MilvusConfig
     [JsonPropertyName("password")]
     public string? Password { get; set; }
 
+    [JsonPropertyName("apikey")]
+    public string? ApiKey { get; set; }
+
     [JsonPropertyName("type")]
     public string? ConnectionType { get; set; }
 
@@ -76,7 +79,14 @@ internal static class MilvusConfigExtensions
         }
         else if(string.Compare(config.ConnectionType, "grpc", true) == 0)
         {
-            return new MilvusGrpcClient(config.Endpoint, config.Port,config.Username,config.Password);
+            if (!string.IsNullOrWhiteSpace(config.ApiKey))
+            {
+                return new MilvusGrpcClient(config.Endpoint, config.ApiKey);
+            }
+            else
+            {
+                return new MilvusGrpcClient(config.Endpoint, config.Port,config.Username,config.Password);
+            }
         }
         else
         {
