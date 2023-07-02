@@ -25,7 +25,7 @@ public sealed class MilvusUserResult
     /// </summary>
     public IEnumerable<string> Roles { get; }
 
-    internal static IEnumerable<MilvusUserResult> Parse(IEnumerable <UserResult> results)
+    internal static IEnumerable<MilvusUserResult> Parse(IEnumerable<UserResult> results)
     {
         if (results == null)
             yield break;

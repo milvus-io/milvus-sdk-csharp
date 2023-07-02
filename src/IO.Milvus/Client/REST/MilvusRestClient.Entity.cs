@@ -12,9 +12,9 @@ public partial class MilvusRestClient
 {
     ///<inheritdoc/>
     public async Task<MilvusMutationResult> InsertAsync(
-        string collectionName, 
-        IList<Field> fields, 
-        string partitionName = "", 
+        string collectionName,
+        IList<Field> fields,
+        string partitionName = "",
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
@@ -26,7 +26,7 @@ public partial class MilvusRestClient
             .WithFields(fields)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -52,8 +52,8 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusMutationResult> DeleteAsync(
-        string collectionName, 
-        string expr, 
+        string collectionName,
+        string expr,
         string partitionName = "",
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
@@ -61,11 +61,11 @@ public partial class MilvusRestClient
         this._log.LogDebug("Delete data {0}", collectionName);
 
         using HttpRequestMessage request = DeleteRequest
-            .Create(collectionName,expr,dbName)
+            .Create(collectionName, expr, dbName)
             .WithPartitionName(partitionName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -90,14 +90,14 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusSearchResult> SearchAsync(
-        MilvusSearchParameters searchParameters, 
+        MilvusSearchParameters searchParameters,
         CancellationToken cancellationToken)
     {
         this._log.LogDebug("Search: {0}", searchParameters.ToString());
 
         using HttpRequestMessage request = searchParameters.BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -122,9 +122,9 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusCalDistanceResult> CalDistanceAsync(
-        MilvusVectors leftVectors, 
-        MilvusVectors rightVectors, 
-        MilvusMetricType milvusMetricType, 
+        MilvusVectors leftVectors,
+        MilvusVectors rightVectors,
+        MilvusMetricType milvusMetricType,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Cal distance: {0}", leftVectors?.ToString());
@@ -135,7 +135,7 @@ public partial class MilvusRestClient
             .WithRightVectors(rightVectors)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -160,17 +160,17 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusFlushResult> FlushAsync(
-        IList<string> collectionNames, 
+        IList<string> collectionNames,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Flush: {0}");
+        this._log.LogDebug("Flush: {0}", dbName);
 
         using HttpRequestMessage request = FlushRequest
-            .Create(collectionNames,dbName)
+            .Create(collectionNames, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -195,7 +195,7 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
-        string collectionName, 
+        string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
@@ -205,7 +205,7 @@ public partial class MilvusRestClient
             .Create(collectionName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -230,7 +230,7 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<bool> GetFlushStateAsync(
-        IList<long> segmentIds, 
+        IList<long> segmentIds,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
@@ -239,7 +239,7 @@ public partial class MilvusRestClient
             .Create(segmentIds)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -278,7 +278,7 @@ public partial class MilvusRestClient
     {
         this._log.LogDebug("Query: {0}", collectionName);
 
-        using HttpRequestMessage request = QueryRequest.Create(collectionName, expr,dbName)
+        using HttpRequestMessage request = QueryRequest.Create(collectionName, expr, dbName)
             .WithOutputFields(outputFields)
             .WithPartitionNames(partitionNames)
             .WithConsistencyLevel(consistencyLevel)
@@ -288,7 +288,7 @@ public partial class MilvusRestClient
             .WithLimit(limit)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -322,7 +322,7 @@ public partial class MilvusRestClient
             .Create(collectionName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {

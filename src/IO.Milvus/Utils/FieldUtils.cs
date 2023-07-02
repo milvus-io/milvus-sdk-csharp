@@ -16,7 +16,7 @@ public static class FieldUtils
     /// <param name="floatVectors">Float vectors</param>
     /// <returns>Floatarray and dimension</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static (FloatArray,int) ToFloatArray(
+    public static (FloatArray, int) ToFloatArray(
         this IList<List<float>> floatVectors)
     {
         if (floatVectors is null)
@@ -33,6 +33,6 @@ public static class FieldUtils
             floatArray.Data.AddRange(value);
         }
 
-        return (floatArray,dim);
+        return (floatArray, dim);
     }
 }

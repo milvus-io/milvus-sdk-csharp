@@ -63,9 +63,9 @@ internal sealed class CreateCollectionRequest
     #endregion
 
     #region Methods
-    public static CreateCollectionRequest Create(string collectionName, string dbName,bool enableDynamicField = false)
+    public static CreateCollectionRequest Create(string collectionName, string dbName, bool enableDynamicField = false)
     {
-        return new CreateCollectionRequest(collectionName,dbName,enableDynamicField);
+        return new CreateCollectionRequest(collectionName, dbName, enableDynamicField);
     }
 
     public CreateCollectionRequest WithShardsNum(int shardsNum)

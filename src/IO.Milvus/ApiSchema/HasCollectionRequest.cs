@@ -39,9 +39,9 @@ internal sealed class HasCollectionRequest
     [JsonPropertyName("time_stamp")]
     public long Timestamp { get; set; }
 
-    public static HasCollectionRequest Create(string collectionName,string dbName)
+    public static HasCollectionRequest Create(string collectionName, string dbName)
     {
-        return new HasCollectionRequest(collectionName,dbName);
+        return new HasCollectionRequest(collectionName, dbName);
     }
 
     public HasCollectionRequest WithTimestamp(DateTime? dateTime)

@@ -37,7 +37,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
     {
         Verify.NotNull(endpoint, "Milvus client cannot be null or empty");
 
-        var address = SanitizeEndpoint(endpoint,port);
+        var address = SanitizeEndpoint(endpoint, port);
 
         this._log = log ?? NullLogger<MilvusGrpcClient>.Instance;
         if (grpcChannel is not null)
@@ -73,11 +73,11 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
         {
             foreach (var reason in response.Reasons)
             {
-                _log.LogWarning(reason);
+                _log.LogWarning("Reason: {0}", reason);
             }
         }
 
-        return new MilvusHealthState(response.IsHealthy, response.Status.Reason,response.Status.ErrorCode);
+        return new MilvusHealthState(response.IsHealthy, response.Status.Reason, response.Status.ErrorCode);
     }
 
     ///<inheritdoc/>
@@ -85,7 +85,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
     {
         this._log.LogDebug("Get milvus collection");
 
-        GetVersionResponse response = await _grpcClient.GetVersionAsync(new GetVersionRequest(),_callOptions.WithCancellationToken(cancellationToken));
+        GetVersionResponse response = await _grpcClient.GetVersionAsync(new GetVersionRequest(), _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

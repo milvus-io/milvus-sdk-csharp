@@ -54,7 +54,7 @@ public partial class MilvusClientTests
         IEnumerable<MilvusUserResult> userResults = await milvusClient.SelectUserAsync(username, true);
         userResults.Should().Contain(x => x.Username == username);
         MilvusUserResult user = userResults.First(x => x.Username == username);
-        if(user.Roles.Contains(roleName) && user.Roles?.Any() == true)
+        if (user.Roles.Contains(roleName) && user.Roles?.Any() == true)
         {
             foreach (var userRole in user.Roles)
             {
@@ -64,7 +64,7 @@ public partial class MilvusClientTests
 
         //2.Create a role.
         //Check if this role exist.
-        IEnumerable<MilvusRoleResult> roles = await milvusClient.SelectRoleAsync(roleName,true);
+        IEnumerable<MilvusRoleResult> roles = await milvusClient.SelectRoleAsync(roleName, true);
         var role = roles.FirstOrDefault(x => x.RoleName == roleName);
         if (role != null && role.Users != null)
         {
@@ -103,7 +103,7 @@ public partial class MilvusClientTests
         await milvusClient.AddUserToRoleAsync(username, roleName);
 
         //Check if user has this role.
-        IEnumerable<MilvusRoleResult> roleResult = await milvusClient.SelectRoleAsync(roleName,true);
+        IEnumerable<MilvusRoleResult> roleResult = await milvusClient.SelectRoleAsync(roleName, true);
         roleResult.First(x => x.RoleName == roleName).Users.Should().Contain(username);
     }
 }

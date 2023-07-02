@@ -8,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Collections.
 /// </summary>
-internal class ShowCollectionsResponse
+internal sealed class ShowCollectionsResponse
 {
     /// <summary>
     /// Collection Id list.

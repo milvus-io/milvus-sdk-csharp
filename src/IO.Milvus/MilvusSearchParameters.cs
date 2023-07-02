@@ -5,6 +5,7 @@ using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -62,7 +63,7 @@ public class MilvusSearchParameters
     /// <summary>
     /// The topK value.
     /// </summary>
-    public int TopK { get;private set; }
+    public int TopK { get; private set; }
 
     /// <summary>
     /// Guarantee timestamp
@@ -82,7 +83,7 @@ public class MilvusSearchParameters
     /// <summary>
     /// Parameters
     /// </summary>
-    public IDictionary<string,string> Parameters { get; private set; } = new Dictionary<string,string>();
+    public IDictionary<string, string> Parameters { get; private set; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Milvus Vector
@@ -97,7 +98,7 @@ public class MilvusSearchParameters
     /// <summary>
     /// Ignore the growing segments to get best search performance. Default is False.
     /// </summary>
-    public bool IgnoreGrowing { get; private set; } = false;
+    public bool IgnoreGrowing { get; private set; }
 
     /// <summary>
     /// Database name.
@@ -118,7 +119,7 @@ public class MilvusSearchParameters
         IList<string> outFields,
         string dbName = Constants.DEFAULT_DATABASE_NAME)
     {
-        return new MilvusSearchParameters(collectionName,vectorFieldName,outFields,dbName);
+        return new MilvusSearchParameters(collectionName, vectorFieldName, outFields, dbName);
     }
 
     /// <summary>
@@ -133,13 +134,14 @@ public class MilvusSearchParameters
         {
             MilvusFloatVectors = (IList<List<float>>)vectors;
             MilvusBinaryVectors = null;
-        }else if (typeof(TVector) == typeof(byte[]))
+        }
+        else if (typeof(TVector) == typeof(byte[]))
         {
             MilvusBinaryVectors = (IList<byte[]>)vectors;
             MilvusFloatVectors = null;
         }
 
-            return this;
+        return this;
     }
 
     /// <summary>
@@ -199,7 +201,7 @@ public class MilvusSearchParameters
             throw new ArgumentException($"\"{nameof(expr)}\" cannot be null or whitespace.");
         }
 
-        this.Expr = expr; 
+        this.Expr = expr;
         return this;
     }
 
@@ -282,7 +284,7 @@ public class MilvusSearchParameters
     /// <param name="metricType">metric type</param>
     public MilvusSearchParameters WithMetricType(MilvusMetricType metricType)
     {
-        this.MetricType = metricType; 
+        this.MetricType = metricType;
         return this;
     }
 
@@ -354,9 +356,9 @@ public class MilvusSearchParameters
     /// <returns></returns>
     public MilvusSearchParameters WithTopK(int topK)
     {
-        if (topK < 1 || topK > 16384)
+        if (topK is < 1 or > 16384)
         {
-            throw new ArgumentOutOfRangeException($"The available range is [1, 16384].");
+            throw new ArgumentOutOfRangeException(nameof(topK), $"The available range is [1, 16384].");
         }
 
         TopK = topK;
@@ -370,7 +372,7 @@ public class MilvusSearchParameters
     /// <param name="value"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public MilvusSearchParameters WithParameter(string key,string value)
+    public MilvusSearchParameters WithParameter(string key, string value)
     {
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -411,7 +413,7 @@ public class MilvusSearchParameters
 
         //dsl
         SetDsl(request);
-        
+
         return request;
     }
 
@@ -421,8 +423,8 @@ public class MilvusSearchParameters
     /// <returns></returns>
     public HttpRequestMessage BuildRest()
     {
-        var request = new SearchRequest() 
-        { 
+        var request = new SearchRequest()
+        {
             CollectionName = this.CollectionName,
             Dsl = this.Expr,
             DslType = (int)MilvusDslType.BoolExprV1,
@@ -456,7 +458,7 @@ public class MilvusSearchParameters
     }
 
     #region Private =======================================================================
-    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields, string dbName) 
+    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields, string dbName)
     {
         this.CollectionName = collectionName;
         this.VectorFieldName = vectorFieldName;
@@ -508,7 +510,7 @@ public class MilvusSearchParameters
             request.OutputFields.AddRange(this.OutputFields);
         }
 
-        request.GuaranteeTimestamp = (ulong)GetGuaranteeTimestamp(ConsistencyLevel,GuaranteeTimestamp,0);
+        request.GuaranteeTimestamp = (ulong)GetGuaranteeTimestamp(ConsistencyLevel, GuaranteeTimestamp, 0);
 
         return request;
     }
@@ -525,9 +527,9 @@ public class MilvusSearchParameters
     private void PrepareRestParameters(SearchRequest request)
     {
         request.SearchParams[Constants.VECTOR_FIELD] = VectorFieldName;
-        request.SearchParams[Constants.TOP_K] = TopK.ToString();
+        request.SearchParams[Constants.TOP_K] = TopK.ToString(CultureInfo.InvariantCulture);
         request.SearchParams[Constants.METRIC_TYPE] = MetricType.ToString();
-        request.SearchParams[Constants.ROUND_DECIMAL] = RoundDecimal.ToString();        
+        request.SearchParams[Constants.ROUND_DECIMAL] = RoundDecimal.ToString(CultureInfo.InvariantCulture);
         request.SearchParams[Constants.IGNORE_GROWING] = IgnoreGrowing.ToString();
 
         if (Parameters?.Any() == true)
@@ -538,14 +540,14 @@ public class MilvusSearchParameters
 
     private void PrepareParameters(Grpc.SearchRequest request)
     {
-        request.SearchParams.AddRange (
+        request.SearchParams.AddRange(
             new[]
             {
                 new Grpc.KeyValuePair() { Key = Constants.VECTOR_FIELD, Value = VectorFieldName },
-                new Grpc.KeyValuePair() { Key = Constants.TOP_K, Value = TopK.ToString() },
-                new Grpc.KeyValuePair() { Key = Constants.METRIC_TYPE, Value = MetricType.ToString().ToUpper() },
+                new Grpc.KeyValuePair() { Key = Constants.TOP_K, Value = TopK.ToString(CultureInfo.InvariantCulture) },
+                new Grpc.KeyValuePair() { Key = Constants.METRIC_TYPE, Value = MetricType.ToString().ToUpperInvariant() },
                 new Grpc.KeyValuePair() { Key = Constants.IGNORE_GROWING, Value = IgnoreGrowing.ToString() },
-                new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString() }
+                new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) }
             });
 
         if (Parameters?.Any() == true)
@@ -571,13 +573,14 @@ public class MilvusSearchParameters
 
                 using var memoryStream = new MemoryStream(milvusVector.Count * sizeof(float));
                 using var binaryWriter = new BinaryWriter(memoryStream);
-                
+
                 for (int i = 0; i < milvusVector.Count; i++)
                     binaryWriter.Write(milvusVector[i]);
                 memoryStream.Seek(0, SeekOrigin.Begin);
                 placeholderValue.Values.Add(ByteString.FromStream(memoryStream));
             }
-        }else if(MilvusBinaryVectors  != null)
+        }
+        else if (MilvusBinaryVectors != null)
         {
             placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
 
@@ -599,7 +602,8 @@ public class MilvusSearchParameters
             {
                 request.SearchVectors.Add(milvusVector);
             }
-        }else if(MilvusBinaryVectors != null)
+        }
+        else if (MilvusBinaryVectors != null)
         {
             throw new NotSupportedException();
         }

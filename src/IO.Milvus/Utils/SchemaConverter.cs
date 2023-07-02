@@ -50,7 +50,7 @@ internal static class SchemaConverter
 
     private static FieldType ToFieldSchema(Grpc.FieldSchema fieldType)
     {
-        var milvusField = new FieldType(fieldType.Name,(MilvusDataType)fieldType.DataType,fieldType.IsPrimaryKey,fieldType.IsDynamic)
+        var milvusField = new FieldType(fieldType.Name, (MilvusDataType)fieldType.DataType, fieldType.IsPrimaryKey, fieldType.IsDynamic)
         {
             FieldId = fieldType.FieldID,
         };
@@ -62,7 +62,7 @@ internal static class SchemaConverter
     }
 
     private static void ToParams(
-        IDictionary<string, string> typeParams, 
+        IDictionary<string, string> typeParams,
         RepeatedField<Grpc.KeyValuePair> indexParams)
     {
         if (indexParams == null)
@@ -109,7 +109,7 @@ internal static class SchemaConverter
         }
     }
 
-    internal static Dictionary<string,IList<int>> ToKeyDataPairs(
+    internal static Dictionary<string, IList<int>> ToKeyDataPairs(
         this IEnumerable<Grpc.KeyDataPair> keyDataPairs)
     {
         Dictionary<string, IList<int>> dictionary = new();

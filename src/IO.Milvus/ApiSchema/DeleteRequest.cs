@@ -37,16 +37,16 @@ internal sealed class DeleteRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static DeleteRequest Create(string collectionName, string expr,string dbName)
+    public static DeleteRequest Create(string collectionName, string expr, string dbName)
     {
-        return new DeleteRequest(collectionName, expr,dbName);
+        return new DeleteRequest(collectionName, expr, dbName);
     }
 
     public DeleteRequest WithPartitionName(string partitionName)
     {
         if (!string.IsNullOrEmpty(PartitionName))
             PartitionName = partitionName;
-        
+
         return this;
     }
 
@@ -73,7 +73,7 @@ internal sealed class DeleteRequest
     {
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/entities",
-            payload:this);
+            payload: this);
     }
 
     public void Validate()

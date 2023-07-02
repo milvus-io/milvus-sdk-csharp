@@ -2,6 +2,7 @@
 using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -61,7 +62,7 @@ internal sealed class QueryRequest
 
     [JsonPropertyName("query_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string,string> QueryParams = new Dictionary<string, string>();
+    public IDictionary<string, string> QueryParams = new Dictionary<string, string>();
 
     /// <summary>
     /// Database name
@@ -72,7 +73,7 @@ internal sealed class QueryRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static QueryRequest Create(string collectionName,string expr,string dbName)
+    public static QueryRequest Create(string collectionName, string expr, string dbName)
     {
         return new QueryRequest(collectionName, expr, dbName);
     }
@@ -101,7 +102,7 @@ internal sealed class QueryRequest
             request.QueryParams.Add(new Grpc.KeyValuePair()
             {
                 Key = "offset",
-                Value = Offset.ToString()
+                Value = Offset.ToString(CultureInfo.InvariantCulture)
             });
         }
         if (Limit > 0)
@@ -109,7 +110,7 @@ internal sealed class QueryRequest
             request.QueryParams.Add(new Grpc.KeyValuePair()
             {
                 Key = "limit",
-                Value = Limit.ToString()
+                Value = Limit.ToString(CultureInfo.InvariantCulture)
             });
         }
 
@@ -122,11 +123,11 @@ internal sealed class QueryRequest
 
         if (Offset > 0)
         {
-            QueryParams.Add("offset",Offset.ToString());
+            QueryParams.Add("offset", Offset.ToString(CultureInfo.InvariantCulture));
         }
         if (Limit > 0)
         {
-            QueryParams.Add("limit",Limit.ToString());
+            QueryParams.Add("limit", Limit.ToString(CultureInfo.InvariantCulture));
         }
 
         var request = HttpRequest.CreatePostRequest(

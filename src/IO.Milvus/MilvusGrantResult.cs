@@ -13,10 +13,10 @@ namespace IO.Milvus;
 public sealed class MilvusGrantEntity
 {
     internal MilvusGrantEntity(
-        MilvusGrantorEntity grantor, 
-        string dbName, 
-        string @object, 
-        string role, 
+        MilvusGrantorEntity grantor,
+        string dbName,
+        string @object,
+        string role,
         string objectName)
     {
         Grantor = grantor;
@@ -59,10 +59,10 @@ public sealed class MilvusGrantEntity
         foreach (var entity in entities)
         {
             yield return new MilvusGrantEntity(
-                MilvusGrantorEntity.Parse(entity.Grantor), 
-                entity.DbName, 
-                entity.Object.Name, 
-                entity.Role.Name, 
+                MilvusGrantorEntity.Parse(entity.Grantor),
+                entity.DbName,
+                entity.Object.Name,
+                entity.Role.Name,
                 entity.ObjectName);
         }
     }

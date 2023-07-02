@@ -230,7 +230,7 @@ public class MilvusVectorIds
         get
         {
             if (IntIds != null) { return IntIds; }
-            else { return StringIds;}
+            else { return StringIds; }
         }
     }
 

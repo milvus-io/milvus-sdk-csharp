@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal class SearchResponse
+internal sealed class SearchResponse
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }

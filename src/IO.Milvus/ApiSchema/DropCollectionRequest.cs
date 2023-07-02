@@ -28,9 +28,9 @@ internal sealed class DropCollectionRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static DropCollectionRequest Create(string collectionName,string dbName)
+    public static DropCollectionRequest Create(string collectionName, string dbName)
     {
-        return new DropCollectionRequest(collectionName,dbName);
+        return new DropCollectionRequest(collectionName, dbName);
     }
 
     public Grpc.DropCollectionRequest BuildGrpc()
@@ -60,7 +60,7 @@ internal sealed class DropCollectionRequest
     }
 
     #region Private =================================================================================
-    public DropCollectionRequest(string collectionName,string dbName)
+    public DropCollectionRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;

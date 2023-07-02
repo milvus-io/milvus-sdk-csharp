@@ -21,13 +21,13 @@ internal sealed class DropAliasRequest
 
     public static DropAliasRequest Create(string alias, string dbName)
     {
-        return new DropAliasRequest(alias,dbName);
+        return new DropAliasRequest(alias, dbName);
     }
 
     public Grpc.DropAliasRequest BuildGrpc()
     {
         return new Grpc.DropAliasRequest()
-        {            
+        {
             Alias = Alias,
             DbName = DbName
         };

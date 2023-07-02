@@ -69,7 +69,7 @@ internal class InsertRequest
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/entities",
-            payload:this
+            payload: this
             );
     }
 
@@ -83,7 +83,7 @@ internal class InsertRequest
     }
 
     #region Private ===============================================================
-    private InsertRequest(string collectionName, string dbName) 
+    private InsertRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;

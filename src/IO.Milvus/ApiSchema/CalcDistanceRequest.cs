@@ -53,14 +53,15 @@ internal sealed class CalcDistanceRequest
 
         //Set left vectors
         request.OpLeft = VectorsLeft.ToVectorsArray();
-        
+
         //Set right vectors
         request.OpRight = VectorsRight.ToVectorsArray();
 
         //Set parameters
         request.Params.Add(new Grpc.KeyValuePair()
         {
-            Key = "metric",Value = _milvusMetricType.ToString().ToUpper()
+            Key = "metric",
+            Value = _milvusMetricType.ToString().ToUpperInvariant()
         });
 
         return request;
@@ -90,7 +91,7 @@ internal sealed class CalcDistanceRequest
     private CalcDistanceRequest(MilvusMetricType milvusMetricType)
     {
         this._milvusMetricType = milvusMetricType;
-        this.Params["metric"] = milvusMetricType.ToString().ToUpper();
+        this.Params["metric"] = milvusMetricType.ToString().ToUpperInvariant();
     }
     #endregion
 }

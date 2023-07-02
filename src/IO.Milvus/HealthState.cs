@@ -8,8 +8,8 @@ namespace IO.Milvus;
 public class MilvusHealthState
 {
     internal MilvusHealthState(
-        bool isHealthy, 
-        string errorMsg, 
+        bool isHealthy,
+        string errorMsg,
         ErrorCode errorCode)
     {
         IsHealthy = isHealthy;

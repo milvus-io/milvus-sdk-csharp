@@ -73,12 +73,12 @@ internal sealed class ShowCollectionsRequest
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collections",
-            payload:this
+            payload: this
             );
     }
 
-    public void Validate() 
-    { 
+    public void Validate()
+    {
         Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 

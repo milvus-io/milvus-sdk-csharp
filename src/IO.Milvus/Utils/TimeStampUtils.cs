@@ -21,18 +21,18 @@ internal static class TimestampUtils
     }
 
     public static long ToTimestamp(this DateTime dt)
-    {        
+    {
         return (dt.Ticks - 621355968000000000) / 10000;
     }
 
     public static DateTime GetTimeFromTimstamp(long timestamp)
-    {        
-        if(timestamp > 253402300799999)
+    {
+        if (timestamp > 253402300799999)
         {
             return DateTime.Now;
         }
         else
-        {                
+        {
             return DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime;
         }
     }

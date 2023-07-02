@@ -25,9 +25,9 @@ internal sealed class CreateAliasRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static CreateAliasRequest Create(string collection,string alias, string dbName)
+    public static CreateAliasRequest Create(string collection, string alias, string dbName)
     {
-        return new CreateAliasRequest(collection,alias,dbName);
+        return new CreateAliasRequest(collection, alias, dbName);
     }
 
     public Grpc.CreateAliasRequest BuildGrpc()

@@ -28,9 +28,9 @@ internal sealed class ReleaseCollectionRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    internal static ReleaseCollectionRequest Create(string collectionName,string dbName)
+    internal static ReleaseCollectionRequest Create(string collectionName, string dbName)
     {
-        return new ReleaseCollectionRequest(collectionName,dbName);
+        return new ReleaseCollectionRequest(collectionName, dbName);
     }
 
     public Grpc.ReleaseCollectionRequest BuildGrpc()

@@ -10,7 +10,7 @@ public partial class MilvusGrpcClient
 {
     ///<inheritdoc/>
     public async Task<MilvusMetrics> GetMetricsAsync(
-        string request, 
+        string request,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get metrics {0}", request);

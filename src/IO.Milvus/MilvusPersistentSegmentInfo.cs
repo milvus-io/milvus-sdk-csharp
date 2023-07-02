@@ -11,7 +11,7 @@ public class MilvusPersistentSegmentInfo
     /// <summary>
     /// MilvusPersistentSegmentInfo
     /// </summary>
-    public MilvusPersistentSegmentInfo(){}
+    public MilvusPersistentSegmentInfo() { }
 
     /// <summary>
     /// Collection id.

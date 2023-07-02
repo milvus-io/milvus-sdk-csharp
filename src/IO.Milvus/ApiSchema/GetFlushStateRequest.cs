@@ -40,12 +40,12 @@ internal sealed class GetFlushStateRequest
     public Grpc.GetFlushStateRequest BuildGrpc()
     {
         this.Validate();
-        var request = new Grpc.GetFlushStateRequest();        
+        var request = new Grpc.GetFlushStateRequest();
         request.SegmentIDs.AddRange(SegmentIds);
         return request;
     }
 
-    public 
+    public
 
     #region Private =============================================
     GetFlushStateRequest(IList<long> segmentIds)

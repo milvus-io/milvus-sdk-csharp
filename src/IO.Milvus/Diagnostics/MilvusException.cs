@@ -23,12 +23,12 @@ public class MilvusException : System.Exception
     /// </summary>
     /// <param name="errorCode"><see cref="ErrorCode"/></param>
     /// <param name="reason"><see cref="ResponseStatus.Reason"/></param>
-    internal MilvusException(Grpc.ErrorCode errorCode,string reason = ""):base(GetErrorMsg(errorCode,reason))
+    internal MilvusException(Grpc.ErrorCode errorCode, string reason = "") : base(GetErrorMsg(errorCode, reason))
     {
         ErrorCode = errorCode;
     }
 
-    internal MilvusException(ResponseStatus status):base(GetErrorMsg(status.ErrorCode,status.Reason))
+    internal MilvusException(ResponseStatus status) : base(GetErrorMsg(status.ErrorCode, status.Reason))
     {
         ErrorCode = status.ErrorCode;
     }
@@ -44,11 +44,6 @@ public class MilvusException : System.Exception
 
     ///<inheritdoc/>
     public MilvusException(string message, System.Exception innerException) : base(message, innerException)
-    {
-    }
-
-    ///<inheritdoc/>
-    protected MilvusException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 

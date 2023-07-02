@@ -14,7 +14,7 @@ internal sealed class DeleteCredentialRequest
     /// Not useful for now
     /// </summary>
     [JsonPropertyName("username")]
-    public string Username { get;set; }
+    public string Username { get; set; }
 
     public static DeleteCredentialRequest Create(string userName)
     {
@@ -37,7 +37,7 @@ internal sealed class DeleteCredentialRequest
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/credential",
-            payload:this
+            payload: this
             );
     }
 

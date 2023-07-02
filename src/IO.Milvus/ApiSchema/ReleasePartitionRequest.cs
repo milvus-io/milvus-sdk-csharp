@@ -46,7 +46,7 @@ internal sealed class ReleasePartitionRequest
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/partitions/load",
-            payload:this
+            payload: this
             );
     }
 

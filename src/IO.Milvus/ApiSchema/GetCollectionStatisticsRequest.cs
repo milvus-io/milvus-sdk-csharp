@@ -31,7 +31,7 @@ internal sealed class GetCollectionStatisticsRequest
 
     public static GetCollectionStatisticsRequest Create(string collectionName, string dbName)
     {
-        return new GetCollectionStatisticsRequest(collectionName,dbName);
+        return new GetCollectionStatisticsRequest(collectionName, dbName);
     }
 
     public Grpc.GetCollectionStatisticsRequest BuildGrpc()
@@ -49,7 +49,7 @@ internal sealed class GetCollectionStatisticsRequest
     {
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collection/statistics",
-            payload:this
+            payload: this
             );
     }
 

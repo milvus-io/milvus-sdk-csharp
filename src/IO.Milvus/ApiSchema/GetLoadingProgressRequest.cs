@@ -15,7 +15,7 @@ internal sealed class GetLoadingProgressRequest
     public string CollectionName { get; set; }
 
     [JsonPropertyName("partition_names")]
-    public IList<string> PartitionNames { get; set;}
+    public IList<string> PartitionNames { get; set; }
 
     public static GetLoadingProgressRequest Create(string collectionName)
     {
@@ -41,7 +41,7 @@ internal sealed class GetLoadingProgressRequest
         {
             request.PartitionNames.AddRange(PartitionNames);
         }
-        
+
         return request;
     }
 
@@ -51,7 +51,7 @@ internal sealed class GetLoadingProgressRequest
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/load/progress",
-            payload:this);
+            payload: this);
     }
 
     public void Validate()

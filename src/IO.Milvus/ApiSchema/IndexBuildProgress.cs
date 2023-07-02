@@ -1,9 +1,12 @@
-﻿namespace IO.Milvus.ApiSchema;
+﻿using System;
+using System.Diagnostics;
+
+namespace IO.Milvus.ApiSchema;
 
 /// <summary>
 /// Indicate build progress of an index.
 /// </summary>
-public struct IndexBuildProgress
+public readonly struct IndexBuildProgress : IEquatable<IndexBuildProgress>
 {
     /// <summary>
     /// Construct a index progress struct.
@@ -26,9 +29,24 @@ public struct IndexBuildProgress
     /// </summary>
     public long TotalRows { get; }
 
+    /// <inheritdoc />
+    public override bool Equals(object obj) =>
+        obj is IndexBuildProgress other && Equals(other);
+
+    /// <inheritdoc />
+    public bool Equals(IndexBuildProgress other) =>
+        IndexedRows == other.IndexedRows &&
+        TotalRows == other.TotalRows;
+
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine(IndexedRows, TotalRows);
+
     ///<inheritdoc/>
-    public override string ToString()
-    {
-        return $"Progress: {IndexedRows}/{TotalRows}";
-    }
+    public override string ToString() => $"Progress: {IndexedRows}/{TotalRows}";
+
+    /// <inheritdoc />
+    public static bool operator ==(IndexBuildProgress left, IndexBuildProgress right) => left.Equals(right);
+
+    /// <inheritdoc />
+    public static bool operator !=(IndexBuildProgress left, IndexBuildProgress right) => !(left == right);
 }

@@ -58,7 +58,7 @@ internal sealed class LoadPartitionsRequest
 
     public static LoadPartitionsRequest Create(string collectionName, string dbName)
     {
-        return new LoadPartitionsRequest(collectionName,dbName);
+        return new LoadPartitionsRequest(collectionName, dbName);
     }
 
     public LoadPartitionsRequest WithPartitionNames(IList<string> partitionNames)

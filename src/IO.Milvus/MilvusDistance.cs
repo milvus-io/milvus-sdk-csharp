@@ -21,14 +21,14 @@ public class MilvusCalDistanceResult
     internal static MilvusCalDistanceResult From(Grpc.CalcDistanceResults calcDistanceResults)
     {
         return new MilvusCalDistanceResult(
-            calcDistanceResults.IntDist?.Data, 
+            calcDistanceResults.IntDist?.Data,
             calcDistanceResults.FloatDist?.Data);
     }
 
     internal static MilvusCalDistanceResult From(CalDistanceResponse data)
     {
         return new MilvusCalDistanceResult(
-            data.MilvusDistance?.IntDistance?.Data, 
+            data.MilvusDistance?.IntDistance?.Data,
             data.MilvusDistance?.FloatDistance?.Data);
     }
 

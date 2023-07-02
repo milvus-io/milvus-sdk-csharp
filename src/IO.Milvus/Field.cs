@@ -33,7 +33,7 @@ public abstract class Field
     /// <param name="fieldName">Field name.</param>
     /// <param name="dataType">Field data type.</param>
     /// <param name="isDynamic"></param>
-    protected Field(string fieldName,MilvusDataType dataType, bool isDynamic = false)
+    protected Field(string fieldName, MilvusDataType dataType, bool isDynamic = false)
     {
         this.FieldName = fieldName;
         this.DataType = dataType;
@@ -104,7 +104,7 @@ public abstract class Field
             {
                 List<List<float>> floatVectors = new();
 
-                for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i+=dim)
+                for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i += dim)
                 {
                     var list = new List<float>(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
                     floatVectors.Add(list);
@@ -124,7 +124,7 @@ public abstract class Field
                 using var reader = new BinaryReader(stream);
 
                 Byte[] subBytes = reader.ReadBytes(dim);
-                while (subBytes?.Any() == true)
+                while (subBytes.Length > 0)
                 {
                     byteArray.Add(subBytes);
                     subBytes = reader.ReadBytes(dim);
@@ -147,7 +147,7 @@ public abstract class Field
                 Grpc.ScalarField.DataOneofCase.IntData => Field.Create<int>(fieldData.FieldName, fieldData.Scalars.IntData.Data),
                 Grpc.ScalarField.DataOneofCase.LongData => Field.Create<long>(fieldData.FieldName, fieldData.Scalars.LongData.Data),
                 Grpc.ScalarField.DataOneofCase.StringData => Field.CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
-                Grpc.ScalarField.DataOneofCase.JsonData => Field.CreateJson(fieldData.FieldName,fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList()),
+                Grpc.ScalarField.DataOneofCase.JsonData => Field.CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList()),
                 _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
             };
             return field;
@@ -171,7 +171,7 @@ public abstract class Field
         {
             dataType = MilvusDataType.Bool;
         }
-        else if(type == typeof(sbyte))
+        else if (type == typeof(sbyte))
         {
             dataType = MilvusDataType.Int8;
         }
@@ -253,7 +253,7 @@ public abstract class Field
         IList<string> data,
         bool isDynamic = false)
     {
-        return new Field<string>(fieldName, data,MilvusDataType.VarChar, isDynamic);
+        return new Field<string>(fieldName, data, MilvusDataType.VarChar, isDynamic);
     }
 
     /// <summary>
@@ -263,7 +263,7 @@ public abstract class Field
     /// <param name="bytes">Byte array data.</param>
     /// <param name="dimension">Dimension of data.</param>
     /// <returns></returns>
-    public static BinaryVectorField CreateFromBytes(string fieldName, byte[] bytes,long dimension)
+    public static BinaryVectorField CreateFromBytes(string fieldName, byte[] bytes, long dimension)
     {
         Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
 
@@ -273,13 +273,13 @@ public abstract class Field
         using var reader = new BinaryReader(stream);
 
         Byte[] subBytes = reader.ReadBytes((int)dimension);
-        while (subBytes?.Any() == true)
+        while (subBytes.Length > 0)
         {
             byteArray.Add(subBytes);
             subBytes = reader.ReadBytes((int)dimension);
         }
 
-        var field = new BinaryVectorField(fieldName, byteArray) ;
+        var field = new BinaryVectorField(fieldName, byteArray);
         return field;
     }
 
@@ -302,7 +302,7 @@ public abstract class Field
     /// <param name="fieldName">Field name.</param>
     /// <param name="data">Data</param>
     /// <returns></returns>
-    public static FloatVectorField CreateFloatVector(string fieldName, List<List<float>> data)
+    public static FloatVectorField CreateFloatVector(string fieldName, IList<List<float>> data)
     {
         return new FloatVectorField(fieldName, data);
     }
@@ -334,7 +334,7 @@ public abstract class Field
     /// <param name="byteString"><see cref="ByteString"/></param>
     /// <param name="dimension">Dimension of this field.</param>
     /// <returns></returns>
-    public static ByteStringField CreateFromByteString(string fieldName, ByteString byteString,long dimension)
+    public static ByteStringField CreateFromByteString(string fieldName, ByteString byteString, long dimension)
     {
         Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
         var field = new ByteStringField(fieldName, byteString, dimension);
@@ -349,7 +349,7 @@ public abstract class Field
     /// <param name="stream"></param>
     /// <param name="dimension">Dimension of data</param>
     /// <returns>New created field</returns>
-    public static Field CreateFromStream(string fieldName, Stream stream,long dimension)
+    public static Field CreateFromStream(string fieldName, Stream stream, long dimension)
     {
         Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
         var field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
@@ -364,10 +364,10 @@ public abstract class Field
     /// <param name="json">json field.</param>
     /// <param name="isDynamic"></param>
     /// <returns></returns>
-    public static Field CreateJson(string fieldName,IList<string> json,bool isDynamic = false)
+    public static Field CreateJson(string fieldName, IList<string> json, bool isDynamic = false)
     {
         Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
-        return new Field<string>(fieldName, json,MilvusDataType.Json,isDynamic);
+        return new Field<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
     #endregion
 }
@@ -384,8 +384,8 @@ public class Field<TData> : Field
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <param name="isDynamic"></param>
-    public Field(string fieldName, IList<TData> data,bool isDynamic = false):
-        base(fieldName,EnsureDataType<TData>(),isDynamic)
+    public Field(string fieldName, IList<TData> data, bool isDynamic = false) :
+        base(fieldName, EnsureDataType<TData>(), isDynamic)
     {
         Data = data;
     }
@@ -401,8 +401,8 @@ public class Field<TData> : Field
         string fieldName,
         IList<TData> data,
         MilvusDataType milvusDataType,
-        bool isDynamic) : 
-        base(fieldName, milvusDataType,isDynamic)
+        bool isDynamic) :
+        base(fieldName, milvusDataType, isDynamic)
     {
         Data = data;
     }
@@ -512,7 +512,7 @@ public class Field<TData> : Field
                 {
                     var doubleData = new Grpc.DoubleArray();
                     doubleData.Data.AddRange(Data as IEnumerable<double>);
-                    
+
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
                         DoubleData = doubleData
@@ -550,7 +550,7 @@ public class Field<TData> : Field
                     }
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
-                        JsonData = jsonData,                        
+                        JsonData = jsonData,
                     };
                 }
                 break;

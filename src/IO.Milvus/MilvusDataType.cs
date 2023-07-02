@@ -62,7 +62,7 @@ public enum MilvusDataType
     /// Array
     /// </summary>
     Array = 22,
-    
+
     /// <summary>
     /// Json
     /// </summary>

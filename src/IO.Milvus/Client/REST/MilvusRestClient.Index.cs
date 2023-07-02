@@ -25,12 +25,12 @@ public partial class MilvusRestClient
         this._log.LogDebug("Create index {0}", collectionName);
 
         using HttpRequestMessage request = CreateIndexRequest
-            .Create(collectionName, fieldName,milvusIndexType, milvusMetricType,dbName)
+            .Create(collectionName, fieldName, milvusIndexType, milvusMetricType, dbName)
             .WithExtraParams(extraParams)
             .WithIndexName(indexName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -56,10 +56,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Drop index {0}", collectionName);
 
         using HttpRequestMessage request = DropIndexRequest
-            .Create(collectionName, fieldName, indexName,dbName)
+            .Create(collectionName, fieldName, indexName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -87,7 +87,7 @@ public partial class MilvusRestClient
             .Create(collectionName, fieldName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -123,7 +123,7 @@ public partial class MilvusRestClient
             .Create(collectionName, fieldName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -156,10 +156,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
 
         using HttpRequestMessage request = GetIndexStateRequest
-            .Create(collectionName, fieldName,dbName)
+            .Create(collectionName, fieldName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {

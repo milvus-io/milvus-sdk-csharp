@@ -16,7 +16,7 @@ public class BinaryVectorField : Field<byte[]>
     /// <param name="fieldName"></param>
     /// <param name="bytes"></param>
     public BinaryVectorField(string fieldName, IList<byte[]> bytes)
-        : base(fieldName, bytes, MilvusDataType.BinaryVector,false)
+        : base(fieldName, bytes, MilvusDataType.BinaryVector, false)
     {
     }
 
@@ -30,9 +30,9 @@ public class BinaryVectorField : Field<byte[]>
         {
             throw new Diagnostics.MilvusException("Row count of fields must be equal");
         }
-        
+
         using var stream = new MemoryStream();
-        using var writer = new BinaryWriter(stream);       
+        using var writer = new BinaryWriter(stream);
         foreach (var value in Data)
         {
             writer.Write(value);
@@ -43,7 +43,7 @@ public class BinaryVectorField : Field<byte[]>
         return new Grpc.FieldData()
         {
             FieldName = FieldName,
-            Type = (Grpc.DataType)DataType,            
+            Type = (Grpc.DataType)DataType,
             Vectors = new Grpc.VectorField()
             {
                 BinaryVector = byteString,

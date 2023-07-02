@@ -35,7 +35,7 @@ internal sealed class CreateCredentialRequest
     [JsonPropertyName("password")]
     public string Password { get; set; }
 
-    public static CreateCredentialRequest Create(string username,string password)
+    public static CreateCredentialRequest Create(string username, string password)
     {
         return new CreateCredentialRequest(username, password);
     }

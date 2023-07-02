@@ -18,7 +18,7 @@ internal static class HttpRequest
     public static HttpRequestMessage CreatePatchRequest(string url, object payload = null) =>
         CreateRequest(s_patchMethod, url, payload);
 
-    public static HttpRequestMessage CreateDeleteRequest(string url,object payload = null) =>
+    public static HttpRequestMessage CreateDeleteRequest(string url, object payload = null) =>
         CreateRequest(HttpMethod.Delete, url, payload);
 
     public static HttpRequestMessage CreateRequest(HttpMethod method, string url, object payload = null)
@@ -29,7 +29,7 @@ internal static class HttpRequest
             byte[] utf8Bytes = payload is string s ?
                 Encoding.UTF8.GetBytes(s) :
                 JsonSerializer.SerializeToUtf8Bytes(payload);
-            
+
             request.Content = new ByteArrayContent(utf8Bytes);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
         }

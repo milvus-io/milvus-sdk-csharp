@@ -18,11 +18,11 @@
 
     public static ProjectVersion Parse(string version)
     {
-        var versionParts = version.Split('.','-');
+        var versionParts = version.Split('.', '-');
 
         return new ProjectVersion(
-            int.Parse(versionParts[0]), 
-            int.Parse(versionParts[1]), 
+            int.Parse(versionParts[0]),
+            int.Parse(versionParts[1]),
             int.Parse(versionParts[2]),
             versionParts.Length > 3 ? versionParts[3] : null);
     }

@@ -15,13 +15,13 @@ public class MilvusMutationResult
     internal MilvusMutationResult() { }
 
     internal MilvusMutationResult(
-        long insertCount, 
-        long deletedCount, 
-        long upsertCount, 
-        bool acknowledged, 
-        IList<uint> successIndex, 
-        IList<uint> errorIndex, 
-        DateTime dateTime, 
+        long insertCount,
+        long deletedCount,
+        long upsertCount,
+        bool acknowledged,
+        IList<uint> successIndex,
+        IList<uint> errorIndex,
+        DateTime dateTime,
         MilvusIds ids,
         Grpc.MutationResult mutationResult = null)
     {
@@ -31,7 +31,7 @@ public class MilvusMutationResult
         Acknowledged = acknowledged;
         SuccessIndex = successIndex;
         ErrorIndex = errorIndex;
-        Timestamp  = dateTime;
+        Timestamp = dateTime;
         Ids = ids;
         MutationResult = mutationResult;
     }
@@ -40,7 +40,7 @@ public class MilvusMutationResult
     {
         return new MilvusMutationResult(
             mutationResult.InsertCnt,
-            mutationResult.DeleteCnt, 
+            mutationResult.DeleteCnt,
             mutationResult.UpsertCnt,
             mutationResult.Acknowledged,
             mutationResult.SuccIndex.ToList(),
@@ -166,7 +166,7 @@ public class MilvusIds
             IdFieldCase = (MilvusIdFieldOneofCase)ids.IdFieldCase,
         };
 
-        if (ids.IntId?.Data?.Any() == true)
+        if (ids.IntId?.Data?.Count > 0)
         {
             idField.IntId = new MilvusId<long>
             {
@@ -174,7 +174,7 @@ public class MilvusIds
             };
         }
 
-        if (ids.StrId?.Data?.Any() == true)
+        if (ids.StrId?.Data?.Count > 0)
         {
             idField.StrId = new MilvusId<String>
             {
@@ -195,7 +195,7 @@ public class IdField
     /// <summary>
     /// Construct a new instance of <see cref="IdField"/>
     /// </summary>
-    public IdField(){}
+    public IdField() { }
 
     /// <summary>
     /// Construct a new instance of <see cref="IdField"/>
@@ -263,7 +263,7 @@ public class MilvusId<TId>
     /// <summary>
     /// Create a new instance of <see cref="MilvusId{TId}"/>
     /// </summary>
-    public MilvusId(){}
+    public MilvusId() { }
 
     /// <summary>
     /// Create a int or string Milvus id.
@@ -278,5 +278,5 @@ public class MilvusId<TId>
     /// Value
     /// </summary>
     [JsonPropertyName("data")]
-    public IList<TId> Data { get; set;}
+    public IList<TId> Data { get; set; }
 }

@@ -32,11 +32,11 @@ internal sealed class CreatePartitionRequest
     public string DbName { get; set; }
 
     internal static CreatePartitionRequest Create(
-        string collectionName, 
+        string collectionName,
         string partitionName,
         string dbName)
     {
-        return new CreatePartitionRequest(collectionName, partitionName,dbName);
+        return new CreatePartitionRequest(collectionName, partitionName, dbName);
     }
 
     public Grpc.CreatePartitionRequest BuildGrpc()

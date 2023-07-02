@@ -22,9 +22,9 @@ internal sealed class DescribeIndexRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static DescribeIndexRequest Create(string collectionName,string fieldName, string dbName)
+    public static DescribeIndexRequest Create(string collectionName, string fieldName, string dbName)
     {
-        return new DescribeIndexRequest(collectionName,fieldName, dbName);
+        return new DescribeIndexRequest(collectionName, fieldName, dbName);
     }
 
     public Grpc.DescribeIndexRequest BuildGrpc()

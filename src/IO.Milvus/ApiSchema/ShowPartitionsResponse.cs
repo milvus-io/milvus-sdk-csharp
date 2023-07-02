@@ -27,7 +27,7 @@ internal sealed class ShowPartitionsResponse
 
     public IEnumerable<MilvusPartition> ToMilvusPartitions()
     {
-        if(PartitionNames?.Any() != true)
+        if (PartitionNames?.Any() != true)
             yield break;
 
         for (int i = 0; i < PartitionNames.Count; i++)

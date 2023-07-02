@@ -12,6 +12,6 @@ public partial class MilvusClientTests
     public async Task HealthTest(IMilvusClient milvusClient)
     {
         MilvusHealthState result = await milvusClient.HealthAsync();
-        Assert.True(result.IsHealthy,result.ToString());
+        Assert.True(result.IsHealthy, result.ToString());
     }
 }

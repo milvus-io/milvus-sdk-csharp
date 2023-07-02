@@ -24,7 +24,7 @@ public partial class MilvusRestClient
             .Create(collectionName, partitionName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -52,7 +52,7 @@ public partial class MilvusRestClient
             .Create(collectionName, partitionName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -81,10 +81,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Show {0} partitions", collectionName);
 
         using HttpRequestMessage request = ShowPartitionsRequest
-            .Create(collectionName,dbName)
+            .Create(collectionName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -125,7 +125,7 @@ public partial class MilvusRestClient
             .WithReplicaNumber(replicaNumber)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -154,7 +154,7 @@ public partial class MilvusRestClient
             .WithPartitionNames(partitionNames)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -179,10 +179,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Drop partition {0}", collectionName);
 
         using HttpRequestMessage request = DropPartitionRequest
-            .Create(collectionName, partitionName,dbName)
+            .Create(collectionName, partitionName, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {

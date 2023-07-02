@@ -13,9 +13,9 @@ public partial class MilvusGrpcClient
 {
     ///<inheritdoc/>
     public async Task<MilvusMutationResult> InsertAsync(
-        string collectionName, 
+        string collectionName,
         IList<Field> fields,
-        string partitionName = "", 
+        string partitionName = "",
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
@@ -33,7 +33,7 @@ public partial class MilvusGrpcClient
         {
             request.PartitionName = partitionName;
         }
-        
+
         var count = fields.First().RowCount;
         Verify.True(fields.All(p => p.RowCount == count), "Fields length is not same");
 
@@ -54,9 +54,9 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<MilvusMutationResult> DeleteAsync(
-        string collectionName, 
-        string expr, 
-        string partitionName = "", 
+        string collectionName,
+        string expr,
+        string partitionName = "",
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
@@ -67,7 +67,7 @@ public partial class MilvusGrpcClient
             .WithPartitionName(partitionName)
             .BuildGrpc();
 
-        Grpc.MutationResult response = await _grpcClient.DeleteAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+        Grpc.MutationResult response = await _grpcClient.DeleteAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -80,14 +80,14 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<MilvusSearchResult> SearchAsync(
-        MilvusSearchParameters searchParameters, 
+        MilvusSearchParameters searchParameters,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Search: {0}", searchParameters.ToString());
 
         var request = searchParameters.BuildGrpc();
 
-        var response = await _grpcClient.SearchAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+        var response = await _grpcClient.SearchAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -114,7 +114,7 @@ public partial class MilvusGrpcClient
         };
         request.CollectionNames.AddRange(collectionNames);
 
-        var response = await _grpcClient.FlushAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+        var response = await _grpcClient.FlushAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -127,9 +127,9 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<MilvusCalDistanceResult> CalDistanceAsync(
-        MilvusVectors leftVectors, 
-        MilvusVectors rightVectors, 
-        MilvusMetricType milvusMetricType, 
+        MilvusVectors leftVectors,
+        MilvusVectors rightVectors,
+        MilvusMetricType milvusMetricType,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Cal distance: {0}", leftVectors.ToString());
@@ -140,7 +140,7 @@ public partial class MilvusGrpcClient
             .WithRightVectors(rightVectors)
             .BuildGrpc();
 
-        Grpc.CalcDistanceResults response = await _grpcClient.CalcDistanceAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+        Grpc.CalcDistanceResults response = await _grpcClient.CalcDistanceAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -153,7 +153,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
-        string collectionName, 
+        string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
@@ -175,7 +175,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<bool> GetFlushStateAsync(
-        IList<long> segmentIds, 
+        IList<long> segmentIds,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
@@ -248,7 +248,7 @@ public partial class MilvusGrpcClient
             this._log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
-        
+
         return MilvusQuerySegmentInfoResult.From(response).ToList();
     }
 }

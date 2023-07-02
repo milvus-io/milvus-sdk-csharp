@@ -57,7 +57,7 @@ internal sealed class GetPartitionStatisticsRequest
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/partition/statistics",
-            payload:this);
+            payload: this);
     }
 
     public void Validate()
@@ -68,7 +68,7 @@ internal sealed class GetPartitionStatisticsRequest
     }
 
     #region Private ================================================================================
-    public GetPartitionStatisticsRequest(string collectionName, string partitionName,string dbName)
+    public GetPartitionStatisticsRequest(string collectionName, string partitionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.PartitionName = partitionName;

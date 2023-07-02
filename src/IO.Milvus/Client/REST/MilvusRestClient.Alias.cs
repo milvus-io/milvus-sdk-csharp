@@ -10,7 +10,7 @@ public partial class MilvusRestClient
 {
     ///<inheritdoc/>
     public async Task CreateAliasAsync(
-        string collectionName, 
+        string collectionName,
         string alias,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
@@ -18,10 +18,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Create alias {0}", collectionName);
 
         using HttpRequestMessage request = CreateAliasRequest
-            .Create(collectionName, alias,dbName)
+            .Create(collectionName, alias, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -45,10 +45,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Drop alias {0}", alias);
 
         using HttpRequestMessage request = DropAliasRequest
-            .Create(alias,dbName)
+            .Create(alias, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -73,10 +73,10 @@ public partial class MilvusRestClient
         this._log.LogDebug("Alter alias {0}", alias);
 
         using HttpRequestMessage request = AlterAliasRequest
-            .Create(collectionName,alias,dbName)
+            .Create(collectionName, alias, dbName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {

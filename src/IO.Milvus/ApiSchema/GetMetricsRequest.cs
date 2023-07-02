@@ -8,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 internal sealed class GetMetricsRequest
 {
     [JsonPropertyName("request")]
-    public string Request { get;set; }
+    public string Request { get; set; }
 
     public static GetMetricsRequest Create(string request)
     {

@@ -11,7 +11,7 @@ public partial class MilvusGrpcClient
 {
     ///<inheritdoc/>
     public async Task CreateRoleAsync(
-        string roleName, 
+        string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
@@ -23,7 +23,7 @@ public partial class MilvusGrpcClient
             {
                 Name = roleName
             }
-        },_callOptions.WithCancellationToken(cancellationToken));
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -34,7 +34,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task DropRoleAsync(
-        string roleName, 
+        string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
@@ -54,8 +54,8 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task AddUserToRoleAsync(
-        string username, 
-        string roleName, 
+        string username,
+        string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(username, "Username cannot be null or empty.");
@@ -78,8 +78,8 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task RemoveUserFromRoleAsync(
-        string username, 
-        string roleName, 
+        string username,
+        string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(username, "Username cannot be null or empty.");
@@ -102,7 +102,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusRoleResult>> SelectRoleAsync(
-        string roleName, 
+        string roleName,
         bool includeUserInfo = false,
         CancellationToken cancellationToken = default)
     {
@@ -116,11 +116,11 @@ public partial class MilvusGrpcClient
                 Name = roleName
             },
             IncludeUserInfo = includeUserInfo
-        },_callOptions.WithCancellationToken(cancellationToken));
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed select role {0}, includeUserInfo: {1}.", roleName , includeUserInfo);
+            this._log.LogError("Failed select role {0}, includeUserInfo: {1}.", roleName, includeUserInfo);
             throw new MilvusException(response.Status);
         }
 
@@ -129,8 +129,8 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusUserResult>> SelectUserAsync(
-        string username, 
-        bool includeRoleInfo = false, 
+        string username,
+        bool includeRoleInfo = false,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(username, "Username cannot be null or empty.");
@@ -156,11 +156,11 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task GrantRolePrivilegeAsync(
-        string roleName, 
-        string @object, 
-        string objectName, 
-        string privilege, 
-        string dbName = Constants.DEFAULT_DATABASE_NAME, 
+        string roleName,
+        string @object,
+        string objectName,
+        string privilege,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
@@ -194,7 +194,7 @@ public partial class MilvusGrpcClient
                 },
                 DbName = dbName
             }
-        },_callOptions.WithCancellationToken(cancellationToken));
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -205,10 +205,10 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task RevokeRolePrivilegeAsync(
-        string roleName, 
+        string roleName,
         string @object,
-        string objectName, 
-        string privilege, 
+        string objectName,
+        string privilege,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
@@ -251,7 +251,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAsync(
-        string roleName, 
+        string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
@@ -270,7 +270,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError(roleName, "Failed select grant for role {0}.", roleName);
+            this._log.LogError("Failed select grant for role {0}.", roleName);
             throw new MilvusException(response.Status);
         }
 
@@ -279,9 +279,9 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
-        string roleName, 
-        string @object, 
-        string objectName, 
+        string roleName,
+        string @object,
+        string objectName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
@@ -307,7 +307,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError(roleName, "Select grant for role and object: {0}.", roleName);
+            this._log.LogError("Select grant for role and object: {0}.", roleName);
             throw new MilvusException(response.Status);
         }
 

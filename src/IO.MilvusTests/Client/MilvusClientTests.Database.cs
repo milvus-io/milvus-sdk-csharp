@@ -29,7 +29,7 @@ public partial class MilvusClientTests
 
         //Not support below milvus 2.2.9
         MilvusVersion version = await milvusClient.GetMilvusVersionAsync();
-        if (!version.GreaterThan(2,2,8))
+        if (!version.GreaterThan(2, 2, 8))
         {
             return;
         }

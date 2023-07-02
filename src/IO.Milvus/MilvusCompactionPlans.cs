@@ -9,12 +9,12 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus compaction plans.
 /// </summary>
-public class MilvusCompactionPlans:List<MilvusCompactionPlan>
+public class MilvusCompactionPlans
 {
     /// <summary>
     /// Merge infos.
     /// </summary>
-    public IList<MilvusCompactionPlan> MergeInfos { get;}
+    public IList<MilvusCompactionPlan> MergeInfos { get; }
 
     /// <summary>
     /// State.
@@ -38,8 +38,8 @@ public class MilvusCompactionPlans:List<MilvusCompactionPlan>
 
     #region Private =========================================================================================================
     private MilvusCompactionPlans(
-    IEnumerable<MilvusCompactionPlan> collection,
-    MilvusCompactionState state) : base(collection)
+        IEnumerable<MilvusCompactionPlan> collection,
+        MilvusCompactionState state)
     {
         MergeInfos = collection.ToList();
         State = state;

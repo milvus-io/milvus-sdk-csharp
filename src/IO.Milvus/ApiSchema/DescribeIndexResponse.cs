@@ -39,5 +39,5 @@ internal sealed class IndexDescription
 
     [JsonPropertyName("params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string,string> Params { get; set; }
+    public IDictionary<string, string> Params { get; set; }
 }

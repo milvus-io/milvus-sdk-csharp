@@ -19,7 +19,7 @@ public partial class MilvusRestClient
             .Create(request)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(getMetricsRequest, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(getMetricsRequest, cancellationToken).ConfigureAwait(false);
 
         try
         {

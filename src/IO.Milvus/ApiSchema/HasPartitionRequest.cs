@@ -31,7 +31,7 @@ internal sealed class HasPartitionRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    internal static HasPartitionRequest Create(string collectionName, string partitionName,string dbName)
+    internal static HasPartitionRequest Create(string collectionName, string partitionName, string dbName)
     {
         return new HasPartitionRequest(collectionName, partitionName, dbName);
     }

@@ -27,7 +27,7 @@ internal sealed class UpdateCredentialRequest
     /// <summary>
     /// New password
     /// </summary>
-    [JsonPropertyName ("newPassword")]
+    [JsonPropertyName("newPassword")]
     public string NewPassword { get; set; }
 
     /// <summary>
@@ -42,7 +42,7 @@ internal sealed class UpdateCredentialRequest
     [JsonPropertyName("username")]
     public string Username { get; set; }
 
-    public static UpdateCredentialRequest Create(string userName,string oldPassword,string newPassword)
+    public static UpdateCredentialRequest Create(string userName, string oldPassword, string newPassword)
     {
         return new UpdateCredentialRequest(userName, oldPassword, newPassword);
     }

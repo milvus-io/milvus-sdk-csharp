@@ -36,7 +36,7 @@ internal sealed class CreateIndexRequest
         MilvusMetricType milvusMetricType,
         string dbName)
     {
-        return new CreateIndexRequest(collectionName, fieldName,milvusIndexType,milvusMetricType,dbName);
+        return new CreateIndexRequest(collectionName, fieldName, milvusIndexType, milvusMetricType, dbName);
     }
 
     public CreateIndexRequest WithIndexName(string indexName)
@@ -48,7 +48,7 @@ internal sealed class CreateIndexRequest
         return this;
     }
 
-    public CreateIndexRequest WithExtraParams(IDictionary<string,string> extraParams)
+    public CreateIndexRequest WithExtraParams(IDictionary<string, string> extraParams)
     {
         if (extraParams == null)
             return this;
@@ -125,7 +125,7 @@ internal sealed class CreateIndexRequest
     private MilvusIndexType _milvusIndexType;
 
     private CreateIndexRequest(
-        string collectionName, 
+        string collectionName,
         string fieldName,
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,

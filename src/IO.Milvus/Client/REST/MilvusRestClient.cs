@@ -62,12 +62,12 @@ public sealed partial class MilvusRestClient : IMilvusClient
     ///<inheritdoc/>
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Ensure to connect to Milvus server {0}",Address);
+        this._log.LogDebug("Ensure to connect to Milvus server {0}", Address);
 
         using HttpRequestMessage request = HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/health");
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -80,10 +80,10 @@ public sealed partial class MilvusRestClient : IMilvusClient
         }
 
         if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
-            return new MilvusHealthState(true,"None",Grpc.ErrorCode.Success);
+            return new MilvusHealthState(true, "None", Grpc.ErrorCode.Success);
 
         var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
-        this._log.LogWarning(status.Reason);
+        this._log.LogWarning("Reason: {0}", status.Reason);
 
         return new MilvusHealthState(status.ErrorCode == Grpc.ErrorCode.Success, status.Reason, status.ErrorCode);
     }
@@ -157,7 +157,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
         return builder.Uri;
     }
 
-    private void ValidateResponse(string responseContent)
+    private static void ValidateResponse(string responseContent)
     {
         if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
             return;

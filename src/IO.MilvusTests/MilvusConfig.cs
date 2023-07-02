@@ -45,7 +45,7 @@ public sealed class MilvusConfig
         }
 
         var file = Path.Combine(
-            dir, 
+            dir,
             "milvusclients.json");
 
         if (!File.Exists(file))
@@ -70,13 +70,13 @@ internal static class MilvusConfigExtensions
 {
     public static IMilvusClient CreateClient(this MilvusConfig config)
     {
-        if (string.Compare(config.ConnectionType,"rest",true) == 0)
+        if (string.Compare(config.ConnectionType, "rest", StringComparison.OrdinalIgnoreCase) == 0)
         {
             return new MilvusRestClient(config.Endpoint, config.Port);
         }
-        else if(string.Compare(config.ConnectionType, "grpc", true) == 0)
+        else if (string.Compare(config.ConnectionType, "grpc", StringComparison.OrdinalIgnoreCase) == 0)
         {
-            return new MilvusGrpcClient(config.Endpoint, config.Port,config.Username,config.Password);
+            return new MilvusGrpcClient(config.Endpoint, config.Port, config.Username, config.Password);
         }
         else
         {

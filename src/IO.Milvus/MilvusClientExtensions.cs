@@ -43,7 +43,7 @@ public static class MilvusClientExtensions
     {
         if (partitionName?.Any() != true)
         {
-            IList<MilvusCollection> collections = await milvusClient.ShowCollectionsAsync(new[] { collectionName },cancellationToken:cancellationToken);
+            IList<MilvusCollection> collections = await milvusClient.ShowCollectionsAsync(new[] { collectionName }, cancellationToken: cancellationToken).ConfigureAwait(false);
 
             MilvusCollection collection = collections.FirstOrDefault(c => c.CollectionName == collectionName);
             if (collection == null)
@@ -53,18 +53,18 @@ public static class MilvusClientExtensions
 
             while (collection.InMemoryPercentage < 100)
             {
-                await Task.Delay(waitingInterval, cancellationToken);
+                await Task.Delay(waitingInterval, cancellationToken).ConfigureAwait(false);
                 timeout -= waitingInterval;
                 if (timeout <= TimeSpan.Zero)
                 {
                     throw new TimeoutException($"Wait for loading collection {collectionName} timeout");
                 }
-                collections = await milvusClient.ShowCollectionsAsync(new[] { collectionName }, cancellationToken: cancellationToken);
+                collections = await milvusClient.ShowCollectionsAsync(new[] { collectionName }, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
         }
         else
         {
-            IList<MilvusPartition> partitions = await milvusClient.ShowPartitionsAsync(collectionName, cancellationToken: cancellationToken);
+            IList<MilvusPartition> partitions = await milvusClient.ShowPartitionsAsync(collectionName, cancellationToken: cancellationToken).ConfigureAwait(false);
 
             MilvusPartition partition = partitions.FirstOrDefault(c => c.PartitionName == collectionName);
             if (partition == null)
@@ -74,13 +74,13 @@ public static class MilvusClientExtensions
 
             while (partition.InMemoryPercentage < 100)
             {
-                await Task.Delay(waitingInterval, cancellationToken);
+                await Task.Delay(waitingInterval, cancellationToken).ConfigureAwait(false);
                 timeout -= waitingInterval;
                 if (timeout <= TimeSpan.Zero)
                 {
                     throw new TimeoutException($"Wait for loading collection {collectionName} timeout");
                 }
-                partitions = await milvusClient.ShowPartitionsAsync(collectionName, cancellationToken: cancellationToken);
+                partitions = await milvusClient.ShowPartitionsAsync(collectionName, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -112,18 +112,18 @@ public static class MilvusClientExtensions
             throw new NotSupportedException("Not support restful api");
         }
 
-        long progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken);
+        long progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
 
         while (progress < 100)
         {
-            await Task.Delay(waitingInterval, cancellationToken);
+            await Task.Delay(waitingInterval, cancellationToken).ConfigureAwait(false);
             timeout -= waitingInterval;
             if (timeout <= TimeSpan.Zero)
             {
                 throw new TimeoutException($"Wait for loading collection {collectionName} timeout");
             }
 
-            progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken);
+            progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -147,26 +147,26 @@ public static class MilvusClientExtensions
         IList<string> partitionName,
         TimeSpan waitingInterval,
         TimeSpan timeout,
-        [EnumeratorCancellation]CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (milvusClient is MilvusRestClient)
         {
             throw new NotSupportedException("Not support restful api");
         }
 
-        var progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken);
+        var progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
         yield return progress;
 
         while (progress < 100)
         {
-            await Task.Delay(waitingInterval, cancellationToken);
+            await Task.Delay(waitingInterval, cancellationToken).ConfigureAwait(false);
             timeout -= waitingInterval;
             if (timeout <= TimeSpan.Zero)
             {
                 throw new TimeoutException($"Wait for loading collection {collectionName} timeout");
             }
 
-            progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken);
+            progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
             yield return progress;
         }
     }
@@ -181,10 +181,10 @@ public static class MilvusClientExtensions
     /// <param name="cancellationToken"></param>
     /// <returns>Milvus version</returns>
     public static async Task<MilvusVersion> GetMilvusVersionAsync(
-        this IMilvusClient milvusClient, 
+        this IMilvusClient milvusClient,
         CancellationToken cancellationToken = default)
     {
-        string version = await milvusClient.GetVersionAsync(cancellationToken);
+        string version = await milvusClient.GetVersionAsync(cancellationToken).ConfigureAwait(false);
         return MilvusVersion.Parse(version);
     }
 }

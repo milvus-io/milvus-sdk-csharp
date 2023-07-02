@@ -24,13 +24,13 @@ internal sealed class ImportRequest
     /// File paths to be imported
     /// </summary>
     [JsonPropertyName("files")]
-    public IList<string> Files { get; set;}
+    public IList<string> Files { get; set; }
 
     /// <summary>
     /// Import options,bucket,etc
     /// </summary>
     [JsonPropertyName("options")]
-    public IList<KeyValuePair<string,string>> Options { get; set;}
+    public IList<KeyValuePair<string, string>> Options { get; set; }
 
     /// <summary>
     /// Target partition

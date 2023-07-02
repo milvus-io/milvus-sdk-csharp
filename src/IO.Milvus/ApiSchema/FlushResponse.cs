@@ -9,11 +9,11 @@ internal sealed class FlushResponse
     public ResponseStatus Status { get; set; }
 
     [JsonPropertyName("coll_segIDs")]
-    public IDictionary<string,MilvusId<long>> CollSegIDs { get; set; }
+    public IDictionary<string, MilvusId<long>> CollSegIDs { get; set; }
 
     [JsonPropertyName("flush_coll_segIDs")]
     public IDictionary<string, MilvusId<long>> FlushCollSegIds { get; set; }
 
     [JsonPropertyName("coll_seal_times")]
-    public IDictionary<string,long> CollSealTimes { get; set; }
+    public IDictionary<string, long> CollSealTimes { get; set; }
 }

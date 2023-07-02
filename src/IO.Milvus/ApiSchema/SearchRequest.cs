@@ -11,7 +11,7 @@ internal sealed class SearchRequest
     /// <summary>
     /// Collection name
     /// </summary>
-    [JsonPropertyName ("collection_name")]
+    [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
 
     /// <summary>
@@ -36,7 +36,7 @@ internal sealed class SearchRequest
     /// Output fields
     /// </summary>
     [JsonPropertyName("output_fields")]
-    public IList<string> OutputFields { get; set;}
+    public IList<string> OutputFields { get; set; }
 
     /// <summary>
     /// Partition names
@@ -55,7 +55,7 @@ internal sealed class SearchRequest
     /// </summary>
     [JsonPropertyName("search_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string, string> SearchParams { get; set; } = new Dictionary<string, string> ();
+    public IDictionary<string, string> SearchParams { get; set; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Travel timestamp

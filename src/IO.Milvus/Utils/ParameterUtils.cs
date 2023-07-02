@@ -15,9 +15,9 @@ internal static class ParameterUtils
         int index = 0;
         foreach (var parameter in parameters)
         {
-            stringBuilder.Append($"\"{parameter.Key}\":{parameter.Value}");
+            stringBuilder.Append('"').Append(parameter.Key).Append('"').Append(':').Append(parameter.Value);
 
-            if (index ++ != (parameters.Count -1))
+            if (index++ != (parameters.Count - 1))
             {
                 stringBuilder.Append(", ");
             }

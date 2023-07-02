@@ -25,7 +25,7 @@ internal sealed class GetPersistentSegmentInfoRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static GetPersistentSegmentInfoRequest Create(string collectionName,string dbName)
+    public static GetPersistentSegmentInfoRequest Create(string collectionName, string dbName)
     {
         return new GetPersistentSegmentInfoRequest(collectionName, dbName);
     }
@@ -56,7 +56,7 @@ internal sealed class GetPersistentSegmentInfoRequest
         Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
     }
 
-    private GetPersistentSegmentInfoRequest(string collectionName,string dbName)
+    private GetPersistentSegmentInfoRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;
