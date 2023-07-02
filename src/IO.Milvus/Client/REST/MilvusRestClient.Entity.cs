@@ -91,7 +91,7 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<MilvusSearchResult> SearchAsync(
         MilvusSearchParameters searchParameters,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Search: {0}", searchParameters.ToString());
 

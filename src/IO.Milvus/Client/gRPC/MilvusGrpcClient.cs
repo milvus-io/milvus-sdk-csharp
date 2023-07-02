@@ -81,7 +81,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
     }
 
     ///<inheritdoc/>
-    public async Task<string> GetVersionAsync(CancellationToken cancellationToken)
+    public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get milvus collection");
 

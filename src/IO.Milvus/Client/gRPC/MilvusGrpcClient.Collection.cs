@@ -215,7 +215,7 @@ public partial class MilvusGrpcClient
     public async Task<long> GetLoadingProgressAsync(
        string collectionName,
        IList<string> partitionNames,
-       CancellationToken cancellationToken)
+       CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get loading progress for collection: {0}", collectionName);
 
