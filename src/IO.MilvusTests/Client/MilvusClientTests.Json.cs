@@ -5,6 +5,7 @@ using IO.Milvus.Client.gRPC;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using FluentAssertions;
+using IO.Milvus.Client.REST;
 
 namespace IO.MilvusTests.Client;
 
@@ -21,6 +22,11 @@ public partial class MilvusClientTests
     [ClassData(typeof(TestClients))]
     public async Task JsonTest(IMilvusClient milvusClient)
     {
+        if (milvusClient is MilvusRestClient)
+        {
+            return;
+        }
+        
         var version = await milvusClient.GetMilvusVersionAsync();
         if (!version.GreaterThan(2, 2, 8))
         {

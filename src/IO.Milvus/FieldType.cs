@@ -170,7 +170,7 @@ public sealed class FieldType
     /// Create a json type field.
     /// </summary>
     /// <remarks>
-    /// 
+    /// Not support <see cref="Client.REST.MilvusRestClient"/>
     /// </remarks>
     /// <param name="name">Field name.</param>
     /// <param name="isDynamic">Is dynamic.</param>

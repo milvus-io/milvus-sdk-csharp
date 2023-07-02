@@ -1,4 +1,15 @@
-- 2023-6-05 **2.2.1-alpha.7**
+- 2023-6-25 **2.2.1-beta.9**
+  - Support Json field(grpcclient only)(#19).
+  - Support PartitionKey(grpcclient only)(#19).
+  - Support IsDynamic(grpcclient only)(#19).
+  - Support RBAC api(grpcclient only)(#19).
+  - Support Database(grpcclient only)(#19).
+  - Fix extraparam null issue(#19).
+  - Fix autoid issue(#19).
+- 2023-6-05 **2.2.1-alpha.8**
+  - Fix float vector field dim split error
+  - Add isdynamic and ispartitionkey to fieldType
+- - 2023-6-05 **2.2.1-alpha.7**
   - add WaitForLoadingProgressCollectionAsync and WaitForLoadingProgressCollectionValueAsync methods.
 - 2023-06-04 **2.2.1-alpha.6**
   - Fix field json convert error when query.

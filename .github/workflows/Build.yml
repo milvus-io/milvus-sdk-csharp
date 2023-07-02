@@ -1,7 +1,11 @@
 name: Build
 
-on: [push, pull_request]
-
+on:
+  push:
+    branches:
+    - master
+  pull_request: 
+    
 jobs:
 
   # build on windows
@@ -35,36 +39,3 @@ jobs:
         env:
           NuGetApiKey: ${{ secrets.NugetKey }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # build on ubuntu
-  #build-ubuntu:
-  #  runs-on: ubuntu-latest
-
-  #  # Steps represent a sequence of tasks that will be executed as part of the job
-  #  steps:
-    
-  #  # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-  #    - uses: actions/checkout@v2
-  #      with:
-  #        submodules: 'recursive'
-  #        fetch-depth: 0
-  #    - name: 'Cache: .nuke/temp, ~/.nuget/packages'
-  #      uses: actions/cache@v3
-  #      with:
-  #        path: |
-  #          .nuke/temp
-  #          ~/.nuget/packages
-  #        key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-
-  #    - name: Setup .NET SDKs
-  #      uses: actions/setup-dotnet@v3
-  #      with:
-  #        dotnet-version: |
-  #          6.0.x
-  #          7.0.x
-
-  #    - name: Run NUKE
-  #      run: ./src/build.cmd
-  #      env:
-  #        NuGetApiKey: ${{ secrets.NugetKey }}
-  #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

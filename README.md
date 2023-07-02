@@ -36,6 +36,8 @@ IO.Milvus is delivered via NuGet package manager.
 
 You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/milvus-io/milvus-sdk-csharp)
+
 * [00.Settings.ipynb](./docs/notebooks/00.Settings.ipynb)
 * [01.Connect to milvus.ipynb](./docs/notebooks/01.Connect%20to%20milvus.ipynb)
 * [02.Create a Collection.ipynb](./docs/notebooks/02.Create%20a%20Collection.ipynb)
@@ -45,5 +47,7 @@ You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 * [06.Search.ipynb](./docs/notebooks/06.Search.ipynb)
 * [07.Query.ipynb](./docs/notebooks/07.Query.ipynb)
 * [08.Calculate Distance.ipynb](./docs/notebooks/08.Calculate%20Distance.ipynb)
+---
+* [x1.OpenAISample.ipynb](./docs/notebooks/x1.OpenAISample.ipynb)
 
 > Requirements: C# notebooks require .NET 7 and the VS Code Polyglot extension.

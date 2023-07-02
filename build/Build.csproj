@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <RootNamespace></RootNamespace>
-    <NoWarn>CS0649;CS0169</NoWarn>
+    <NoWarn>CS0649;CS0169;CS8632</NoWarn>
     <NukeRootDirectory>..</NukeRootDirectory>
     <NukeScriptDirectory>..\src</NukeScriptDirectory>
     <NukeTelemetryVersion>1</NukeTelemetryVersion>
@@ -18,4 +18,7 @@
     <PackageReference Include="LibGit2Sharp" Version="0.27.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\src\IO.MilvusTests\MilvusConfig.cs" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
