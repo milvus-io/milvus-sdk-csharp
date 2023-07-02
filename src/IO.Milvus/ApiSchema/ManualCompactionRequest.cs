@@ -10,10 +10,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Do a manual compaction
 /// </summary>
-internal sealed class ManualCompactionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.ManualCompactionRequest>
+internal sealed class ManualCompactionRequest
 {
     /// <summary>
     /// Collection Id
@@ -53,7 +50,7 @@ internal sealed class ManualCompactionRequest:
 
     public void Validate()
     {
-        Verify.True(CollectionId > 0, "Invalid collection id");
+        Verify.GreaterThan(CollectionId, 0);
     }
 
     internal ManualCompactionRequest WithTimetravel(DateTime? timetravel)

@@ -5,10 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class GetIndexStateRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetIndexStateRequest>
+internal sealed class GetIndexStateRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
@@ -51,9 +48,9 @@ internal sealed class GetIndexStateRequest :
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(FieldName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ====================================================================================

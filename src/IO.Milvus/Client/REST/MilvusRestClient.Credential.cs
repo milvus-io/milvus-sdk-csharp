@@ -14,7 +14,7 @@ public partial class MilvusRestClient
 {
     ///<inheritdoc/>
     public async Task DeleteCredentialAsync(
-        string username, 
+        string username,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Delete credential {0}", username);
@@ -23,7 +23,7 @@ public partial class MilvusRestClient
             .Create(username)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -40,18 +40,18 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task UpdateCredentialAsync(
-        string username, 
-        string oldPassword, 
-        string newPassword, 
+        string username,
+        string oldPassword,
+        string newPassword,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Update credential {0}", username);
 
         using HttpRequestMessage request = UpdateCredentialRequest
-            .Create(username,Base64Encode(oldPassword),Base64Encode(newPassword))
+            .Create(username, Base64Encode(oldPassword), Base64Encode(newPassword))
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -68,8 +68,8 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task CreateCredentialAsync(
-        string username, 
-        string password, 
+        string username,
+        string password,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Create credential {0}", username);
@@ -78,7 +78,7 @@ public partial class MilvusRestClient
             .Create(username, Base64Encode(password))
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -101,7 +101,7 @@ public partial class MilvusRestClient
 
         using HttpRequestMessage request = HttpRequest.CreateGetRequest($"{ApiVersion.V1}/credential/users");
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -125,7 +125,7 @@ public partial class MilvusRestClient
     }
 
     #region Private =================================================================================================
-    private string Base64Encode(string input)
+    private static string Base64Encode(string input)
     {
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
     }

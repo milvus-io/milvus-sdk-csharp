@@ -1,4 +1,5 @@
-﻿using Google.Protobuf;
+﻿using IO.Milvus.Diagnostics;
+using Google.Protobuf;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -38,6 +39,7 @@ public class MilvusVectors
     /// <returns></returns>
     public static MilvusVectors CreateBinaryVectors(BinaryVectorField binaryVectorFields)
     {
+        Verify.NotNull(binaryVectorFields);
         return new MilvusVectors(binaryVectorFields);
     }
 
@@ -79,7 +81,9 @@ public class MilvusVectors
     /// <returns></returns>
     public static MilvusVectors CreateIds(MilvusVectorIds ids)
     {
-        return new MilvusVectors(ids: ids);
+        Verify.NotNull(ids);
+
+        return new MilvusVectors(ids);
     }
 
     /// <summary>
@@ -230,7 +234,7 @@ public class MilvusVectorIds
         get
         {
             if (IntIds != null) { return IntIds; }
-            else { return StringIds;}
+            else { return StringIds; }
         }
     }
 

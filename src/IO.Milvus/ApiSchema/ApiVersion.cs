@@ -1,6 +1,6 @@
 ﻿namespace IO.Milvus.ApiSchema;
 
-internal class ApiVersion
+internal static class ApiVersion
 {
     internal const string V1 = "/api/v1";
 }

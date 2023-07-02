@@ -38,7 +38,7 @@ public class MilvusRoleResult
         foreach (var result in results)
         {
             yield return new MilvusRoleResult(
-                result.Role.Name, 
+                result.Role.Name,
                 result.Users?.Select(u => u.Name) ?? Enumerable.Empty<string>());
         }
     }

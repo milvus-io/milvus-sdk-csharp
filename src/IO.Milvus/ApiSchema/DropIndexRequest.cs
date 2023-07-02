@@ -5,10 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class DropIndexRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropIndexRequest>
+internal sealed class DropIndexRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
@@ -61,10 +58,10 @@ internal sealed class DropIndexRequest :
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(IndexName, $"Index name cannot be null or empty.The default index name is Constants.DEFAULT_INDEX_NAME :{Constants.DEFAULT_INDEX_NAME}");
-        Verify.ArgNotNullOrEmpty(DbName, $"DbName cannot be null or empty.The default index name is Constants.DEFAULT_INDEX_NAME :{Constants.DEFAULT_DATABASE_NAME}");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(FieldName);
+        Verify.NotNullOrWhiteSpace(IndexName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ======================================================

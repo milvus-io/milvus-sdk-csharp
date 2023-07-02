@@ -17,7 +17,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
     public override IList<Field> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var list = new List<Field>();
-        DeserializePropertyList<Field>(ref reader,list);
+        DeserializePropertyList<Field>(ref reader, list);
         return list;
     }
 
@@ -29,12 +29,11 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
 
     private static void DeserializePropertyList<T>(ref Utf8JsonReader reader, IList<T> list)
     {
-        Verify.NotNull(list, nameof(list));
+        Verify.NotNull(list);
 
         if (reader.TokenType == JsonTokenType.PropertyName) reader.Read();
 
         if (reader.TokenType != JsonTokenType.StartArray) throw new JsonException();
-        if (reader.TokenType == JsonTokenType.StartObject) throw new JsonException();
 
         while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
         {
@@ -117,7 +116,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
             var name = reader.GetString();
 
             reader.Read();
-            
+
             switch (name)
             {
                 case "field_name":
@@ -136,38 +135,39 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
 
                         switch (fieldTypeName)
                         {
-                            case "Scalars": 
+                            case "Scalars":
                                 {
-                                    reader.Read();reader.Read();
-                                    reader.Read();reader.Read();
+                                    reader.Read(); reader.Read();
+                                    reader.Read(); reader.Read();
                                     var scalarTypeName = reader.GetString();
                                     reader.Read(); reader.Read(); reader.Read();
-                                    if (reader.TokenType != JsonTokenType.StartArray) {
+                                    if (reader.TokenType != JsonTokenType.StartArray)
+                                    {
                                         reader.Read(); reader.Read();
                                         break;
                                     };
                                     switch (scalarTypeName)
                                     {
                                         case "BoolData":
-                                            DeserializePropertyList<bool>(ref reader,boolData);                                            
+                                            DeserializePropertyList<bool>(ref reader, boolData);
                                             break;
                                         case "BytesData":
-                                            DeserializePropertyList<byte>(ref reader,bytesData);
+                                            DeserializePropertyList<byte>(ref reader, bytesData);
                                             break;
                                         case "IntData":
-                                            DeserializePropertyList<int>(ref reader,intData);
+                                            DeserializePropertyList<int>(ref reader, intData);
                                             break;
                                         case "FloatData":
-                                            DeserializePropertyList<float>(ref reader,floatData);
+                                            DeserializePropertyList<float>(ref reader, floatData);
                                             break;
                                         case "DoubleData":
-                                            DeserializePropertyList<double>(ref reader,doubleData);
+                                            DeserializePropertyList<double>(ref reader, doubleData);
                                             break;
                                         case "StringData":
-                                            DeserializePropertyList<string>(ref reader,stringData);
+                                            DeserializePropertyList<string>(ref reader, stringData);
                                             break;
                                         case "LongData":
-                                            DeserializePropertyList<long>(ref reader,longData);
+                                            DeserializePropertyList<long>(ref reader, longData);
                                             break;
                                         default:
                                             throw new JsonException($"Unexpected property {scalarTypeName}");
@@ -179,7 +179,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                             case "Vectors":
                                 {
                                     reader.Read(); reader.Read();
-                                    dim = DeserializeVector(ref reader, floatVector,binaryVector);
+                                    dim = DeserializeVector(ref reader, floatVector, binaryVector);
                                     reader.Read();
                                 }
                                 break;
@@ -191,7 +191,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                 default:
                     throw new JsonException($"Unexpected property {name}");
             }
-            
+
             reader.Read();
         }
 
@@ -204,7 +204,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                 field = Field.Create<sbyte>(fieldName, intData.Select(s => (sbyte)s).ToList());
                 break;
             case MilvusDataType.Int16:
-                field = Field.Create<Int16>(fieldName, intData.Select(s => (Int16)s).ToList());;
+                field = Field.Create<Int16>(fieldName, intData.Select(s => (Int16)s).ToList()); ;
                 break;
             case MilvusDataType.Int32:
                 field = Field.Create<int>(fieldName, intData);
@@ -222,10 +222,10 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                 field = Field.CreateVarChar(fieldName, stringData);
                 break;
             case MilvusDataType.BinaryVector:
-                field = Field.CreateFromBytes(fieldName, binaryVector.ToArray(),dim);
+                field = Field.CreateFromBytes(fieldName, binaryVector.ToArray(), dim);
                 break;
             case MilvusDataType.FloatVector:
-                field = Field.CreateFloatVector(fieldName, floatVector,dim);
+                field = Field.CreateFloatVector(fieldName, floatVector, dim);
                 break;
             case MilvusDataType.String:
             default:
@@ -279,7 +279,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
                         reader.Read(); reader.Read();
                     }
                     break;
-                
+
                 default:
                     throw new JsonException($"Not support: {name}");
             }
@@ -339,15 +339,15 @@ internal static class JsonConverterExtension
 {
     public static Object GetAnyValue(this in Utf8JsonReader reader)
     {
-        switch (reader.TokenType)
+        return reader.TokenType switch
         {
-            case JsonTokenType.Null: return null;
-            case JsonTokenType.True: return true;
-            case JsonTokenType.False: return false;
-            case JsonTokenType.String: return reader.GetString();
-            case JsonTokenType.Number: return reader.GetDecimal();
-            case JsonTokenType.PropertyName: return reader.GetString();
-            default: throw new NotImplementedException();
-        }
+            JsonTokenType.Null => null,
+            JsonTokenType.True => true,
+            JsonTokenType.False => false,
+            JsonTokenType.String => reader.GetString(),
+            JsonTokenType.Number => reader.GetDecimal(),
+            JsonTokenType.PropertyName => reader.GetString(),
+            _ => throw new NotImplementedException(),
+        };
     }
 }

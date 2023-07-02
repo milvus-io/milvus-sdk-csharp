@@ -1,5 +1,6 @@
 ﻿using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -10,9 +11,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Insert rows of data entities into a collection
 /// </summary>
-internal class InsertRequest:
-    IValidatable,
-    IRestRequest
+internal sealed class InsertRequest
 {
     /// <summary>
     /// Collection name
@@ -71,21 +70,27 @@ internal class InsertRequest:
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/entities",
-            payload:this
+            payload: this
             );
     }
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(FieldsData?.Any() == true, "Fields cannot be null or empty");
-
-        var count = this.FieldsData.First().RowCount;
-        Verify.True(this.FieldsData.All(p => p.RowCount == count), "Fields length is not same");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        
+        Verify.NotNullOrEmpty(FieldsData);
+        long count = FieldsData[0].RowCount;
+        for (int i = 1; i < FieldsData.Count; i++)
+        {
+            if (FieldsData[i].RowCount != count)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(FieldsData)}[{i}])", "Fields length is not same");
+            }
+        }
     }
 
     #region Private ===============================================================
-    private InsertRequest(string collectionName, string dbName) 
+    private InsertRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;

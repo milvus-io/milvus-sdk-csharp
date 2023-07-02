@@ -10,7 +10,7 @@ public partial class MilvusClientTests
     [ClassData(typeof(TestClients))]
     public async Task CredentialTest(IMilvusClient milvusClient)
     {
-        if(milvusClient.ToString().Contains("zilliz"))
+        if (milvusClient.ToString().Contains("zilliz"))
         {
             return;
         }
@@ -27,7 +27,7 @@ public partial class MilvusClientTests
         }
 
         //Create
-        await milvusClient.CreateCredentialAsync(username,password);
+        await milvusClient.CreateCredentialAsync(username, password);
         users = await milvusClient.ListCredUsersAsync();
         users.Should().NotBeNullOrEmpty();
         users.Should().Contain("abb1bW");

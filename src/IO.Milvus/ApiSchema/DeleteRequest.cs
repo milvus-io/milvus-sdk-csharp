@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete rows of data entities from a collection by given expression
 /// </summary>
-internal sealed class DeleteRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DeleteRequest>
+internal sealed class DeleteRequest
 {
     /// <summary>
     /// Collection name
@@ -40,16 +37,16 @@ internal sealed class DeleteRequest:
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static DeleteRequest Create(string collectionName, string expr,string dbName)
+    public static DeleteRequest Create(string collectionName, string expr, string dbName)
     {
-        return new DeleteRequest(collectionName, expr,dbName);
+        return new DeleteRequest(collectionName, expr, dbName);
     }
 
     public DeleteRequest WithPartitionName(string partitionName)
     {
         if (!string.IsNullOrEmpty(PartitionName))
             PartitionName = partitionName;
-        
+
         return this;
     }
 
@@ -76,14 +73,14 @@ internal sealed class DeleteRequest:
     {
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/entities",
-            payload:this);
+            payload: this);
     }
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(Expr, "Expr cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(Expr);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ===========================================================

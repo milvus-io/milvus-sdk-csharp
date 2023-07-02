@@ -9,10 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get the flush state of multiple segments
 /// </summary>
-internal sealed class GetFlushStateRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetFlushStateRequest>
+internal sealed class GetFlushStateRequest
 {
     /// <summary>
     /// Segment ids
@@ -43,12 +40,12 @@ internal sealed class GetFlushStateRequest:
     public Grpc.GetFlushStateRequest BuildGrpc()
     {
         this.Validate();
-        var request = new Grpc.GetFlushStateRequest();        
+        var request = new Grpc.GetFlushStateRequest();
         request.SegmentIDs.AddRange(SegmentIds);
         return request;
     }
 
-    public 
+    public
 
     #region Private =============================================
     GetFlushStateRequest(IList<long> segmentIds)

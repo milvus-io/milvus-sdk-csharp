@@ -8,7 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Collections.
 /// </summary>
-internal class ShowCollectionsResponse
+internal sealed class ShowCollectionsResponse
 {
     /// <summary>
     /// Collection Id list.
@@ -56,7 +56,7 @@ internal class ShowCollectionsResponse
                 CollectionIds[i],
                 CollectionNames[i],
                 TimestampUtils.GetTimeFromTimstamp(CreatedUtcTimestamps[i]),
-                InMemoryPercentages?.Any() == true ? InMemoryPercentages[i] : -1);
+                InMemoryPercentages?.Count > i ? InMemoryPercentages[i] : -1);
         }
     }
 }

@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Release a collection loaded before
 /// </summary>
-internal sealed class ReleaseCollectionRequest : 
-    IRestRequest, 
-    IGrpcRequest<Grpc.ReleaseCollectionRequest>,
-    IValidatable
+internal sealed class ReleaseCollectionRequest
 {
     /// <summary>
     /// Collection Name
@@ -31,9 +28,9 @@ internal sealed class ReleaseCollectionRequest :
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    internal static ReleaseCollectionRequest Create(string collectionName,string dbName)
+    internal static ReleaseCollectionRequest Create(string collectionName, string dbName)
     {
-        return new ReleaseCollectionRequest(collectionName,dbName);
+        return new ReleaseCollectionRequest(collectionName, dbName);
     }
 
     public Grpc.ReleaseCollectionRequest BuildGrpc()
@@ -57,8 +54,8 @@ internal sealed class ReleaseCollectionRequest :
 
     public void Validate()
     {
-        Verify.NotNullOrEmpty(CollectionName, "Collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ===============================================================

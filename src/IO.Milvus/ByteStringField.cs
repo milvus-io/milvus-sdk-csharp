@@ -13,8 +13,8 @@ public class ByteStringField : Field
     public ByteStringField(
         string fieldName,
         ByteString byteString,
-        long dimension):
-        base(fieldName,MilvusDataType.BinaryVector)
+        long dimension) :
+        base(fieldName, MilvusDataType.BinaryVector)
     {
         DataType = MilvusDataType.BinaryVector;
         RowCount = dimension;

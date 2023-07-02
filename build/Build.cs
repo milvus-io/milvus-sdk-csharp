@@ -87,14 +87,14 @@ partial class Build : NukeBuild
         Information("GitVersion: {0}", GitVersion.MajorMinorPatch);
         var tag = GitRepository.Tags.LastOrDefault();
         Information("Tag: {0}", tag);
-        
+
         if (IsTag)
         {
             if (!string.IsNullOrEmpty(tag))
             {
                 if (tag.StartsWith('v'))
                 {
-                    Version = tag.Substring(1,tag.Length -1);
+                    Version = tag.Substring(1, tag.Length - 1);
                 }
                 else
                 {

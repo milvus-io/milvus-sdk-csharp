@@ -8,16 +8,13 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete a Credential
 /// </summary>
-internal sealed class DeleteCredentialRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DeleteCredentialRequest>
+internal sealed class DeleteCredentialRequest
 {
     /// <summary>
     /// Not useful for now
     /// </summary>
     [JsonPropertyName("username")]
-    public string Username { get;set; }
+    public string Username { get; set; }
 
     public static DeleteCredentialRequest Create(string userName)
     {
@@ -40,13 +37,13 @@ internal sealed class DeleteCredentialRequest:
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/credential",
-            payload:this
+            payload: this
             );
     }
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Username, "Username cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Username);
     }
 
     #region Private ==================================================

@@ -13,18 +13,18 @@ public partial class MilvusRestClient
 {
     ///<inheritdoc/>
     public async Task<long> ManualCompactionAsync(
-        long collectionId, 
-        DateTime? timetravel = null, 
+        long collectionId,
+        DateTime? timeTravel = null,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Manual compaction {1}", collectionId);
 
         using HttpRequestMessage request = ManualCompactionRequest
             .Create(collectionId)
-            .WithTimetravel(timetravel)
+            .WithTimetravel(timeTravel)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -48,7 +48,7 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusCompactionState> GetCompactionStateAsync(
-        long compactionId, 
+        long compactionId,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get compaction state: {1}", compactionId);
@@ -57,7 +57,7 @@ public partial class MilvusRestClient
             .Create(compactionId)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -65,7 +65,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError("Failed get compaction state: {0}, {1}", e.Message,responseContent);
+            this._log.LogError("Failed get compaction state: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -73,7 +73,7 @@ public partial class MilvusRestClient
 
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed get compaction state: {0}, {1}", data.Status.ErrorCode,data.Status.Reason);
+            this._log.LogError("Failed get compaction state: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new MilvusException(data.Status);
         }
 
@@ -82,7 +82,7 @@ public partial class MilvusRestClient
 
     ///<inheritdoc/>
     public async Task<MilvusCompactionPlans> GetCompactionPlansAsync(
-        long compactionId, 
+        long compactionId,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get compaction plans: {1}", compactionId);
@@ -91,7 +91,7 @@ public partial class MilvusRestClient
             .Create(compactionId)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await this.ExecuteHttpRequestAsync(request, cancellationToken);
+        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
         {

@@ -6,6 +6,6 @@ internal static class MilvusServerUtils
 {
     public static bool IsZillizCloud(this IMilvusClient client)
     {
-        return client.Address.Contains("vectordb.zillizcloud.com",StringComparison.OrdinalIgnoreCase);
+        return client.Address.Contains("vectordb.zillizcloud.com", StringComparison.OrdinalIgnoreCase);
     }
 }

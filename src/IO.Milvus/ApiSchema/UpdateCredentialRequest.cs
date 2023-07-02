@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Update password for a user
 /// </summary>
-internal sealed class UpdateCredentialRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.UpdateCredentialRequest>
+internal sealed class UpdateCredentialRequest
 {
     /// <summary>
     /// UTC timestamps
@@ -30,7 +27,7 @@ internal sealed class UpdateCredentialRequest:
     /// <summary>
     /// New password
     /// </summary>
-    [JsonPropertyName ("newPassword")]
+    [JsonPropertyName("newPassword")]
     public string NewPassword { get; set; }
 
     /// <summary>
@@ -45,7 +42,7 @@ internal sealed class UpdateCredentialRequest:
     [JsonPropertyName("username")]
     public string Username { get; set; }
 
-    public static UpdateCredentialRequest Create(string userName,string oldPassword,string newPassword)
+    public static UpdateCredentialRequest Create(string userName, string oldPassword, string newPassword)
     {
         return new UpdateCredentialRequest(userName, oldPassword, newPassword);
     }
@@ -71,9 +68,9 @@ internal sealed class UpdateCredentialRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Username, "Username cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(OldPassword, "OldPassword cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(NewPassword, "NewPassword cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Username);
+        Verify.NotNullOrWhiteSpace(OldPassword);
+        Verify.NotNullOrWhiteSpace(NewPassword);
     }
 
     #region Private ==================================================================

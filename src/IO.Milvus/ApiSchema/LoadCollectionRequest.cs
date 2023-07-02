@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Load a collection for search
 /// </summary>
-internal sealed class LoadCollectionRequest :
-    IRestRequest,
-    IGrpcRequest<Grpc.LoadCollectionRequest>,
-    IValidatable
+internal sealed class LoadCollectionRequest
 {
     /// <summary>
     /// Collection Name
@@ -37,7 +34,7 @@ internal sealed class LoadCollectionRequest :
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static LoadCollectionRequest Create(string collectionName,string dbName)
+    public static LoadCollectionRequest Create(string collectionName, string dbName)
     {
         return new LoadCollectionRequest(collectionName, dbName);
     }
@@ -71,13 +68,13 @@ internal sealed class LoadCollectionRequest :
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.GreaterThanOrEqualTo(ReplicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =====================================================================================
-    private LoadCollectionRequest(string collectionName,string dbName)
+    private LoadCollectionRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;

@@ -7,10 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class ShowPartitionsRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.ShowPartitionsRequest>
+internal sealed class ShowPartitionsRequest
 {
     /// <summary>
     /// The collection name you want to describe, 
@@ -50,15 +47,15 @@ internal sealed class ShowPartitionsRequest:
     [JsonPropertyName("type")]
     public int Type { get; set; }
 
-    internal static ShowPartitionsRequest Create(string collectionName,string dbName)
+    internal static ShowPartitionsRequest Create(string collectionName, string dbName)
     {
-        return new ShowPartitionsRequest(collectionName,dbName);
+        return new ShowPartitionsRequest(collectionName, dbName);
     }
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     public HttpRequestMessage BuildRest()

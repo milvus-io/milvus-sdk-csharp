@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IO.Milvus.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -14,8 +15,8 @@ public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, strin
     /// Read a milvus dictionary format to a default json format.
     /// </summary>
     public override IDictionary<string, string> Read(
-        ref Utf8JsonReader reader, 
-        Type typeToConvert, 
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
         JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartArray)
@@ -41,7 +42,7 @@ public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, strin
             string key = reader.GetString();
 
             // Get the value.
-            reader.Read();            
+            reader.Read();
             reader.Read();
 
             string value = reader.GetString();
@@ -61,6 +62,8 @@ public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, strin
         IDictionary<string, string> value,
         JsonSerializerOptions options)
     {
+        Verify.NotNull(writer);
+
         if (value == null)
         {
             return;

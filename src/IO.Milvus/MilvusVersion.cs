@@ -1,4 +1,7 @@
-﻿namespace IO.MilvusTests.Client;
+﻿using IO.Milvus.Diagnostics;
+using System.Globalization;
+
+namespace IO.MilvusTests.Client;
 
 /// <summary>
 /// Milvus version
@@ -40,12 +43,14 @@ public sealed record MilvusVersion
     /// <returns>Milvus version</returns>
     public static MilvusVersion Parse(string version)
     {
-        var versions = version.Substring(1, version.Length -1).Split('.','-');
+        Verify.NotNull(version);
+
+        var versions = version.Substring(1, version.Length - 1).Split('.', '-');
         return new MilvusVersion(
-            int.Parse(versions[0]),
-            int.Parse(versions[1]),
-            int.Parse(versions[2]),
-            version.Length >3 ? null : versions[3]);
+            int.Parse(versions[0], CultureInfo.InvariantCulture),
+            int.Parse(versions[1], CultureInfo.InvariantCulture),
+            int.Parse(versions[2], CultureInfo.InvariantCulture),
+            version.Length > 3 ? null : versions[3]);
     }
 
     /// <summary>
@@ -73,7 +78,7 @@ public sealed record MilvusVersion
     public override string ToString()
     {
         return string.IsNullOrEmpty(Suffix) ?
-            $"{Major}.{Minor}.{Patch}" : 
+            $"{Major}.{Minor}.{Patch}" :
             $"{Major}.{Minor}.{Patch}-{Suffix}";
     }
 }

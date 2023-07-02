@@ -9,10 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Create a new user and password
 /// </summary>
-internal sealed class CreateCredentialRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateCredentialRequest>
+internal sealed class CreateCredentialRequest
 {
     /// <summary>
     /// UTC timestamps
@@ -38,7 +35,7 @@ internal sealed class CreateCredentialRequest:
     [JsonPropertyName("password")]
     public string Password { get; set; }
 
-    public static CreateCredentialRequest Create(string username,string password)
+    public static CreateCredentialRequest Create(string username, string password)
     {
         return new CreateCredentialRequest(username, password);
     }
@@ -71,8 +68,8 @@ internal sealed class CreateCredentialRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Username, "Username cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(Password, "Password cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Username);
+        Verify.NotNullOrWhiteSpace(Password);
     }
 
     #region Private =================================================================

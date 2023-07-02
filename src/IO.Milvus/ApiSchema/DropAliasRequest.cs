@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete an Alias
 /// </summary>
-internal sealed class DropAliasRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropAliasRequest>
+internal sealed class DropAliasRequest
 {
     [JsonPropertyName("alias")]
     public string Alias { get; set; }
@@ -24,13 +21,13 @@ internal sealed class DropAliasRequest:
 
     public static DropAliasRequest Create(string alias, string dbName)
     {
-        return new DropAliasRequest(alias,dbName);
+        return new DropAliasRequest(alias, dbName);
     }
 
     public Grpc.DropAliasRequest BuildGrpc()
     {
         return new Grpc.DropAliasRequest()
-        {            
+        {
             Alias = Alias,
             DbName = DbName
         };
@@ -46,7 +43,7 @@ internal sealed class DropAliasRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Alias);
     }
 
     #region Private ============================================================================

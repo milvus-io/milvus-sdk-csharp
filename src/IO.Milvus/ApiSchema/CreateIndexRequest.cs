@@ -8,10 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class CreateIndexRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateIndexRequest>
+internal sealed class CreateIndexRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }
@@ -39,7 +36,7 @@ internal sealed class CreateIndexRequest:
         MilvusMetricType milvusMetricType,
         string dbName)
     {
-        return new CreateIndexRequest(collectionName, fieldName,milvusIndexType,milvusMetricType,dbName);
+        return new CreateIndexRequest(collectionName, fieldName, milvusIndexType, milvusMetricType, dbName);
     }
 
     public CreateIndexRequest WithIndexName(string indexName)
@@ -51,7 +48,7 @@ internal sealed class CreateIndexRequest:
         return this;
     }
 
-    public CreateIndexRequest WithExtraParams(IDictionary<string,string> extraParams)
+    public CreateIndexRequest WithExtraParams(IDictionary<string, string> extraParams)
     {
         if (extraParams == null)
             return this;
@@ -91,7 +88,7 @@ internal sealed class CreateIndexRequest:
             Value = _milvusIndexType.ToString()
         });
 
-        if (ExtraParams?.Any() == true)
+        if (ExtraParams?.Count > 0)
         {
             request.ExtraParams.Add(new Grpc.KeyValuePair()
             {
@@ -118,9 +115,9 @@ internal sealed class CreateIndexRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(FieldName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ==================================================================================
@@ -128,7 +125,7 @@ internal sealed class CreateIndexRequest:
     private MilvusIndexType _milvusIndexType;
 
     private CreateIndexRequest(
-        string collectionName, 
+        string collectionName,
         string fieldName,
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,

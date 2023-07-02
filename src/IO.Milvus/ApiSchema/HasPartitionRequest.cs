@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get if a partition exists
 /// </summary>
-internal sealed class HasPartitionRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.HasPartitionRequest>
+internal sealed class HasPartitionRequest
 {
     /// <summary>
     /// Collection name
@@ -34,7 +31,7 @@ internal sealed class HasPartitionRequest :
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    internal static HasPartitionRequest Create(string collectionName, string partitionName,string dbName)
+    internal static HasPartitionRequest Create(string collectionName, string partitionName, string dbName)
     {
         return new HasPartitionRequest(collectionName, partitionName, dbName);
     }
@@ -63,9 +60,9 @@ internal sealed class HasPartitionRequest :
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(PartitionName, "Milvus partition name cannot be null or empty.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(PartitionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =============================================================

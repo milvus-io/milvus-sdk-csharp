@@ -27,8 +27,8 @@ public class MilvusFlushResult
     internal static MilvusFlushResult From(FlushResponse response)
     {
         return new MilvusFlushResult(
-            response.CollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }), 
-            response.FlushCollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }), 
+            response.CollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }),
+            response.FlushCollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }),
             response.CollSealTimes);
     }
 
@@ -43,7 +43,7 @@ public class MilvusFlushResult
     #region Private ==========================================================================================
     private MilvusFlushResult(
         IDictionary<string, MilvusId<long>> collSegIDs,
-        IDictionary<string, MilvusId<long>> flushCollSegIDs, 
+        IDictionary<string, MilvusId<long>> flushCollSegIDs,
         IDictionary<string, long> collSealTimes)
     {
         this.CollSegIDs = collSegIDs;

@@ -46,7 +46,7 @@ public sealed class MilvusConfig
         }
 
         var file = Path.Combine(
-            dir, 
+            dir,
             "milvusclients.json");
 
         if (!File.Exists(file))

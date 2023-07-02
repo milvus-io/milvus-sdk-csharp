@@ -3,7 +3,7 @@
 /// <summary>
 /// Constant/static values for internal usage.
 /// </summary>
-public class Constants
+public static class Constants
 {
     /// <summary>
     /// Vector tag for <see cref="Grpc.PlaceholderValue"/>
@@ -29,7 +29,7 @@ public class Constants
     /// Top parameter key name.
     /// </summary>
     public const string TOP_K = "topk";
-    
+
     /// <summary>
     /// Key name in parameters.<see cref="MilvusIndexType"/>
     /// </summary>

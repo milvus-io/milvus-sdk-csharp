@@ -36,7 +36,7 @@ public partial class MilvusClientTests
         var collectionName = milvusClient.GetType().Name + "Json";
 
         //Check if collection exists.
-        var collectionExist =  await milvusClient.HasCollectionAsync(collectionName);
+        var collectionExist = await milvusClient.HasCollectionAsync(collectionName);
         if (collectionExist)
         {
             await milvusClient.DropCollectionAsync(collectionName);
@@ -80,23 +80,23 @@ public partial class MilvusClientTests
             await Task.Delay(TimeSpan.FromSeconds(10));
         }
 
-        List<List<float>> vectors = new ();
-        List<ArticleMeta> articleMetas = new ();
-        List<string> titles = new ();
+        List<List<float>> vectors = new();
+        List<ArticleMeta> articleMetas = new();
+        List<string> titles = new();
 
         Random r = new();
         for (int i = 0; i < 100; i++)
         {
             var vector = new List<float>(2);
-            vector.Add(i/10f);
-            vector.Add(9*i/10f);
+            vector.Add(i / 10f);
+            vector.Add(9 * i / 10f);
 
             titles.Add("title" + i.ToString());
             articleMetas.Add(new ArticleMeta(
                         link: Link,
-                        readingTime: r.Next(0,40),
+                        readingTime: r.Next(0, 40),
                         publication: "The Startup",
-                        claps: r.Next(20,50),
+                        claps: r.Next(20, 50),
                         responses: 18
                         ));
 
@@ -127,7 +127,7 @@ public partial class MilvusClientTests
             .WithTopK(3)
             .WithExpr("article_meta[\"claps\"] > 30 and article_meta[\"reading_time\"] < 10")
             .WithMetricType(MilvusMetricType.L2)
-            .WithParameter("nprobe",10.ToString())
+            .WithParameter("nprobe", 10.ToString())
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
             .WithVectors(new[] { new List<float> { 0.5f, 0.5f } })
             );
@@ -144,10 +144,10 @@ public partial class MilvusClientTests
 internal class ArticleMeta
 {
     public ArticleMeta(
-        string link, 
-        int readingTime, 
-        string publication, 
-        int claps, 
+        string link,
+        int readingTime,
+        string publication,
+        int claps,
         int responses)
     {
         Link = link;

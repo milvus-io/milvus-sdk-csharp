@@ -10,5 +10,5 @@ internal sealed class GetCollectionStatisticsResponse
 
     [JsonPropertyName("stats")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string,string> Statistics { get; set; }
+    public IDictionary<string, string> Statistics { get; set; }
 }

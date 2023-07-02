@@ -11,15 +11,15 @@ public partial class MilvusGrpcClient
 {
     ///<inheritdoc/>
     public async Task<long> ManualCompactionAsync(
-        long collectionId, 
-        DateTime? timetravel = null,
+        long collectionId,
+        DateTime? timeTravel = null,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Manual compaction {1}", collectionId);
 
         Grpc.ManualCompactionRequest request = ManualCompactionRequest
             .Create(collectionId)
-            .WithTimetravel(timetravel)
+            .WithTimetravel(timeTravel)
             .BuildGrpc();
 
         Grpc.ManualCompactionResponse response = await _grpcClient.ManualCompactionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -35,7 +35,7 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task<MilvusCompactionState> GetCompactionStateAsync(
-        long compactionId, 
+        long compactionId,
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get compaction state: {1}", compactionId);
@@ -44,7 +44,7 @@ public partial class MilvusGrpcClient
             .Create(compactionId)
             .BuildGrpc();
 
-        Grpc.GetCompactionStateResponse response = await _grpcClient.GetCompactionStateAsync(request,_callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetCompactionStateResponse response = await _grpcClient.GetCompactionStateAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

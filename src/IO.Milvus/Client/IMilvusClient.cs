@@ -53,15 +53,15 @@ public interface IMilvusClient : IDisposable
     /// <param name="consistencyLevel">
     /// The consistency level that the collection used, modification is not supported now.</param>
     /// <param name="fieldTypes">field types that represents this collection schema</param>
-    /// <param name="shards_num">Once set, no modification is allowed (Optional).</param>
+    /// <param name="shardsNum">Once set, no modification is allowed (Optional).</param>
     /// <param name="enableDynamicField"><see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/></param>
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateCollectionAsync(
-        string collectionName, 
+        string collectionName,
         IList<FieldType> fieldTypes,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
-        int shards_num = 1,
+        int shardsNum = 1,
         bool enableDynamicField = false,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
@@ -78,8 +78,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> HasCollectionAsync(
-        string collectionName, 
-        DateTime? dateTime = null, 
+        string collectionName,
+        DateTime? dateTime = null,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -92,7 +92,7 @@ public interface IMilvusClient : IDisposable
     Task ReleaseCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
-        CancellationToken cancellationToken= default);
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The collection name you want to load.
@@ -102,8 +102,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public Task LoadCollectionAsync(
-        string collectionName, 
-        int replicaNumber = 1, 
+        string collectionName,
+        int replicaNumber = 1,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -113,7 +113,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="collectionName">The collection name you want get statistics</param>
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task<IDictionary<string,string>> GetCollectionStatisticsAsync(
+    Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
@@ -129,7 +129,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
 
     Task<IList<MilvusCollection>> ShowCollectionsAsync(
-        IList<string> collectionNames = null, 
+        IList<string> collectionNames = null,
         ShowType showType = ShowType.All,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
@@ -198,8 +198,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreatePartitionAsync(
-        string collectionName, 
-        string partitionName, 
+        string collectionName,
+        string partitionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -211,8 +211,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<bool> HasPartitionAsync(
-        string collectionName, 
-        string partitionName, 
+        string collectionName,
+        string partitionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -239,9 +239,9 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task LoadPartitionsAsync(
-        string collectionName, 
-        IList<string> partitionNames, 
-        int replicaNumber = 1, 
+        string collectionName,
+        IList<string> partitionNames,
+        int replicaNumber = 1,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -254,8 +254,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task ReleasePartitionAsync(
-        string collectionName, 
-        IList<string> partitionNames, 
+        string collectionName,
+        IList<string> partitionNames,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -269,7 +269,7 @@ public interface IMilvusClient : IDisposable
     /// <returns></returns>
     Task DropPartitionsAsync(
         string collectionName,
-        string partitionName, 
+        string partitionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -281,7 +281,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task<IDictionary<string,string>> GetPartitionStatisticsAsync(
+    Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -297,7 +297,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>CompactionId</returns>
     Task<long> ManualCompactionAsync(
-        long collectionId, 
+        long collectionId,
         DateTime? timeTravel = null,
         CancellationToken cancellationToken = default);
 
@@ -308,7 +308,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     Task<MilvusCompactionState> GetCompactionStateAsync(
-        long compactionId, 
+        long compactionId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -417,7 +417,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<MilvusSearchResult> SearchAsync(
-        MilvusSearchParameters searchParameters, 
+        MilvusSearchParameters searchParameters,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -477,7 +477,7 @@ public interface IMilvusClient : IDisposable
     /// <returns></returns>
     Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
-        string dbName =Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -575,8 +575,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task DropIndexAsync(
-        string collectionName, 
-        string fieldName, 
+        string collectionName,
+        string fieldName,
         string indexName = Constants.DEFAULT_INDEX_NAME,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
@@ -590,8 +590,8 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     Task<IList<MilvusIndex>> DescribeIndexAsync(
-        string collectionName, 
-        string fieldName, 
+        string collectionName,
+        string fieldName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
 
@@ -702,7 +702,7 @@ public interface IMilvusClient : IDisposable
     /// <param name="roleName">Role name that will be created.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task CreateRoleAsync(
-        string roleName, 
+        string roleName,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -829,7 +829,7 @@ public interface IMilvusClient : IDisposable
     Task GrantRolePrivilegeAsync(
         string roleName,
         string @object,
-        string objectName, 
+        string objectName,
         string privilege,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default);
@@ -896,7 +896,7 @@ public interface IMilvusClient : IDisposable
     Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
         string roleName,
         string @object,
-        string objectName, 
+        string objectName,
         CancellationToken cancellationToken = default);
     #endregion
 
@@ -911,9 +911,4 @@ public interface IMilvusClient : IDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Milvus version</returns>
     Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Close milvus connection.
-    /// </summary>
-    void Close();
 }

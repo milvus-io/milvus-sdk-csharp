@@ -2,6 +2,7 @@
 using IO.Milvus.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security;
 using System.Text.Json.Serialization;
 
@@ -10,7 +11,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Field type
 /// </summary>
-public sealed class FieldType:IValidatable
+public sealed class FieldType
 {
     #region Ctor
     /// <summary>
@@ -38,7 +39,7 @@ public sealed class FieldType:IValidatable
         this.DataType = dataType;
         this.IsPrimaryKey = isPrimaryKey;
         this.AutoId = autoId;
-        this.IsPartitionKey= isPartitionKey;
+        this.IsPartitionKey = isPartitionKey;
         this.IsDynamic = isDynamic;
     }
 
@@ -127,7 +128,7 @@ public sealed class FieldType:IValidatable
         bool isPartitionKey = false,
         bool isDynamic = false)
     {
-        var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId,isPartitionKey,isDynamic);
+        var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, isDynamic);
         field.WithMaxLength(maxLength);
         field.Validate();
         return field;
@@ -144,7 +145,7 @@ public sealed class FieldType:IValidatable
         long dim)
     {
         var field = new FieldType(name, MilvusDataType.FloatVector, false, false);
-        field.WithTypeParameter(Constants.VECTOR_DIM,dim.ToString());
+        field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
         field.Validate();
         return field;
     }
@@ -160,7 +161,7 @@ public sealed class FieldType:IValidatable
         long dim)
     {
         var field = new FieldType(name, MilvusDataType.BinaryVector, false, false);
-        field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString());
+        field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
         field.Validate();
         return field;
     }
@@ -174,9 +175,9 @@ public sealed class FieldType:IValidatable
     /// <param name="name">Field name.</param>
     /// <param name="isDynamic">Is dynamic.</param>
     /// <returns></returns>
-    public static FieldType CreateJson(string name,bool isDynamic = false)
+    public static FieldType CreateJson(string name, bool isDynamic = false)
     {
-        return new FieldType(name, MilvusDataType.Json, false,isDynamic:isDynamic);
+        return new FieldType(name, MilvusDataType.Json, false, isDynamic: isDynamic);
     }
     #endregion
 
@@ -269,7 +270,7 @@ public sealed class FieldType:IValidatable
     /// <returns></returns>
     public FieldType WithMaxLength(int maxLength)
     {
-        return WithTypeParameter(Constants.VARCHAR_MAX_LENGTH, maxLength.ToString());
+        return WithTypeParameter(Constants.VARCHAR_MAX_LENGTH, maxLength.ToString(CultureInfo.InvariantCulture));
     }
 
     /// <summary>
@@ -279,13 +280,13 @@ public sealed class FieldType:IValidatable
     /// <returns></returns>
     public FieldType WithDimension(int dim)
     {
-        return WithTypeParameter(Constants.VECTOR_DIM, dim.ToString());
+        return WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
     }
 
     /// <summary>
     /// Sets a type parameter for the field.
     /// </summary>
-    public FieldType WithTypeParameter(string key,string vlaue)
+    public FieldType WithTypeParameter(string key, string vlaue)
     {
         TypeParams[key] = vlaue;
         return this;
@@ -305,38 +306,44 @@ public sealed class FieldType:IValidatable
     /// </summary>
     public void Validate()
     {
-        Verify.True(DataType != MilvusDataType.None, "Milvus field datatype cannot be None");
-        Verify.True(DataType != MilvusDataType.String, "String type is not supported, use Varchar instead");
-
-        if (DataType == MilvusDataType.FloatVector || DataType == MilvusDataType.BinaryVector)
+        if (DataType is MilvusDataType.None)
         {
-            Verify.True(TypeParams.ContainsKey(Constants.VECTOR_DIM), "Vector field dimension must be specified");
+            throw new ArgumentOutOfRangeException(nameof(DataType), "Milvus field datatype cannot be None");
+        }
 
-            if (int.TryParse(TypeParams[Constants.VECTOR_DIM],out int dim))
-            {
-                Verify.True(dim > 0, "Vector field dimension must be larger than zero");
-            }
-            else
-            {
-                throw new System.ArgumentException("Vector field dimension must be an integer number");
-            }
-        }else if(DataType == MilvusDataType.VarChar)
+        if (DataType is MilvusDataType.String)
         {
-            Verify.True(TypeParams.ContainsKey(Constants.VARCHAR_MAX_LENGTH), "Varchar field max length must be specified");
+            throw new ArgumentOutOfRangeException(nameof(DataType), "String type is not supported, use Varchar instead");
+        }
 
-            if (int.TryParse(TypeParams[Constants.VARCHAR_MAX_LENGTH], out int maxLength))
+        if (DataType is MilvusDataType.FloatVector or MilvusDataType.BinaryVector)
+        {
+            if (!TypeParams.ContainsKey(Constants.VECTOR_DIM))
             {
-                Verify.True(maxLength > 0, "Varchar field max length must be larger than zero");
+                throw new ArgumentException("Vector field dimension must be specified");
             }
-            else
+
+            if (!int.TryParse(TypeParams[Constants.VECTOR_DIM], out int dim) || dim <= 0)
             {
-                throw new System.ArgumentException("Varchar field max length must be an integer number");
+                throw new ArgumentException("Vector field dimension must be a positive integer number");
+            }
+        }
+        else if (DataType == MilvusDataType.VarChar)
+        {
+            if (!TypeParams.ContainsKey(Constants.VARCHAR_MAX_LENGTH))
+            {
+                throw new ArgumentException("Varchar field max length must be specified");
+            }
+
+            if (!int.TryParse(TypeParams[Constants.VARCHAR_MAX_LENGTH], out int maxLength) || maxLength <= 0)
+            {
+                throw new ArgumentException("Varchar field max length must be a positive integer number");
             }
         }
 
         if (IsPrimaryKey || IsPartitionKey)
         {
-            if (DataType != MilvusDataType.Int64 && DataType != MilvusDataType.VarChar)
+            if (DataType is not MilvusDataType.Int64 and not MilvusDataType.VarChar)
             {
                 throw new ArgumentException("Only Int64 and Varchar type field can be primary key or partition key");
             }

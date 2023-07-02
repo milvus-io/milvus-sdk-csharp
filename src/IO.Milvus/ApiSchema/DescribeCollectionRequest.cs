@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Describe a collection
 /// </summary>
-internal sealed class DescribeCollectionRequest:
-    IRestRequest,
-    IGrpcRequest<Grpc.DescribeCollectionRequest>,
-    IValidatable
+internal sealed class DescribeCollectionRequest
 {
     /// <summary>
     /// Collection Name
@@ -50,7 +47,7 @@ internal sealed class DescribeCollectionRequest:
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     public static DescribeCollectionRequest Create(string collectionName, string dbName)
     {
-        return new DescribeCollectionRequest(collectionName,dbName);
+        return new DescribeCollectionRequest(collectionName, dbName);
     }
 
     public DescribeCollectionRequest WithCollectionId(int collectionId)
@@ -90,8 +87,8 @@ internal sealed class DescribeCollectionRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region private ================================================================================

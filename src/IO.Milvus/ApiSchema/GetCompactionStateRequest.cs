@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get the state of a compaction
 /// </summary>
-internal sealed class GetCompactionStateRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetCompactionStateRequest>
+internal sealed class GetCompactionStateRequest
 {
     /// <summary>
     /// Compaction ID
@@ -45,7 +42,7 @@ internal sealed class GetCompactionStateRequest:
 
     public void Validate()
     {
-        Verify.True(CompactionId > 0, "Invalid collection id");
+        Verify.GreaterThan(CompactionId, 0);
     }
 
     #region Prvate =========================================================================

@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Returns sealed segment information of a collection
 /// </summary>
-internal sealed class GetPersistentSegmentInfoRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetPersistentSegmentInfoRequest>
+internal sealed class GetPersistentSegmentInfoRequest
 {
     /// <summary>
     /// Collection name
@@ -28,7 +25,7 @@ internal sealed class GetPersistentSegmentInfoRequest:
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static GetPersistentSegmentInfoRequest Create(string collectionName,string dbName)
+    public static GetPersistentSegmentInfoRequest Create(string collectionName, string dbName)
     {
         return new GetPersistentSegmentInfoRequest(collectionName, dbName);
     }
@@ -55,11 +52,11 @@ internal sealed class GetPersistentSegmentInfoRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
-    private GetPersistentSegmentInfoRequest(string collectionName,string dbName)
+    private GetPersistentSegmentInfoRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;

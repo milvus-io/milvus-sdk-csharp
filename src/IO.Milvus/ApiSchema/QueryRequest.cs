@@ -2,6 +2,7 @@
 using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -12,10 +13,7 @@ namespace IO.Milvus.ApiSchema;
 /// do a explicit record query by given expression. 
 /// For example when you want to query by primary key.
 /// </summary>
-internal sealed class QueryRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.QueryRequest>
+internal sealed class QueryRequest
 {
     /// <summary>
     /// Collection name
@@ -64,7 +62,7 @@ internal sealed class QueryRequest:
 
     [JsonPropertyName("query_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string,string> QueryParams = new Dictionary<string, string>();
+    public IDictionary<string, string> QueryParams = new Dictionary<string, string>();
 
     /// <summary>
     /// Database name
@@ -75,7 +73,7 @@ internal sealed class QueryRequest:
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static QueryRequest Create(string collectionName,string expr,string dbName)
+    public static QueryRequest Create(string collectionName, string expr, string dbName)
     {
         return new QueryRequest(collectionName, expr, dbName);
     }
@@ -94,7 +92,7 @@ internal sealed class QueryRequest:
         };
 
         request.OutputFields.AddRange(OutFields);
-        if (PartitionNames?.Any() == true)
+        if (PartitionNames?.Count > 0)
         {
             request.PartitionNames.AddRange(PartitionNames);
         }
@@ -104,7 +102,7 @@ internal sealed class QueryRequest:
             request.QueryParams.Add(new Grpc.KeyValuePair()
             {
                 Key = "offset",
-                Value = Offset.ToString()
+                Value = Offset.ToString(CultureInfo.InvariantCulture)
             });
         }
         if (Limit > 0)
@@ -112,7 +110,7 @@ internal sealed class QueryRequest:
             request.QueryParams.Add(new Grpc.KeyValuePair()
             {
                 Key = "limit",
-                Value = Limit.ToString()
+                Value = Limit.ToString(CultureInfo.InvariantCulture)
             });
         }
 
@@ -125,11 +123,11 @@ internal sealed class QueryRequest:
 
         if (Offset > 0)
         {
-            QueryParams.Add("offset",Offset.ToString());
+            QueryParams.Add("offset", Offset.ToString(CultureInfo.InvariantCulture));
         }
         if (Limit > 0)
         {
-            QueryParams.Add("limit",Limit.ToString());
+            QueryParams.Add("limit", Limit.ToString(CultureInfo.InvariantCulture));
         }
 
         var request = HttpRequest.CreatePostRequest(
@@ -141,14 +139,14 @@ internal sealed class QueryRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(this.CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(this.OutFields?.Any() == true, "OutputFields cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(this.Expr, "Expr cannot be null or empty");
-        Verify.True(this.GuaranteeTimestamp >= 0, "GuaranteeTimestamp must be greater than 0");
-        Verify.True(this.TravelTimestamp >= 0, "TravelTimestamp must be greater than 0");
-        Verify.True(this.Offset >= 0, "Offset must be greater than 0");
-        Verify.True(this.Limit >= 0, "Limit must be greater than 0");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrEmpty(OutFields);
+        Verify.NotNullOrWhiteSpace(Expr);
+        Verify.GreaterThanOrEqualTo(GuaranteeTimestamp, 0);
+        Verify.GreaterThanOrEqualTo(TravelTimestamp, 0);
+        Verify.GreaterThanOrEqualTo(Offset, 0);
+        Verify.GreaterThanOrEqualTo(Limit, 0);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     internal QueryRequest WithOutputFields(IList<string> outputFields)

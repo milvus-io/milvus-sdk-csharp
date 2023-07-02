@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get a partition's statistics
 /// </summary>
-internal sealed class GetPartitionStatisticsRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetPartitionStatisticsRequest>
+internal sealed class GetPartitionStatisticsRequest
 {
     /// <summary>
     /// The collection name in milvus
@@ -60,18 +57,18 @@ internal sealed class GetPartitionStatisticsRequest:
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/partition/statistics",
-            payload:this);
+            payload: this);
     }
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(PartitionName, "Milvus partition name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(PartitionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ================================================================================
-    public GetPartitionStatisticsRequest(string collectionName, string partitionName,string dbName)
+    public GetPartitionStatisticsRequest(string collectionName, string partitionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.PartitionName = partitionName;

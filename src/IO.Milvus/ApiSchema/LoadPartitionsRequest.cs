@@ -6,10 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class LoadPartitionsRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.LoadPartitionsRequest>
+internal sealed class LoadPartitionsRequest
 {
     /// <summary>
     /// Collection name in milvus
@@ -53,15 +50,15 @@ internal sealed class LoadPartitionsRequest :
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.NotNullOrEmpty(PartitionNames, "Partition names count must be greater than 1");
-        Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrEmpty(PartitionNames);
+        Verify.GreaterThanOrEqualTo(ReplicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     public static LoadPartitionsRequest Create(string collectionName, string dbName)
     {
-        return new LoadPartitionsRequest(collectionName,dbName);
+        return new LoadPartitionsRequest(collectionName, dbName);
     }
 
     public LoadPartitionsRequest WithPartitionNames(IList<string> partitionNames)

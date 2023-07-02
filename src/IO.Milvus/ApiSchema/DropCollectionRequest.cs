@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Drop a collection
 /// </summary>
-internal sealed class DropCollectionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropCollectionRequest>
+internal sealed class DropCollectionRequest
 {
     /// <summary>
     /// Collection Name
@@ -31,9 +28,9 @@ internal sealed class DropCollectionRequest:
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static DropCollectionRequest Create(string collectionName,string dbName)
+    public static DropCollectionRequest Create(string collectionName, string dbName)
     {
-        return new DropCollectionRequest(collectionName,dbName);
+        return new DropCollectionRequest(collectionName, dbName);
     }
 
     public Grpc.DropCollectionRequest BuildGrpc()
@@ -58,12 +55,12 @@ internal sealed class DropCollectionRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName, "Milvus collection name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =================================================================================
-    public DropCollectionRequest(string collectionName,string dbName)
+    public DropCollectionRequest(string collectionName, string dbName)
     {
         this.CollectionName = collectionName;
         this.DbName = dbName;

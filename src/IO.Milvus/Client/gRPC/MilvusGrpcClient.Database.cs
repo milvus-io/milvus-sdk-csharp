@@ -11,13 +11,13 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(dbName, "Milvus dbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(dbName);
 
         this._log.LogDebug("Create database {0}", dbName);
         Grpc.Status response = await _grpcClient.CreateDatabaseAsync(new Grpc.CreateDatabaseRequest()
         {
             DbName = dbName,
-        },_callOptions.WithCancellationToken(cancellationToken));
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -27,13 +27,13 @@ public partial class MilvusGrpcClient
     }
 
     ///<inheritdoc/>
-    public async Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellation = default)
+    public async Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("List databases");
 
         Grpc.ListDatabasesResponse response = await _grpcClient.ListDatabasesAsync(
-            new Grpc.ListDatabasesRequest(), 
-            _callOptions.WithCancellationToken(cancellation));
+            new Grpc.ListDatabasesRequest(),
+            _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -47,7 +47,7 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(dbName, "Milvus dbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(dbName);
 
         this._log.LogDebug("Drop database {0}", dbName);
         var response = await _grpcClient.DropDatabaseAsync(new Grpc.DropDatabaseRequest()

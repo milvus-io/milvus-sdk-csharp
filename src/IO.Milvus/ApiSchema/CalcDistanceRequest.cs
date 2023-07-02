@@ -8,10 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class CalcDistanceRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CalcDistanceRequest>
+internal sealed class CalcDistanceRequest
 {
     private readonly MilvusMetricType _milvusMetricType;
 
@@ -56,14 +53,15 @@ internal sealed class CalcDistanceRequest:
 
         //Set left vectors
         request.OpLeft = VectorsLeft.ToVectorsArray();
-        
+
         //Set right vectors
         request.OpRight = VectorsRight.ToVectorsArray();
 
         //Set parameters
         request.Params.Add(new Grpc.KeyValuePair()
         {
-            Key = "metric",Value = _milvusMetricType.ToString().ToUpper()
+            Key = "metric",
+            Value = _milvusMetricType.ToString().ToUpperInvariant()
         });
 
         return request;
@@ -71,15 +69,12 @@ internal sealed class CalcDistanceRequest:
 
     public void Validate()
     {
-        Verify.NotNull(this.VectorsLeft, "VectorsLeft cannot be null or empty");
-        Verify.NotNull(this.VectorsRight, "VectorsRight cannot be null or empty");
-        Verify.True(
-            new[] {
-                MilvusMetricType.L2,
-                MilvusMetricType.IP,
-                MilvusMetricType.Hamming,
-                MilvusMetricType.Tanimoto}.Contains(_milvusMetricType),
-            "MetricType must be one of \"metric\":\"L2\"/\"IP\"/\"HAMMIN\"/\"TANIMOTO\"");
+        Verify.NotNull(VectorsLeft);
+        Verify.NotNull(VectorsRight);
+        if (_milvusMetricType is not MilvusMetricType.L2 and not MilvusMetricType.IP and not MilvusMetricType.Hamming and not MilvusMetricType.Tanimoto)
+        {
+            throw new ArgumentOutOfRangeException(nameof(_milvusMetricType), "MetricType must be one of \"metric\":\"L2\"/\"IP\"/\"HAMMIN\"/\"TANIMOTO\"");
+        }
     }
 
     public HttpRequestMessage BuildRest()
@@ -93,7 +88,7 @@ internal sealed class CalcDistanceRequest:
     private CalcDistanceRequest(MilvusMetricType milvusMetricType)
     {
         this._milvusMetricType = milvusMetricType;
-        this.Params["metric"] = milvusMetricType.ToString().ToUpper();
+        this.Params["metric"] = milvusMetricType.ToString().ToUpperInvariant();
     }
     #endregion
 }

@@ -13,10 +13,10 @@ public partial class MilvusGrpcClient
 {
     ///<inheritdoc/>
     public async Task DeleteCredentialAsync(
-    string username,
-    CancellationToken cancellationToken = default)
+        string username,
+        CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Delete credential {0}, {1}", username);
+        this._log.LogDebug("Delete credential {0}", username);
 
         Grpc.DeleteCredentialRequest request = DeleteCredentialRequest
             .Create(username)
@@ -34,14 +34,14 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task UpdateCredentialAsync(
         string username,
-        string oldPassword, 
-        string newPassword, 
+        string oldPassword,
+        string newPassword,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Update credential {0}, {1}", username);
+        this._log.LogDebug("Update credential {0}", username);
 
         Grpc.UpdateCredentialRequest request = UpdateCredentialRequest
-            .Create(username,oldPassword, Base64Encode(newPassword))
+            .Create(username, oldPassword, Base64Encode(newPassword))
             .BuildGrpc();
 
         Grpc.Status response = await _grpcClient.UpdateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
@@ -55,11 +55,11 @@ public partial class MilvusGrpcClient
 
     ///<inheritdoc/>
     public async Task CreateCredentialAsync(
-        string username, 
-        string password, 
+        string username,
+        string password,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create credential {0}, {1}", username);
+        this._log.LogDebug("Create credential {0}", username);
 
         Grpc.CreateCredentialRequest request = CreateCredentialRequest
             .Create(username, Base64Encode(password))

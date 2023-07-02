@@ -5,13 +5,10 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class GetMetricsRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetMetricsRequest>
+internal sealed class GetMetricsRequest
 {
     [JsonPropertyName("request")]
-    public string Request { get;set; }
+    public string Request { get; set; }
 
     public static GetMetricsRequest Create(string request)
     {
@@ -40,7 +37,7 @@ internal sealed class GetMetricsRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Request, "Request cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(Request);
     }
 
     #region Private ==========================================

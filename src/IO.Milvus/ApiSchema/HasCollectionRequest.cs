@@ -10,10 +10,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get if a collection's existence
 /// </summary>
-internal sealed class HasCollectionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.HasCollectionRequest>
+internal sealed class HasCollectionRequest
 {
     /// <summary>
     /// Collection Name
@@ -42,9 +39,9 @@ internal sealed class HasCollectionRequest:
     [JsonPropertyName("time_stamp")]
     public long Timestamp { get; set; }
 
-    public static HasCollectionRequest Create(string collectionName,string dbName)
+    public static HasCollectionRequest Create(string collectionName, string dbName)
     {
-        return new HasCollectionRequest(collectionName,dbName);
+        return new HasCollectionRequest(collectionName, dbName);
     }
 
     public HasCollectionRequest WithTimestamp(DateTime? dateTime)
@@ -76,8 +73,8 @@ internal sealed class HasCollectionRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =========================================================================================================

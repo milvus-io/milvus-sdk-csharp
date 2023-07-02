@@ -9,10 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// ShowCollections
 /// </summary>
-internal sealed class ShowCollectionsRequest:
-    IRestRequest,
-    IGrpcRequest<Grpc.ShowCollectionsRequest>,
-    IValidatable
+internal sealed class ShowCollectionsRequest
 {
     /// <summary>
     /// Collection Names
@@ -76,13 +73,13 @@ internal sealed class ShowCollectionsRequest:
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collections",
-            payload:this
+            payload: this
             );
     }
 
-    public void Validate() 
-    { 
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+    public void Validate()
+    {
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private

@@ -12,7 +12,8 @@ internal sealed class CalDistanceResponse
     public MilvusDistanceResponse MilvusDistance { get; set; }
 }
 
-internal sealed class MilvusDistanceResponse {
+internal sealed class MilvusDistanceResponse
+{
     /// <summary>
     /// Int distance value.
     /// </summary>

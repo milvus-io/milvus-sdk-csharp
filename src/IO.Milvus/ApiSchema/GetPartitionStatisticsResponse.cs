@@ -10,5 +10,5 @@ internal sealed class GetPartitionStatisticsResponse
 
     [JsonPropertyName("stats")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
-    public IDictionary<string,string> Stats { get; set; }
+    public IDictionary<string, string> Stats { get; set; }
 }

@@ -9,10 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get a collection's statistics
 /// </summary>
-internal sealed class GetCollectionStatisticsRequest:
-    IRestRequest,
-    IGrpcRequest<Grpc.GetCollectionStatisticsRequest>,
-    IValidatable
+internal sealed class GetCollectionStatisticsRequest
 {
     /// <summary>
     /// Collection Name
@@ -34,7 +31,7 @@ internal sealed class GetCollectionStatisticsRequest:
 
     public static GetCollectionStatisticsRequest Create(string collectionName, string dbName)
     {
-        return new GetCollectionStatisticsRequest(collectionName,dbName);
+        return new GetCollectionStatisticsRequest(collectionName, dbName);
     }
 
     public Grpc.GetCollectionStatisticsRequest BuildGrpc()
@@ -52,14 +49,14 @@ internal sealed class GetCollectionStatisticsRequest:
     {
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collection/statistics",
-            payload:this
+            payload: this
             );
     }
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(DbName, "DbName cannot be null or empty");
     }
 
     #region Private ==================================================

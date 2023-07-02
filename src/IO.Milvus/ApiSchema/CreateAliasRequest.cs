@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Create an alias for a collection name
 /// </summary>
-internal sealed class CreateAliasRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateAliasRequest>
+internal sealed class CreateAliasRequest
 {
     [JsonPropertyName("alias")]
     public string Alias { get; set; }
@@ -28,9 +25,9 @@ internal sealed class CreateAliasRequest:
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static CreateAliasRequest Create(string collection,string alias, string dbName)
+    public static CreateAliasRequest Create(string collection, string alias, string dbName)
     {
-        return new CreateAliasRequest(collection,alias,dbName);
+        return new CreateAliasRequest(collection, alias, dbName);
     }
 
     public Grpc.CreateAliasRequest BuildGrpc()
@@ -53,9 +50,9 @@ internal sealed class CreateAliasRequest:
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(Alias);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =============================================

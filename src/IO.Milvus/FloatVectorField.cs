@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Float vector field
 /// </summary>
-public class FloatVectorField:Field<List<float>>
+public class FloatVectorField : Field<List<float>>
 {
     /// <summary>
     /// Create a float vector field.
@@ -14,9 +14,9 @@ public class FloatVectorField:Field<List<float>>
     /// <param name="fieldName">Field name</param>
     /// <param name="data">data</param>
     public FloatVectorField(
-        string fieldName, 
-        IList<List<float>> data) : 
-        base(fieldName, data, MilvusDataType.FloatVector,false)
+        string fieldName,
+        IList<List<float>> data) :
+        base(fieldName, data, MilvusDataType.FloatVector, false)
     {
     }
 

@@ -6,7 +6,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Response status
 /// </summary>
-internal class ResponseStatus
+internal sealed class ResponseStatus
 {
     /// <summary>
     /// Error code
