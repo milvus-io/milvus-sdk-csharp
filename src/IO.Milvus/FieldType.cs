@@ -306,33 +306,38 @@ public sealed class FieldType
     /// </summary>
     public void Validate()
     {
-        Verify.True(DataType != MilvusDataType.None, "Milvus field datatype cannot be None");
-        Verify.True(DataType != MilvusDataType.String, "String type is not supported, use Varchar instead");
+        if (DataType is MilvusDataType.None)
+        {
+            throw new ArgumentOutOfRangeException(nameof(DataType), "Milvus field datatype cannot be None");
+        }
+
+        if (DataType is MilvusDataType.String)
+        {
+            throw new ArgumentOutOfRangeException(nameof(DataType), "String type is not supported, use Varchar instead");
+        }
 
         if (DataType is MilvusDataType.FloatVector or MilvusDataType.BinaryVector)
         {
-            Verify.True(TypeParams.ContainsKey(Constants.VECTOR_DIM), "Vector field dimension must be specified");
-
-            if (int.TryParse(TypeParams[Constants.VECTOR_DIM], out int dim))
+            if (!TypeParams.ContainsKey(Constants.VECTOR_DIM))
             {
-                Verify.True(dim > 0, "Vector field dimension must be larger than zero");
+                throw new ArgumentException("Vector field dimension must be specified");
             }
-            else
+
+            if (!int.TryParse(TypeParams[Constants.VECTOR_DIM], out int dim) || dim <= 0)
             {
-                throw new System.ArgumentException("Vector field dimension must be an integer number");
+                throw new ArgumentException("Vector field dimension must be a positive integer number");
             }
         }
         else if (DataType == MilvusDataType.VarChar)
         {
-            Verify.True(TypeParams.ContainsKey(Constants.VARCHAR_MAX_LENGTH), "Varchar field max length must be specified");
-
-            if (int.TryParse(TypeParams[Constants.VARCHAR_MAX_LENGTH], out int maxLength))
+            if (!TypeParams.ContainsKey(Constants.VARCHAR_MAX_LENGTH))
             {
-                Verify.True(maxLength > 0, "Varchar field max length must be larger than zero");
+                throw new ArgumentException("Varchar field max length must be specified");
             }
-            else
+
+            if (!int.TryParse(TypeParams[Constants.VARCHAR_MAX_LENGTH], out int maxLength) || maxLength <= 0)
             {
-                throw new System.ArgumentException("Varchar field max length must be an integer number");
+                throw new ArgumentException("Varchar field max length must be a positive integer number");
             }
         }
 

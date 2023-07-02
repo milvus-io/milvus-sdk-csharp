@@ -43,7 +43,7 @@ internal sealed class DropAliasRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Alias);
     }
 
     #region Private ============================================================================

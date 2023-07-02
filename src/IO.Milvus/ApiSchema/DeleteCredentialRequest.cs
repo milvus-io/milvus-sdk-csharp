@@ -43,7 +43,7 @@ internal sealed class DeleteCredentialRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Username, "Username cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Username);
     }
 
     #region Private ==================================================

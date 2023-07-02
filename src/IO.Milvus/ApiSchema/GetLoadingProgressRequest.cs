@@ -37,7 +37,7 @@ internal sealed class GetLoadingProgressRequest
             CollectionName = this.CollectionName,
         };
 
-        if (PartitionNames?.Any() == true)
+        if (PartitionNames?.Count > 0)
         {
             request.PartitionNames.AddRange(PartitionNames);
         }
@@ -56,7 +56,7 @@ internal sealed class GetLoadingProgressRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
     }
 
     #region Private ===============================================================================

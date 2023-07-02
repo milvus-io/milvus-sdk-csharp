@@ -52,9 +52,9 @@ internal sealed class ReleasePartitionRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.True(PartitionNames.Count >= 1, "Partition names count must be greater than 1");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.GreaterThanOrEqualTo(PartitionNames.Count, 1);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     public Grpc.ReleasePartitionsRequest BuildGrpc()

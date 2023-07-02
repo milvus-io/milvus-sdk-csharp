@@ -55,8 +55,8 @@ internal sealed class DropCollectionRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName, "Milvus collection name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(DbName, "DbName cannot be null or empty");
     }
 
     #region Private =================================================================================

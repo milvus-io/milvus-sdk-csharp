@@ -92,7 +92,7 @@ internal sealed class QueryRequest
         };
 
         request.OutputFields.AddRange(OutFields);
-        if (PartitionNames?.Any() == true)
+        if (PartitionNames?.Count > 0)
         {
             request.PartitionNames.AddRange(PartitionNames);
         }
@@ -139,14 +139,14 @@ internal sealed class QueryRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(this.CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(this.OutFields?.Any() == true, "OutputFields cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(this.Expr, "Expr cannot be null or empty");
-        Verify.True(this.GuaranteeTimestamp >= 0, "GuaranteeTimestamp must be greater than 0");
-        Verify.True(this.TravelTimestamp >= 0, "TravelTimestamp must be greater than 0");
-        Verify.True(this.Offset >= 0, "Offset must be greater than 0");
-        Verify.True(this.Limit >= 0, "Limit must be greater than 0");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrEmpty(OutFields);
+        Verify.NotNullOrWhiteSpace(Expr);
+        Verify.GreaterThanOrEqualTo(GuaranteeTimestamp, 0);
+        Verify.GreaterThanOrEqualTo(TravelTimestamp, 0);
+        Verify.GreaterThanOrEqualTo(Offset, 0);
+        Verify.GreaterThanOrEqualTo(Limit, 0);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     internal QueryRequest WithOutputFields(IList<string> outputFields)

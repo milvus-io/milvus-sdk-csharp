@@ -448,13 +448,16 @@ public class MilvusSearchParameters
     /// </summary>
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(VectorFieldName, "Vector field name cannot be null or empty");
-        Verify.True(OutputFields?.Any() == true, "Output fields cannot be null or empty");
-        Verify.True(GuaranteeTimestamp >= 0, "The guarantee timestamp must be greater than 0");
-        Verify.True(MetricType != MilvusMetricType.Invalid, "Metric type is invalid");
-        Verify.True(MilvusFloatVectors.Count > 0, "Target vectors can not be empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(VectorFieldName);
+        Verify.NotNullOrEmpty(OutputFields);
+        Verify.GreaterThanOrEqualTo(GuaranteeTimestamp, 0);
+        if (MetricType is MilvusMetricType.Invalid)
+        {
+            throw new ArgumentOutOfRangeException(nameof(MetricType), "Metric type is invalid");
+        }
+        Verify.NotNullOrEmpty(MilvusFloatVectors);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =======================================================================
@@ -500,12 +503,12 @@ public class MilvusSearchParameters
             TravelTimestamp = (ulong)TravelTimestamp,
         };
 
-        if (this.PartitionNames?.Any() == true)
+        if (this.PartitionNames?.Count > 0)
         {
             request.PartitionNames.AddRange(this.PartitionNames);
         }
 
-        if (this.OutputFields?.Any() == true)
+        if (this.OutputFields?.Count > 0)
         {
             request.OutputFields.AddRange(this.OutputFields);
         }
@@ -532,7 +535,7 @@ public class MilvusSearchParameters
         request.SearchParams[Constants.ROUND_DECIMAL] = RoundDecimal.ToString(CultureInfo.InvariantCulture);
         request.SearchParams[Constants.IGNORE_GROWING] = IgnoreGrowing.ToString();
 
-        if (Parameters?.Any() == true)
+        if (Parameters?.Count > 0)
         {
             request.SearchParams[Constants.PARAMS] = Parameters.Combine();
         }
@@ -550,7 +553,7 @@ public class MilvusSearchParameters
                 new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) }
             });
 
-        if (Parameters?.Any() == true)
+        if (Parameters?.Count > 0)
         {
             request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = Parameters.Combine() });
         }

@@ -79,7 +79,7 @@ internal sealed class ShowCollectionsRequest
 
     public void Validate()
     {
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private

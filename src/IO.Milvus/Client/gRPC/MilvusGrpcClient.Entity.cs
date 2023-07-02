@@ -1,6 +1,7 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -20,9 +21,9 @@ public partial class MilvusGrpcClient
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Insert entities to {0}", collectionName);
-        Verify.ArgNotNullOrEmpty(collectionName, "Milvus collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(fields, "Fields cannot be null or empty");
-        Verify.NotNullOrEmpty(dbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrEmpty(fields);
+        Verify.NotNullOrWhiteSpace(dbName);
 
         Grpc.InsertRequest request = new Grpc.InsertRequest()
         {
@@ -34,8 +35,14 @@ public partial class MilvusGrpcClient
             request.PartitionName = partitionName;
         }
 
-        var count = fields.First().RowCount;
-        Verify.True(fields.All(p => p.RowCount == count), "Fields length is not same");
+        long count = fields[0].RowCount;
+        for (int i = 1; i < fields.Count; i++)
+        {
+            if (fields[i].RowCount != count)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(fields)}[{i}])", "Fields length is not same");
+            }
+        }
 
         request.FieldsData.AddRange(fields.Select(p => p.ToGrpcFieldData()));
 
@@ -83,6 +90,8 @@ public partial class MilvusGrpcClient
         MilvusSearchParameters searchParameters,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(searchParameters);
+
         this._log.LogDebug("Search: {0}", searchParameters.ToString());
 
         var request = searchParameters.BuildGrpc();
@@ -104,9 +113,9 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Flush: {0}", collectionNames.ToString());
-        Verify.True(collectionNames?.Any() == true, "Milvus collection names cannot be null or empty");
-        Verify.NotNullOrEmpty(dbName, "DbName cannot be null or empty");
+        Verify.NotNullOrEmpty(collectionNames);
+        Verify.NotNullOrWhiteSpace(dbName);
+        this._log.LogDebug("Flush: {0}", dbName);
 
         Grpc.FlushRequest request = new Grpc.FlushRequest()
         {
@@ -132,6 +141,8 @@ public partial class MilvusGrpcClient
         MilvusMetricType milvusMetricType,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(leftVectors);
+
         this._log.LogDebug("Cal distance: {0}", leftVectors.ToString());
 
         Grpc.CalcDistanceRequest request = CalcDistanceRequest
@@ -179,7 +190,7 @@ public partial class MilvusGrpcClient
         CancellationToken cancellationToken = default)
     {
         this._log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
-        Verify.True(segmentIds?.Any() == true, "Milvus segment ids cannot be null or empty");
+        Verify.NotNullOrEmpty(segmentIds);
 
         Grpc.GetFlushStateRequest request = new Grpc.GetFlushStateRequest();
         request.SegmentIDs.AddRange(segmentIds);

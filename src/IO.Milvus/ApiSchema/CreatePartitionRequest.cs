@@ -59,9 +59,9 @@ internal sealed class CreatePartitionRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(PartitionName, "Milvus partition name cannot be null or empty.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(PartitionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ====================================================================

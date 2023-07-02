@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
-using System.Threading;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
 using System.Net.Http;
-using IO.Milvus.ApiSchema;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace IO.Milvus.Client.REST;
 
@@ -93,6 +94,8 @@ public partial class MilvusRestClient
         MilvusSearchParameters searchParameters,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(searchParameters);
+
         this._log.LogDebug("Search: {0}", searchParameters.ToString());
 
         using HttpRequestMessage request = searchParameters.BuildRest();

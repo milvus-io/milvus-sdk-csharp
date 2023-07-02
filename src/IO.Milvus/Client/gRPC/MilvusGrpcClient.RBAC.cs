@@ -14,7 +14,7 @@ public partial class MilvusGrpcClient
         string roleName,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
         this._log.LogDebug("Creating role {0}.", roleName);
 
         Grpc.Status response = await _grpcClient.CreateRoleAsync(new Grpc.CreateRoleRequest()
@@ -37,7 +37,7 @@ public partial class MilvusGrpcClient
         string roleName,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
         this._log.LogDebug("Drop role {0}.", roleName);
 
         Grpc.Status response = await _grpcClient.DropRoleAsync(new Grpc.DropRoleRequest()
@@ -58,8 +58,8 @@ public partial class MilvusGrpcClient
         string roleName,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(username, "Username cannot be null or empty.");
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(username);
+        Verify.NotNullOrWhiteSpace(roleName);
         this._log.LogDebug("Add user to role {0} {1}.", username, roleName);
 
         Grpc.Status response = await _grpcClient.OperateUserRoleAsync(new Grpc.OperateUserRoleRequest()
@@ -82,8 +82,8 @@ public partial class MilvusGrpcClient
         string roleName,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(username, "Username cannot be null or empty.");
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(username);
+        Verify.NotNullOrWhiteSpace(roleName);
         this._log.LogDebug("Remove user to role {0} {1}.", username, roleName);
 
         Grpc.Status response = await _grpcClient.OperateUserRoleAsync(new Grpc.OperateUserRoleRequest()
@@ -106,7 +106,7 @@ public partial class MilvusGrpcClient
         bool includeUserInfo = false,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
         this._log.LogDebug("Select role {0}, includeUserInfo: {1}.", roleName, includeUserInfo);
 
         Grpc.SelectRoleResponse response = await this._grpcClient.SelectRoleAsync(new Grpc.SelectRoleRequest()
@@ -133,7 +133,7 @@ public partial class MilvusGrpcClient
         bool includeRoleInfo = false,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(username, "Username cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(username);
         this._log.LogDebug("Select user {0}, includeRoleInfo: {1}.", username, includeRoleInfo);
 
         Grpc.SelectUserResponse response = await this._grpcClient.SelectUserAsync(new Grpc.SelectUserRequest()
@@ -163,11 +163,11 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
-        Verify.NotNullOrEmpty(@object, "Object cannot be null or empty.");
-        Verify.NotNullOrEmpty(objectName, "Object name cannot be null or empty.");
-        Verify.NotNullOrEmpty(privilege, "Privilege cannot be null or empty.");
-        Verify.NotNullOrEmpty(dbName, "Database name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
+        Verify.NotNullOrWhiteSpace(@object);
+        Verify.NotNullOrWhiteSpace(objectName);
+        Verify.NotNullOrWhiteSpace(privilege);
+        Verify.NotNullOrWhiteSpace(dbName);
 
         this._log.LogDebug("Grant role {0} privilege {1} on {2} {3} of {4}.", roleName, privilege, @object, objectName, dbName);
 
@@ -211,10 +211,10 @@ public partial class MilvusGrpcClient
         string privilege,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
-        Verify.NotNullOrEmpty(@object, "Object cannot be null or empty.");
-        Verify.NotNullOrEmpty(objectName, "Object name cannot be null or empty.");
-        Verify.NotNullOrEmpty(privilege, "Privilege cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
+        Verify.NotNullOrWhiteSpace(@object);
+        Verify.NotNullOrWhiteSpace(objectName);
+        Verify.NotNullOrWhiteSpace(privilege);
 
         this._log.LogDebug("Revoke role {0} privilege {1} on {2} {3}.", roleName, privilege, @object, objectName);
 
@@ -254,7 +254,7 @@ public partial class MilvusGrpcClient
         string roleName,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
         this._log.LogDebug("Select grant for role {0}.", roleName);
 
         Grpc.SelectGrantResponse response = await this._grpcClient.SelectGrantAsync(new Grpc.SelectGrantRequest()
@@ -284,9 +284,9 @@ public partial class MilvusGrpcClient
         string objectName,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrEmpty(roleName, "Role name cannot be null or empty.");
-        Verify.NotNullOrEmpty(@object, "Object cannot be null or empty.");
-        Verify.NotNullOrEmpty(objectName, "Object name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(roleName);
+        Verify.NotNullOrWhiteSpace(@object);
+        Verify.NotNullOrWhiteSpace(objectName);
         this._log.LogDebug("Select grant for role and object: {0}.", roleName);
 
         Grpc.SelectGrantResponse response = await this._grpcClient.SelectGrantAsync(new Grpc.SelectGrantRequest()

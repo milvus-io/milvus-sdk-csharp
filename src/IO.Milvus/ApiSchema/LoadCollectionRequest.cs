@@ -68,9 +68,9 @@ internal sealed class LoadCollectionRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.GreaterThanOrEqualTo(ReplicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =====================================================================================

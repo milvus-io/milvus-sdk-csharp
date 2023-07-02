@@ -32,7 +32,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
         ILogger log = null
         )
     {
-        Verify.ArgNotNullOrEmpty(endpoint, "Milvus client cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(endpoint);
 
         this._log = log ?? NullLogger<MilvusRestClient>.Instance;
         this._httpClient = httpClient ?? s_defaultHttpClient;
@@ -149,7 +149,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
 
     private static Uri SanitizeEndpoint(string endpoint, int? port)
     {
-        Verify.IsValidUrl(nameof(endpoint), endpoint, false, true, false);
+        Verify.ValidUrl(nameof(endpoint), endpoint, false, true, false);
 
         UriBuilder builder = new(endpoint);
         if (port.HasValue) { builder.Port = port.Value; }

@@ -54,8 +54,8 @@ internal sealed class ReleaseCollectionRequest
 
     public void Validate()
     {
-        Verify.NotNullOrEmpty(CollectionName, "Collection name cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ===============================================================

@@ -37,7 +37,7 @@ internal sealed class GetMetricsRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Request, "Request cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(Request);
     }
 
     #region Private ==========================================

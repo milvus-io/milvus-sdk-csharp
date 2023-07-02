@@ -1,5 +1,6 @@
 ﻿using IO.Milvus.Client;
 using IO.Milvus.Client.REST;
+using IO.Milvus.Diagnostics;
 using IO.MilvusTests.Client;
 using System;
 using System.Collections.Generic;
@@ -41,7 +42,9 @@ public static class MilvusClientExtensions
         TimeSpan timeout,
         CancellationToken cancellationToken = default)
     {
-        if (partitionName?.Any() != true)
+        Verify.NotNull(milvusClient);
+
+        if (partitionName is not { Count: > 0 })
         {
             IList<MilvusCollection> collections = await milvusClient.ShowCollectionsAsync(new[] { collectionName }, cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -107,6 +110,7 @@ public static class MilvusClientExtensions
         TimeSpan timeout,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(milvusClient);
         if (milvusClient is MilvusRestClient)
         {
             throw new NotSupportedException("Not support restful api");
@@ -149,6 +153,7 @@ public static class MilvusClientExtensions
         TimeSpan timeout,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(milvusClient);
         if (milvusClient is MilvusRestClient)
         {
             throw new NotSupportedException("Not support restful api");
@@ -184,6 +189,8 @@ public static class MilvusClientExtensions
         this IMilvusClient milvusClient,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(milvusClient);
+
         string version = await milvusClient.GetVersionAsync(cancellationToken).ConfigureAwait(false);
         return MilvusVersion.Parse(version);
     }

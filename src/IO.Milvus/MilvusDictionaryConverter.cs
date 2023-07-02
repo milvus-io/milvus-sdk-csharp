@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IO.Milvus.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -61,6 +62,8 @@ public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, strin
         IDictionary<string, string> value,
         JsonSerializerOptions options)
     {
+        Verify.NotNull(writer);
+
         if (value == null)
         {
             return;

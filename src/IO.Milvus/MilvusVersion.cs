@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using IO.Milvus.Diagnostics;
+using System.Globalization;
 
 namespace IO.MilvusTests.Client;
 
@@ -42,6 +43,8 @@ public sealed record MilvusVersion
     /// <returns>Milvus version</returns>
     public static MilvusVersion Parse(string version)
     {
+        Verify.NotNull(version);
+
         var versions = version.Substring(1, version.Length - 1).Split('.', '-');
         return new MilvusVersion(
             int.Parse(versions[0], CultureInfo.InvariantCulture),

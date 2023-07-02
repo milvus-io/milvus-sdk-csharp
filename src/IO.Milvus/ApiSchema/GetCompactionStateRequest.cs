@@ -42,7 +42,7 @@ internal sealed class GetCompactionStateRequest
 
     public void Validate()
     {
-        Verify.True(CompactionId > 0, "Invalid collection id");
+        Verify.GreaterThan(CompactionId, 0);
     }
 
     #region Prvate =========================================================================

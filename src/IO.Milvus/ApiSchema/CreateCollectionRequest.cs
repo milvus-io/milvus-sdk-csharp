@@ -1,8 +1,10 @@
 ﻿using Google.Protobuf;
+using Google.Protobuf.Reflection;
 using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -95,14 +97,22 @@ internal sealed class CreateCollectionRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.True(Schema.Fields?.Any() == true, "FieldTypes cannot be null or empty");
-        Verify.True(Schema.Fields?.Count(p => p.IsPrimaryKey) == 1, "FieldTypes need only one primary key field type");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
-        FieldType firstField = Schema.Fields.First();
-        if (!firstField.IsPrimaryKey || (firstField.DataType != (MilvusDataType)DataType.Int64 && firstField.DataType != (MilvusDataType)DataType.VarChar))
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrEmpty(Schema.Fields);
+        Verify.NotNullOrWhiteSpace(DbName);
+        Verify.NotNullOrEmpty(Schema.Fields);
+        FieldType firstField = Schema.Fields[0];
+        if (!firstField.IsPrimaryKey ||
+            (firstField.DataType is not (MilvusDataType)DataType.Int64 and not (MilvusDataType)DataType.VarChar))
         {
-            throw new MilvusException("The first filedType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
+            throw new MilvusException("The first fielType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
+        }
+        for (int i = 1; i < Schema.Fields.Count; i++)
+        {
+            if (Schema.Fields[i].IsPrimaryKey)
+            {
+                throw new ArgumentException("FieldTypes needs at most one primary key field type", "Schema.Fields");
+            }
         }
     }
 

@@ -68,9 +68,9 @@ internal sealed class UpdateCredentialRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Username, "Username cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(OldPassword, "OldPassword cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(NewPassword, "NewPassword cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Username);
+        Verify.NotNullOrWhiteSpace(OldPassword);
+        Verify.NotNullOrWhiteSpace(NewPassword);
     }
 
     #region Private ==================================================================

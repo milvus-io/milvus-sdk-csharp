@@ -50,9 +50,9 @@ internal sealed class CreateAliasRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(Alias, "Alias cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(Alias);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private =============================================

@@ -69,15 +69,12 @@ internal sealed class CalcDistanceRequest
 
     public void Validate()
     {
-        Verify.NotNull(this.VectorsLeft, "VectorsLeft cannot be null or empty");
-        Verify.NotNull(this.VectorsRight, "VectorsRight cannot be null or empty");
-        Verify.True(
-            new[] {
-                MilvusMetricType.L2,
-                MilvusMetricType.IP,
-                MilvusMetricType.Hamming,
-                MilvusMetricType.Tanimoto}.Contains(_milvusMetricType),
-            "MetricType must be one of \"metric\":\"L2\"/\"IP\"/\"HAMMIN\"/\"TANIMOTO\"");
+        Verify.NotNull(VectorsLeft);
+        Verify.NotNull(VectorsRight);
+        if (_milvusMetricType is not MilvusMetricType.L2 and not MilvusMetricType.IP and not MilvusMetricType.Hamming and not MilvusMetricType.Tanimoto)
+        {
+            throw new ArgumentOutOfRangeException(nameof(_milvusMetricType), "MetricType must be one of \"metric\":\"L2\"/\"IP\"/\"HAMMIN\"/\"TANIMOTO\"");
+        }
     }
 
     public HttpRequestMessage BuildRest()

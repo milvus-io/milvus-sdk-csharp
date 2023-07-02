@@ -35,7 +35,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
         CallOptions? callOptions = default,
         ILogger log = null)
     {
-        Verify.NotNull(endpoint, "Milvus client cannot be null or empty");
+        Verify.NotNull(endpoint);
 
         var address = SanitizeEndpoint(endpoint, port);
 
@@ -122,7 +122,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
 
     private static Uri SanitizeEndpoint(string endpoint, int? port)
     {
-        Verify.IsValidUrl(nameof(endpoint), endpoint, false, true, false);
+        Verify.ValidUrl(nameof(endpoint), endpoint, false, true, false);
 
         UriBuilder builder = new(endpoint);
         if (port.HasValue) { builder.Port = port.Value; }

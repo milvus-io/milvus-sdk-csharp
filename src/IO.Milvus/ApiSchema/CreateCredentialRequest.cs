@@ -68,8 +68,8 @@ internal sealed class CreateCredentialRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(Username, "Username cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(Password, "Password cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(Username);
+        Verify.NotNullOrWhiteSpace(Password);
     }
 
     #region Private =================================================================

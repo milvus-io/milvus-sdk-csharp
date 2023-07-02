@@ -225,14 +225,7 @@ public partial class MilvusClientTests
 
         //Drop index
         await milvusClient.DropIndexAsync(collectionName, "book_intro", Constants.DEFAULT_INDEX_NAME);
-        try
-        {
-            indexes = await milvusClient.DescribeIndexAsync(collectionName, "book_intro");
-        }
-        catch (MilvusException ex)
-        {
-            ex.ErrorCode.Should().Be(Milvus.Grpc.ErrorCode.IndexNotExist);
-        }
+        await Assert.ThrowsAsync<MilvusException>(async () => await milvusClient.DescribeIndexAsync(collectionName, "book_intro"));
 
         //Drop partition
         if (!milvusClient.IsZillizCloud())

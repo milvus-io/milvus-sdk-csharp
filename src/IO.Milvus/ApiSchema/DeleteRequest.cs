@@ -78,9 +78,9 @@ internal sealed class DeleteRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.ArgNotNullOrEmpty(Expr, "Expr cannot be null or empty");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(Expr);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ===========================================================

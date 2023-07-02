@@ -36,7 +36,7 @@ internal sealed class ShowPartitionsResponse
                 PartitionIds[i],
                 PartitionNames[i],
                 TimestampUtils.GetTimeFromTimstamp(CreatedUtcTimestamps[i]),
-                InMemoryPercentages?.Any() == true ? InMemoryPercentages[i] : -1
+                InMemoryPercentages?.Count > i ? InMemoryPercentages[i] : -1
                 );
         }
     }

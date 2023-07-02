@@ -88,7 +88,7 @@ internal sealed class CreateIndexRequest
             Value = _milvusIndexType.ToString()
         });
 
-        if (ExtraParams?.Any() == true)
+        if (ExtraParams?.Count > 0)
         {
             request.ExtraParams.Add(new Grpc.KeyValuePair()
             {
@@ -115,9 +115,9 @@ internal sealed class CreateIndexRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(FieldName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ==================================================================================

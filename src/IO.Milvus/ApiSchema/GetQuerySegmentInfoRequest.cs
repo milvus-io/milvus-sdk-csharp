@@ -42,7 +42,7 @@ internal sealed class GetQuerySegmentInfoRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
     }
 
     #region Private ==================================================================================

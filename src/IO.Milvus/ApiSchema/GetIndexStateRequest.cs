@@ -48,9 +48,9 @@ internal sealed class GetIndexStateRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(FieldName, "Field name cannot be null or empty.");
-        Verify.ArgNotNullOrEmpty(DbName, "DbName cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrWhiteSpace(FieldName);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ====================================================================================

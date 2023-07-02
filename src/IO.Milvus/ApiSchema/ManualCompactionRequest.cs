@@ -50,7 +50,7 @@ internal sealed class ManualCompactionRequest
 
     public void Validate()
     {
-        Verify.True(CollectionId > 0, "Invalid collection id");
+        Verify.GreaterThan(CollectionId, 0);
     }
 
     internal ManualCompactionRequest WithTimetravel(DateTime? timetravel)

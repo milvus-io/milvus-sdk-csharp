@@ -29,7 +29,7 @@ public class MilvusFieldConverter : JsonConverter<IList<Field>>
 
     private static void DeserializePropertyList<T>(ref Utf8JsonReader reader, IList<T> list)
     {
-        Verify.NotNull(list, nameof(list));
+        Verify.NotNull(list);
 
         if (reader.TokenType == JsonTokenType.PropertyName) reader.Read();
 

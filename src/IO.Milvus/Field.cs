@@ -96,6 +96,8 @@ public abstract class Field
     /// <exception cref="NotSupportedException"></exception>
     public static Field FromGrpcFieldData(Grpc.FieldData fieldData)
     {
+        Verify.NotNull(fieldData);
+
         if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Vectors)
         {
             int dim = (int)fieldData.Vectors.Dim;
@@ -265,7 +267,7 @@ public abstract class Field
     /// <returns></returns>
     public static BinaryVectorField CreateFromBytes(string fieldName, byte[] bytes, long dimension)
     {
-        Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
+        Verify.NotNullOrWhiteSpace(fieldName);
 
         List<byte[]> byteArray = new();
 
@@ -291,7 +293,7 @@ public abstract class Field
     /// <returns></returns>
     public static BinaryVectorField CreateBinaryVectors(string fieldName, IList<byte[]> data)
     {
-        Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
+        Verify.NotNullOrWhiteSpace(fieldName);
         var field = new BinaryVectorField(fieldName, data);
         return field;
     }
@@ -336,7 +338,7 @@ public abstract class Field
     /// <returns></returns>
     public static ByteStringField CreateFromByteString(string fieldName, ByteString byteString, long dimension)
     {
-        Verify.ArgNotNullOrEmpty(fieldName, nameof(FieldName));
+        Verify.NotNullOrWhiteSpace(fieldName);
         var field = new ByteStringField(fieldName, byteString, dimension);
 
         return field;
@@ -351,7 +353,7 @@ public abstract class Field
     /// <returns>New created field</returns>
     public static Field CreateFromStream(string fieldName, Stream stream, long dimension)
     {
-        Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(fieldName);
         var field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
 
         return field;
@@ -366,7 +368,7 @@ public abstract class Field
     /// <returns></returns>
     public static Field CreateJson(string fieldName, IList<string> json, bool isDynamic = false)
     {
-        Verify.ArgNotNullOrEmpty(fieldName, "Field name cannot be null or empty.");
+        Verify.NotNullOrWhiteSpace(fieldName);
         return new Field<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
     #endregion
@@ -572,7 +574,7 @@ public class Field<TData> : Field
 
     internal void Check()
     {
-        Verify.ArgNotNullOrEmpty(FieldName, $"FieldName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(FieldName);
         if (Data?.Any() != true)
         {
             throw new MilvusException($"{nameof(Field)}.{nameof(Data)} is empty");

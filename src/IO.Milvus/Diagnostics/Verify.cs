@@ -7,62 +7,78 @@ namespace IO.Milvus.Diagnostics;
 
 internal static class Verify
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void True(bool value, string message)
+    internal static void NotNull([NotNull] object argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
     {
-        if (!value)
+        if (argument is null)
         {
-            throw new ArgumentException(message);
+            ThrowNullException(paramName);
+        }
+
+        static void ThrowNullException(string paramName) =>
+            throw new ArgumentNullException(paramName);
+    }
+
+    internal static void NotNullOrWhiteSpace([NotNull] string argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
+    {
+        if (string.IsNullOrWhiteSpace(argument))
+        {
+            ThrowNullOrWhiteSpaceException(argument, paramName);
+        }
+
+        static void ThrowNullOrWhiteSpaceException(string argument, string paramName)
+        {
+            NotNull(argument, paramName);
+            throw new ArgumentException("The value cannot be an empty string or composed entirely of whitespace.", paramName);
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void NotNull([NotNull] object obj, string message)
+    internal static void NotNullOrEmpty<T>(IList<T> argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
     {
-        if (obj != null) { return; }
-
-        throw new ArgumentNullException(null, message);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void NotNullOrEmpty([NotNull] string str, string message)
-    {
-        NotNull(str, message);
-        if (!string.IsNullOrWhiteSpace(str)) { return; }
-
-        throw new ArgumentOutOfRangeException(message);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void ArgNotNullOrEmpty([NotNull] string str, string paramName, [CallerMemberName] string caller = default)
-    {
-        NotNull(str, paramName);
-        if (!string.IsNullOrWhiteSpace(str)) { return; }
-
-        throw new ArgumentException(paramName, $"Parameter {paramName} cannot be empty." + (!string.IsNullOrEmpty(caller) ? $"({caller})" : string.Empty));
-    }
-
-    internal static void NotNullOrEmpty<T>(IList<T> list, string message)
-    {
-        if (list == null || list.Count == 0)
+        if (argument is null || argument.Count == 0)
         {
-            throw new ArgumentOutOfRangeException(message);
+            ThrowNullOrEmptyException(argument, paramName);
+        }
+
+        static void ThrowNullOrEmptyException(object argument, string paramName)
+        {
+            NotNull(argument, paramName);
+            throw new ArgumentException("The collection cannot empty", paramName);
         }
     }
 
-    public static void IsValidUrl(string name, string url, bool requireHttps, bool allowReservedIp, bool allowQuery)
+    internal static void GreaterThan(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = null)
     {
-        static bool IsReservedIpAddress(string host)
+        if (value <= other)
         {
-            return host.StartsWith("0.", StringComparison.Ordinal) ||
-                   host.StartsWith("10.", StringComparison.Ordinal) ||
-                   host.StartsWith("127.", StringComparison.Ordinal) ||
-                   host.StartsWith("169.254.", StringComparison.Ordinal) ||
-                   host.StartsWith("192.0.0.", StringComparison.Ordinal) ||
-                   host.StartsWith("192.88.99.", StringComparison.Ordinal) ||
-                   host.StartsWith("192.168.", StringComparison.Ordinal) ||
-                   host.StartsWith("255.255.255.255", StringComparison.Ordinal);
+            ThrowLessThanOrEqual(other, paramName);
         }
+
+        static void ThrowLessThanOrEqual(long other, string paramName) =>
+            throw new ArgumentOutOfRangeException(paramName, $"The value must be greater than {other}.");
+    }
+
+    internal static void GreaterThanOrEqualTo(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = null)
+    {
+        if (value < other)
+        {
+            ThrowLessThan(other, paramName);
+        }
+
+        static void ThrowLessThan(long other, string paramName) =>
+            throw new ArgumentOutOfRangeException(paramName, $"The value must be greater than or equal to {other}.");
+    }
+
+    public static void ValidUrl(string name, string url, bool requireHttps, bool allowReservedIp, bool allowQuery)
+    {
+        static bool IsReservedIpAddress(string host) =>
+            host.StartsWith("0.", StringComparison.Ordinal) ||
+            host.StartsWith("10.", StringComparison.Ordinal) ||
+            host.StartsWith("127.", StringComparison.Ordinal) ||
+            host.StartsWith("169.254.", StringComparison.Ordinal) ||
+            host.StartsWith("192.0.0.", StringComparison.Ordinal) ||
+            host.StartsWith("192.88.99.", StringComparison.Ordinal) ||
+            host.StartsWith("192.168.", StringComparison.Ordinal) ||
+            host.StartsWith("255.255.255.255", StringComparison.Ordinal);
 
         if (string.IsNullOrEmpty(url))
         {
@@ -79,8 +95,7 @@ internal static class Verify
             throw new ArgumentException($"The {name} `{url}` is incomplete, enter a valid URL starting with 'https://", name);
         }
 
-        bool result = Uri.TryCreate(url, UriKind.Absolute, out var uri);
-        if (!result || string.IsNullOrEmpty(uri.Host))
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || string.IsNullOrEmpty(uri.Host))
         {
             throw new ArgumentException($"The {name} `{url}` is not valid", name);
         }

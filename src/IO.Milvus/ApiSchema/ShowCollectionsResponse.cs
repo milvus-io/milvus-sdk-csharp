@@ -56,7 +56,7 @@ internal sealed class ShowCollectionsResponse
                 CollectionIds[i],
                 CollectionNames[i],
                 TimestampUtils.GetTimeFromTimstamp(CreatedUtcTimestamps[i]),
-                InMemoryPercentages?.Any() == true ? InMemoryPercentages[i] : -1);
+                InMemoryPercentages?.Count > i ? InMemoryPercentages[i] : -1);
         }
     }
 }

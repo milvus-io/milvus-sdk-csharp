@@ -50,10 +50,10 @@ internal sealed class LoadPartitionsRequest
 
     public void Validate()
     {
-        Verify.ArgNotNullOrEmpty(CollectionName, "Milvus collection name cannot be null or empty.");
-        Verify.NotNullOrEmpty(PartitionNames, "Partition names count must be greater than 1");
-        Verify.True(ReplicaNumber >= 1, "Replica number must be greater than 1.");
-        Verify.NotNullOrEmpty(DbName, "DbName cannot be null or empty");
+        Verify.NotNullOrWhiteSpace(CollectionName);
+        Verify.NotNullOrEmpty(PartitionNames);
+        Verify.GreaterThanOrEqualTo(ReplicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     public static LoadPartitionsRequest Create(string collectionName, string dbName)
