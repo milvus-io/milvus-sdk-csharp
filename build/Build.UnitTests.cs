@@ -19,7 +19,9 @@ partial class Build
     const string MilvusYmlName = "milvus-standalone-docker-compose.yml";
 
     [Parameter]
-    string MilvusYmlFileAddress = "https://github.com/milvus-io/milvus/releases/download/v2.2.10/milvus-standalone-docker-compose.yml";
+    string MilvusVersion = "v2.2.10";
+
+    string MilvusYmlFileAddress => $"https://github.com/milvus-io/milvus/releases/download/{MilvusVersion}/milvus-standalone-docker-compose.yml";
 
     Target DownloadYml => _ => _ 
         .DependsOn(Compile)
@@ -30,6 +32,7 @@ partial class Build
                 file.Delete();
             }
 
+            Log.Information(MilvusYmlFileAddress);
             await DownloadFileAsync(MilvusYmlFileAddress, MilvusYmlName);
 
             file = new FileInfo(MilvusYmlName);
@@ -59,7 +62,7 @@ partial class Build
         .DependsOn(ComposeUp)
         .Executes(() =>{
             //Generate milvus client config file
-            List<MilvusConfig> configs = new List<MilvusConfig>{
+            List<MilvusConfig> configs = new (){
                 new MilvusConfig(){
                     Endpoint = "http://localhost",
                     Port = 19530,
@@ -100,7 +103,7 @@ partial class Build
              });
         });
 
-    private async Task DownloadFileAsync(string url, string fileName){
+    private static async Task DownloadFileAsync(string url, string fileName){
         var uri = new Uri(url);
         using var client = new HttpClient();
         var response = await client.GetAsync(uri);

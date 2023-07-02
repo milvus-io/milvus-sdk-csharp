@@ -38,7 +38,7 @@
             "VSCode"
           ]
         },
-        "MilvusYmlFileAddress": {
+        "MilvusVersion": {
           "type": "string"
         },
         "NoLogo": {
