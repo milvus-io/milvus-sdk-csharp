@@ -9,10 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class GetLoadingProgressRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetLoadingProgressRequest>
+internal sealed class GetLoadingProgressRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }

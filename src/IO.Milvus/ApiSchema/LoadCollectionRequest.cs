@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Load a collection for search
 /// </summary>
-internal sealed class LoadCollectionRequest :
-    IRestRequest,
-    IGrpcRequest<Grpc.LoadCollectionRequest>,
-    IValidatable
+internal sealed class LoadCollectionRequest
 {
     /// <summary>
     /// Collection Name

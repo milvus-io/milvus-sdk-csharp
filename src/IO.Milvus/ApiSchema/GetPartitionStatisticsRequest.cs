@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get a partition's statistics
 /// </summary>
-internal sealed class GetPartitionStatisticsRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetPartitionStatisticsRequest>
+internal sealed class GetPartitionStatisticsRequest
 {
     /// <summary>
     /// The collection name in milvus

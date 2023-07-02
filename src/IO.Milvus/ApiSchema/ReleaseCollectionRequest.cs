@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Release a collection loaded before
 /// </summary>
-internal sealed class ReleaseCollectionRequest : 
-    IRestRequest, 
-    IGrpcRequest<Grpc.ReleaseCollectionRequest>,
-    IValidatable
+internal sealed class ReleaseCollectionRequest
 {
     /// <summary>
     /// Collection Name

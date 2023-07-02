@@ -9,10 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get a collection's statistics
 /// </summary>
-internal sealed class GetCollectionStatisticsRequest:
-    IRestRequest,
-    IGrpcRequest<Grpc.GetCollectionStatisticsRequest>,
-    IValidatable
+internal sealed class GetCollectionStatisticsRequest
 {
     /// <summary>
     /// Collection Name

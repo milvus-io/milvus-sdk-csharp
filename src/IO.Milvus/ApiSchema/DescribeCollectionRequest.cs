@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Describe a collection
 /// </summary>
-internal sealed class DescribeCollectionRequest:
-    IRestRequest,
-    IGrpcRequest<Grpc.DescribeCollectionRequest>,
-    IValidatable
+internal sealed class DescribeCollectionRequest
 {
     /// <summary>
     /// Collection Name

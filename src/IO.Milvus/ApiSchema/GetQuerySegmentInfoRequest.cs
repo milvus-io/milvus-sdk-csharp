@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Returns growing segments's information of a collection
 /// </summary>
-internal sealed class GetQuerySegmentInfoRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetQuerySegmentInfoRequest>
+internal sealed class GetQuerySegmentInfoRequest
 {
     /// <summary>
     /// Collection name

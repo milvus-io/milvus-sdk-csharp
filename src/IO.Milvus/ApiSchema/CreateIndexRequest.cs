@@ -8,10 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class CreateIndexRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateIndexRequest>
+internal sealed class CreateIndexRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }

@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Create an alias for a collection name
 /// </summary>
-internal sealed class CreateAliasRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateAliasRequest>
+internal sealed class CreateAliasRequest
 {
     [JsonPropertyName("alias")]
     public string Alias { get; set; }

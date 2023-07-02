@@ -13,10 +13,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Create a collection
 /// </summary>
-internal sealed class CreateCollectionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateCollectionRequest>
+internal sealed class CreateCollectionRequest
 {
     #region Properties
     /// <summary>

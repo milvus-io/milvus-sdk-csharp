@@ -4,10 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class GetCompactionPlansRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetCompactionPlansRequest>
+internal sealed class GetCompactionPlansRequest
 {
     [JsonPropertyName("compactionID")]
     public long CompactionId { get; set; }

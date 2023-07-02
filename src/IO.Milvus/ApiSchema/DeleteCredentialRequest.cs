@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete a Credential
 /// </summary>
-internal sealed class DeleteCredentialRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DeleteCredentialRequest>
+internal sealed class DeleteCredentialRequest
 {
     /// <summary>
     /// Not useful for now

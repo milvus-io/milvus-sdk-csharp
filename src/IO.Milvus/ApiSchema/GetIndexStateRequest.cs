@@ -5,10 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class GetIndexStateRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetIndexStateRequest>
+internal sealed class GetIndexStateRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }

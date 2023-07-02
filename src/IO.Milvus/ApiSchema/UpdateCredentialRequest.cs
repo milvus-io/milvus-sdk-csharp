@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Update password for a user
 /// </summary>
-internal sealed class UpdateCredentialRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.UpdateCredentialRequest>
+internal sealed class UpdateCredentialRequest
 {
     /// <summary>
     /// UTC timestamps

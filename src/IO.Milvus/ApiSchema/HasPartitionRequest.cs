@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get if a partition exists
 /// </summary>
-internal sealed class HasPartitionRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.HasPartitionRequest>
+internal sealed class HasPartitionRequest
 {
     /// <summary>
     /// Collection name

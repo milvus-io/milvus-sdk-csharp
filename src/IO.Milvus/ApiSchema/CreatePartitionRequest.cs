@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Create a partition.
 /// </summary>
-internal sealed class CreatePartitionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreatePartitionRequest>
+internal sealed class CreatePartitionRequest
 {
     /// <summary>
     /// Collection name.

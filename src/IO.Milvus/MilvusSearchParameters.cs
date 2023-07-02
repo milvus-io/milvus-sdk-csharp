@@ -14,10 +14,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Search parameters.
 /// </summary>
-public class MilvusSearchParameters:
-    IValidatable,
-    IGrpcRequest<Grpc.SearchRequest>,
-    IRestRequest
+public class MilvusSearchParameters
 {
     /// <summary>
     /// the consistency level used in the query. 

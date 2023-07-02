@@ -6,10 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class LoadPartitionsRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.LoadPartitionsRequest>
+internal sealed class LoadPartitionsRequest
 {
     /// <summary>
     /// Collection name in milvus

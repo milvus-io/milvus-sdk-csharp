@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete rows of data entities from a collection by given expression
 /// </summary>
-internal sealed class DeleteRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DeleteRequest>
+internal sealed class DeleteRequest
 {
     /// <summary>
     /// Collection name

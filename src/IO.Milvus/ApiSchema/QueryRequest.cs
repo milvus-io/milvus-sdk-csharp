@@ -12,10 +12,7 @@ namespace IO.Milvus.ApiSchema;
 /// do a explicit record query by given expression. 
 /// For example when you want to query by primary key.
 /// </summary>
-internal sealed class QueryRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.QueryRequest>
+internal sealed class QueryRequest
 {
     /// <summary>
     /// Collection name

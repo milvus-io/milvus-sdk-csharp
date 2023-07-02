@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Drop a collection
 /// </summary>
-internal sealed class DropCollectionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropCollectionRequest>
+internal sealed class DropCollectionRequest
 {
     /// <summary>
     /// Collection Name

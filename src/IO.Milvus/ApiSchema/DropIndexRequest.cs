@@ -5,10 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class DropIndexRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropIndexRequest>
+internal sealed class DropIndexRequest
 {
     [JsonPropertyName("collection_name")]
     public string CollectionName { get; set; }

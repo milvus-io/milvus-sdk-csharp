@@ -8,10 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class CalcDistanceRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CalcDistanceRequest>
+internal sealed class CalcDistanceRequest
 {
     private readonly MilvusMetricType _milvusMetricType;
 

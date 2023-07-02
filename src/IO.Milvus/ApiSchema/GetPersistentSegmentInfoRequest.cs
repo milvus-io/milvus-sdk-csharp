@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Returns sealed segment information of a collection
 /// </summary>
-internal sealed class GetPersistentSegmentInfoRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetPersistentSegmentInfoRequest>
+internal sealed class GetPersistentSegmentInfoRequest
 {
     /// <summary>
     /// Collection name

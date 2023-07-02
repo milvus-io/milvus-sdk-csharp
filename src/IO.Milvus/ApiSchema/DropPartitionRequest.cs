@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete a partition
 /// </summary>
-internal sealed class DropPartitionRequest :
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropPartitionRequest>
+internal sealed class DropPartitionRequest
 {
     /// <summary>
     /// Collection name

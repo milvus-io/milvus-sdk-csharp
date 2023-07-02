@@ -10,10 +10,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Do a manual compaction
 /// </summary>
-internal sealed class ManualCompactionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.ManualCompactionRequest>
+internal sealed class ManualCompactionRequest
 {
     /// <summary>
     /// Collection Id

@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get the state of a compaction
 /// </summary>
-internal sealed class GetCompactionStateRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.GetCompactionStateRequest>
+internal sealed class GetCompactionStateRequest
 {
     /// <summary>
     /// Compaction ID

@@ -9,10 +9,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Create a new user and password
 /// </summary>
-internal sealed class CreateCredentialRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.CreateCredentialRequest>
+internal sealed class CreateCredentialRequest
 {
     /// <summary>
     /// UTC timestamps

@@ -10,9 +10,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Insert rows of data entities into a collection
 /// </summary>
-internal class InsertRequest:
-    IValidatable,
-    IRestRequest
+internal class InsertRequest
 {
     /// <summary>
     /// Collection name

@@ -7,10 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
-internal sealed class ShowPartitionsRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.ShowPartitionsRequest>
+internal sealed class ShowPartitionsRequest
 {
     /// <summary>
     /// The collection name you want to describe, 

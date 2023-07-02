@@ -15,10 +15,7 @@ namespace IO.Milvus.ApiSchema;
 /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism. 
 /// It will be removed in the future.
 /// </remarks>
-internal sealed class FlushRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.FlushRequest>
+internal sealed class FlushRequest
 {   
     /// <summary>
     /// Collection names

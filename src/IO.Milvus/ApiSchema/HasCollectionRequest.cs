@@ -10,10 +10,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Get if a collection's existence
 /// </summary>
-internal sealed class HasCollectionRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.HasCollectionRequest>
+internal sealed class HasCollectionRequest
 {
     /// <summary>
     /// Collection Name

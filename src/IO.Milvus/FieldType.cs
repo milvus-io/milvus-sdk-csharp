@@ -10,7 +10,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Field type
 /// </summary>
-public sealed class FieldType:IValidatable
+public sealed class FieldType
 {
     #region Ctor
     /// <summary>

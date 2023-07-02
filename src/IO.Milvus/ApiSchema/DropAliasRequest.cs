@@ -8,10 +8,7 @@ namespace IO.Milvus.ApiSchema;
 /// <summary>
 /// Delete an Alias
 /// </summary>
-internal sealed class DropAliasRequest:
-    IValidatable,
-    IRestRequest,
-    IGrpcRequest<Grpc.DropAliasRequest>
+internal sealed class DropAliasRequest
 {
     [JsonPropertyName("alias")]
     public string Alias { get; set; }
