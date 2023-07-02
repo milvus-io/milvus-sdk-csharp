@@ -19,7 +19,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Insert data {0}", collectionName);
+        _log.LogDebug("Insert data {0}", collectionName);
 
         using HttpRequestMessage request = InsertRequest
             .Create(collectionName, dbName)
@@ -36,7 +36,7 @@ public partial class MilvusRestClient
         catch (HttpRequestException e)
         {
             e.Data["responseContent"] = responseContent;
-            this._log.LogError(e, "Insert data failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Insert data failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -44,7 +44,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed insert data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Failed insert data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -59,7 +59,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Delete data {0}", collectionName);
+        _log.LogDebug("Delete data {0}", collectionName);
 
         using HttpRequestMessage request = DeleteRequest
             .Create(collectionName, expr, dbName)
@@ -74,7 +74,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Delete data failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Delete data failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -82,7 +82,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed Delete data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Failed Delete data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -96,7 +96,7 @@ public partial class MilvusRestClient
     {
         Verify.NotNull(searchParameters);
 
-        this._log.LogDebug("Search: {0}", searchParameters.ToString());
+        _log.LogDebug("Search: {0}", searchParameters.ToString());
 
         using HttpRequestMessage request = searchParameters.BuildRest();
 
@@ -108,7 +108,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Search failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Search failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -116,7 +116,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Search failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Search failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -130,7 +130,7 @@ public partial class MilvusRestClient
         MilvusMetricType milvusMetricType,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Cal distance: {0}", leftVectors?.ToString());
+        _log.LogDebug("Cal distance: {0}", leftVectors?.ToString());
 
         using HttpRequestMessage request = CalcDistanceRequest
             .Create(milvusMetricType)
@@ -146,7 +146,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Cal distance failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Cal distance failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -154,7 +154,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Cal distance: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Cal distance: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -167,7 +167,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Flush: {0}", dbName);
+        _log.LogDebug("Flush: {0}", dbName);
 
         using HttpRequestMessage request = FlushRequest
             .Create(collectionNames, dbName)
@@ -181,7 +181,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Flush failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Flush failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -189,7 +189,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Flush failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Flush failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -202,7 +202,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get persistent segment infos: {0}", collectionName);
+        _log.LogDebug("Get persistent segment infos: {0}", collectionName);
 
         using HttpRequestMessage request = GetPersistentSegmentInfoRequest
             .Create(collectionName, dbName)
@@ -216,7 +216,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Get persistent segment infos failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Get persistent segment infos failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -224,7 +224,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get persistent segment infos failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Get persistent segment infos failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -236,7 +236,7 @@ public partial class MilvusRestClient
         IList<long> segmentIds,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
+        _log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
 
         using HttpRequestMessage request = GetFlushStateRequest
             .Create(segmentIds)
@@ -250,7 +250,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Get flush state failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Get flush state failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -258,7 +258,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get flush state failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Get flush state failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -279,7 +279,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Query: {0}", collectionName);
+        _log.LogDebug("Query: {0}", collectionName);
 
         using HttpRequestMessage request = QueryRequest.Create(collectionName, expr, dbName)
             .WithOutputFields(outputFields)
@@ -299,7 +299,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Query failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Query failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -307,7 +307,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Query failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Query failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -319,7 +319,7 @@ public partial class MilvusRestClient
         string collectionName,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get query segment info: {0}", collectionName);
+        _log.LogDebug("Get query segment info: {0}", collectionName);
 
         using HttpRequestMessage request = GetQuerySegmentInfoRequest
             .Create(collectionName)
@@ -333,7 +333,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Get query segment info failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Get query segment info failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -341,7 +341,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get query segment info failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Get query segment info failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 

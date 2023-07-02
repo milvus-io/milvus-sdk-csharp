@@ -46,7 +46,7 @@ public class MilvusSearchResult
 
     private MilvusSearchResult(string collectionName, MilvusSearchResultData results)
     {
-        this.CollectionName = collectionName;
-        this.Results = results;
+        CollectionName = collectionName;
+        Results = results;
     }
 }

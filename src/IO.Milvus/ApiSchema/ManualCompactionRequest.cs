@@ -31,17 +31,17 @@ internal sealed class ManualCompactionRequest
 
     public Grpc.ManualCompactionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.ManualCompactionRequest()
         {
-            CollectionID = this.CollectionId,
+            CollectionID = CollectionId,
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/compaction",
@@ -57,7 +57,7 @@ internal sealed class ManualCompactionRequest
     {
         if (timetravel != null)
         {
-            this.TimeTravel = TimestampUtils.ToUtcTimestamp(timetravel.Value);
+            TimeTravel = TimestampUtils.ToUtcTimestamp(timetravel.Value);
         }
 
         return this;

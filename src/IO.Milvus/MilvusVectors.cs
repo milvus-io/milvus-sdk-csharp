@@ -113,16 +113,16 @@ public class MilvusVectors
             vectorArray.DataArray = new Grpc.VectorField()
             {
                 FloatVector = new Grpc.FloatArray(),
-                Dim = this.Dim
+                Dim = Dim
             };
-            vectorArray.DataArray.FloatVector.Data.AddRange(this.Vectors);
+            vectorArray.DataArray.FloatVector.Data.AddRange(Vectors);
         }
         else if (MilvusVectorsType == MilvusVectorsType.BinaryVectors)
         {
             vectorArray.DataArray = new Grpc.VectorField()
             {
-                BinaryVector = this.BinaryVectorField.ToGrpcFieldData().ToByteString(),
-                Dim = this.Dim
+                BinaryVector = BinaryVectorField.ToGrpcFieldData().ToByteString(),
+                Dim = Dim
             };
         }
         else if (MilvusVectorsType == MilvusVectorsType.Ids)
@@ -169,14 +169,14 @@ public class MilvusVectors
     private MilvusVectors(BinaryVectorField binaryVectorField)
     {
         MilvusVectorsType = MilvusVectorsType.BinaryVectors;
-        this.BinaryVectorField = binaryVectorField;
+        BinaryVectorField = binaryVectorField;
         Dim = binaryVectorField.RowCount;
     }
 
     private MilvusVectors(MilvusVectorIds ids)
     {
         MilvusVectorsType = MilvusVectorsType.Ids;
-        this.Ids = ids;
+        Ids = ids;
         Dim = ids.Dim;
     }
 
@@ -184,14 +184,14 @@ public class MilvusVectors
     {
         MilvusVectorsType = MilvusVectorsType.FloatVectors;
         Dim = floatFields.First().Count;
-        this.Vectors = floatFields.SelectMany(_ => _).ToList();
+        Vectors = floatFields.SelectMany(_ => _).ToList();
     }
 
     private MilvusVectors(IList<float> floatFields, int dim)
     {
         MilvusVectorsType = MilvusVectorsType.FloatVectors;
         Dim = dim;
-        this.Vectors = floatFields;
+        Vectors = floatFields;
     }
     #endregion
 }
@@ -288,8 +288,8 @@ public class MilvusVectorIds
     {
         var idArray = new Grpc.VectorIDs()
         {
-            FieldName = this.FieldName,
-            CollectionName = this.CollectionName,
+            FieldName = FieldName,
+            CollectionName = CollectionName,
         };
 
         var ids = new Grpc.IDs();

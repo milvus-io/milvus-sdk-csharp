@@ -38,19 +38,19 @@ internal sealed class HasPartitionRequest
 
     public Grpc.HasPartitionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.HasPartitionRequest()
         {
-            CollectionName = this.CollectionName,
-            PartitionName = this.PartitionName,
-            DbName = this.DbName,
+            CollectionName = CollectionName,
+            PartitionName = PartitionName,
+            DbName = DbName,
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/partition/existence",
@@ -68,9 +68,9 @@ internal sealed class HasPartitionRequest
     #region Private =============================================================
     private HasPartitionRequest(string collectionName, string partitionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.PartitionName = partitionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        PartitionName = partitionName;
+        DbName = dbName;
     }
     #endregion
 }

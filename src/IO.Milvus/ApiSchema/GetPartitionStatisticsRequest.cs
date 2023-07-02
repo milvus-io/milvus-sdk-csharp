@@ -41,19 +41,19 @@ internal sealed class GetPartitionStatisticsRequest
 
     public Grpc.GetPartitionStatisticsRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetPartitionStatisticsRequest()
         {
-            CollectionName = this.CollectionName,
-            PartitionName = this.PartitionName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            PartitionName = PartitionName,
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/partition/statistics",
@@ -70,9 +70,9 @@ internal sealed class GetPartitionStatisticsRequest
     #region Private ================================================================================
     public GetPartitionStatisticsRequest(string collectionName, string partitionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.PartitionName = partitionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        PartitionName = partitionName;
+        DbName = dbName;
     }
     #endregion
 }

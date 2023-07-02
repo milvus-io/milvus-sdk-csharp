@@ -19,7 +19,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Delete collection {0}", collectionName);
+        _log.LogDebug("Delete collection {0}", collectionName);
 
         using HttpRequestMessage request = DropCollectionRequest
             .Create(collectionName, dbName)
@@ -33,7 +33,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -46,7 +46,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Describe collection {0}", collectionName);
+        _log.LogDebug("Describe collection {0}", collectionName);
 
         using HttpRequestMessage request = DescribeCollectionRequest
             .Create(collectionName, dbName)
@@ -60,7 +60,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Describe collection failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Describe collection failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -68,7 +68,7 @@ public partial class MilvusRestClient
 
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed Describe collections: {0}", data.Status.ErrorCode);
+            _log.LogError("Failed Describe collections: {0}", data.Status.ErrorCode);
             throw new MilvusException(data.Status);
         }
 
@@ -85,7 +85,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
+        _log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
 
         using HttpRequestMessage request = CreateCollectionRequest
             .Create(collectionName, dbName, enableDynamicField)
@@ -101,7 +101,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Collection creation failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Collection creation failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -115,7 +115,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Check if a {0} exists", collectionName);
+        _log.LogDebug("Check if a {0} exists", collectionName);
 
         using HttpRequestMessage request = HasCollectionRequest
             .Create(collectionName, dbName)
@@ -130,7 +130,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed check if a {0} exists: {0}, {1}", collectionName, e.Message, responseContent);
+            _log.LogError(e, "Failed check if a {0} exists: {0}, {1}", collectionName, e.Message, responseContent);
             throw;
         }
 
@@ -148,7 +148,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Release collection: {0}", collectionName);
+        _log.LogDebug("Release collection: {0}", collectionName);
 
         using HttpRequestMessage request = ReleaseCollectionRequest
             .Create(collectionName, dbName)
@@ -162,7 +162,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed release collection: {0}, {1}, {2}", collectionName, e.Message, responseContent);
+            _log.LogError(e, "Failed release collection: {0}, {1}, {2}", collectionName, e.Message, responseContent);
             throw;
         }
 
@@ -176,7 +176,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Load collection: {0}", collectionName);
+        _log.LogDebug("Load collection: {0}", collectionName);
 
         using HttpRequestMessage request = LoadCollectionRequest
             .Create(collectionName, dbName)
@@ -191,7 +191,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed load collection: {0}, {1}, {2}", collectionName, e.Message, responseContent);
+            _log.LogError(e, "Failed load collection: {0}, {1}, {2}", collectionName, e.Message, responseContent);
             throw;
         }
     }
@@ -202,7 +202,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get collection statistics: {0}", collectionName);
+        _log.LogDebug("Get collection statistics: {0}", collectionName);
 
         using HttpRequestMessage request = GetCollectionStatisticsRequest
             .Create(collectionName, dbName)
@@ -216,7 +216,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed get collection statistics: {0}, {1}, {2}", collectionName, e.Message, responseContent);
+            _log.LogError(e, "Failed get collection statistics: {0}, {1}, {2}", collectionName, e.Message, responseContent);
             throw;
         }
 
@@ -232,7 +232,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Show collections");
+        _log.LogDebug("Show collections");
 
         using HttpRequestMessage request = ShowCollectionsRequest
             .Create(dbName)
@@ -248,7 +248,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Failed show collections: {0}, {1}, {2}", collectionNames?.ToString(), e.Message, responseContent);
+            _log.LogError(e, "Failed show collections: {0}, {1}, {2}", collectionNames?.ToString(), e.Message, responseContent);
             throw;
         }
 
@@ -256,7 +256,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed show collections: {0}", data.Status.ErrorCode);
+            _log.LogError("Failed show collections: {0}", data.Status.ErrorCode);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -279,7 +279,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get partition statistics: {0}, {1}", collectionName, partitionName);
+        _log.LogDebug("Get partition statistics: {0}, {1}", collectionName, partitionName);
 
         using HttpRequestMessage request = GetPartitionStatisticsRequest
             .Create(collectionName, partitionName, dbName)
@@ -293,7 +293,7 @@ public partial class MilvusRestClient
         }
         catch (System.Exception e)
         {
-            this._log.LogError(e, "Get partition statistics: {0}, {1}, {2}", collectionName, e.Message, responseContent);
+            _log.LogError(e, "Get partition statistics: {0}, {1}, {2}", collectionName, e.Message, responseContent);
             throw;
         }
 
@@ -301,7 +301,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get partition statistics: {0}", data.Status.ErrorCode);
+            _log.LogError("Get partition statistics: {0}", data.Status.ErrorCode);
             throw new Diagnostics.MilvusException(data.Status);
         }
 

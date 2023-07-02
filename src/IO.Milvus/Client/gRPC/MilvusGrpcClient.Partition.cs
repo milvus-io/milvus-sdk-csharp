@@ -18,7 +18,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create partition {0}", collectionName);
+        _log.LogDebug("Create partition {0}", collectionName);
 
         Grpc.CreatePartitionRequest request = CreatePartitionRequest
             .Create(collectionName, partitionName, dbName)
@@ -28,7 +28,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create partition failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Create partition failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -40,7 +40,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Check if partition {0} exists", collectionName);
+        _log.LogDebug("Check if partition {0} exists", collectionName);
 
         Grpc.HasPartitionRequest request = HasPartitionRequest
             .Create(collectionName, partitionName, dbName)
@@ -50,7 +50,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed check if partition exists: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Failed check if partition exists: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -63,7 +63,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Show {0} collection partitions", collectionName);
+        _log.LogDebug("Show {0} collection partitions", collectionName);
 
         Grpc.ShowPartitionsRequest request = ShowPartitionsRequest
             .Create(collectionName, dbName)
@@ -73,7 +73,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Show partitions failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Show partitions failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -88,7 +88,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Load partitions {0}", collectionName);
+        _log.LogDebug("Load partitions {0}", collectionName);
 
         Grpc.LoadPartitionsRequest request = LoadPartitionsRequest
             .Create(collectionName, dbName)
@@ -100,7 +100,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Load partitions failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Load partitions failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -112,7 +112,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Release partitions {0}", collectionName);
+        _log.LogDebug("Release partitions {0}", collectionName);
 
         Grpc.ReleasePartitionsRequest request = ReleasePartitionRequest
             .Create(collectionName, dbName)
@@ -123,7 +123,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Release partitions failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Release partitions failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -135,7 +135,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Drop partition {0}", collectionName);
+        _log.LogDebug("Drop partition {0}", collectionName);
 
         Grpc.DropPartitionRequest request = DropPartitionRequest
             .Create(collectionName, partitionName, dbName)
@@ -145,7 +145,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Drop partition failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Drop partition failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }

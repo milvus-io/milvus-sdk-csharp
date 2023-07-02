@@ -49,7 +49,7 @@ internal sealed class UpdateCredentialRequest
 
     public Grpc.UpdateCredentialRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
         return new Grpc.UpdateCredentialRequest
         {
             NewPassword = NewPassword,
@@ -60,7 +60,7 @@ internal sealed class UpdateCredentialRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
         return HttpRequest.CreatePatchRequest(
             $"{ApiVersion.V1}/credential",
             payload: this);
@@ -76,9 +76,9 @@ internal sealed class UpdateCredentialRequest
     #region Private ==================================================================
     public UpdateCredentialRequest(string userName, string oldPassword, string newPassword)
     {
-        this.Username = userName;
-        this.OldPassword = oldPassword;
-        this.NewPassword = newPassword;
+        Username = userName;
+        OldPassword = oldPassword;
+        NewPassword = newPassword;
     }
     #endregion
 }

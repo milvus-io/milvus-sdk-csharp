@@ -23,7 +23,7 @@ internal sealed class GetCompactionStateRequest
 
     public Grpc.GetCompactionStateRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetCompactionStateRequest()
         {
@@ -33,7 +33,7 @@ internal sealed class GetCompactionStateRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/compaction/state"

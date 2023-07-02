@@ -35,12 +35,12 @@ public sealed class FieldType
         bool isPartitionKey = false,
         bool isDynamic = false)
     {
-        this.Name = name;
-        this.DataType = dataType;
-        this.IsPrimaryKey = isPrimaryKey;
-        this.AutoId = autoId;
-        this.IsPartitionKey = isPartitionKey;
-        this.IsDynamic = isDynamic;
+        Name = name;
+        DataType = dataType;
+        IsPrimaryKey = isPrimaryKey;
+        AutoId = autoId;
+        IsPartitionKey = isPartitionKey;
+        IsDynamic = isDynamic;
     }
 
     /// <summary>

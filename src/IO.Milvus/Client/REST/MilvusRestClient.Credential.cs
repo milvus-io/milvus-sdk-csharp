@@ -17,7 +17,7 @@ public partial class MilvusRestClient
         string username,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Delete credential {0}", username);
+        _log.LogDebug("Delete credential {0}", username);
 
         using HttpRequestMessage request = DeleteCredentialRequest
             .Create(username)
@@ -31,7 +31,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Delete credential failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Delete credential failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -45,7 +45,7 @@ public partial class MilvusRestClient
         string newPassword,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Update credential {0}", username);
+        _log.LogDebug("Update credential {0}", username);
 
         using HttpRequestMessage request = UpdateCredentialRequest
             .Create(username, Base64Encode(oldPassword), Base64Encode(newPassword))
@@ -59,7 +59,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Update credential failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Update credential failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -72,7 +72,7 @@ public partial class MilvusRestClient
         string password,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create credential {0}", username);
+        _log.LogDebug("Create credential {0}", username);
 
         using HttpRequestMessage request = CreateCredentialRequest
             .Create(username, Base64Encode(password))
@@ -86,7 +86,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Create credential failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Create credential failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -97,7 +97,7 @@ public partial class MilvusRestClient
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("List credential users");
+        _log.LogDebug("List credential users");
 
         using HttpRequestMessage request = HttpRequest.CreateGetRequest($"{ApiVersion.V1}/credential/users");
 
@@ -109,7 +109,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "List credential users failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "List credential users failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -117,7 +117,7 @@ public partial class MilvusRestClient
 
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed list credential users: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Failed list credential users: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 

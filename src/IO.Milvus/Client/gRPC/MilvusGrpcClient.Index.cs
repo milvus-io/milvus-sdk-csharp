@@ -21,7 +21,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create index {0}", collectionName);
+        _log.LogDebug("Create index {0}", collectionName);
 
         Grpc.CreateIndexRequest request = CreateIndexRequest
             .Create(collectionName, fieldName, milvusIndexType, milvusMetricType, dbName)
@@ -33,7 +33,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create index failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Create index failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -46,7 +46,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Drop index {0}", collectionName);
+        _log.LogDebug("Drop index {0}", collectionName);
 
         Grpc.DropIndexRequest request = DropIndexRequest
             .Create(collectionName, fieldName, indexName, dbName)
@@ -56,7 +56,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Drop index failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Drop index failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -68,7 +68,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Describe index {0}", collectionName);
+        _log.LogDebug("Describe index {0}", collectionName);
 
         Grpc.DescribeIndexRequest request = DescribeIndexRequest
             .Create(collectionName, fieldName, dbName)
@@ -78,7 +78,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Describe index failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Describe index failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -92,7 +92,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get index build progress {0}", collectionName);
+        _log.LogDebug("Get index build progress {0}", collectionName);
 
         Grpc.GetIndexBuildProgressRequest request = GetIndexBuildProgressRequest
             .Create(collectionName, fieldName, dbName)
@@ -102,7 +102,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get index build progress failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get index build progress failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -116,7 +116,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
+        _log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
 
         Grpc.GetIndexStateRequest request = GetIndexStateRequest
             .Create(collectionName, fieldName, dbName)
@@ -126,7 +126,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get index state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get index state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

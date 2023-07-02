@@ -29,18 +29,18 @@ internal sealed class DescribeIndexRequest
 
     public Grpc.DescribeIndexRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.DescribeIndexRequest()
         {
-            CollectionName = this.CollectionName,
-            FieldName = this.FieldName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            FieldName = FieldName,
+            DbName = DbName
         };
 
-        if (!string.IsNullOrEmpty(this.IndexName))
+        if (!string.IsNullOrEmpty(IndexName))
         {
-            request.IndexName = this.IndexName;
+            request.IndexName = IndexName;
         }
 
         return request;
@@ -48,7 +48,7 @@ internal sealed class DescribeIndexRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/index",
@@ -66,9 +66,9 @@ internal sealed class DescribeIndexRequest
     #region Private =========================================================================================
     private DescribeIndexRequest(string collectionName, string fieldName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.FieldName = fieldName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        FieldName = fieldName;
+        DbName = dbName;
     }
     #endregion
 }

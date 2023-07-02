@@ -13,7 +13,7 @@ public partial class MilvusGrpcClient
         string request,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get metrics {0}", request);
+        _log.LogDebug("Get metrics {0}", request);
 
         Grpc.GetMetricsRequest getMetricsRequest = GetMetricsRequest
             .Create(request)
@@ -23,7 +23,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get metrics failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get metrics failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

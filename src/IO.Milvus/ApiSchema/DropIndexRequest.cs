@@ -33,14 +33,14 @@ internal sealed class DropIndexRequest
 
     public Grpc.DropIndexRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.DropIndexRequest()
         {
-            CollectionName = this.CollectionName,
-            FieldName = this.FieldName,
-            IndexName = this.IndexName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            FieldName = FieldName,
+            IndexName = IndexName,
+            DbName = DbName
         };
 
         return request;
@@ -48,7 +48,7 @@ internal sealed class DropIndexRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/index",
@@ -67,10 +67,10 @@ internal sealed class DropIndexRequest
     #region Private ======================================================
     public DropIndexRequest(string collectionName, string fieldName, string indexName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.FieldName = fieldName;
-        this.IndexName = indexName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        FieldName = fieldName;
+        IndexName = indexName;
+        DbName = dbName;
     }
     #endregion
 }

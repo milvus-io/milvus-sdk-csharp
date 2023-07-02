@@ -35,17 +35,17 @@ internal sealed class ReleaseCollectionRequest
 
     public Grpc.ReleaseCollectionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
         return new Grpc.ReleaseCollectionRequest()
         {
             CollectionName = CollectionName,
-            DbName = this.DbName
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/collection/load",
             this
@@ -61,8 +61,8 @@ internal sealed class ReleaseCollectionRequest
     #region Private ===============================================================
     private ReleaseCollectionRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

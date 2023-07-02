@@ -34,14 +34,14 @@ public sealed partial class MilvusRestClient : IMilvusClient
     {
         Verify.NotNullOrWhiteSpace(endpoint);
 
-        this._log = log ?? NullLogger<MilvusRestClient>.Instance;
-        this._httpClient = httpClient ?? s_defaultHttpClient;
+        _log = log ?? NullLogger<MilvusRestClient>.Instance;
+        _httpClient = httpClient ?? s_defaultHttpClient;
 
         // Store the base address and auth header for all requests. These are added to each
         // HttpRequestMessage rather than to _httpClient to avoid mutating a shared HttpClient instance,
         // especially one that's provided by a consumer.
-        this._baseAddress = SanitizeEndpoint(endpoint, port);
-        this._authHeader = new AuthenticationHeaderValue(
+        _baseAddress = SanitizeEndpoint(endpoint, port);
+        _authHeader = new AuthenticationHeaderValue(
             "Basic",
             Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}"))
             );
@@ -51,18 +51,18 @@ public sealed partial class MilvusRestClient : IMilvusClient
     /// <summary>
     /// The endpoint for the Milvus service.
     /// </summary>
-    public string Address => this._baseAddress.ToString();
+    public string Address => _baseAddress.ToString();
 
     /// <summary>
     /// The port for the Milvus service.
     /// </summary>
-    public int Port => this._baseAddress.Port;
+    public int Port => _baseAddress.Port;
     #endregion
 
     ///<inheritdoc/>
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Ensure to connect to Milvus server {0}", Address);
+        _log.LogDebug("Ensure to connect to Milvus server {0}", Address);
 
         using HttpRequestMessage request = HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/health");
@@ -75,7 +75,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Ensure to connect to Milvus server failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Ensure to connect to Milvus server failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -83,7 +83,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
             return new MilvusHealthState(true, "None", Grpc.ErrorCode.Success);
 
         var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
-        this._log.LogWarning("Reason: {0}", status.Reason);
+        _log.LogWarning("Reason: {0}", status.Reason);
 
         return new MilvusHealthState(status.ErrorCode == Grpc.ErrorCode.Success, status.Reason, status.ErrorCode);
     }
@@ -101,7 +101,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
     /// <returns></returns>
     public override string ToString()
     {
-        return $"{{{nameof(MilvusRestClient)};{this._baseAddress}}}";
+        return $"{{{nameof(MilvusRestClient)};{_baseAddress}}}";
     }
 
     #region private ================================================================================
@@ -124,10 +124,10 @@ public sealed partial class MilvusRestClient : IMilvusClient
             throw new ObjectDisposedException(GetType().Name);
         }
 
-        request.RequestUri = new Uri(this._baseAddress, request.RequestUri);
-        request.Headers.Authorization = this._authHeader;
+        request.RequestUri = new Uri(_baseAddress, request.RequestUri);
+        request.Headers.Authorization = _authHeader;
 
-        HttpResponseMessage response = await this._httpClient
+        HttpResponseMessage response = await _httpClient
             .SendAsync(request, cancellationToken)
             .ConfigureAwait(false);
 
@@ -137,11 +137,11 @@ public sealed partial class MilvusRestClient : IMilvusClient
             .ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
         {
-            this._log.LogTrace("Milvus responded successfully");
+            _log.LogTrace("Milvus responded successfully");
         }
         else
         {
-            this._log.LogTrace("Milvus responded with error");
+            _log.LogTrace("Milvus responded with error");
         }
 
         return (response, responseContent);

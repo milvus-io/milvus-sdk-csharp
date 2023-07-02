@@ -17,17 +17,17 @@ internal sealed class GetMetricsRequest
 
     public Grpc.GetMetricsRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetMetricsRequest()
         {
-            Request = this.Request,
+            Request = Request,
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/metrics",
@@ -43,7 +43,7 @@ internal sealed class GetMetricsRequest
     #region Private ==========================================
     private GetMetricsRequest(string request)
     {
-        this.Request = request;
+        Request = request;
     }
     #endregion
 }

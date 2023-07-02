@@ -70,16 +70,16 @@ internal sealed class ShowPartitionsRequest
     {
         return new Grpc.ShowPartitionsRequest()
         {
-            CollectionName = this.CollectionName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            DbName = DbName
         };
     }
 
     #region Private =============================================================
     private ShowPartitionsRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

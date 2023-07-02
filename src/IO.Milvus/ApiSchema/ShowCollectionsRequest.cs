@@ -54,12 +54,12 @@ internal sealed class ShowCollectionsRequest
 
     public Grpc.ShowCollectionsRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.ShowCollectionsRequest()
         {
-            Type = (Grpc.ShowType)this.Type,
-            DbName = this.DbName
+            Type = (Grpc.ShowType)Type,
+            DbName = DbName
         };
         if (CollectionNames != null)
             request.CollectionNames.AddRange(CollectionNames);
@@ -69,7 +69,7 @@ internal sealed class ShowCollectionsRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collections",
@@ -85,7 +85,7 @@ internal sealed class ShowCollectionsRequest
     #region Private
     private ShowCollectionsRequest(string dbName)
     {
-        this.DbName = dbName;
+        DbName = dbName;
     }
     #endregion
 }

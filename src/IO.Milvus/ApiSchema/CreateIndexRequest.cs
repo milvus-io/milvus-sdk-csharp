@@ -62,13 +62,13 @@ internal sealed class CreateIndexRequest
 
     public Grpc.CreateIndexRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.CreateIndexRequest()
         {
-            CollectionName = this.CollectionName,
-            FieldName = this.FieldName,
-            DbName = this.DbName,
+            CollectionName = CollectionName,
+            FieldName = FieldName,
+            DbName = DbName,
         };
 
         if (!string.IsNullOrEmpty(IndexName))
@@ -102,7 +102,7 @@ internal sealed class CreateIndexRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         ExtraParams["metric_type"] = _milvusMetricType.ToString();
         ExtraParams["index_type"] = _milvusIndexType.ToString();
@@ -131,11 +131,11 @@ internal sealed class CreateIndexRequest
         MilvusMetricType milvusMetricType,
         string dbName)
     {
-        this.CollectionName = collectionName;
-        this.FieldName = fieldName;
-        this._milvusMetricType = milvusMetricType;
-        this._milvusIndexType = milvusIndexType;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        FieldName = fieldName;
+        _milvusMetricType = milvusMetricType;
+        _milvusIndexType = milvusIndexType;
+        DbName = dbName;
     }
     #endregion
 }

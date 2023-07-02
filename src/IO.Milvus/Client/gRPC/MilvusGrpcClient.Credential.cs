@@ -16,7 +16,7 @@ public partial class MilvusGrpcClient
         string username,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Delete credential {0}", username);
+        _log.LogDebug("Delete credential {0}", username);
 
         Grpc.DeleteCredentialRequest request = DeleteCredentialRequest
             .Create(username)
@@ -26,7 +26,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Delete credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Delete credential failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -38,7 +38,7 @@ public partial class MilvusGrpcClient
         string newPassword,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Update credential {0}", username);
+        _log.LogDebug("Update credential {0}", username);
 
         Grpc.UpdateCredentialRequest request = UpdateCredentialRequest
             .Create(username, oldPassword, Base64Encode(newPassword))
@@ -48,7 +48,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Update credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Update credential failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -59,7 +59,7 @@ public partial class MilvusGrpcClient
         string password,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create credential {0}", username);
+        _log.LogDebug("Create credential {0}", username);
 
         Grpc.CreateCredentialRequest request = CreateCredentialRequest
             .Create(username, Base64Encode(password))
@@ -69,7 +69,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create credential failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Create credential failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -78,7 +78,7 @@ public partial class MilvusGrpcClient
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("List credential users");
+        _log.LogDebug("List credential users");
 
         Grpc.ListCredUsersRequest request = new Grpc.ListCredUsersRequest();
 
@@ -86,7 +86,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("List credential users failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("List credential users failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

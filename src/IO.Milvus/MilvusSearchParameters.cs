@@ -160,7 +160,7 @@ public class MilvusSearchParameters
 
         foreach (var outField in outputFields)
         {
-            this.OutputFields.Add(outField);
+            OutputFields.Add(outField);
         }
 
         return this;
@@ -183,7 +183,7 @@ public class MilvusSearchParameters
 
         foreach (var partitionName in partitionNames)
         {
-            this.PartitionNames.Add(partitionName);
+            PartitionNames.Add(partitionName);
         }
 
         return this;
@@ -201,7 +201,7 @@ public class MilvusSearchParameters
             throw new ArgumentException($"\"{nameof(expr)}\" cannot be null or whitespace.");
         }
 
-        this.Expr = expr;
+        Expr = expr;
         return this;
     }
 
@@ -212,7 +212,7 @@ public class MilvusSearchParameters
     /// <param name="consistencyLevel">The consistency level used in the query.</param>
     public MilvusSearchParameters WithConsistencyLevel(MilvusConsistencyLevel consistencyLevel)
     {
-        this.ConsistencyLevel = consistencyLevel;
+        ConsistencyLevel = consistencyLevel;
         return this;
     }
 
@@ -227,7 +227,7 @@ public class MilvusSearchParameters
     /// <param name="travelTimestamp"></param>
     public MilvusSearchParameters WithTravelTimestamp(long travelTimestamp)
     {
-        this.TravelTimestamp = travelTimestamp;
+        TravelTimestamp = travelTimestamp;
         return this;
     }
 
@@ -246,9 +246,9 @@ public class MilvusSearchParameters
             throw new ArgumentException($"\"{nameof(fieldName)}\" cannot be null or whitespace.");
         }
 
-        if (!this.OutputFields.Contains(fieldName))
+        if (!OutputFields.Contains(fieldName))
         {
-            this.OutputFields.Add(fieldName);
+            OutputFields.Add(fieldName);
         }
 
         return this;
@@ -270,9 +270,9 @@ public class MilvusSearchParameters
             throw new ArgumentException($"\"{nameof(partitionName)}\" cannot be null or whitespace.");
         }
 
-        if (!this.PartitionNames.Contains(partitionName))
+        if (!PartitionNames.Contains(partitionName))
         {
-            this.PartitionNames.Add(partitionName);
+            PartitionNames.Add(partitionName);
         }
 
         return this;
@@ -284,7 +284,7 @@ public class MilvusSearchParameters
     /// <param name="metricType">metric type</param>
     public MilvusSearchParameters WithMetricType(MilvusMetricType metricType)
     {
-        this.MetricType = metricType;
+        MetricType = metricType;
         return this;
     }
 
@@ -295,7 +295,7 @@ public class MilvusSearchParameters
     /// <returns></returns>
     public MilvusSearchParameters WithRoundDecimal(long @decimal)
     {
-        this.RoundDecimal = @decimal;
+        RoundDecimal = @decimal;
         return this;
     }
 
@@ -379,7 +379,7 @@ public class MilvusSearchParameters
             throw new ArgumentException($"\"{nameof(key)}\" cannot be null or empty");
         }
 
-        this.Parameters[key] = value;
+        Parameters[key] = value;
         return this;
     }
 
@@ -401,7 +401,7 @@ public class MilvusSearchParameters
     /// <returns></returns>
     public Grpc.SearchRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         Grpc.SearchRequest request = InitSearchRequest();
 
@@ -425,11 +425,11 @@ public class MilvusSearchParameters
     {
         var request = new SearchRequest()
         {
-            CollectionName = this.CollectionName,
-            Dsl = this.Expr,
+            CollectionName = CollectionName,
+            Dsl = Expr,
             DslType = (int)MilvusDslType.BoolExprV1,
-            PartitionNames = this.PartitionNames,
-            OutputFields = this.OutputFields,
+            PartitionNames = PartitionNames,
+            OutputFields = OutputFields,
         };
 
         request.GuaranteeTimestamp = GetGuaranteeTimestamp(ConsistencyLevel, GuaranteeTimestamp, 0);
@@ -463,10 +463,10 @@ public class MilvusSearchParameters
     #region Private =======================================================================
     private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.VectorFieldName = vectorFieldName;
-        this.OutputFields = outFields;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        VectorFieldName = vectorFieldName;
+        OutputFields = outFields;
+        DbName = dbName;
     }
 
     private static long GetGuaranteeTimestamp(
@@ -499,18 +499,18 @@ public class MilvusSearchParameters
     {
         var request = new Grpc.SearchRequest()
         {
-            CollectionName = this.CollectionName,
+            CollectionName = CollectionName,
             TravelTimestamp = (ulong)TravelTimestamp,
         };
 
-        if (this.PartitionNames?.Count > 0)
+        if (PartitionNames?.Count > 0)
         {
-            request.PartitionNames.AddRange(this.PartitionNames);
+            request.PartitionNames.AddRange(PartitionNames);
         }
 
-        if (this.OutputFields?.Count > 0)
+        if (OutputFields?.Count > 0)
         {
-            request.OutputFields.AddRange(this.OutputFields);
+            request.OutputFields.AddRange(OutputFields);
         }
 
         request.GuaranteeTimestamp = (ulong)GetGuaranteeTimestamp(ConsistencyLevel, GuaranteeTimestamp, 0);
@@ -521,9 +521,9 @@ public class MilvusSearchParameters
     private void SetDsl(Grpc.SearchRequest request)
     {
         request.DslType = Grpc.DslType.BoolExprV1;
-        if (!string.IsNullOrEmpty(this.Expr))
+        if (!string.IsNullOrEmpty(Expr))
         {
-            request.Dsl = this.Expr;
+            request.Dsl = Expr;
         }
     }
 

@@ -15,7 +15,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create alias {0}", collectionName);
+        _log.LogDebug("Create alias {0}", collectionName);
 
         using HttpRequestMessage request = CreateAliasRequest
             .Create(collectionName, alias, dbName)
@@ -29,7 +29,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Create alias failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Create alias failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -42,7 +42,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Drop alias {0}", alias);
+        _log.LogDebug("Drop alias {0}", alias);
 
         using HttpRequestMessage request = DropAliasRequest
             .Create(alias, dbName)
@@ -56,7 +56,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Drop alias failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Drop alias failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -70,7 +70,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Alter alias {0}", alias);
+        _log.LogDebug("Alter alias {0}", alias);
 
         using HttpRequestMessage request = AlterAliasRequest
             .Create(collectionName, alias, dbName)
@@ -84,7 +84,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Alter alias failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Alter alias failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 

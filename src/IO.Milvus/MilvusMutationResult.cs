@@ -128,7 +128,7 @@ public class MilvusIds
     /// <param name="idField"></param>
     public MilvusIds(IdField idField)
     {
-        this.IdField = idField;
+        IdField = idField;
     }
 
     /// <summary>

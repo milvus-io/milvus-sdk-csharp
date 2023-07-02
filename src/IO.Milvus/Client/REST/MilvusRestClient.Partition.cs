@@ -18,7 +18,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create partition {0}", collectionName);
+        _log.LogDebug("Create partition {0}", collectionName);
 
         using HttpRequestMessage request = CreatePartitionRequest
             .Create(collectionName, partitionName, dbName)
@@ -32,7 +32,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Create partition failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Create partition failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -46,7 +46,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Check if {0} partition exists", collectionName);
+        _log.LogDebug("Check if {0} partition exists", collectionName);
 
         using HttpRequestMessage request = HasPartitionRequest
             .Create(collectionName, partitionName, dbName)
@@ -60,7 +60,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Check if {0} partition exists: {1}, {2}", partitionName, e.Message, responseContent);
+            _log.LogError(e, "Check if {0} partition exists: {1}, {2}", partitionName, e.Message, responseContent);
             throw;
         }
 
@@ -78,7 +78,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Show {0} partitions", collectionName);
+        _log.LogDebug("Show {0} partitions", collectionName);
 
         using HttpRequestMessage request = ShowPartitionsRequest
             .Create(collectionName, dbName)
@@ -92,7 +92,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Failed show partitions: {1}, {2}", e.Message, responseContent);
+            _log.LogError(e, "Failed show partitions: {1}, {2}", e.Message, responseContent);
             throw;
         }
 
@@ -100,7 +100,7 @@ public partial class MilvusRestClient
 
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed show partitions: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
+            _log.LogError("Failed show partitions: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
             throw new Diagnostics.MilvusException(data.Status);
         }
 
@@ -117,7 +117,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Load partition {0}", collectionName);
+        _log.LogDebug("Load partition {0}", collectionName);
 
         using HttpRequestMessage request = LoadPartitionsRequest
             .Create(collectionName, dbName)
@@ -133,7 +133,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Load partition failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Load partition failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -147,7 +147,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Release partitions {0}", collectionName);
+        _log.LogDebug("Release partitions {0}", collectionName);
 
         using HttpRequestMessage request = ReleasePartitionRequest
             .Create(collectionName, dbName)
@@ -162,7 +162,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Release partition failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Release partition failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 
@@ -176,7 +176,7 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Drop partition {0}", collectionName);
+        _log.LogDebug("Drop partition {0}", collectionName);
 
         using HttpRequestMessage request = DropPartitionRequest
             .Create(collectionName, partitionName, dbName)
@@ -190,7 +190,7 @@ public partial class MilvusRestClient
         }
         catch (HttpRequestException e)
         {
-            this._log.LogError(e, "Drop partition failed: {0}, {1}", e.Message, responseContent);
+            _log.LogError(e, "Drop partition failed: {0}, {1}", e.Message, responseContent);
             throw;
         }
 

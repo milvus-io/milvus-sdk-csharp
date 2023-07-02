@@ -35,18 +35,18 @@ internal sealed class DropCollectionRequest
 
     public Grpc.DropCollectionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.DropCollectionRequest
         {
-            CollectionName = this.CollectionName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/collection",
@@ -62,8 +62,8 @@ internal sealed class DropCollectionRequest
     #region Private =================================================================================
     public DropCollectionRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

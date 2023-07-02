@@ -26,19 +26,19 @@ internal sealed class GetIndexStateRequest
 
     public Grpc.GetIndexStateRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetIndexStateRequest()
         {
-            CollectionName = this.CollectionName,
-            FieldName = this.FieldName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            FieldName = FieldName,
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/state",
@@ -56,9 +56,9 @@ internal sealed class GetIndexStateRequest
     #region Private ====================================================================================
     public GetIndexStateRequest(string collectionName, string fieldName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.FieldName = fieldName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        FieldName = fieldName;
+        DbName = dbName;
     }
     #endregion
 }

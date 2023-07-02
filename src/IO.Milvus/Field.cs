@@ -35,9 +35,9 @@ public abstract class Field
     /// <param name="isDynamic"></param>
     protected Field(string fieldName, MilvusDataType dataType, bool isDynamic = false)
     {
-        this.FieldName = fieldName;
-        this.DataType = dataType;
-        this.IsDynamic = isDynamic;
+        FieldName = fieldName;
+        DataType = dataType;
+        IsDynamic = isDynamic;
     }
 
     #region Properties
@@ -437,7 +437,7 @@ public class Field<TData> : Field
         {
             FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
-            IsDynamic = this.IsDynamic
+            IsDynamic = IsDynamic
         };
 
         switch (DataType)

@@ -64,7 +64,7 @@ internal sealed class DescribeCollectionRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collection",
@@ -74,14 +74,14 @@ internal sealed class DescribeCollectionRequest
 
     public Grpc.DescribeCollectionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.DescribeCollectionRequest()
         {
-            CollectionID = this.CollectionId,
-            CollectionName = this.CollectionName,
-            TimeStamp = (ulong)this.Timestamp,
-            DbName = this.DbName,
+            CollectionID = CollectionId,
+            CollectionName = CollectionName,
+            TimeStamp = (ulong)Timestamp,
+            DbName = DbName,
         };
     }
 
@@ -95,8 +95,8 @@ internal sealed class DescribeCollectionRequest
 
     private DescribeCollectionRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

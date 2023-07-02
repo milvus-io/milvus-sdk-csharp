@@ -32,7 +32,7 @@ internal sealed class GetPersistentSegmentInfoRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/persist/segment-info"
@@ -41,12 +41,12 @@ internal sealed class GetPersistentSegmentInfoRequest
 
     public Grpc.GetPersistentSegmentInfoRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetPersistentSegmentInfoRequest()
         {
-            CollectionName = this.CollectionName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            DbName = DbName
         };
     }
 
@@ -58,7 +58,7 @@ internal sealed class GetPersistentSegmentInfoRequest
 
     private GetPersistentSegmentInfoRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
 }

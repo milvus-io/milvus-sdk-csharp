@@ -47,19 +47,19 @@ internal sealed class LoadCollectionRequest
 
     public Grpc.LoadCollectionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.LoadCollectionRequest()
         {
-            CollectionName = this.CollectionName,
-            ReplicaNumber = this.ReplicaNumber,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            ReplicaNumber = ReplicaNumber,
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/collection/load",
@@ -76,8 +76,8 @@ internal sealed class LoadCollectionRequest
     #region Private =====================================================================================
     private LoadCollectionRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

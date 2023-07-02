@@ -65,8 +65,8 @@ internal sealed class InsertRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
-        NumRows = this.FieldsData.First().RowCount;
+        Validate();
+        NumRows = FieldsData.First().RowCount;
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/entities",
@@ -92,8 +92,8 @@ internal sealed class InsertRequest
     #region Private ===============================================================
     private InsertRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

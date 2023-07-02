@@ -37,9 +37,9 @@ internal sealed class AlterAliasRequest
     {
         return new Grpc.AlterAliasRequest()
         {
-            CollectionName = this.CollectionName,
-            Alias = this.Alias,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            Alias = Alias,
+            DbName = DbName
         };
     }
 
@@ -61,9 +61,9 @@ internal sealed class AlterAliasRequest
     #region Private ================================================================================
     private AlterAliasRequest(string collection, string alias, string dbName)
     {
-        this.CollectionName = collection;
-        this.Alias = alias;
-        this.DbName = dbName;
+        CollectionName = collection;
+        Alias = alias;
+        DbName = dbName;
     }
     #endregion
 }

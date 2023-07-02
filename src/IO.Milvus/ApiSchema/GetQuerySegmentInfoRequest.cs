@@ -23,17 +23,17 @@ internal sealed class GetQuerySegmentInfoRequest
 
     public Grpc.GetQuerySegmentInfoRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetQuerySegmentInfoRequest()
         {
-            CollectionName = this.CollectionName
+            CollectionName = CollectionName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/query-segment-info",
@@ -48,7 +48,7 @@ internal sealed class GetQuerySegmentInfoRequest
     #region Private ==================================================================================
     private GetQuerySegmentInfoRequest(string collectionName)
     {
-        this.CollectionName = collectionName;
+        CollectionName = collectionName;
     }
     #endregion
 }

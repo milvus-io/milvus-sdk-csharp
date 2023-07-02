@@ -42,12 +42,12 @@ internal sealed class CreateCredentialRequest
 
     public Grpc.CreateCredentialRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.CreateCredentialRequest()
         {
-            Username = this.Username,
-            Password = this.Password,
+            Username = Username,
+            Password = Password,
             ModifiedUtcTimestamps = (ulong)TimestampUtils.GetNowUTCTimestamp(),
             CreatedUtcTimestamps = (ulong)TimestampUtils.GetNowUTCTimestamp()
         };
@@ -55,7 +55,7 @@ internal sealed class CreateCredentialRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         ModifiedUtcTimestamps = TimestampUtils.GetNowUTCTimestamp();
         CreatedUtcTimestamps = TimestampUtils.GetNowUTCTimestamp();
@@ -75,8 +75,8 @@ internal sealed class CreateCredentialRequest
     #region Private =================================================================
     public CreateCredentialRequest(string username, string password)
     {
-        this.Username = username;
-        this.Password = password;
+        Username = username;
+        Password = password;
     }
     #endregion
 }

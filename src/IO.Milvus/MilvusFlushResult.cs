@@ -46,9 +46,9 @@ public class MilvusFlushResult
         IDictionary<string, MilvusId<long>> flushCollSegIDs,
         IDictionary<string, long> collSealTimes)
     {
-        this.CollSegIDs = collSegIDs;
-        this.FlushCollSegIds = flushCollSegIDs;
-        this.CollSealTimes = collSealTimes;
+        CollSegIDs = collSegIDs;
+        FlushCollSegIds = flushCollSegIDs;
+        CollSealTimes = collSealTimes;
     }
     #endregion
 }

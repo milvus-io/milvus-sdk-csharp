@@ -36,12 +36,12 @@ internal sealed class GetCollectionStatisticsRequest
 
     public Grpc.GetCollectionStatisticsRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetCollectionStatisticsRequest()
         {
-            CollectionName = this.CollectionName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            DbName = DbName
         };
     }
 
@@ -62,8 +62,8 @@ internal sealed class GetCollectionStatisticsRequest
     #region Private ==================================================
     public GetCollectionStatisticsRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

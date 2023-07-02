@@ -118,7 +118,7 @@ internal sealed class CreateCollectionRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/collection",
@@ -127,7 +127,7 @@ internal sealed class CreateCollectionRequest
 
     public Grpc.CreateCollectionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.CreateCollectionRequest()
         {
@@ -142,10 +142,10 @@ internal sealed class CreateCollectionRequest
     #region Private ======================================================================
     private CreateCollectionRequest(string collectionName, string dbName, bool enableDynamicField)
     {
-        this.CollectionName = collectionName;
-        this.Schema.Name = collectionName;
-        this.DbName = dbName;
-        this.Schema.EnableDynamicField = enableDynamicField;
+        CollectionName = collectionName;
+        Schema.Name = collectionName;
+        DbName = dbName;
+        Schema.EnableDynamicField = enableDynamicField;
     }
     #endregion
 }

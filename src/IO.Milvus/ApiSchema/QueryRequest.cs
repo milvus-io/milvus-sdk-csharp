@@ -80,15 +80,15 @@ internal sealed class QueryRequest
 
     public Grpc.QueryRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.QueryRequest()
         {
-            CollectionName = this.CollectionName,
-            Expr = this.Expr,
-            GuaranteeTimestamp = (ulong)this.GuaranteeTimestamp,
-            TravelTimestamp = (ulong)this.TravelTimestamp,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            Expr = Expr,
+            GuaranteeTimestamp = (ulong)GuaranteeTimestamp,
+            TravelTimestamp = (ulong)TravelTimestamp,
+            DbName = DbName
         };
 
         request.OutputFields.AddRange(OutFields);
@@ -119,7 +119,7 @@ internal sealed class QueryRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         if (Offset > 0)
         {
@@ -151,19 +151,19 @@ internal sealed class QueryRequest
 
     internal QueryRequest WithOutputFields(IList<string> outputFields)
     {
-        this.OutFields = outputFields;
+        OutFields = outputFields;
         return this;
     }
 
     internal QueryRequest WithOffset(long offset)
     {
-        this.Offset = offset;
+        Offset = offset;
         return this;
     }
 
     internal QueryRequest WithLimit(long limit)
     {
-        this.Limit = limit;
+        Limit = limit;
         return this;
     }
 
@@ -181,7 +181,7 @@ internal sealed class QueryRequest
 
     internal QueryRequest WithGracefulTimestamp(long gracefulTime)
     {
-        this.GracefulTime = gracefulTime;
+        GracefulTime = gracefulTime;
         return this;
     }
 
@@ -193,16 +193,16 @@ internal sealed class QueryRequest
 
     internal QueryRequest WithConsistencyLevel(MilvusConsistencyLevel consistencyLevel)
     {
-        this.ConsistencyLevel = consistencyLevel;
+        ConsistencyLevel = consistencyLevel;
         return this;
     }
 
     #region Private ====================================================
     private QueryRequest(string collectionName, string expr, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.Expr = expr;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        Expr = expr;
+        DbName = dbName;
     }
     #endregion
 }

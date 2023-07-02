@@ -26,19 +26,19 @@ internal sealed class GetIndexBuildProgressRequest
 
     public Grpc.GetIndexBuildProgressRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.GetIndexBuildProgressRequest()
         {
-            CollectionName = this.CollectionName,
-            FieldName = this.FieldName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            FieldName = FieldName,
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/index/progress",
@@ -58,7 +58,7 @@ internal sealed class GetIndexBuildProgressRequest
     {
         CollectionName = collectionName;
         FieldName = fieldName;
-        this.DbName = dbName;
+        DbName = dbName;
     }
     #endregion
 }

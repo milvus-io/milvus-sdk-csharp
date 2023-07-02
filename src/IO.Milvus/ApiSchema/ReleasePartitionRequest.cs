@@ -42,7 +42,7 @@ internal sealed class ReleasePartitionRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/partitions/load",
@@ -59,12 +59,12 @@ internal sealed class ReleasePartitionRequest
 
     public Grpc.ReleasePartitionsRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.ReleasePartitionsRequest()
         {
-            CollectionName = this.CollectionName,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            DbName = DbName
         };
         request.PartitionNames.AddRange(PartitionNames);
 
@@ -74,8 +74,8 @@ internal sealed class ReleasePartitionRequest
     #region Private ========================================================
     public ReleasePartitionRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

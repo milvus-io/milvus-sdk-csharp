@@ -39,7 +39,7 @@ internal sealed class FlushRequest
 
     public Grpc.FlushRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.FlushRequest();
         request.CollectionNames.AddRange(CollectionNames);
@@ -49,7 +49,7 @@ internal sealed class FlushRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreatePostRequest(
             $"{ApiVersion.V1}/persist",
@@ -65,8 +65,8 @@ internal sealed class FlushRequest
     #region Private ===========================================================================================
     private FlushRequest(IList<string> collectionNames, string dbName)
     {
-        this.CollectionNames = collectionNames;
-        this.DbName = dbName;
+        CollectionNames = collectionNames;
+        DbName = dbName;
     }
     #endregion
 }

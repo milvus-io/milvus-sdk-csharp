@@ -43,9 +43,9 @@ internal sealed class CreatePartitionRequest
     {
         return new Grpc.CreatePartitionRequest()
         {
-            CollectionName = this.CollectionName,
-            PartitionName = this.PartitionName,
-            DbName = this.DbName,
+            CollectionName = CollectionName,
+            PartitionName = PartitionName,
+            DbName = DbName,
         };
     }
 
@@ -67,9 +67,9 @@ internal sealed class CreatePartitionRequest
     #region Private ====================================================================
     private CreatePartitionRequest(string collectionName, string partitionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.PartitionName = partitionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        PartitionName = partitionName;
+        DbName = dbName;
     }
     #endregion
 }

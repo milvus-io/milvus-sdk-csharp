@@ -30,11 +30,11 @@ internal sealed class GetLoadingProgressRequest
 
     public Grpc.GetLoadingProgressRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.GetLoadingProgressRequest()
         {
-            CollectionName = this.CollectionName,
+            CollectionName = CollectionName,
         };
 
         if (PartitionNames?.Count > 0)
@@ -47,7 +47,7 @@ internal sealed class GetLoadingProgressRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/load/progress",

@@ -24,7 +24,7 @@ internal sealed class GetFlushStateRequest
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/persist/state",
@@ -39,7 +39,7 @@ internal sealed class GetFlushStateRequest
 
     public Grpc.GetFlushStateRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
         var request = new Grpc.GetFlushStateRequest();
         request.SegmentIDs.AddRange(SegmentIds);
         return request;
@@ -50,7 +50,7 @@ internal sealed class GetFlushStateRequest
     #region Private =============================================
     GetFlushStateRequest(IList<long> segmentIds)
     {
-        this.SegmentIds = segmentIds;
+        SegmentIds = segmentIds;
     }
     #endregion
 }

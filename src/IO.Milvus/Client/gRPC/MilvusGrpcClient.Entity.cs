@@ -20,7 +20,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Insert entities to {0}", collectionName);
+        _log.LogDebug("Insert entities to {0}", collectionName);
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrEmpty(fields);
         Verify.NotNullOrWhiteSpace(dbName);
@@ -52,7 +52,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Insert entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Insert entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -67,7 +67,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Delete entities: {0}", collectionName);
+        _log.LogDebug("Delete entities: {0}", collectionName);
 
         Grpc.DeleteRequest request = ApiSchema.DeleteRequest
             .Create(collectionName, expr, dbName)
@@ -78,7 +78,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Delete entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Delete entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -92,7 +92,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNull(searchParameters);
 
-        this._log.LogDebug("Search: {0}", searchParameters.ToString());
+        _log.LogDebug("Search: {0}", searchParameters.ToString());
 
         var request = searchParameters.BuildGrpc();
 
@@ -100,7 +100,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Delete entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Delete entities failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -115,7 +115,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrEmpty(collectionNames);
         Verify.NotNullOrWhiteSpace(dbName);
-        this._log.LogDebug("Flush: {0}", dbName);
+        _log.LogDebug("Flush: {0}", dbName);
 
         Grpc.FlushRequest request = new Grpc.FlushRequest()
         {
@@ -127,7 +127,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Flush failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Flush failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -143,7 +143,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNull(leftVectors);
 
-        this._log.LogDebug("Cal distance: {0}", leftVectors.ToString());
+        _log.LogDebug("Cal distance: {0}", leftVectors.ToString());
 
         Grpc.CalcDistanceRequest request = CalcDistanceRequest
             .Create(milvusMetricType)
@@ -155,7 +155,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Cal distance failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Cal distance failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -168,7 +168,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get persistent segment infos failed: {0}", collectionName);
+        _log.LogDebug("Get persistent segment infos failed: {0}", collectionName);
 
         Grpc.GetPersistentSegmentInfoRequest request = GetPersistentSegmentInfoRequest.Create(collectionName, dbName)
             .BuildGrpc();
@@ -177,7 +177,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get persistent segment infos failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get persistent segment infos failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -189,7 +189,7 @@ public partial class MilvusGrpcClient
         IList<long> segmentIds,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
+        _log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
         Verify.NotNullOrEmpty(segmentIds);
 
         Grpc.GetFlushStateRequest request = new Grpc.GetFlushStateRequest();
@@ -199,7 +199,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get flush state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get flush state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -220,7 +220,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Query: {0}", collectionName);
+        _log.LogDebug("Query: {0}", collectionName);
 
         Grpc.QueryRequest request = QueryRequest.Create(collectionName, expr, dbName)
             .WithOutputFields(outputFields)
@@ -234,7 +234,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -246,7 +246,7 @@ public partial class MilvusGrpcClient
         string collectionName,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Query: {0}", collectionName);
+        _log.LogDebug("Query: {0}", collectionName);
 
         Grpc.GetQuerySegmentInfoRequest request = GetQuerySegmentInfoRequest
             .Create(collectionName)
@@ -256,7 +256,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Query: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

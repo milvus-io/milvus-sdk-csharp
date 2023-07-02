@@ -39,9 +39,9 @@ internal sealed class LoadPartitionsRequest
     {
         var request = new Grpc.LoadPartitionsRequest()
         {
-            CollectionName = this.CollectionName,
-            ReplicaNumber = this.ReplicaNumber,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            ReplicaNumber = ReplicaNumber,
+            DbName = DbName
         };
         request.PartitionNames.AddRange(PartitionNames);
 
@@ -83,8 +83,8 @@ internal sealed class LoadPartitionsRequest
     #region Private ==================================================
     public LoadPartitionsRequest(string collectionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        DbName = dbName;
     }
     #endregion
 }

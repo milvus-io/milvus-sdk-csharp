@@ -23,17 +23,17 @@ internal sealed class DeleteCredentialRequest
 
     public Grpc.DeleteCredentialRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.DeleteCredentialRequest()
         {
-            Username = this.Username
+            Username = Username
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateDeleteRequest(
             $"{ApiVersion.V1}/credential",

@@ -52,19 +52,19 @@ internal sealed class HasCollectionRequest
 
     public Grpc.HasCollectionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.HasCollectionRequest()
         {
-            CollectionName = this.CollectionName,
-            TimeStamp = (ulong)this.Timestamp,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            TimeStamp = (ulong)Timestamp,
+            DbName = DbName
         };
     }
 
     public HttpRequestMessage BuildRest()
     {
-        this.Validate();
+        Validate();
 
         return HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/collection/existence",
@@ -81,7 +81,7 @@ internal sealed class HasCollectionRequest
     private HasCollectionRequest(string collectionName, string dbName)
     {
         CollectionName = collectionName;
-        this.DbName = dbName;
+        DbName = dbName;
     }
     #endregion
 }

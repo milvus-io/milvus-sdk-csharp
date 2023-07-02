@@ -23,7 +23,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
+        _log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
 
         Grpc.CreateCollectionRequest request = CreateCollectionRequest
             .Create(collectionName, dbName, enableDynamicField)
@@ -36,7 +36,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create collection failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Create collection failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -47,7 +47,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Describe collection {0}", collectionName);
+        _log.LogDebug("Describe collection {0}", collectionName);
 
         Grpc.DescribeCollectionRequest request = DescribeCollectionRequest
             .Create(collectionName, dbName)
@@ -57,7 +57,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Describe collection failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Describe collection failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -79,7 +79,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Drop collection {0}", collectionName);
+        _log.LogDebug("Drop collection {0}", collectionName);
 
         Grpc.DropCollectionRequest request = DropCollectionRequest
             .Create(collectionName, dbName)
@@ -89,7 +89,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Drop collection failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Drop collection failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -100,7 +100,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get collection statistics {0}", collectionName);
+        _log.LogDebug("Get collection statistics {0}", collectionName);
 
         Grpc.GetCollectionStatisticsRequest request = GetCollectionStatisticsRequest
             .Create(collectionName, dbName)
@@ -110,7 +110,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get collection statistics: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get collection statistics: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -124,7 +124,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Check if a {0} exists", collectionName);
+        _log.LogDebug("Check if a {0} exists", collectionName);
 
         Grpc.HasCollectionRequest request = HasCollectionRequest
             .Create(collectionName, dbName)
@@ -148,7 +148,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Load collection {0}", collectionName);
+        _log.LogDebug("Load collection {0}", collectionName);
 
         Grpc.LoadCollectionRequest request = LoadCollectionRequest
             .Create(collectionName, dbName)
@@ -159,7 +159,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Load collection failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Load collection failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -170,7 +170,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Release collection {0}", collectionName);
+        _log.LogDebug("Release collection {0}", collectionName);
 
         Grpc.ReleaseCollectionRequest request = ReleaseCollectionRequest
             .Create(collectionName, dbName)
@@ -180,7 +180,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Release collection failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Release collection failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -192,7 +192,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Show collections {0}", collectionNames?.ToString());
+        _log.LogDebug("Show collections {0}", collectionNames?.ToString());
 
         Grpc.ShowCollectionsRequest request = ShowCollectionsRequest
             .Create(dbName)
@@ -204,7 +204,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Show collections failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Show collections failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -217,7 +217,7 @@ public partial class MilvusGrpcClient
        IList<string> partitionNames,
        CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get loading progress for collection: {0}", collectionName);
+        _log.LogDebug("Get loading progress for collection: {0}", collectionName);
 
         Grpc.GetLoadingProgressRequest request = GetLoadingProgressRequest
             .Create(collectionName)
@@ -228,7 +228,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get loading progress failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get loading progress failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -242,7 +242,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get partition statistics: {0}", collectionName);
+        _log.LogDebug("Get partition statistics: {0}", collectionName);
 
         Grpc.GetPartitionStatisticsRequest request = GetPartitionStatisticsRequest
             .Create(collectionName, partitionName, dbName)
@@ -254,7 +254,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get partition statistics failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get partition statistics failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

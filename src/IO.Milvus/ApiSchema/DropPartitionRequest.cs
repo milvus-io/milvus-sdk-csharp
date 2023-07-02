@@ -38,7 +38,7 @@ internal sealed class DropPartitionRequest
 
     public Grpc.DropPartitionRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         return new Grpc.DropPartitionRequest()
         {
@@ -65,9 +65,9 @@ internal sealed class DropPartitionRequest
     #region Private =========================================================================
     public DropPartitionRequest(string collectionName, string partitionName, string dbName)
     {
-        this.CollectionName = collectionName;
-        this.PartitionName = partitionName;
-        this.DbName = dbName;
+        CollectionName = collectionName;
+        PartitionName = partitionName;
+        DbName = dbName;
     }
     #endregion
 }

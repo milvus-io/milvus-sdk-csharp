@@ -68,11 +68,11 @@ public class MilvusPersistentSegmentInfo
         long numRows,
         SegmentState state)
     {
-        this.CollectionId = collectionID;
-        this.PartitionId = partitionID;
-        this.SegmentId = segmentID;
-        this.NumRows = numRows;
-        this.State = (MilvusSegmentState)state;
+        CollectionId = collectionID;
+        PartitionId = partitionID;
+        SegmentId = segmentID;
+        NumRows = numRows;
+        State = (MilvusSegmentState)state;
     }
     #endregion
 }

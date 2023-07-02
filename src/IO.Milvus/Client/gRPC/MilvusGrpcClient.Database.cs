@@ -13,7 +13,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(dbName);
 
-        this._log.LogDebug("Create database {0}", dbName);
+        _log.LogDebug("Create database {0}", dbName);
         Grpc.Status response = await _grpcClient.CreateDatabaseAsync(new Grpc.CreateDatabaseRequest()
         {
             DbName = dbName,
@@ -21,7 +21,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create database failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Create database failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -29,7 +29,7 @@ public partial class MilvusGrpcClient
     ///<inheritdoc/>
     public async Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("List databases");
+        _log.LogDebug("List databases");
 
         Grpc.ListDatabasesResponse response = await _grpcClient.ListDatabasesAsync(
             new Grpc.ListDatabasesRequest(),
@@ -37,7 +37,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("List databases failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("List databases failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -49,7 +49,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(dbName);
 
-        this._log.LogDebug("Drop database {0}", dbName);
+        _log.LogDebug("Drop database {0}", dbName);
         var response = await _grpcClient.DropDatabaseAsync(new Grpc.DropDatabaseRequest()
         {
             DbName = dbName,
@@ -57,7 +57,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Drop database failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Drop database failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }

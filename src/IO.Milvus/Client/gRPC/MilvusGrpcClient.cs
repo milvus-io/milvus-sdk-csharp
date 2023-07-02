@@ -39,16 +39,16 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
 
         var address = SanitizeEndpoint(endpoint, port);
 
-        this._log = log ?? NullLogger<MilvusGrpcClient>.Instance;
+        _log = log ?? NullLogger<MilvusGrpcClient>.Instance;
         if (grpcChannel is not null)
         {
-            this._grpcChannel = grpcChannel;
-            this._ownsGrpcChannel = false;
+            _grpcChannel = grpcChannel;
+            _ownsGrpcChannel = false;
         }
         else
         {
-            this._grpcChannel = GrpcChannel.ForAddress(address);
-            this._ownsGrpcChannel = true;
+            _grpcChannel = GrpcChannel.ForAddress(address);
+            _ownsGrpcChannel = true;
         }
 
         _callOptions = callOptions ?? new CallOptions(
@@ -83,13 +83,13 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
     ///<inheritdoc/>
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get milvus collection");
+        _log.LogDebug("Get milvus collection");
 
         GetVersionResponse response = await _grpcClient.GetVersionAsync(new GetVersionRequest(), _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Get milvus version failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Get milvus version failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

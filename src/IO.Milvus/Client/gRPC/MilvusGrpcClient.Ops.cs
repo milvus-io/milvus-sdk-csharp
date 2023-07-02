@@ -15,7 +15,7 @@ public partial class MilvusGrpcClient
         DateTime? timeTravel = null,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Manual compaction {1}", collectionId);
+        _log.LogDebug("Manual compaction {1}", collectionId);
 
         Grpc.ManualCompactionRequest request = ManualCompactionRequest
             .Create(collectionId)
@@ -26,7 +26,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Manual compaction failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Manual compaction failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -38,7 +38,7 @@ public partial class MilvusGrpcClient
         long compactionId,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get compaction state: {1}", compactionId);
+        _log.LogDebug("Get compaction state: {1}", compactionId);
 
         Grpc.GetCompactionStateRequest request = GetCompactionStateRequest
             .Create(compactionId)
@@ -48,7 +48,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed get compaction state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Failed get compaction state: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 
@@ -60,7 +60,7 @@ public partial class MilvusGrpcClient
         long compactionId,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Get compaction plans: {1}", compactionId);
+        _log.LogDebug("Get compaction plans: {1}", compactionId);
 
         Grpc.GetCompactionPlansRequest request = GetCompactionPlansRequest
             .Create(compactionId)
@@ -70,7 +70,7 @@ public partial class MilvusGrpcClient
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Failed get compaction plans: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
+            _log.LogError("Failed get compaction plans: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
             throw new MilvusException(response.Status);
         }
 

@@ -52,18 +52,18 @@ internal sealed class DeleteRequest
 
     public Grpc.DeleteRequest BuildGrpc()
     {
-        this.Validate();
+        Validate();
 
         var request = new Grpc.DeleteRequest()
         {
-            CollectionName = this.CollectionName,
-            Expr = this.Expr,
-            DbName = this.DbName
+            CollectionName = CollectionName,
+            Expr = Expr,
+            DbName = DbName
         };
 
         if (!string.IsNullOrEmpty(PartitionName))
         {
-            request.PartitionName = this.PartitionName;
+            request.PartitionName = PartitionName;
         }
 
         return request;

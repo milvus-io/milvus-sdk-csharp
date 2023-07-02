@@ -15,7 +15,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Create alias {0}, {1}, {2}", collectionName, alias, dbName);
+        _log.LogDebug("Create alias {0}, {1}, {2}", collectionName, alias, dbName);
 
         Grpc.CreateAliasRequest request = CreateAliasRequest
             .Create(collectionName, alias, dbName)
@@ -25,7 +25,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Create alias failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Create alias failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -36,7 +36,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Drop alias {0}, {1}", alias, dbName);
+        _log.LogDebug("Drop alias {0}, {1}", alias, dbName);
 
         Grpc.DropAliasRequest request = DropAliasRequest
             .Create(alias, dbName)
@@ -46,7 +46,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Drop alias failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Drop alias failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
@@ -58,7 +58,7 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Alter alias {0}, {1}, {2}", collectionName, alias, dbName);
+        _log.LogDebug("Alter alias {0}, {1}, {2}", collectionName, alias, dbName);
 
         Grpc.AlterAliasRequest request = AlterAliasRequest
             .Create(collectionName, alias, dbName)
@@ -68,7 +68,7 @@ public partial class MilvusGrpcClient
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
-            this._log.LogError("Alter alias failed: {0}, {1}", response.ErrorCode, response.Reason);
+            _log.LogError("Alter alias failed: {0}, {1}", response.ErrorCode, response.Reason);
             throw new MilvusException(response);
         }
     }
