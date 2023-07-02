@@ -49,17 +49,18 @@ partial class Build
         .Executes(() =>{
             var process = Process.Start(new ProcessStartInfo(){
                 FileName = "docker-compose",
-                Arguments = $"-f {MilvusYmlName} up"
+                Arguments = $"-f {MilvusYmlName} up --build"
              });
             
             //Waiting milvus is ready
-            Thread.Sleep(TimeSpan.FromSeconds(50));
+            Thread.Sleep(TimeSpan.FromSeconds(60));
         });
 
     AbsolutePath TestDir => RootDirectory / "src" / "IO.MilvusTests" / "bin" / "Release" / "net7.0" / "milvusclients.json";
 
     Target Test => _ => _        
         .DependsOn(ComposeUp)
+        .Produces(TestResultsDirectory / "*.trx")
         .Executes(() =>{
             //Generate milvus client config file
             List<MilvusConfig> configs = new (){
@@ -89,7 +90,7 @@ partial class Build
                 .EnableNoBuild()                
                 .When(true, _ => _
                     .SetLoggers("trx")
-                    .SetResultsDirectory(TestResultsDirectory)));
+                    .SetResultsDirectory(TestResultsDirectory)));            
         });
 
     Target ComposeDown => _ => _
