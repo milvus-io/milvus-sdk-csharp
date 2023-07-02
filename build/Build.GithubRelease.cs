@@ -44,7 +44,7 @@ partial class Build
                 Log.Information("Detected Tag: {Version}", version);
             }
 
-            var newRelease = new NewRelease(version)
+            var newRelease = new NewRelease('v'+ version)
             {
                 Name = version,
                 Body = CreateChangelog(version),
