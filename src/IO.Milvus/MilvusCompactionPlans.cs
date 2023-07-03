@@ -8,7 +8,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus compaction plans.
 /// </summary>
-public class MilvusCompactionPlans
+public sealed class MilvusCompactionPlans
 {
     /// <summary>
     /// Merge infos.
@@ -49,7 +49,7 @@ public class MilvusCompactionPlans
 /// <summary>
 /// Milvus compaction plan.
 /// </summary>
-public class MilvusCompactionPlan
+public sealed class MilvusCompactionPlan
 {
     /// <summary>
     /// Sources

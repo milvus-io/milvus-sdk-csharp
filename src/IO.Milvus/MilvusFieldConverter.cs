@@ -10,7 +10,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Converter fields_data to <see cref="IList{Field}"/>.
 /// </summary>
-public class MilvusFieldConverter : JsonConverter<IList<Field>>
+public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
 {
     ///<inheritdoc/>
     public override IList<Field> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

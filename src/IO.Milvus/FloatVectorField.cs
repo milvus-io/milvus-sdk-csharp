@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Float vector field
 /// </summary>
-public class FloatVectorField : Field<List<float>>
+public sealed class FloatVectorField : Field<List<float>>
 {
     /// <summary>
     /// Create a float vector field.

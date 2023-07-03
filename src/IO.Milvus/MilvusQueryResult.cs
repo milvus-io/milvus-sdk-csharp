@@ -8,7 +8,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus query result.
 /// </summary>
-public class MilvusQueryResult
+public sealed class MilvusQueryResult
 {
     /// <summary>
     /// Collection name.

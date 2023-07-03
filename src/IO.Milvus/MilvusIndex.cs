@@ -5,7 +5,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus index.
 /// </summary>
-public class MilvusIndex
+public sealed class MilvusIndex
 {
     /// <summary>
     /// Milvus Index.

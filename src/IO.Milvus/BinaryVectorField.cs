@@ -8,7 +8,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Binary Field
 /// </summary>
-public class BinaryVectorField : Field<byte[]>
+public sealed class BinaryVectorField : Field<byte[]>
 {
     /// <summary>
     /// Construct a binary vector field

@@ -7,7 +7,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus query segment result.
 /// </summary>
-public class MilvusQuerySegmentInfoResult
+public sealed class MilvusQuerySegmentInfoResult
 {
     /// <summary>
     /// Collection id.

@@ -14,7 +14,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Search parameters.
 /// </summary>
-public class MilvusSearchParameters
+public sealed class MilvusSearchParameters
 {
     /// <summary>
     /// the consistency level used in the query. 

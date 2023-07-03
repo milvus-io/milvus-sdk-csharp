@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Describe a milvus collection
 /// </summary>
-public class DetailedMilvusCollection
+public sealed class DetailedMilvusCollection
 {
     internal DetailedMilvusCollection(
         IReadOnlyList<string> aliases,

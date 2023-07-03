@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus search result data
 /// </summary>
-public class MilvusSearchResultData
+public sealed class MilvusSearchResultData
 {
     /// <summary>
     /// Fields data

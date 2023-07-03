@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus persistent segment info
 /// </summary>
-public class MilvusPersistentSegmentInfo
+public sealed class MilvusPersistentSegmentInfo
 {
     /// <summary>
     /// MilvusPersistentSegmentInfo

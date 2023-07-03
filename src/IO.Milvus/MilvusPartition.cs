@@ -9,7 +9,7 @@ namespace IO.Milvus;
 /// Milvus allows you to divide the bulk of vector data into a small number of partitions. 
 /// Search and other operations can then be limited to one partition to improve the performance.
 /// </remarks>
-public class MilvusPartition
+public sealed class MilvusPartition
 {
     /// <summary>
     /// Construct a milvus partition.

@@ -10,7 +10,7 @@ namespace IO.Milvus;
 /// <remarks>
 /// <see href="https://milvus.io/docs/rbac.md"/>
 /// </remarks>
-public class MilvusRoleResult
+public sealed class MilvusRoleResult
 {
     internal MilvusRoleResult(string roleName, IEnumerable<string> users)
     {

@@ -7,7 +7,7 @@ namespace IO.Milvus;
 /// <summary>
 /// milvus flush result.
 /// </summary>
-public class MilvusFlushResult
+public sealed class MilvusFlushResult
 {
     /// <summary>
     /// Coll segIDs.

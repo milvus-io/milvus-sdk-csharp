@@ -5,7 +5,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus collection information
 /// </summary>
-public class MilvusCollection
+public sealed class MilvusCollection
 {
     internal MilvusCollection(
         long id,

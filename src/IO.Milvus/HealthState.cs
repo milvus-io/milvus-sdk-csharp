@@ -5,7 +5,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Check if Milvus is healthy.
 /// </summary>
-public class MilvusHealthState
+public sealed class MilvusHealthState
 {
     internal MilvusHealthState(
         bool isHealthy,

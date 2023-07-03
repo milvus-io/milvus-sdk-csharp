@@ -3,7 +3,7 @@
 /// <summary>
 /// Milvus metrics
 /// </summary>
-public class MilvusMetrics
+public sealed class MilvusMetrics
 {
     /// <summary>
     /// Constructor a milvus metrics.

@@ -10,7 +10,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Mutation result wrapper
 /// </summary>
-public class MilvusMutationResult
+public sealed class MilvusMutationResult
 {
     internal MilvusMutationResult() { }
 
@@ -115,7 +115,7 @@ public class MilvusMutationResult
 /// <summary>
 /// Ids
 /// </summary>
-public class MilvusIds
+public sealed class MilvusIds
 {
     /// <summary>
     /// Construct a new instance of <see cref="MilvusIds"/>
@@ -190,7 +190,7 @@ public class MilvusIds
 /// <summary>
 /// Id field
 /// </summary>
-public class IdField
+public sealed class IdField
 {
     /// <summary>
     /// Construct a new instance of <see cref="IdField"/>
@@ -258,7 +258,7 @@ public enum MilvusIdFieldOneofCase
 /// Milvus id
 /// </summary>
 /// <typeparam name="TId"><see cref="int"/> or <see cref="string"/></typeparam>
-public class MilvusId<TId>
+public sealed class MilvusId<TId>
 {
     /// <summary>
     /// Create a new instance of <see cref="MilvusId{TId}"/>

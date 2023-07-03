@@ -5,7 +5,7 @@ namespace IO.Milvus;
 /// <summary>
 /// ByteString Field
 /// </summary>
-public class ByteStringField : Field
+public sealed class ByteStringField : Field
 {
     /// <summary>
     /// Construct a ByteString field

@@ -30,7 +30,7 @@ public enum MilvusVectorsType
 /// <summary>
 /// Vectors when calculating distance.
 /// </summary>
-public class MilvusVectors
+public sealed class MilvusVectors
 {
     /// <summary>
     /// Create BinaryVectors for calculating distance.
@@ -199,7 +199,7 @@ public class MilvusVectors
 /// <summary>
 /// Vector when calculating distance.
 /// </summary>
-public class MilvusVectorIds
+public sealed class MilvusVectorIds
 {
     /// <summary>
     /// Collection name.

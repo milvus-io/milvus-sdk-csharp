@@ -9,7 +9,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Converter a default json format to a milvus dictionary format.
 /// </summary>
-public class MilvusDictionaryConverter : JsonConverter<IDictionary<string, string>>
+public sealed class MilvusDictionaryConverter : JsonConverter<IDictionary<string, string>>
 {
     /// <summary>
     /// Read a milvus dictionary format to a default json format.

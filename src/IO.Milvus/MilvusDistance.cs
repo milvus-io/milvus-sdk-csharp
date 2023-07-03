@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Milvus distance
 /// </summary>
-public class MilvusCalDistanceResult
+public sealed class MilvusCalDistanceResult
 {
     /// <summary>
     /// Int distance value.
