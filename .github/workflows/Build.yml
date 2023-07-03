@@ -17,14 +17,6 @@ jobs:
           submodules: 'recursive'
           fetch-depth: 0
 
-      - name: 'Restore cache'
-        uses: actions/cache@v3
-        with:
-          path: |
-            .nuke/temp
-            ~/.nuget/packages
-          key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-
       - name: Setup .NET SDKs
         uses: actions/setup-dotnet@v3
         with:

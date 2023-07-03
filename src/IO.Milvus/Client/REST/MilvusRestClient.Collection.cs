@@ -73,7 +73,7 @@ public partial class MilvusRestClient
             {
                 CollectionName = collectionName,
                 DbName = dbName,
-                Schema = new CollectionSchema() { Fields = fieldTypes, EnableDynamicField = enableDynamicField },
+                Schema = new CollectionSchema() { Name = collectionName, Fields = fieldTypes, EnableDynamicField = enableDynamicField },
                 ShardsNum = shardsNum,
                 ConsistencyLevel = consistencyLevel,
             });

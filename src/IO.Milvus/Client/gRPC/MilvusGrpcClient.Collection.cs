@@ -35,7 +35,7 @@ public partial class MilvusGrpcClient
             CollectionName = collectionName,
             ConsistencyLevel = (Grpc.ConsistencyLevel)((int)consistencyLevel),
             ShardsNum = shardsNum,
-            Schema = new CollectionSchema() { Fields = fieldTypes, EnableDynamicField = enableDynamicField }.ConvertCollectionSchema().ToByteString()
+            Schema = new CollectionSchema() { Name = collectionName, Fields = fieldTypes, EnableDynamicField = enableDynamicField }.ConvertCollectionSchema().ToByteString()
         }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
