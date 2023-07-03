@@ -519,11 +519,7 @@ public sealed class MilvusSearchParameters
         request.SearchParams[Constants.METRIC_TYPE] = MetricType.ToString();
         request.SearchParams[Constants.ROUND_DECIMAL] = RoundDecimal.ToString(CultureInfo.InvariantCulture);
         request.SearchParams[Constants.IGNORE_GROWING] = IgnoreGrowing.ToString();
-
-        if (Parameters?.Count > 0)
-        {
-            request.SearchParams[Constants.PARAMS] = Parameters.Combine();
-        }
+        request.SearchParams[Constants.PARAMS] = Parameters?.Count > 0 ? Parameters.Combine() : "{}";
     }
 
     private void PrepareParameters(Grpc.SearchRequest request)
@@ -535,13 +531,9 @@ public sealed class MilvusSearchParameters
                 new Grpc.KeyValuePair() { Key = Constants.TOP_K, Value = TopK.ToString(CultureInfo.InvariantCulture) },
                 new Grpc.KeyValuePair() { Key = Constants.METRIC_TYPE, Value = MetricType.ToString().ToUpperInvariant() },
                 new Grpc.KeyValuePair() { Key = Constants.IGNORE_GROWING, Value = IgnoreGrowing.ToString() },
-                new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) }
+                new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) },
+                new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = Parameters?.Count > 0 ? Parameters.Combine() : "{}" }
             });
-
-        if (Parameters?.Count > 0)
-        {
-            request.SearchParams.Add(new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = Parameters.Combine() });
-        }
     }
 
     private void PrepareTargetVectors(Grpc.SearchRequest request)
