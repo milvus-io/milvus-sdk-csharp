@@ -1,9 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using IO.Milvus.Utils;
-using System;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -38,50 +33,4 @@ internal sealed class HasCollectionRequest
     /// </remarks>
     [JsonPropertyName("time_stamp")]
     public long Timestamp { get; set; }
-
-    public static HasCollectionRequest Create(string collectionName, string dbName)
-    {
-        return new HasCollectionRequest(collectionName, dbName);
-    }
-
-    public HasCollectionRequest WithTimestamp(DateTime? dateTime)
-    {
-        Timestamp = dateTime == null ? 0 : dateTime.Value.ToUtcTimestamp();
-        return this;
-    }
-
-    public Grpc.HasCollectionRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.HasCollectionRequest()
-        {
-            CollectionName = CollectionName,
-            TimeStamp = (ulong)Timestamp,
-            DbName = DbName
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}/collection/existence",
-            this);
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private =========================================================================================================
-    private HasCollectionRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

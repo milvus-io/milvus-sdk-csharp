@@ -1,9 +1,6 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Diagnostics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Security;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;

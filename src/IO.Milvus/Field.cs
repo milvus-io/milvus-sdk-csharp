@@ -1,11 +1,10 @@
 ﻿using Google.Protobuf;
+using IO.Milvus.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
-using IO.Milvus.Diagnostics;
-using System.Collections.Specialized;
 
 namespace IO.Milvus;
 

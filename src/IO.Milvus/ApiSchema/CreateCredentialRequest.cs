@@ -1,8 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using IO.Milvus.Utils;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -34,49 +30,4 @@ internal sealed class CreateCredentialRequest
     /// </summary>
     [JsonPropertyName("password")]
     public string Password { get; set; }
-
-    public static CreateCredentialRequest Create(string username, string password)
-    {
-        return new CreateCredentialRequest(username, password);
-    }
-
-    public Grpc.CreateCredentialRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.CreateCredentialRequest()
-        {
-            Username = Username,
-            Password = Password,
-            ModifiedUtcTimestamps = (ulong)TimestampUtils.GetNowUTCTimestamp(),
-            CreatedUtcTimestamps = (ulong)TimestampUtils.GetNowUTCTimestamp()
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        ModifiedUtcTimestamps = TimestampUtils.GetNowUTCTimestamp();
-        CreatedUtcTimestamps = TimestampUtils.GetNowUTCTimestamp();
-
-        return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/credential",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(Username);
-        Verify.NotNullOrWhiteSpace(Password);
-    }
-
-    #region Private =================================================================
-    public CreateCredentialRequest(string username, string password)
-    {
-        Username = username;
-        Password = password;
-    }
-    #endregion
 }

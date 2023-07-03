@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using IO.Milvus.Diagnostics;
+using IO.Milvus.Utils;
 using Microsoft.Extensions.Logging;
-using IO.Milvus.Diagnostics;
-using IO.Milvus.ApiSchema;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -15,14 +15,15 @@ public partial class MilvusGrpcClient
         DateTime? timeTravel = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.GreaterThan(collectionId, 0);
+
         _log.LogDebug("Manual compaction {1}", collectionId);
 
-        Grpc.ManualCompactionRequest request = ManualCompactionRequest
-            .Create(collectionId)
-            .WithTimetravel(timeTravel)
-            .BuildGrpc();
-
-        Grpc.ManualCompactionResponse response = await _grpcClient.ManualCompactionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.ManualCompactionResponse response = await _grpcClient.ManualCompactionAsync(new Grpc.ManualCompactionRequest()
+        {
+            CollectionID = collectionId,
+            Timetravel = timeTravel is not null ? (ulong)TimestampUtils.ToUtcTimestamp(timeTravel.Value) : 0,
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -38,13 +39,14 @@ public partial class MilvusGrpcClient
         long compactionId,
         CancellationToken cancellationToken = default)
     {
+        Verify.GreaterThan(compactionId, 0);
+
         _log.LogDebug("Get compaction state: {1}", compactionId);
 
-        Grpc.GetCompactionStateRequest request = GetCompactionStateRequest
-            .Create(compactionId)
-            .BuildGrpc();
-
-        Grpc.GetCompactionStateResponse response = await _grpcClient.GetCompactionStateAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetCompactionStateResponse response = await _grpcClient.GetCompactionStateAsync(new Grpc.GetCompactionStateRequest()
+        {
+            CompactionID = compactionId,
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -60,13 +62,14 @@ public partial class MilvusGrpcClient
         long compactionId,
         CancellationToken cancellationToken = default)
     {
+        Verify.GreaterThan(compactionId, 0); // TODO: The other's had this and this one didn't; was it intentional?
+
         _log.LogDebug("Get compaction plans: {1}", compactionId);
 
-        Grpc.GetCompactionPlansRequest request = GetCompactionPlansRequest
-            .Create(compactionId)
-            .BuildGrpc();
-
-        Grpc.GetCompactionPlansResponse response = await _grpcClient.GetCompactionStateWithPlansAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetCompactionPlansResponse response = await _grpcClient.GetCompactionStateWithPlansAsync(new Grpc.GetCompactionPlansRequest()
+        {
+            CompactionID = compactionId
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

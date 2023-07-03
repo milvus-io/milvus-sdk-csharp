@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
-using IO.Milvus.Diagnostics;
+﻿using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
-using System.Linq;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.gRPC;
 

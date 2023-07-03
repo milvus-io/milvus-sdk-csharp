@@ -1,5 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
+using IO.Milvus.Utils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
@@ -17,27 +18,15 @@ public partial class MilvusRestClient
         DateTime? timeTravel = null,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Manual compaction {1}", collectionId);
+        Verify.GreaterThan(collectionId, 0);
 
-        using HttpRequestMessage request = ManualCompactionRequest
-            .Create(collectionId)
-            .WithTimetravel(timeTravel)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/compaction",
+            new ManualCompactionRequest { CollectionId = collectionId, TimeTravel = timeTravel is not null ? TimestampUtils.ToUtcTimestamp(timeTravel.Value) : 0 });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError("Manual compaction failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ManualCompactionResponse>(responseContent);
-
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             throw new MilvusException(data.Status);
@@ -51,26 +40,15 @@ public partial class MilvusRestClient
         long compactionId,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get compaction state: {1}", compactionId);
+        Verify.GreaterThan(compactionId, 0);
 
-        using HttpRequestMessage request = GetCompactionStateRequest
-            .Create(compactionId)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/compaction/state",
+            new GetCompactionStateRequest { CompactionId = compactionId });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError("Failed get compaction state: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetCompactionStateResponse>(responseContent);
-
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed get compaction state: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
@@ -85,26 +63,15 @@ public partial class MilvusRestClient
         long compactionId,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get compaction plans: {1}", compactionId);
+        Verify.GreaterThan(compactionId, 0); // TODO: The other's had this and this one didn't; was it intentional?
 
-        using HttpRequestMessage request = GetCompactionPlansRequest
-            .Create(compactionId)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/compaction/plans",
+            new GetCompactionPlansRequest { CompactionId = compactionId });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError("Failed get compaction plans: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetCompactionPlansResponse>(responseContent);
-
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed get compaction plans: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);

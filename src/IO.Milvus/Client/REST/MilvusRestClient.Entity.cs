@@ -1,11 +1,13 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace IO.Milvus.Client.REST;
 
@@ -19,33 +21,27 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Insert data {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        InsertRequest.ValidateFields(fields);
 
-        using HttpRequestMessage request = InsertRequest
-            .Create(collectionName, dbName)
-            .WithPartitionName(partitionName)
-            .WithFields(fields)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/entities",
+            new InsertRequest
+            {
+                CollectionName = collectionName,
+                DbName = dbName,
+                PartitionName = partitionName,
+                FieldsData = fields,
+                NumRows = fields[0].RowCount,
+            });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            e.Data["responseContent"] = responseContent;
-            _log.LogError(e, "Insert data failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed insert data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return MilvusMutationResult.From(data);
@@ -55,35 +51,31 @@ public partial class MilvusRestClient
     public async Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
         string expr,
-        string partitionName = "",
+        string partitionName = null,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Delete data {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(expr);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DeleteRequest
-            .Create(collectionName, expr, dbName)
-            .WithPartitionName(partitionName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/entities",
+            new DeleteRequest 
+            {
+                CollectionName = collectionName, 
+                DbName = dbName, 
+                Expr = expr, 
+                PartitionName = !string.IsNullOrEmpty(partitionName) ? partitionName : null
+            });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Delete data failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed Delete data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return MilvusMutationResult.From(data);
@@ -95,29 +87,17 @@ public partial class MilvusRestClient
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(searchParameters);
-
-        _log.LogDebug("Search: {0}", searchParameters.ToString());
+        searchParameters.Validate();
 
         using HttpRequestMessage request = searchParameters.BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Search failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<SearchResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Search failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return MilvusSearchResult.From(data);
@@ -130,32 +110,25 @@ public partial class MilvusRestClient
         MilvusMetricType milvusMetricType,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Cal distance: {0}", leftVectors?.ToString());
-
-        using HttpRequestMessage request = CalcDistanceRequest
-            .Create(milvusMetricType)
-            .WithLeftVectors(leftVectors)
-            .WithRightVectors(rightVectors)
-            .BuildRest();
-
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
+        Verify.NotNull(leftVectors);
+        Verify.NotNull(rightVectors);
+        if (milvusMetricType is not (MilvusMetricType.L2 or MilvusMetricType.IP or MilvusMetricType.Hamming or MilvusMetricType.Tanimoto))
         {
-            response.EnsureSuccessStatusCode();
+            throw new ArgumentOutOfRangeException(nameof(milvusMetricType));
         }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Cal distance failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+
+        var payload = new CalcDistanceRequest { VectorsLeft = leftVectors, VectorsRight = rightVectors };
+        payload.Params["metric"] = milvusMetricType.ToString().ToUpperInvariant();
+
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest($"{ApiVersion.V1}/distance", payload);
+
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<CalDistanceResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Cal distance: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return MilvusCalDistanceResult.From(data);
@@ -167,30 +140,20 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Flush: {0}", dbName);
+        Verify.NotNullOrEmpty(collectionNames);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = FlushRequest
-            .Create(collectionNames, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/persist",
+            new FlushRequest { CollectionNames = collectionNames, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Flush failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<FlushResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Flush failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return MilvusFlushResult.From(data);
@@ -202,30 +165,20 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get persistent segment infos: {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = GetPersistentSegmentInfoRequest
-            .Create(collectionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/persist/segment-info",
+            new GetPersistentSegmentInfoRequest { CollectionName = collectionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Get persistent segment infos failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetPersistentSegmentInfoResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Get persistent segment infos failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.Infos;
@@ -236,30 +189,19 @@ public partial class MilvusRestClient
         IList<long> segmentIds,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get flush state: {0}", segmentIds?.ToString());
+        Verify.NotNullOrEmpty(segmentIds);
 
-        using HttpRequestMessage request = GetFlushStateRequest
-            .Create(segmentIds)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/persist/state",
+            new GetFlushStateRequest { SegmentIds = segmentIds });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Get flush state failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetFlushStateResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Get flush state failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.Flushed;
@@ -279,36 +221,44 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Query: {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrEmpty(outputFields);
+        Verify.NotNullOrWhiteSpace(expr);
+        Verify.GreaterThanOrEqualTo(guaranteeTimestamp, 0);
+        Verify.GreaterThanOrEqualTo(travelTimestamp, 0);
+        Verify.GreaterThanOrEqualTo(offset, 0);
+        Verify.GreaterThanOrEqualTo(limit, 0);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = QueryRequest.Create(collectionName, expr, dbName)
-            .WithOutputFields(outputFields)
-            .WithPartitionNames(partitionNames)
-            .WithConsistencyLevel(consistencyLevel)
-            .WithGuaranteeTimestamp(guaranteeTimestamp)
-            .WithTravelTimestamp(travelTimestamp)
-            .WithOffset(offset)
-            .WithLimit(limit)
-            .BuildRest();
-
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
+        var payload = new QueryRequest
         {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
+            CollectionName = collectionName,
+            DbName = dbName,
+            Expr = expr,
+            OutFields = outputFields,
+            PartitionNames = partitionNames,
+            ConsistencyLevel = consistencyLevel,
+            GuaranteeTimestamp = guaranteeTimestamp,
+            TravelTimestamp = travelTimestamp,
+        };
+        if (offset > 0)
         {
-            _log.LogError(e, "Query failed: {0}, {1}", e.Message, responseContent);
-            throw;
+            payload.QueryParams.Add("offset", offset.ToString(CultureInfo.InvariantCulture));
         }
+        if (limit > 0)
+        {
+            payload.QueryParams.Add("limit", limit.ToString(CultureInfo.InvariantCulture));
+        }
+
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest($"{ApiVersion.V1}/query", payload);
+
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<QueryResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Query failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return MilvusQueryResult.From(data);
@@ -319,30 +269,19 @@ public partial class MilvusRestClient
         string collectionName,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get query segment info: {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
 
-        using HttpRequestMessage request = GetQuerySegmentInfoRequest
-            .Create(collectionName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/query-segment-info",
+            new GetQuerySegmentInfoRequest { CollectionName = collectionName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Get query segment info failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetQuerySegmentInfoResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Get query segment info failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.Infos;

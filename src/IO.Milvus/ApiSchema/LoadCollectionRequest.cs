@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -33,51 +30,4 @@ internal sealed class LoadCollectionRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static LoadCollectionRequest Create(string collectionName, string dbName)
-    {
-        return new LoadCollectionRequest(collectionName, dbName);
-    }
-
-    public LoadCollectionRequest WithReplicaNumber(int replicaNumber)
-    {
-        ReplicaNumber = replicaNumber;
-        return this;
-    }
-
-    public Grpc.LoadCollectionRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.LoadCollectionRequest()
-        {
-            CollectionName = CollectionName,
-            ReplicaNumber = ReplicaNumber,
-            DbName = DbName
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/collection/load",
-            this);
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.GreaterThanOrEqualTo(ReplicaNumber, 1);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private =====================================================================================
-    private LoadCollectionRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

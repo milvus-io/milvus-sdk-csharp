@@ -1,12 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Diagnostics;
+using IO.Milvus.Utils;
 using Microsoft.Extensions.Logging;
-using System.Net.Http;
-using IO.Milvus.ApiSchema;
-using System.Text.Json;
-using System.Text;
 using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.REST;
 
@@ -17,23 +19,13 @@ public partial class MilvusRestClient
         string username,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Delete credential {0}", username);
+        Verify.NotNullOrWhiteSpace(username);
 
-        using HttpRequestMessage request = DeleteCredentialRequest
-            .Create(username)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/credential",
+            new DeleteCredentialRequest { Username = username });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Delete credential failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -45,23 +37,15 @@ public partial class MilvusRestClient
         string newPassword,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Update credential {0}", username);
+        Verify.NotNullOrWhiteSpace(username);
+        Verify.NotNullOrWhiteSpace(oldPassword);
+        Verify.NotNullOrWhiteSpace(newPassword);
 
-        using HttpRequestMessage request = UpdateCredentialRequest
-            .Create(username, Base64Encode(oldPassword), Base64Encode(newPassword))
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePatchRequest(
+            $"{ApiVersion.V1}/credential",
+            new UpdateCredentialRequest {  Username = username, OldPassword = Base64Encode(oldPassword), NewPassword = Base64Encode(newPassword) });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Update credential failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -72,23 +56,21 @@ public partial class MilvusRestClient
         string password,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Create credential {0}", username);
+        Verify.NotNullOrWhiteSpace(username);
+        Verify.NotNullOrWhiteSpace(password);
 
-        using HttpRequestMessage request = CreateCredentialRequest
-            .Create(username, Base64Encode(password))
-            .BuildRest();
+        long timestamp = TimestampUtils.GetNowUTCTimestamp();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/credential",
+            new CreateCredentialRequest
+            {
+                Username = username,
+                Password = Base64Encode(password),
+                ModifiedUtcTimestamps = timestamp,
+                CreatedUtcTimestamps = timestamp,
+            });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Create credential failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -97,37 +79,19 @@ public partial class MilvusRestClient
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("List credential users");
-
         using HttpRequestMessage request = HttpRequest.CreateGetRequest($"{ApiVersion.V1}/credential/users");
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "List credential users failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ListCredUsersResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed list credential users: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.Usernames;
     }
 
-    #region Private =================================================================================================
-    private static string Base64Encode(string input)
-    {
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-    }
-    #endregion
+    private static string Base64Encode(string input) => Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
 }

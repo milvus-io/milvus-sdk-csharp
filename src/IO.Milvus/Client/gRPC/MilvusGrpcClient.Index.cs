@@ -1,10 +1,12 @@
 ﻿using IO.Milvus.ApiSchema;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
-using Microsoft.Extensions.Logging;
 using IO.Milvus.Diagnostics;
+using Microsoft.Extensions.Logging;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -21,6 +23,10 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Create index {0}", collectionName);
 
         Grpc.CreateIndexRequest request = CreateIndexRequest
@@ -46,13 +52,20 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(indexName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Drop index {0}", collectionName);
 
-        Grpc.DropIndexRequest request = DropIndexRequest
-            .Create(collectionName, fieldName, indexName, dbName)
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.DropIndexAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.DropIndexAsync(new Grpc.DropIndexRequest()
+        {
+            CollectionName = collectionName,
+            FieldName = fieldName,
+            IndexName = indexName,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -68,13 +81,18 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Describe index {0}", collectionName);
 
-        Grpc.DescribeIndexRequest request = DescribeIndexRequest
-            .Create(collectionName, fieldName, dbName)
-            .BuildGrpc();
-
-        Grpc.DescribeIndexResponse response = await _grpcClient.DescribeIndexAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.DescribeIndexResponse response = await _grpcClient.DescribeIndexAsync(new Grpc.DescribeIndexRequest()
+        {
+            CollectionName = collectionName,
+            FieldName = fieldName,
+            DbName = dbName,
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -92,13 +110,18 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Get index build progress {0}", collectionName);
 
-        Grpc.GetIndexBuildProgressRequest request = GetIndexBuildProgressRequest
-            .Create(collectionName, fieldName, dbName)
-            .BuildGrpc();
-
-        Grpc.GetIndexBuildProgressResponse response = await _grpcClient.GetIndexBuildProgressAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetIndexBuildProgressResponse response = await _grpcClient.GetIndexBuildProgressAsync(new Grpc.GetIndexBuildProgressRequest()
+        {
+            CollectionName = collectionName,
+            FieldName = fieldName,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -116,13 +139,18 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
 
-        Grpc.GetIndexStateRequest request = GetIndexStateRequest
-            .Create(collectionName, fieldName, dbName)
-            .BuildGrpc();
-
-        Grpc.GetIndexStateResponse response = await _grpcClient.GetIndexStateAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetIndexStateResponse response = await _grpcClient.GetIndexStateAsync(new Grpc.GetIndexStateRequest()
+        {
+            CollectionName = collectionName,
+            FieldName = fieldName,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

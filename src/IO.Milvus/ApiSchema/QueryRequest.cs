@@ -1,10 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Globalization;
-using System.Linq;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -49,16 +43,10 @@ internal sealed class QueryRequest
     public long TravelTimestamp { get; set; }
 
     [JsonPropertyName("graceful_time")]
-    public long GracefulTime { get; private set; }
+    public long GracefulTime { get; set; }
 
     [JsonPropertyName("consistency_level")]
-    public MilvusConsistencyLevel ConsistencyLevel { get; private set; }
-
-    [JsonIgnore]
-    public long Offset { get; private set; }
-
-    [JsonIgnore]
-    public long Limit { get; private set; }
+    public MilvusConsistencyLevel ConsistencyLevel { get; set; }
 
     [JsonPropertyName("query_params")]
     [JsonConverter(typeof(MilvusDictionaryConverter))]
@@ -72,137 +60,4 @@ internal sealed class QueryRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static QueryRequest Create(string collectionName, string expr, string dbName)
-    {
-        return new QueryRequest(collectionName, expr, dbName);
-    }
-
-    public Grpc.QueryRequest BuildGrpc()
-    {
-        Validate();
-
-        var request = new Grpc.QueryRequest()
-        {
-            CollectionName = CollectionName,
-            Expr = Expr,
-            GuaranteeTimestamp = (ulong)GuaranteeTimestamp,
-            TravelTimestamp = (ulong)TravelTimestamp,
-            DbName = DbName
-        };
-
-        request.OutputFields.AddRange(OutFields);
-        if (PartitionNames?.Count > 0)
-        {
-            request.PartitionNames.AddRange(PartitionNames);
-        }
-
-        if (Offset > 0)
-        {
-            request.QueryParams.Add(new Grpc.KeyValuePair()
-            {
-                Key = "offset",
-                Value = Offset.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-        if (Limit > 0)
-        {
-            request.QueryParams.Add(new Grpc.KeyValuePair()
-            {
-                Key = "limit",
-                Value = Limit.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        return request;
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        if (Offset > 0)
-        {
-            QueryParams.Add("offset", Offset.ToString(CultureInfo.InvariantCulture));
-        }
-        if (Limit > 0)
-        {
-            QueryParams.Add("limit", Limit.ToString(CultureInfo.InvariantCulture));
-        }
-
-        var request = HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/query",
-            payload: this);
-
-        return request;
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrEmpty(OutFields);
-        Verify.NotNullOrWhiteSpace(Expr);
-        Verify.GreaterThanOrEqualTo(GuaranteeTimestamp, 0);
-        Verify.GreaterThanOrEqualTo(TravelTimestamp, 0);
-        Verify.GreaterThanOrEqualTo(Offset, 0);
-        Verify.GreaterThanOrEqualTo(Limit, 0);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    internal QueryRequest WithOutputFields(IList<string> outputFields)
-    {
-        OutFields = outputFields;
-        return this;
-    }
-
-    internal QueryRequest WithOffset(long offset)
-    {
-        Offset = offset;
-        return this;
-    }
-
-    internal QueryRequest WithLimit(long limit)
-    {
-        Limit = limit;
-        return this;
-    }
-
-    internal QueryRequest WithPartitionNames(IList<string> partitionNames)
-    {
-        PartitionNames = partitionNames;
-        return this;
-    }
-
-    internal QueryRequest WithGuaranteeTimestamp(long guarantee_timestamp)
-    {
-        GuaranteeTimestamp = guarantee_timestamp;
-        return this;
-    }
-
-    internal QueryRequest WithGracefulTimestamp(long gracefulTime)
-    {
-        GracefulTime = gracefulTime;
-        return this;
-    }
-
-    internal QueryRequest WithTravelTimestamp(long travelTimestamp)
-    {
-        TravelTimestamp = (int)travelTimestamp;
-        return this;
-    }
-
-    internal QueryRequest WithConsistencyLevel(MilvusConsistencyLevel consistencyLevel)
-    {
-        ConsistencyLevel = consistencyLevel;
-        return this;
-    }
-
-    #region Private ====================================================
-    private QueryRequest(string collectionName, string expr, string dbName)
-    {
-        CollectionName = collectionName;
-        Expr = expr;
-        DbName = dbName;
-    }
-    #endregion
 }

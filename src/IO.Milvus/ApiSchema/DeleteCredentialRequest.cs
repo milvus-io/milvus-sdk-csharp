@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -15,41 +12,4 @@ internal sealed class DeleteCredentialRequest
     /// </summary>
     [JsonPropertyName("username")]
     public string Username { get; set; }
-
-    public static DeleteCredentialRequest Create(string userName)
-    {
-        return new DeleteCredentialRequest(userName);
-    }
-
-    public Grpc.DeleteCredentialRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.DeleteCredentialRequest()
-        {
-            Username = Username
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreateDeleteRequest(
-            $"{ApiVersion.V1}/credential",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(Username);
-    }
-
-    #region Private ==================================================
-    public DeleteCredentialRequest(string userName)
-    {
-        Username = userName;
-    }
-    #endregion
 }

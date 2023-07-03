@@ -1,13 +1,14 @@
 ﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Diagnostics;
+using IO.Milvus.Utils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Text.Json;
 using System.Linq;
-using IO.Milvus.Diagnostics;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.REST;
 
@@ -19,23 +20,14 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Delete collection {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DropCollectionRequest
-            .Create(collectionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/collection", 
+            new DropCollectionRequest { CollectionName = collectionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Delete collection failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -46,26 +38,16 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Describe collection {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DescribeCollectionRequest
-            .Create(collectionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/collection",
+            new DescribeCollectionRequest { CollectionName = collectionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Describe collection failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<DescribeCollectionResponse>(responseContent);
-
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed Describe collections: {0}", data.Status.ErrorCode);
@@ -80,30 +62,27 @@ public partial class MilvusRestClient
         string collectionName,
         IList<FieldType> fieldTypes,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
-        int shards_num = 1,
+        int shardsNum = 1,
         bool enableDynamicField = false,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+        CreateCollectionRequest.ValidateFieldTypes(fieldTypes);
 
-        using HttpRequestMessage request = CreateCollectionRequest
-            .Create(collectionName, dbName, enableDynamicField)
-            .WithConsistencyLevel(consistencyLevel)
-            .WithFieldTypes(fieldTypes)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/collection",
+            new CreateCollectionRequest
+            {
+                CollectionName = collectionName,
+                DbName = dbName,
+                Schema = new CollectionSchema() { Fields = fieldTypes, EnableDynamicField = enableDynamicField },
+                ShardsNum = shardsNum,
+                ConsistencyLevel = consistencyLevel,
+            });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Collection creation failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -115,31 +94,24 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Check if a {0} exists", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = HasCollectionRequest
-            .Create(collectionName, dbName)
-            .WithTimestamp(dateTime)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/collection/existence",
+            new HasCollectionRequest
+            {
+                CollectionName = collectionName,
+                DbName = dbName,
+                Timestamp = dateTime is not null ? dateTime.Value.ToUtcTimestamp() : 0,
+            });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (System.Exception e)
-        {
-            _log.LogError(e, "Failed check if a {0} exists: {0}, {1}", collectionName, e.Message, responseContent);
-            throw;
-        }
-
-        if (string.IsNullOrEmpty(responseContent) || responseContent == "{}")
-            return false;
-
-        var hasCollectionResponse = JsonSerializer.Deserialize<HasCollectionResponse>(responseContent);
-
-        return hasCollectionResponse.Value;
+        return
+            !string.IsNullOrEmpty(responseContent) &&
+            responseContent != "{}" &&
+            JsonSerializer.Deserialize<HasCollectionResponse>(responseContent).Value;
     }
 
     ///<inheritdoc/>
@@ -148,23 +120,14 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Release collection: {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = ReleaseCollectionRequest
-            .Create(collectionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/collection/load",
+            new ReleaseCollectionRequest { CollectionName = collectionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (System.Exception e)
-        {
-            _log.LogError(e, "Failed release collection: {0}, {1}, {2}", collectionName, e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -176,24 +139,15 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Load collection: {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.GreaterThanOrEqualTo(replicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = LoadCollectionRequest
-            .Create(collectionName, dbName)
-            .WithReplicaNumber(replicaNumber)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/collection/load",
+            new LoadCollectionRequest {  CollectionName = collectionName, DbName = dbName, ReplicaNumber = replicaNumber });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (System.Exception e)
-        {
-            _log.LogError(e, "Failed load collection: {0}, {1}, {2}", collectionName, e.Message, responseContent);
-            throw;
-        }
+        await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
     ///<inheritdoc/>
@@ -202,27 +156,16 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get collection statistics: {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = GetCollectionStatisticsRequest
-            .Create(collectionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/collection/statistics",
+            new GetCollectionStatisticsRequest { CollectionName = collectionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (System.Exception e)
-        {
-            _log.LogError(e, "Failed get collection statistics: {0}, {1}, {2}", collectionName, e.Message, responseContent);
-            throw;
-        }
-
-        var data = JsonSerializer.Deserialize<GetCollectionStatisticsResponse>(responseContent);
-
-        return data.Statistics;
+        return JsonSerializer.Deserialize<GetCollectionStatisticsResponse>(responseContent).Statistics;
     }
 
     ///<inheritdoc/>
@@ -232,32 +175,24 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Show collections");
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = ShowCollectionsRequest
-            .Create(dbName)
-            .WithCollectionNames(collectionNames)
-            .WithType(showType)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/collections",
+            new ShowCollectionsRequest
+            {
+                DbName = dbName,
+                CollectionNames = collectionNames,
+                Type = showType,
+            });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (System.Exception e)
-        {
-            _log.LogError(e, "Failed show collections: {0}, {1}, {2}", collectionNames?.ToString(), e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ShowCollectionsResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed show collections: {0}", data.Status.ErrorCode);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.ToCollections().ToList();
@@ -269,7 +204,7 @@ public partial class MilvusRestClient
         IList<string> partitionNames = null,
         CancellationToken cancellationToken = default)
     {
-        throw new NotSupportedException($"Not supported in milvus restful api");
+        throw new NotSupportedException($"Not supported in Milvus restful API");
     }
 
     ///<inheritdoc/>
@@ -279,30 +214,21 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get partition statistics: {0}, {1}", collectionName, partitionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(partitionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = GetPartitionStatisticsRequest
-            .Create(collectionName, partitionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/partition/statistics",
+            new GetPartitionStatisticsRequest { CollectionName= collectionName, DbName = dbName, PartitionName = partitionName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (System.Exception e)
-        {
-            _log.LogError(e, "Get partition statistics: {0}, {1}, {2}", collectionName, e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetPartitionStatisticsResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Get partition statistics: {0}", data.Status.ErrorCode);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.Stats;

@@ -1,8 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Security;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -28,42 +24,4 @@ internal sealed class GetCollectionStatisticsRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static GetCollectionStatisticsRequest Create(string collectionName, string dbName)
-    {
-        return new GetCollectionStatisticsRequest(collectionName, dbName);
-    }
-
-    public Grpc.GetCollectionStatisticsRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.GetCollectionStatisticsRequest()
-        {
-            CollectionName = CollectionName,
-            DbName = DbName
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}/collection/statistics",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName, "Milvus collection name cannot be null or empty");
-        Verify.NotNullOrWhiteSpace(DbName, "DbName cannot be null or empty");
-    }
-
-    #region Private ==================================================
-    public GetCollectionStatisticsRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

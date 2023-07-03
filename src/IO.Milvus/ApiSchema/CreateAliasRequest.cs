@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -24,43 +21,4 @@ internal sealed class CreateAliasRequest
     /// </summary>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static CreateAliasRequest Create(string collection, string alias, string dbName)
-    {
-        return new CreateAliasRequest(collection, alias, dbName);
-    }
-
-    public Grpc.CreateAliasRequest BuildGrpc()
-    {
-        return new Grpc.CreateAliasRequest()
-        {
-            CollectionName = CollectionName,
-            Alias = Alias,
-            DbName = DbName
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/alias",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(Alias);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private =============================================
-    private CreateAliasRequest(string collection, string alias, string dbName)
-    {
-        CollectionName = collection;
-        Alias = alias;
-        DbName = dbName;
-    }
-    #endregion
 }

@@ -1,8 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -46,40 +42,4 @@ internal sealed class ShowPartitionsRequest
     /// </remarks>
     [JsonPropertyName("type")]
     public int Type { get; set; }
-
-    internal static ShowPartitionsRequest Create(string collectionName, string dbName)
-    {
-        return new ShowPartitionsRequest(collectionName, dbName);
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}/partitions",
-            payload: this
-            );
-    }
-
-    public Grpc.ShowPartitionsRequest BuildGrpc()
-    {
-        return new Grpc.ShowPartitionsRequest()
-        {
-            CollectionName = CollectionName,
-            DbName = DbName
-        };
-    }
-
-    #region Private =============================================================
-    private ShowPartitionsRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

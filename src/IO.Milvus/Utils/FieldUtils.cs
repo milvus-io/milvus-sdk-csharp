@@ -1,7 +1,7 @@
-﻿using IO.Milvus.Grpc;
+﻿using IO.Milvus.Diagnostics;
+using IO.Milvus.Grpc;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace IO.Milvus.Utils;
 
@@ -19,16 +19,13 @@ public static class FieldUtils
     public static (FloatArray, int) ToFloatArray(
         this IList<List<float>> floatVectors)
     {
-        if (floatVectors is null)
-        {
-            throw new ArgumentNullException(nameof(floatVectors));
-        }
+        Verify.NotNullOrEmpty(floatVectors);
 
         var floatArray = new FloatArray();
 
-        int dim = (int)floatVectors.First().Count;
+        int dim = floatVectors[0].Count;
 
-        foreach (var value in floatVectors)
+        foreach (List<float> value in floatVectors)
         {
             floatArray.Data.AddRange(value);
         }

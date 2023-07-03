@@ -1,11 +1,12 @@
 ﻿using IO.Milvus.ApiSchema;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
+using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.REST;
 
@@ -18,23 +19,15 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Create partition {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(partitionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = CreatePartitionRequest
-            .Create(collectionName, partitionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/partition",
+            new CreatePartitionRequest { CollectionName = collectionName, PartitionName = partitionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Create partition failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -46,30 +39,20 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Check if {0} partition exists", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(partitionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = HasPartitionRequest
-            .Create(collectionName, partitionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/partition/existence", 
+            new HasPartitionRequest { CollectionName = collectionName, PartitionName = partitionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Check if {0} partition exists: {1}, {2}", partitionName, e.Message, responseContent);
-            throw;
-        }
-
-        if (string.IsNullOrEmpty(responseContent) || responseContent == "{}")
-            return false;
-
-        var hasCollectionResponse = JsonSerializer.Deserialize<HasPartitionResponse>(responseContent);
-
-        return hasCollectionResponse.Value;
+        return
+            !string.IsNullOrEmpty(responseContent) &&
+            responseContent != "{}" &&
+            JsonSerializer.Deserialize<HasPartitionResponse>(responseContent).Value;
     }
 
     ///<inheritdoc/>
@@ -78,30 +61,20 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Show {0} partitions", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = ShowPartitionsRequest
-            .Create(collectionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/partitions", 
+            new ShowPartitionsRequest { CollectionName = collectionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Failed show partitions: {1}, {2}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ShowPartitionsResponse>(responseContent);
-
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed show partitions: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data
@@ -117,25 +90,16 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Load partition {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrEmpty(partitionNames);
+        Verify.GreaterThanOrEqualTo(replicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = LoadPartitionsRequest
-            .Create(collectionName, dbName)
-            .WithPartitionNames(partitionNames)
-            .WithReplicaNumber(replicaNumber)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/partitions/load", 
+            new LoadPartitionsRequest { CollectionName = collectionName, PartitionNames = partitionNames, ReplicaNumber = replicaNumber, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Load partition failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -147,24 +111,15 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Release partitions {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrEmpty(partitionNames);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = ReleasePartitionRequest
-            .Create(collectionName, dbName)
-            .WithPartitionNames(partitionNames)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/partitions/load", 
+            new ReleasePartitionRequest { CollectionName = collectionName, PartitionNames = partitionNames, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Release partition failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -176,23 +131,15 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Drop partition {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(partitionName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DropPartitionRequest
-            .Create(collectionName, partitionName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/partition", 
+            new DropPartitionRequest { CollectionName = collectionName, PartitionName = partitionName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Drop partition failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }

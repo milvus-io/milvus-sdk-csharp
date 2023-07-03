@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -30,47 +27,4 @@ internal sealed class HasPartitionRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    internal static HasPartitionRequest Create(string collectionName, string partitionName, string dbName)
-    {
-        return new HasPartitionRequest(collectionName, partitionName, dbName);
-    }
-
-    public Grpc.HasPartitionRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.HasPartitionRequest()
-        {
-            CollectionName = CollectionName,
-            PartitionName = PartitionName,
-            DbName = DbName,
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}/partition/existence",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(PartitionName);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private =============================================================
-    private HasPartitionRequest(string collectionName, string partitionName, string dbName)
-    {
-        CollectionName = collectionName;
-        PartitionName = partitionName;
-        DbName = dbName;
-    }
-    #endregion
 }

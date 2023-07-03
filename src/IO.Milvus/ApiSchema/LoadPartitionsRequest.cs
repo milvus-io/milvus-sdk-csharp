@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -34,57 +31,4 @@ internal sealed class LoadPartitionsRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public Grpc.LoadPartitionsRequest BuildGrpc()
-    {
-        var request = new Grpc.LoadPartitionsRequest()
-        {
-            CollectionName = CollectionName,
-            ReplicaNumber = ReplicaNumber,
-            DbName = DbName
-        };
-        request.PartitionNames.AddRange(PartitionNames);
-
-        return request;
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrEmpty(PartitionNames);
-        Verify.GreaterThanOrEqualTo(ReplicaNumber, 1);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    public static LoadPartitionsRequest Create(string collectionName, string dbName)
-    {
-        return new LoadPartitionsRequest(collectionName, dbName);
-    }
-
-    public LoadPartitionsRequest WithPartitionNames(IList<string> partitionNames)
-    {
-        PartitionNames = partitionNames;
-        return this;
-    }
-
-    public LoadPartitionsRequest WithReplicaNumber(int replicaNumber)
-    {
-        ReplicaNumber = replicaNumber;
-        return this;
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/partitions/load",
-            payload: this);
-    }
-
-    #region Private ==================================================
-    public LoadPartitionsRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

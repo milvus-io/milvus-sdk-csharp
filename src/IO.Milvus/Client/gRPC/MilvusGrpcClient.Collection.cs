@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using Google.Protobuf;
 using IO.Milvus.ApiSchema;
-using Microsoft.Extensions.Logging;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -23,16 +25,19 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+        CreateCollectionRequest.ValidateFieldTypes(fieldTypes);
+
         _log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
 
-        Grpc.CreateCollectionRequest request = CreateCollectionRequest
-            .Create(collectionName, dbName, enableDynamicField)
-            .WithShardsNum(shardsNum)
-            .WithConsistencyLevel(consistencyLevel)
-            .WithFieldTypes(fieldTypes)
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.CreateCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.CreateCollectionAsync(new Grpc.CreateCollectionRequest()
+        {
+            CollectionName = collectionName,
+            ConsistencyLevel = (Grpc.ConsistencyLevel)((int)consistencyLevel),
+            ShardsNum = shardsNum,
+            Schema = new CollectionSchema() { Fields = fieldTypes, EnableDynamicField = enableDynamicField }.ConvertCollectionSchema().ToByteString()
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -47,13 +52,16 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Describe collection {0}", collectionName);
 
-        Grpc.DescribeCollectionRequest request = DescribeCollectionRequest
-            .Create(collectionName, dbName)
-            .BuildGrpc();
-
-        Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(new Grpc.DescribeCollectionRequest()
+        {
+            CollectionName = collectionName,
+            DbName = dbName,
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -79,13 +87,16 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Drop collection {0}", collectionName);
 
-        Grpc.DropCollectionRequest request = DropCollectionRequest
-            .Create(collectionName, dbName)
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.DropCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.DropCollectionAsync(new Grpc.DropCollectionRequest
+        {
+            CollectionName = collectionName,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -100,13 +111,16 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Get collection statistics {0}", collectionName);
 
-        Grpc.GetCollectionStatisticsRequest request = GetCollectionStatisticsRequest
-            .Create(collectionName, dbName)
-            .BuildGrpc();
-
-        Grpc.GetCollectionStatisticsResponse response = await _grpcClient.GetCollectionStatisticsAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetCollectionStatisticsResponse response = await _grpcClient.GetCollectionStatisticsAsync(new Grpc.GetCollectionStatisticsRequest()
+        {
+            CollectionName = collectionName,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -124,14 +138,17 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Check if a {0} exists", collectionName);
 
-        Grpc.HasCollectionRequest request = HasCollectionRequest
-            .Create(collectionName, dbName)
-            .WithTimestamp(dateTime)
-            .BuildGrpc();
-
-        var response = await _grpcClient.HasCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        var response = await _grpcClient.HasCollectionAsync(new Grpc.HasCollectionRequest()
+        {
+            CollectionName = collectionName,
+            TimeStamp = (ulong)(dateTime is not null ? dateTime.Value.ToUtcTimestamp() : 0),
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -148,14 +165,18 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.GreaterThanOrEqualTo(replicaNumber, 1);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Load collection {0}", collectionName);
 
-        Grpc.LoadCollectionRequest request = LoadCollectionRequest
-            .Create(collectionName, dbName)
-            .WithReplicaNumber(replicaNumber)
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.LoadCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.LoadCollectionAsync(new Grpc.LoadCollectionRequest()
+        {
+            CollectionName = collectionName,
+            ReplicaNumber = replicaNumber,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -170,13 +191,16 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Release collection {0}", collectionName);
 
-        Grpc.ReleaseCollectionRequest request = ReleaseCollectionRequest
-            .Create(collectionName, dbName)
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.ReleaseCollectionAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.ReleaseCollectionAsync(new Grpc.ReleaseCollectionRequest()
+        {
+            CollectionName = collectionName,
+            DbName = dbName
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -192,13 +216,19 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Show collections {0}", collectionNames?.ToString());
 
-        Grpc.ShowCollectionsRequest request = ShowCollectionsRequest
-            .Create(dbName)
-            .WithCollectionNames(collectionNames)
-            .WithType(showType)
-            .BuildGrpc();
+        var request = new Grpc.ShowCollectionsRequest
+        {
+            Type = (Grpc.ShowType)showType,
+            DbName = dbName
+        };
+        if (collectionNames is not null)
+        {
+            request.CollectionNames.AddRange(collectionNames);
+        }
 
         Grpc.ShowCollectionsResponse response = await _grpcClient.ShowCollectionsAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
@@ -217,12 +247,18 @@ public partial class MilvusGrpcClient
        IList<string> partitionNames,
        CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+
         _log.LogDebug("Get loading progress for collection: {0}", collectionName);
 
-        Grpc.GetLoadingProgressRequest request = GetLoadingProgressRequest
-            .Create(collectionName)
-            .WithPartitionNames(partitionNames)
-            .BuildGrpc();
+        Grpc.GetLoadingProgressRequest request = new Grpc.GetLoadingProgressRequest()
+        {
+            CollectionName = collectionName,
+        };
+        if (partitionNames?.Count > 0)
+        {
+            request.PartitionNames.AddRange(partitionNames);
+        }
 
         Grpc.GetLoadingProgressResponse response = await _grpcClient.GetLoadingProgressAsync(request, _callOptions.WithCancellationToken(cancellationToken));
 
@@ -242,15 +278,19 @@ public partial class MilvusGrpcClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(partitionName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
         _log.LogDebug("Get partition statistics: {0}", collectionName);
 
-        Grpc.GetPartitionStatisticsRequest request = GetPartitionStatisticsRequest
-            .Create(collectionName, partitionName, dbName)
-            .BuildGrpc();
-
         Grpc.GetPartitionStatisticsResponse response = await _grpcClient.GetPartitionStatisticsAsync(
-            request,
-            _callOptions.WithCancellationToken(cancellationToken));
+            new Grpc.GetPartitionStatisticsRequest()
+            {
+                CollectionName = collectionName,
+                PartitionName = partitionName,
+                DbName = dbName
+            }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

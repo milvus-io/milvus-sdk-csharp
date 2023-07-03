@@ -1,10 +1,10 @@
 ﻿using IO.Milvus.ApiSchema;
-using System.Threading.Tasks;
-using System.Threading;
+using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Text.Json;
-using IO.Milvus.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.REST;
 
@@ -13,26 +13,15 @@ public partial class MilvusRestClient
     ///<inheritdoc/>
     public async Task<MilvusMetrics> GetMetricsAsync(string request, CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get metrics {0}", request);
+        Verify.NotNullOrWhiteSpace(request);
 
-        using HttpRequestMessage getMetricsRequest = GetMetricsRequest
-            .Create(request)
-            .BuildRest();
+        using HttpRequestMessage getMetricsRequest = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/metrics",
+            new GetMetricsRequest { Request = request });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(getMetricsRequest, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Get metrics failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(getMetricsRequest, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetMetricsResponse>(responseContent);
-
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed get metrics: {0}", data.Status.ErrorCode);

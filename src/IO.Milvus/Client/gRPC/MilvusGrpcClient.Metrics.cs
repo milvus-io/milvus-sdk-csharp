@@ -1,8 +1,7 @@
-﻿using IO.Milvus.ApiSchema;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
-using IO.Milvus.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -13,13 +12,14 @@ public partial class MilvusGrpcClient
         string request,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(request);
+
         _log.LogDebug("Get metrics {0}", request);
 
-        Grpc.GetMetricsRequest getMetricsRequest = GetMetricsRequest
-            .Create(request)
-            .BuildGrpc();
-
-        Grpc.GetMetricsResponse response = await _grpcClient.GetMetricsAsync(getMetricsRequest, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.GetMetricsResponse response = await _grpcClient.GetMetricsAsync(new Grpc.GetMetricsRequest()
+        {
+            Request = request,
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
         {

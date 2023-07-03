@@ -1,5 +1,5 @@
-﻿using IO.Milvus.Diagnostics;
-using Google.Protobuf;
+﻿using Google.Protobuf;
+using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;

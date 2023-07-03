@@ -1,8 +1,8 @@
-﻿using System.Threading.Tasks;
-using System.Threading;
-using Microsoft.Extensions.Logging;
+﻿using IO.Milvus.ApiSchema;
+using IO.Milvus.Diagnostics;
 using System.Net.Http;
-using IO.Milvus.ApiSchema;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.REST;
 
@@ -15,23 +15,15 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Create alias {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(alias);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = CreateAliasRequest
-            .Create(collectionName, alias, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreatePostRequest(
+            $"{ApiVersion.V1}/alias",
+            new CreateAliasRequest { CollectionName = collectionName, Alias = alias, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Create alias failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -42,23 +34,14 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Drop alias {0}", alias);
+        Verify.NotNullOrWhiteSpace(alias);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DropAliasRequest
-            .Create(alias, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/alias", 
+            new DropAliasRequest { Alias = alias, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Drop alias failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -70,23 +53,15 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Alter alias {0}", alias);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(alias);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = AlterAliasRequest
-            .Create(collectionName, alias, dbName)
-            .BuildRest();
-
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Alter alias failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        using HttpRequestMessage request = HttpRequest.CreatePatchRequest(
+            $"{ApiVersion.V1}/alias", 
+            new AlterAliasRequest { CollectionName = collectionName, Alias = alias, DbName = dbName });
+        
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }

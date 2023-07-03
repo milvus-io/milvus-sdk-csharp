@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -27,43 +24,4 @@ internal sealed class AlterAliasRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static AlterAliasRequest Create(string collectionName, string alias, string dbName)
-    {
-        return new AlterAliasRequest(collectionName, alias, dbName);
-    }
-
-    public Grpc.AlterAliasRequest BuildGrpc()
-    {
-        return new Grpc.AlterAliasRequest()
-        {
-            CollectionName = CollectionName,
-            Alias = Alias,
-            DbName = DbName
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        return HttpRequest.CreatePatchRequest(
-            $"{ApiVersion.V1}/alias",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(Alias);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private ================================================================================
-    private AlterAliasRequest(string collection, string alias, string dbName)
-    {
-        CollectionName = collection;
-        Alias = alias;
-        DbName = dbName;
-    }
-    #endregion
 }

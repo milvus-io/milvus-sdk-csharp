@@ -1,8 +1,6 @@
 ﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
@@ -62,8 +60,6 @@ internal sealed class CreateIndexRequest
 
     public Grpc.CreateIndexRequest BuildGrpc()
     {
-        Validate();
-
         var request = new Grpc.CreateIndexRequest()
         {
             CollectionName = CollectionName,
@@ -102,8 +98,6 @@ internal sealed class CreateIndexRequest
 
     public HttpRequestMessage BuildRest()
     {
-        Validate();
-
         ExtraParams["metric_type"] = _milvusMetricType.ToString();
         ExtraParams["index_type"] = _milvusIndexType.ToString();
 
@@ -111,13 +105,6 @@ internal sealed class CreateIndexRequest
             $"{ApiVersion.V1}/index",
             payload: this
             );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(FieldName);
-        Verify.NotNullOrWhiteSpace(DbName);
     }
 
     #region Private ==================================================================================

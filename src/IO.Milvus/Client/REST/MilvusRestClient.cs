@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -67,19 +68,9 @@ public sealed partial class MilvusRestClient : IMilvusClient
         using HttpRequestMessage request = HttpRequest.CreateGetRequest(
             $"{ApiVersion.V1}/health");
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Ensure to connect to Milvus server failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
-
-        if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
+        if (string.IsNullOrWhiteSpace(responseContent) || responseContent.AsSpan().Trim().SequenceEqual("{}".AsSpan()))
             return new MilvusHealthState(true, "None", Grpc.ErrorCode.Success);
 
         var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
@@ -115,9 +106,10 @@ public sealed partial class MilvusRestClient : IMilvusClient
     private readonly HttpClient _httpClient;
     private bool _disposed;
 
-    private async Task<(HttpResponseMessage response, string responseContent)> ExecuteHttpRequestAsync(
+    private async Task<string> ExecuteHttpRequestAsync(
         HttpRequestMessage request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        [CallerMemberName] string callerName = null)
     {
         if (_disposed)
         {
@@ -127,24 +119,45 @@ public sealed partial class MilvusRestClient : IMilvusClient
         request.RequestUri = new Uri(_baseAddress, request.RequestUri);
         request.Headers.Authorization = _authHeader;
 
-        HttpResponseMessage response = await _httpClient
-            .SendAsync(request, cancellationToken)
-            .ConfigureAwait(false);
-
-        string responseContent = await response
-            .Content
-            .ReadAsStringAsync()
-            .ConfigureAwait(false);
-        if (response.IsSuccessStatusCode)
+        if (_log.IsEnabled(LogLevel.Debug))
         {
-            _log.LogTrace("Milvus responded successfully");
-        }
-        else
-        {
-            _log.LogTrace("Milvus responded with error");
+            _log.LogDebug("Milvus {0} request: {1}", callerName, request);
         }
 
-        return (response, responseContent);
+        string responseContent = null;
+        try
+        {
+            using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            if (_log.IsEnabled(LogLevel.Trace))
+            {
+                _log.LogTrace("Milvus response: {statusCode}", response.StatusCode);
+            }
+
+            responseContent = await response.Content.ReadAsStringAsync(
+#if NET6_0_OR_GREATER
+                    cancellationToken
+#endif
+                    ).ConfigureAwait(false);
+
+
+            response.EnsureSuccessStatusCode();
+
+            return responseContent;
+        }
+        catch (Exception e)
+        {
+            if (responseContent is not null)
+            {
+                e.Data[nameof(responseContent)] = responseContent;
+                _log.LogError(e, "{0} failed: {1}, {2}", callerName, e.Message, responseContent);
+            }
+            else
+            {
+                _log.LogError(e, "{0} failed: {1}", callerName, e.Message);
+            }
+            throw;
+        }
     }
 
     private static Uri SanitizeEndpoint(string endpoint, int? port)
@@ -159,13 +172,14 @@ public sealed partial class MilvusRestClient : IMilvusClient
 
     private static void ValidateResponse(string responseContent)
     {
-        if (string.IsNullOrWhiteSpace(responseContent) || responseContent.Trim() == "{}")
-            return;
-
-        var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
-        if (status.ErrorCode != Grpc.ErrorCode.Success)
+        if (!string.IsNullOrWhiteSpace(responseContent) &&
+            !responseContent.AsSpan().Trim().SequenceEqual("{}".AsSpan()))
         {
-            throw new MilvusException(status);
+            ResponseStatus status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
+            if (status.ErrorCode != Grpc.ErrorCode.Success)
+            {
+                throw new MilvusException(status);
+            }
         }
     }
     #endregion

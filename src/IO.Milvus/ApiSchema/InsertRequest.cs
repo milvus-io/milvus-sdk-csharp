@@ -1,9 +1,6 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
+﻿using IO.Milvus.Diagnostics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -46,54 +43,16 @@ internal sealed class InsertRequest
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
 
-    public static InsertRequest Create(string collectionName, string dbName)
+    public static void ValidateFields(IList<Field> fields)
     {
-        return new InsertRequest(collectionName, dbName);
-    }
-
-    public InsertRequest WithPartitionName(string partitionName)
-    {
-        PartitionName = partitionName;
-        return this;
-    }
-
-    public InsertRequest WithFields(IList<Field> fields)
-    {
-        FieldsData = fields;
-        return this;
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-        NumRows = FieldsData.First().RowCount;
-
-        return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/entities",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        
-        Verify.NotNullOrEmpty(FieldsData);
-        long count = FieldsData[0].RowCount;
-        for (int i = 1; i < FieldsData.Count; i++)
+        Verify.NotNullOrEmpty(fields);
+        long count = fields[0].RowCount;
+        for (int i = 1; i < fields.Count; i++)
         {
-            if (FieldsData[i].RowCount != count)
+            if (fields[i].RowCount != count)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(FieldsData)}[{i}])", "Fields length is not same");
+                throw new ArgumentOutOfRangeException($"{nameof(fields)}[{i}])", "Fields length is not same");
             }
         }
     }
-
-    #region Private ===============================================================
-    private InsertRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

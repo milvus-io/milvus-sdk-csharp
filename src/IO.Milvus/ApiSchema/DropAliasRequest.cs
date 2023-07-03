@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -18,39 +15,4 @@ internal sealed class DropAliasRequest
     /// </summary>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static DropAliasRequest Create(string alias, string dbName)
-    {
-        return new DropAliasRequest(alias, dbName);
-    }
-
-    public Grpc.DropAliasRequest BuildGrpc()
-    {
-        return new Grpc.DropAliasRequest()
-        {
-            Alias = Alias,
-            DbName = DbName
-        };
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        return HttpRequest.CreateDeleteRequest(
-            $"{ApiVersion.V1}/alias",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(Alias);
-    }
-
-    #region Private ============================================================================
-    public DropAliasRequest(string alias, string dbName)
-    {
-        Alias = alias;
-        DbName = dbName;
-    }
-    #endregion
 }

@@ -1,11 +1,14 @@
 ﻿using IO.Milvus.ApiSchema;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
+using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace IO.Milvus.Client.REST;
 
@@ -22,7 +25,9 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Create index {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
         using HttpRequestMessage request = CreateIndexRequest
             .Create(collectionName, fieldName, milvusIndexType, milvusMetricType, dbName)
@@ -30,17 +35,7 @@ public partial class MilvusRestClient
             .WithIndexName(indexName)
             .BuildRest();
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Create index failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -53,23 +48,16 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Drop index {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(indexName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DropIndexRequest
-            .Create(collectionName, fieldName, indexName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateDeleteRequest(
+            $"{ApiVersion.V1}/index", 
+            new DropIndexRequest { CollectionName = collectionName, FieldName = fieldName, IndexName = indexName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Drop index failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         ValidateResponse(responseContent);
     }
@@ -81,30 +69,21 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Describe index {0}", collectionName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = DescribeIndexRequest
-            .Create(collectionName, fieldName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/index", 
+            new DescribeIndexRequest { CollectionName = collectionName, FieldName = fieldName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Describe index failed: {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<DescribeIndexResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed describe index: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.ToMilvusIndexes().ToList();
@@ -117,30 +96,21 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get index build progress {0}, {1}", collectionName, fieldName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = GetIndexBuildProgressRequest
-            .Create(collectionName, fieldName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/index/progress", 
+            new GetIndexBuildProgressRequest { CollectionName = collectionName, FieldName = fieldName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Failed get index build progress {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetIndexBuildProgressResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed get index build progress {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.ToIndexBuildProgress();
@@ -153,30 +123,21 @@ public partial class MilvusRestClient
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get index state {0}, {1}", collectionName, fieldName);
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.NotNullOrWhiteSpace(dbName);
 
-        using HttpRequestMessage request = GetIndexStateRequest
-            .Create(collectionName, fieldName, dbName)
-            .BuildRest();
+        using HttpRequestMessage request = HttpRequest.CreateGetRequest(
+            $"{ApiVersion.V1}/state", 
+            new GetIndexStateRequest { CollectionName = collectionName, FieldName = fieldName, DbName = dbName });
 
-        (HttpResponseMessage response, string responseContent) = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException e)
-        {
-            _log.LogError(e, "Failed get index state {0}, {1}", e.Message, responseContent);
-            throw;
-        }
+        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetIndexStateResponse>(responseContent);
-
         if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed get index build progress {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new Diagnostics.MilvusException(data.Status);
+            throw new MilvusException(data.Status);
         }
 
         return data.IndexState;

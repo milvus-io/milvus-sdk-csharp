@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -34,58 +31,4 @@ internal sealed class ShowCollectionsRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static ShowCollectionsRequest Create(string dbName)
-    {
-        return new ShowCollectionsRequest(dbName);
-    }
-
-    public ShowCollectionsRequest WithCollectionNames(IList<string> collectionNames)
-    {
-        CollectionNames = collectionNames;
-        return this;
-    }
-
-    public ShowCollectionsRequest WithType(ShowType type)
-    {
-        Type = type;
-        return this;
-    }
-
-    public Grpc.ShowCollectionsRequest BuildGrpc()
-    {
-        Validate();
-
-        var request = new Grpc.ShowCollectionsRequest()
-        {
-            Type = (Grpc.ShowType)Type,
-            DbName = DbName
-        };
-        if (CollectionNames != null)
-            request.CollectionNames.AddRange(CollectionNames);
-
-        return request;
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}/collections",
-            payload: this
-            );
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private
-    private ShowCollectionsRequest(string dbName)
-    {
-        DbName = dbName;
-    }
-    #endregion
 }

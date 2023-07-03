@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Net.Http;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
 
@@ -39,64 +36,4 @@ internal sealed class DescribeCollectionRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    /// <summary>
-    /// Create a description collection request.
-    /// </summary>
-    /// <param name="collectionName">Milvus collection name.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    public static DescribeCollectionRequest Create(string collectionName, string dbName)
-    {
-        return new DescribeCollectionRequest(collectionName, dbName);
-    }
-
-    public DescribeCollectionRequest WithCollectionId(int collectionId)
-    {
-        CollectionId = collectionId;
-        return this;
-    }
-
-    public DescribeCollectionRequest WithTimestamp(int timestamp)
-    {
-        Timestamp = timestamp;
-        return this;
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreateGetRequest(
-            $"{ApiVersion.V1}/collection",
-            payload: this
-            );
-    }
-
-    public Grpc.DescribeCollectionRequest BuildGrpc()
-    {
-        Validate();
-
-        return new Grpc.DescribeCollectionRequest()
-        {
-            CollectionID = CollectionId,
-            CollectionName = CollectionName,
-            TimeStamp = (ulong)Timestamp,
-            DbName = DbName,
-        };
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrWhiteSpace(CollectionName);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region private ================================================================================
-
-    private DescribeCollectionRequest(string collectionName, string dbName)
-    {
-        CollectionName = collectionName;
-        DbName = dbName;
-    }
-    #endregion
 }

@@ -1,8 +1,4 @@
-﻿using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus.ApiSchema;
@@ -31,42 +27,4 @@ internal sealed class FlushRequest
     /// </remarks>
     [JsonPropertyName("db_name")]
     public string DbName { get; set; }
-
-    public static FlushRequest Create(IList<string> collectionNames, string dbName)
-    {
-        return new FlushRequest(collectionNames, dbName);
-    }
-
-    public Grpc.FlushRequest BuildGrpc()
-    {
-        Validate();
-
-        var request = new Grpc.FlushRequest();
-        request.CollectionNames.AddRange(CollectionNames);
-
-        return request;
-    }
-
-    public HttpRequestMessage BuildRest()
-    {
-        Validate();
-
-        return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/persist",
-            payload: this);
-    }
-
-    public void Validate()
-    {
-        Verify.NotNullOrEmpty(CollectionNames);
-        Verify.NotNullOrWhiteSpace(DbName);
-    }
-
-    #region Private ===========================================================================================
-    private FlushRequest(IList<string> collectionNames, string dbName)
-    {
-        CollectionNames = collectionNames;
-        DbName = dbName;
-    }
-    #endregion
 }

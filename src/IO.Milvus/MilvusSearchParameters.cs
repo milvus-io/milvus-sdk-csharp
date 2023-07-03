@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 
 namespace IO.Milvus;
@@ -27,7 +26,7 @@ public class MilvusSearchParameters
     /// <summary>
     /// The name list of output fields.
     /// </summary>
-    public IList<string> OutputFields { get; private set; } = new List<string>();
+    public IList<string> OutputFields { get; } = new List<string>();
 
     /// <summary>
     /// The name list of the partitions to query.
@@ -35,7 +34,7 @@ public class MilvusSearchParameters
     /// <remarks>
     /// (Optional).
     /// </remarks>
-    public IList<string> PartitionNames { get; private set; } = new List<string>();
+    public IList<string> PartitionNames { get; } = new List<string>();
 
     /// <summary>
     /// An absolute timestamp value.
@@ -83,7 +82,7 @@ public class MilvusSearchParameters
     /// <summary>
     /// Parameters
     /// </summary>
-    public IDictionary<string, string> Parameters { get; private set; } = new Dictionary<string, string>();
+    public IDictionary<string, string> Parameters { get; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Milvus Vector
@@ -241,10 +240,7 @@ public class MilvusSearchParameters
     /// <param name="fieldName">The name of an output field</param>
     public MilvusSearchParameters AddOutField(string fieldName)
     {
-        if (string.IsNullOrWhiteSpace(fieldName))
-        {
-            throw new ArgumentException($"\"{nameof(fieldName)}\" cannot be null or whitespace.");
-        }
+        Verify.NotNullOrWhiteSpace(fieldName);
 
         if (!OutputFields.Contains(fieldName))
         {
@@ -265,10 +261,7 @@ public class MilvusSearchParameters
     /// <exception cref="ArgumentException"></exception>
     public MilvusSearchParameters AddPartitionName(string partitionName)
     {
-        if (string.IsNullOrWhiteSpace(partitionName))
-        {
-            throw new ArgumentException($"\"{nameof(partitionName)}\" cannot be null or whitespace.");
-        }
+        Verify.NotNullOrWhiteSpace(partitionName);
 
         if (!PartitionNames.Contains(partitionName))
         {
@@ -334,10 +327,7 @@ public class MilvusSearchParameters
     /// <param name="vectorFieldName">A vector field name.</param>
     public MilvusSearchParameters WithVectorFieldName(string vectorFieldName)
     {
-        if (string.IsNullOrWhiteSpace(vectorFieldName))
-        {
-            throw new ArgumentException($"\"{nameof(vectorFieldName)}\" cannot be null or empty.");
-        }
+        Verify.NotNullOrWhiteSpace(vectorFieldName);
 
         VectorFieldName = vectorFieldName;
         return this;
@@ -374,10 +364,7 @@ public class MilvusSearchParameters
     /// <exception cref="ArgumentException"></exception>
     public MilvusSearchParameters WithParameter(string key, string value)
     {
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            throw new ArgumentException($"\"{nameof(key)}\" cannot be null or empty");
-        }
+        Verify.NotNullOrWhiteSpace(key);
 
         Parameters[key] = value;
         return this;
@@ -399,10 +386,8 @@ public class MilvusSearchParameters
     /// Build a grpc request.
     /// </summary>
     /// <returns></returns>
-    public Grpc.SearchRequest BuildGrpc()
+    internal Grpc.SearchRequest BuildGrpc()
     {
-        Validate();
-
         Grpc.SearchRequest request = InitSearchRequest();
 
         //Prepare target vectors
@@ -421,7 +406,7 @@ public class MilvusSearchParameters
     /// Build a rest request.
     /// </summary>
     /// <returns></returns>
-    public HttpRequestMessage BuildRest()
+    internal HttpRequestMessage BuildRest()
     {
         var request = new SearchRequest()
         {
@@ -446,7 +431,7 @@ public class MilvusSearchParameters
     /// <summary>
     /// Validate search parameter.
     /// </summary>
-    public void Validate()
+    internal void Validate()
     {
         Verify.NotNullOrWhiteSpace(CollectionName);
         Verify.NotNullOrWhiteSpace(VectorFieldName);

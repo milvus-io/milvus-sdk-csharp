@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using IO.Milvus.Diagnostics;
+using IO.Milvus.Utils;
 using Microsoft.Extensions.Logging;
-using IO.Milvus.ApiSchema;
-using IO.Milvus.Diagnostics;
-using System.Text;
 using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IO.Milvus.Client.gRPC;
 
@@ -16,13 +16,14 @@ public partial class MilvusGrpcClient
         string username,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(username);
+
         _log.LogDebug("Delete credential {0}", username);
 
-        Grpc.DeleteCredentialRequest request = DeleteCredentialRequest
-            .Create(username)
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.DeleteCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.DeleteCredentialAsync(new Grpc.DeleteCredentialRequest()
+        {
+            Username = username
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -38,13 +39,18 @@ public partial class MilvusGrpcClient
         string newPassword,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(username);
+        Verify.NotNullOrWhiteSpace(oldPassword);
+        Verify.NotNullOrWhiteSpace(newPassword);
+
         _log.LogDebug("Update credential {0}", username);
 
-        Grpc.UpdateCredentialRequest request = UpdateCredentialRequest
-            .Create(username, oldPassword, Base64Encode(newPassword))
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.UpdateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        Grpc.Status response = await _grpcClient.UpdateCredentialAsync(new Grpc.UpdateCredentialRequest
+        {
+            NewPassword = Base64Encode(newPassword),
+            OldPassword = oldPassword, // TODO: Is it correct that this isn't Base64 encoded?
+            Username = username
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {
@@ -59,13 +65,19 @@ public partial class MilvusGrpcClient
         string password,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(username);
+        Verify.NotNullOrWhiteSpace(password);
+
         _log.LogDebug("Create credential {0}", username);
 
-        Grpc.CreateCredentialRequest request = CreateCredentialRequest
-            .Create(username, Base64Encode(password))
-            .BuildGrpc();
-
-        Grpc.Status response = await _grpcClient.CreateCredentialAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        ulong timestamp = (ulong)TimestampUtils.GetNowUTCTimestamp();
+        Grpc.Status response = await _grpcClient.CreateCredentialAsync(new Grpc.CreateCredentialRequest()
+        {
+            Username = username,
+            Password = Base64Encode(password),
+            ModifiedUtcTimestamps = timestamp,
+            CreatedUtcTimestamps = timestamp
+        }, _callOptions.WithCancellationToken(cancellationToken));
 
         if (response.ErrorCode != Grpc.ErrorCode.Success)
         {

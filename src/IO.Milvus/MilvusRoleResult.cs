@@ -1,8 +1,6 @@
-﻿using Google.Protobuf.Collections;
-using IO.Milvus.Grpc;
-using System;
-using System.Linq;
+﻿using IO.Milvus.Grpc;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace IO.Milvus;
 
