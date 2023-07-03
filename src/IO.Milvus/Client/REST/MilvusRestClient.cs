@@ -170,16 +170,21 @@ public sealed partial class MilvusRestClient : IMilvusClient
         return builder.Uri;
     }
 
-    private static void ValidateResponse(string responseContent)
+    private void ValidateResponse(string responseContent, [CallerMemberName] string callerName = null)
     {
         if (!string.IsNullOrWhiteSpace(responseContent) &&
             !responseContent.AsSpan().Trim().SequenceEqual("{}".AsSpan()))
         {
-            ResponseStatus status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
-            if (status.ErrorCode != Grpc.ErrorCode.Success)
-            {
-                throw new MilvusException(status);
-            }
+            ValidateStatus(JsonSerializer.Deserialize<ResponseStatus>(responseContent), callerName);
+        }
+    }
+
+    private void ValidateStatus(ResponseStatus status, [CallerMemberName] string callerName = null)
+    {
+        if (status is not null && status.ErrorCode is not Grpc.ErrorCode.Success)
+        {
+            _log.LogError("Failed {0}: {1}, {2}", callerName, status.ErrorCode, status.Reason);
+            throw new MilvusException(status);
         }
     }
     #endregion

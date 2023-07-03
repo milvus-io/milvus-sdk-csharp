@@ -84,11 +84,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ListCredUsersResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed list credential users: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.Usernames;
     }

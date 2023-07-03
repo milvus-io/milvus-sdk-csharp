@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using LibGit2Sharp;
-using NuGet.Versioning;
 using Nuke.Common;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Git;
@@ -13,7 +12,6 @@ using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
 using Nuke.Common.Utilities.Collections;
 using Nuke.Components;
-using YamlDotNet.Core;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Serilog.Log;
 

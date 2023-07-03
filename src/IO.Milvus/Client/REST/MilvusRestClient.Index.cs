@@ -1,14 +1,12 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using Microsoft.Extensions.Logging;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace IO.Milvus.Client.REST;
 
@@ -80,11 +78,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<DescribeIndexResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed describe index: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.ToMilvusIndexes().ToList();
     }
@@ -107,11 +101,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetIndexBuildProgressResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed get index build progress {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.ToIndexBuildProgress();
     }
@@ -134,11 +124,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetIndexStateResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed get index build progress {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.IndexState;
     }

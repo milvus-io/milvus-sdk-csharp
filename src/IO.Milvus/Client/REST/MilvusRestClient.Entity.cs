@@ -38,11 +38,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed insert data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusMutationResult.From(data);
     }
@@ -72,11 +68,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed Delete data: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusMutationResult.From(data);
     }
@@ -94,11 +86,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<SearchResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Search failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusSearchResult.From(data);
     }
@@ -125,11 +113,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<CalDistanceResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Cal distance: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusCalDistanceResult.From(data);
     }
@@ -150,11 +134,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<FlushResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Flush failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusFlushResult.From(data);
     }
@@ -175,11 +155,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetPersistentSegmentInfoResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get persistent segment infos failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.Infos;
     }
@@ -198,11 +174,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetFlushStateResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get flush state failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.Flushed;
     }
@@ -255,11 +227,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<QueryResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Query failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusQueryResult.From(data);
     }
@@ -278,11 +246,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetQuerySegmentInfoResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get query segment info failed: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.Infos;
     }

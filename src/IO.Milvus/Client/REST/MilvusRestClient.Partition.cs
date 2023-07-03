@@ -71,11 +71,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ShowPartitionsResponse>(responseContent);
-        if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed show partitions: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data
             .ToMilvusPartitions()

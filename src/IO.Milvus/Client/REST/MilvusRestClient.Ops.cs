@@ -49,11 +49,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetCompactionStateResponse>(responseContent);
-        if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed get compaction state: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.State;
     }
@@ -72,11 +68,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetCompactionPlansResponse>(responseContent);
-        if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed get compaction plans: {0}, {1}", data.Status.ErrorCode, data.Status.Reason);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return MilvusCompactionPlans.From(data);
     }

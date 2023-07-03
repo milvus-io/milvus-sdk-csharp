@@ -4,7 +4,6 @@ using IO.MilvusTests.Utils;
 using IO.Milvus;
 using Xunit;
 using FluentAssertions;
-using System.Security.AccessControl;
 
 namespace IO.MilvusTests.Client;
 

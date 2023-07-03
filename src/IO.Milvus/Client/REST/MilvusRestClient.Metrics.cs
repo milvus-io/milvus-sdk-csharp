@@ -22,11 +22,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(getMetricsRequest, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetMetricsResponse>(responseContent);
-        if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed get metrics: {0}", data.Status.ErrorCode);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return new MilvusMetrics(data.Response, data.ComponentName);
     }

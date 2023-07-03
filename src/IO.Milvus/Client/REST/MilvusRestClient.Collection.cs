@@ -48,11 +48,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<DescribeCollectionResponse>(responseContent);
-        if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed Describe collections: {0}", data.Status.ErrorCode);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.ToDetailedMilvusCollection();
     }
@@ -189,11 +185,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<ShowCollectionsResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed show collections: {0}", data.Status.ErrorCode);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.ToCollections().ToList();
     }
@@ -225,11 +217,7 @@ public partial class MilvusRestClient
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
         var data = JsonSerializer.Deserialize<GetPartitionStatisticsResponse>(responseContent);
-        if (data.Status != null && data.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get partition statistics: {0}", data.Status.ErrorCode);
-            throw new MilvusException(data.Status);
-        }
+        ValidateStatus(data.Status);
 
         return data.Stats;
     }
