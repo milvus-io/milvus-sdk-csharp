@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -12,7 +11,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreatePartitionAsync(
         string collectionName,
         string partitionName,
@@ -32,7 +31,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> HasPartitionAsync(
         string collectionName,
         string partitionName,
@@ -55,7 +54,7 @@ public partial class MilvusRestClient
             JsonSerializer.Deserialize<HasPartitionResponse>(responseContent).Value;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -70,7 +69,7 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<ShowPartitionsResponse>(responseContent);
+        ShowPartitionsResponse data = JsonSerializer.Deserialize<ShowPartitionsResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data
@@ -78,7 +77,7 @@ public partial class MilvusRestClient
             .ToList();
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task LoadPartitionsAsync(
         string collectionName,
         IList<string> partitionNames,
@@ -100,7 +99,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task ReleasePartitionAsync(
         string collectionName,
         IList<string> partitionNames,
@@ -120,7 +119,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropPartitionsAsync(
         string collectionName,
         string partitionName,

@@ -1,6 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Grpc;
-using System.Linq;
+﻿using System.Linq;
 
 namespace IO.Milvus;
 
@@ -26,11 +24,11 @@ public sealed class MilvusSearchResult
             Converter(searchResults.Results));
     }
 
-    private static MilvusSearchResultData Converter(SearchResultData results)
+    private static MilvusSearchResultData Converter(Grpc.SearchResultData results)
     {
         return new MilvusSearchResultData()
         {
-            FieldsData = results.FieldsData.Select(f => Field.FromGrpcFieldData(f)).ToList(),
+            FieldsData = results.FieldsData.Select(Field.FromGrpcFieldData).ToList(),
             Ids = MilvusIds.From(results.Ids),
             NumQueries = results.NumQueries,
             Scores = results.Scores,
@@ -39,7 +37,7 @@ public sealed class MilvusSearchResult
         };
     }
 
-    internal static MilvusSearchResult From(SearchResponse searchResponse)
+    internal static MilvusSearchResult From(ApiSchema.SearchResponse searchResponse)
     {
         return new MilvusSearchResult(searchResponse.CollectionName, searchResponse.Results);
     }

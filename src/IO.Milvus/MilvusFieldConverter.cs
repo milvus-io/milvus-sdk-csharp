@@ -12,15 +12,15 @@ namespace IO.Milvus;
 /// </summary>
 public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override IList<Field> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var list = new List<Field>();
+        List<Field> list = new();
         DeserializePropertyList<Field>(ref reader, list);
         return list;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, IList<Field> value, JsonSerializerOptions options)
     {
         throw new NotImplementedException();
@@ -62,7 +62,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
         if (reader.TokenType == JsonTokenType.PropertyName) reader.Read();
 
         // untangle nullable
-        var ntype = Nullable.GetUnderlyingType(vtype);
+        Type ntype = Nullable.GetUnderlyingType(vtype);
         if (ntype != null) vtype = ntype;
 
         if (vtype == typeof(String)) { value = reader.GetString(); return true; }
@@ -112,7 +112,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
         reader.Read();
         while (reader.TokenType != JsonTokenType.EndObject)
         {
-            var name = reader.GetString();
+            string name = reader.GetString();
 
             reader.Read();
 
@@ -130,7 +130,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
                 case "Field":
                     {
                         reader.Read();
-                        var fieldTypeName = reader.GetString();
+                        string fieldTypeName = reader.GetString();
 
                         switch (fieldTypeName)
                         {
@@ -138,7 +138,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
                                 {
                                     reader.Read(); reader.Read();
                                     reader.Read(); reader.Read();
-                                    var scalarTypeName = reader.GetString();
+                                    string scalarTypeName = reader.GetString();
                                     reader.Read(); reader.Read(); reader.Read();
                                     if (reader.TokenType != JsonTokenType.StartArray)
                                     {
@@ -200,10 +200,10 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
                 field = Field.Create<bool>(fieldName, boolData);
                 break;
             case MilvusDataType.Int8:
-                field = Field.Create<sbyte>(fieldName, intData.Select(s => (sbyte)s).ToList());
+                field = Field.Create<sbyte>(fieldName, intData.Select(static s => (sbyte)s).ToList());
                 break;
             case MilvusDataType.Int16:
-                field = Field.Create<Int16>(fieldName, intData.Select(s => (Int16)s).ToList()); ;
+                field = Field.Create<Int16>(fieldName, intData.Select(static s => (short)s).ToList()); ;
                 break;
             case MilvusDataType.Int32:
                 field = Field.Create<int>(fieldName, intData);
@@ -241,7 +241,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
         long dim = default;
         while (reader.TokenType != JsonTokenType.EndObject)
         {
-            var name = reader.GetString();
+            string name = reader.GetString();
 
             reader.Read();
 
@@ -254,7 +254,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
                     {
                         reader.Read();
 
-                        var dataType = reader.GetString();
+                        string dataType = reader.GetString();
                         reader.Read(); reader.Read(); reader.Read();
                         if (reader.TokenType != JsonTokenType.StartArray)
                         {
@@ -295,7 +295,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
 
         if (reader.TokenType == JsonTokenType.StartArray)
         {
-            var list = new List<Object>();
+            List<object> list = new();
 
             while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
             {
@@ -307,13 +307,13 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
 
         if (reader.TokenType == JsonTokenType.StartObject)
         {
-            var dict = new Dictionary<String, Object>();
+            Dictionary<string, object> dict = new();
 
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
                 if (reader.TokenType == JsonTokenType.PropertyName)
                 {
-                    var key = reader.GetString();
+                    string key = reader.GetString();
 
                     dict[key] = DeserializeUnknownObject(ref reader);
                 }

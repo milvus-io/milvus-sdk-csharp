@@ -8,11 +8,11 @@ internal static class ParameterUtils
     internal static string Combine(
         this IDictionary<string, string> parameters)
     {
-        var stringBuilder = new StringBuilder();
+        StringBuilder stringBuilder = new();
         stringBuilder.Append('{');
 
         int index = 0;
-        foreach (var parameter in parameters)
+        foreach (KeyValuePair<string, string> parameter in parameters)
         {
             stringBuilder.Append('"').Append(parameter.Key).Append('"').Append(':').Append(parameter.Value);
 

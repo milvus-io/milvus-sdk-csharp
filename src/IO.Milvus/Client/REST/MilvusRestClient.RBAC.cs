@@ -7,7 +7,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task CreateRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
@@ -15,7 +15,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task DropRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
@@ -23,7 +23,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task AddUserToRoleAsync(
         string username,
         string roleName,
@@ -32,7 +32,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task RemoveUserFromRoleAsync(
         string username,
         string roleName,
@@ -41,7 +41,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<IEnumerable<MilvusRoleResult>> SelectRoleAsync(
         string roleName,
         bool includeUserInfo = false,
@@ -50,7 +50,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<IEnumerable<MilvusUserResult>> SelectUserAsync(
         string username,
         bool includeRoleInfo = false,
@@ -59,7 +59,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task GrantRolePrivilegeAsync(
         string roleName,
         string @object,
@@ -71,7 +71,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task RevokeRolePrivilegeAsync(
         string roleName,
         string @object,
@@ -81,7 +81,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
@@ -89,7 +89,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
         string roleName,
         string @object,

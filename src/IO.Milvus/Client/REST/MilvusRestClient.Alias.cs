@@ -8,7 +8,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateAliasAsync(
         string collectionName,
         string alias,
@@ -28,7 +28,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropAliasAsync(
         string alias,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -46,7 +46,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task AlterAliasAsync(
         string collectionName,
         string alias,

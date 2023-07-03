@@ -1,6 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
+﻿using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +49,7 @@ public sealed class MilvusMutationResult
             );
     }
 
-    internal static MilvusMutationResult From(MilvusMutationResponse insertResponse)
+    internal static MilvusMutationResult From(ApiSchema.MilvusMutationResponse insertResponse)
     {
         return new MilvusMutationResult(
             insertResponse.InsertCount,
@@ -157,11 +155,11 @@ public sealed class MilvusIds
     }
 
     #region Private =========================================================
-    internal static MilvusIds From(IDs ids)
+    internal static MilvusIds From(Grpc.IDs ids)
     {
         if (ids == null) return null;
 
-        var idField = new IdField()
+        IdField idField = new()
         {
             IdFieldCase = (MilvusIdFieldOneofCase)ids.IdFieldCase,
         };

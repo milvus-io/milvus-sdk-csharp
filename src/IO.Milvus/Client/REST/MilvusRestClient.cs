@@ -60,7 +60,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
     public int Port => _baseAddress.Port;
     #endregion
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
         _log.LogDebug("Ensure to connect to Milvus server {0}", Address);
@@ -73,14 +73,14 @@ public sealed partial class MilvusRestClient : IMilvusClient
         if (string.IsNullOrWhiteSpace(responseContent) || responseContent.AsSpan().Trim().SequenceEqual("{}".AsSpan()))
             return new MilvusHealthState(true, "None", Grpc.ErrorCode.Success);
 
-        var status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
+        ResponseStatus status = JsonSerializer.Deserialize<ResponseStatus>(responseContent);
         _log.LogWarning("Reason: {0}", status.Reason);
 
         return new MilvusHealthState(status.ErrorCode == Grpc.ErrorCode.Success, status.Reason, status.ErrorCode);
     }
 
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("Not support in MilvusRestClient");
@@ -98,7 +98,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
     #region private ================================================================================
 
     /// <summary>Default HttpClient instance used if none is provided to a <see cref="MilvusRestClient"/> instance.</summary>
-    private static readonly HttpClient s_defaultHttpClient = new HttpClient();
+    private static readonly HttpClient s_defaultHttpClient = new();
 
     private readonly Uri _baseAddress;
     private readonly AuthenticationHeaderValue _authHeader;
@@ -184,7 +184,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
         if (status is not null && status.ErrorCode is not Grpc.ErrorCode.Success)
         {
             _log.LogError("Failed {0}: {1}, {2}", callerName, status.ErrorCode, status.Reason);
-            throw new MilvusException(status);
+            throw new MilvusException(MilvusException.GetErrorMessage(status.ErrorCode, status.Reason));
         }
     }
     #endregion
@@ -203,7 +203,7 @@ public sealed partial class MilvusRestClient : IMilvusClient
         _disposed = true;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public void Close()
     {
         Dispose();

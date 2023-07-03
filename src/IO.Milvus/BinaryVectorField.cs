@@ -20,25 +20,25 @@ public sealed class BinaryVectorField : Field<byte[]>
     {
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override Grpc.FieldData ToGrpcFieldData()
     {
-        var floatArray = new Grpc.FloatArray();
+        Grpc.FloatArray floatArray = new();
 
-        var dim = Data.First().Length;
+        int dim = Data.First().Length;
         if (!Data.All(p => p.Length == dim))
         {
             throw new Diagnostics.MilvusException("Row count of fields must be equal");
         }
 
-        using var stream = new MemoryStream();
-        using var writer = new BinaryWriter(stream);
-        foreach (var value in Data)
+        using MemoryStream stream = new();
+        using BinaryWriter writer = new(stream);
+        foreach (byte[] value in Data)
         {
             writer.Write(value);
         }
 
-        var byteString = ByteString.CopyFrom(stream.ToArray());
+        ByteString byteString = ByteString.CopyFrom(stream.ToArray());
 
         return new Grpc.FieldData()
         {

@@ -1,7 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +13,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -32,7 +31,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -47,13 +46,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<DescribeCollectionResponse>(responseContent);
+        DescribeCollectionResponse data = JsonSerializer.Deserialize<DescribeCollectionResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.ToDetailedMilvusCollection();
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateCollectionAsync(
         string collectionName,
         IList<FieldType> fieldTypes,
@@ -83,7 +82,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> HasCollectionAsync(
         string collectionName,
         DateTime? dateTime = null,
@@ -110,7 +109,7 @@ public partial class MilvusRestClient
             JsonSerializer.Deserialize<HasCollectionResponse>(responseContent).Value;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task ReleaseCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -128,7 +127,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task LoadCollectionAsync(
         string collectionName,
         int replicaNumber = 1,
@@ -146,7 +145,7 @@ public partial class MilvusRestClient
         await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -164,7 +163,7 @@ public partial class MilvusRestClient
         return JsonSerializer.Deserialize<GetCollectionStatisticsResponse>(responseContent).Statistics;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null,
         ShowType showType = ShowType.All,
@@ -184,13 +183,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<ShowCollectionsResponse>(responseContent);
+        ShowCollectionsResponse data = JsonSerializer.Deserialize<ShowCollectionsResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.ToCollections().ToList();
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<long> GetLoadingProgressAsync(
         string collectionName,
         IList<string> partitionNames = null,
@@ -199,7 +198,7 @@ public partial class MilvusRestClient
         throw new NotSupportedException($"Not supported in Milvus restful API");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
@@ -216,7 +215,7 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetPartitionStatisticsResponse>(responseContent);
+        GetPartitionStatisticsResponse data = JsonSerializer.Deserialize<GetPartitionStatisticsResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.Stats;

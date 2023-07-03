@@ -66,7 +66,7 @@ public sealed class MilvusQuerySegmentInfoResult
     internal static IEnumerable<MilvusQuerySegmentInfoResult> From(
         GetQuerySegmentInfoResponse response)
     {
-        foreach (var info in response.Infos)
+        foreach (QuerySegmentInfo info in response.Infos)
         {
             yield return new MilvusQuerySegmentInfoResult()
             {

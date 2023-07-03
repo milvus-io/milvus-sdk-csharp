@@ -1,7 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -14,7 +13,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DeleteCredentialAsync(
         string username,
         CancellationToken cancellationToken = default)
@@ -30,7 +29,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task UpdateCredentialAsync(
         string username,
         string oldPassword,
@@ -50,7 +49,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateCredentialAsync(
         string username,
         string password,
@@ -75,7 +74,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)
     {
@@ -83,7 +82,7 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<ListCredUsersResponse>(responseContent);
+        ListCredUsersResponse data = JsonSerializer.Deserialize<ListCredUsersResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.Usernames;

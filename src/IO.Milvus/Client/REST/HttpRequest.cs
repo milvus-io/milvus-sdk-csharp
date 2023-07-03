@@ -23,7 +23,7 @@ internal static class HttpRequest
 
     public static HttpRequestMessage CreateRequest(HttpMethod method, string url, object payload = null)
     {
-        var request = new HttpRequestMessage(method, url);
+        HttpRequestMessage request = new(method, url);
         if (payload is not null)
         {
             byte[] utf8Bytes = payload is string s ?

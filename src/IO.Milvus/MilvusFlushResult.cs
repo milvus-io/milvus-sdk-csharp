@@ -27,15 +27,15 @@ public sealed class MilvusFlushResult
     internal static MilvusFlushResult From(FlushResponse response)
     {
         return new MilvusFlushResult(
-            response.CollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }),
-            response.FlushCollSegIDs.ToDictionary(p => p.Key, p => new MilvusId<long>() { Data = p.Value.Data }),
+            response.CollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>() { Data = p.Value.Data }),
+            response.FlushCollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>() { Data = p.Value.Data }),
             response.CollSealTimes);
     }
 
     internal static MilvusFlushResult From(ApiSchema.FlushResponse data)
     {
         return new MilvusFlushResult(
-            data.CollSegIDs.ToDictionary(p => p.Key, p => p.Value),
+            data.CollSegIDs.ToDictionary(static p => p.Key, static p => p.Value),
             data.FlushCollSegIds,
             data.CollSealTimes);
     }

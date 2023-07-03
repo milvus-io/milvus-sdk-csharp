@@ -56,7 +56,7 @@ public sealed class MilvusGrantEntity
         if (entities == null)
             yield break;
 
-        foreach (var entity in entities)
+        foreach (GrantEntity entity in entities)
         {
             yield return new MilvusGrantEntity(
                 MilvusGrantorEntity.Parse(entity.Grantor),

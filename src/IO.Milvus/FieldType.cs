@@ -61,7 +61,7 @@ public sealed class FieldType
         bool isPartitionKey = false,
         bool isDynamic = false)
     {
-        var field = new FieldType(name, dataType, isPrimaryKey, autoId, isPartitionKey, isDynamic);
+        FieldType field = new(name, dataType, isPrimaryKey, autoId, isPartitionKey, isDynamic);
         field.Validate();
         return field;
     }
@@ -100,7 +100,7 @@ public sealed class FieldType
         bool isDynamic = false)
     {
         MilvusDataType dataType = Field.EnsureDataType<TData>();
-        var field = new FieldType(name, dataType, isPrimaryKey, autoId, isPartitionKey, isDynamic);
+        FieldType field = new(name, dataType, isPrimaryKey, autoId, isPartitionKey, isDynamic);
         return field;
     }
 
@@ -125,7 +125,7 @@ public sealed class FieldType
         bool isPartitionKey = false,
         bool isDynamic = false)
     {
-        var field = new FieldType(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, isDynamic);
+        FieldType field = new(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, isDynamic);
         field.WithMaxLength(maxLength);
         field.Validate();
         return field;
@@ -141,7 +141,7 @@ public sealed class FieldType
         string name,
         long dim)
     {
-        var field = new FieldType(name, MilvusDataType.FloatVector, false, false);
+        FieldType field = new(name, MilvusDataType.FloatVector, false, false);
         field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
         field.Validate();
         return field;
@@ -157,7 +157,7 @@ public sealed class FieldType
         string name,
         long dim)
     {
-        var field = new FieldType(name, MilvusDataType.BinaryVector, false, false);
+        FieldType field = new(name, MilvusDataType.BinaryVector, false, false);
         field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
         field.Validate();
         return field;

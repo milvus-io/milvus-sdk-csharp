@@ -32,14 +32,14 @@ public sealed class FloatVectorField : Field<List<float>>
     /// <exception cref="Diagnostics.MilvusException"></exception>
     public override Grpc.FieldData ToGrpcFieldData()
     {
-        var floatArray = new Grpc.FloatArray();
+        Grpc.FloatArray floatArray = new();
 
-        var dim = Data.First().Count;
+        int dim = Data.First().Count;
         if (!Data.All(p => p.Count == dim))
         {
             throw new Diagnostics.MilvusException("Row count of fields must be equal");
         }
-        foreach (var value in Data)
+        foreach (List<float> value in Data)
         {
             floatArray.Data.AddRange(value);
         }

@@ -1,5 +1,5 @@
 ﻿using IO.Milvus.Diagnostics;
-using Microsoft.Extensions.Logging;
+using IO.Milvus.Grpc;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,50 +8,33 @@ namespace IO.Milvus.Client.gRPC;
 
 public partial class MilvusGrpcClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
-        _log.LogDebug("Creating role {0}.", roleName);
 
-        Grpc.Status response = await _grpcClient.CreateRoleAsync(new Grpc.CreateRoleRequest()
+        await InvokeAsync(_grpcClient.CreateRoleAsync, new CreateRoleRequest
         {
-            Entity = new Grpc.RoleEntity()
-            {
-                Name = roleName
-            }
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Drop role failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+            Entity = new RoleEntity() { Name = roleName },
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
-        _log.LogDebug("Drop role {0}.", roleName);
 
-        Grpc.Status response = await _grpcClient.DropRoleAsync(new Grpc.DropRoleRequest()
+        await InvokeAsync(_grpcClient.DropRoleAsync, new DropRoleRequest
         {
             RoleName = roleName
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Drop role failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task AddUserToRoleAsync(
         string username,
         string roleName,
@@ -59,23 +42,16 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(roleName);
-        _log.LogDebug("Add user to role {0} {1}.", username, roleName);
 
-        Grpc.Status response = await _grpcClient.OperateUserRoleAsync(new Grpc.OperateUserRoleRequest()
+        await InvokeAsync(_grpcClient.OperateUserRoleAsync, new OperateUserRoleRequest
         {
             RoleName = roleName,
             Username = username,
-            Type = Grpc.OperateUserRoleType.AddUserToRole
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed add user to role {0} {1}.", username, roleName);
-            throw new MilvusException(response);
-        }
+            Type = OperateUserRoleType.AddUserToRole
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task RemoveUserFromRoleAsync(
         string username,
         string roleName,
@@ -83,77 +59,50 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(roleName);
-        _log.LogDebug("Remove user to role {0} {1}.", username, roleName);
 
-        Grpc.Status response = await _grpcClient.OperateUserRoleAsync(new Grpc.OperateUserRoleRequest()
+        await InvokeAsync(_grpcClient.OperateUserRoleAsync, new OperateUserRoleRequest
         {
             RoleName = roleName,
             Username = username,
-            Type = Grpc.OperateUserRoleType.RemoveUserFromRole
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed Remove user to role {0} {1}.", username, roleName);
-            throw new MilvusException(response);
-        }
+            Type = OperateUserRoleType.RemoveUserFromRole
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<MilvusRoleResult>> SelectRoleAsync(
         string roleName,
         bool includeUserInfo = false,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
-        _log.LogDebug("Select role {0}, includeUserInfo: {1}.", roleName, includeUserInfo);
 
-        Grpc.SelectRoleResponse response = await _grpcClient.SelectRoleAsync(new Grpc.SelectRoleRequest()
+        SelectRoleResponse response = await InvokeAsync(_grpcClient.SelectRoleAsync, new SelectRoleRequest
         {
-            Role = new Grpc.RoleEntity()
-            {
-                Name = roleName
-            },
+            Role = new RoleEntity() { Name = roleName },
             IncludeUserInfo = includeUserInfo
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed select role {0}, includeUserInfo: {1}.", roleName, includeUserInfo);
-            throw new MilvusException(response.Status);
-        }
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return MilvusRoleResult.Parse(response.Results);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<MilvusUserResult>> SelectUserAsync(
         string username,
         bool includeRoleInfo = false,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(username);
-        _log.LogDebug("Select user {0}, includeRoleInfo: {1}.", username, includeRoleInfo);
 
-        Grpc.SelectUserResponse response = await _grpcClient.SelectUserAsync(new Grpc.SelectUserRequest()
+        SelectUserResponse response = await InvokeAsync(_grpcClient.SelectUserAsync, new SelectUserRequest
         {
-            User = new Grpc.UserEntity()
-            {
-                Name = username
-            },
+            User = new UserEntity() { Name = username },
             IncludeRoleInfo = includeRoleInfo
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed select user {0}, includeRoleInfo: {1}.", username, includeRoleInfo);
-            throw new MilvusException(response.Status);
-        }
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return MilvusUserResult.Parse(response.Results);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task GrantRolePrivilegeAsync(
         string roleName,
         string @object,
@@ -168,41 +117,21 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(privilege);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Grant role {0} privilege {1} on {2} {3} of {4}.", roleName, privilege, @object, objectName, dbName);
-
-        Grpc.Status response = await _grpcClient.OperatePrivilegeAsync(new Grpc.OperatePrivilegeRequest()
+        await InvokeAsync(_grpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
         {
-            Type = Grpc.OperatePrivilegeType.Grant,
-            Entity = new Grpc.GrantEntity()
+            Type = OperatePrivilegeType.Grant,
+            Entity = new GrantEntity()
             {
-                Role = new Grpc.RoleEntity()
-                {
-                    Name = roleName
-                },
-                Object = new Grpc.ObjectEntity()
-                {
-                    Name = @object
-                },
+                Role = new() { Name = roleName },
+                Object = new() { Name = @object },
                 ObjectName = objectName,
-                Grantor = new Grpc.GrantorEntity()
-                {
-                    Privilege = new Grpc.PrivilegeEntity()
-                    {
-                        Name = privilege
-                    },
-                },
+                Grantor = new() { Privilege = new() { Name = privilege }, },
                 DbName = dbName
             }
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed grant role {0} privilege {1} on {2} {3} of {4}.", roleName, privilege, @object, objectName, dbName);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task RevokeRolePrivilegeAsync(
         string roleName,
         string @object,
@@ -215,68 +144,35 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(objectName);
         Verify.NotNullOrWhiteSpace(privilege);
 
-        _log.LogDebug("Revoke role {0} privilege {1} on {2} {3}.", roleName, privilege, @object, objectName);
-
-        Grpc.Status response = await _grpcClient.OperatePrivilegeAsync(new Grpc.OperatePrivilegeRequest()
+        await InvokeAsync(_grpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
         {
-            Type = Grpc.OperatePrivilegeType.Revoke,
-            Entity = new Grpc.GrantEntity()
+            Type = OperatePrivilegeType.Revoke,
+            Entity = new GrantEntity()
             {
-                Role = new Grpc.RoleEntity()
-                {
-                    Name = roleName
-                },
-                Object = new Grpc.ObjectEntity()
-                {
-                    Name = @object
-                },
+                Role = new() { Name = roleName },
+                Object = new() { Name = @object },
                 ObjectName = objectName,
-                Grantor = new Grpc.GrantorEntity()
-                {
-                    Privilege = new Grpc.PrivilegeEntity()
-                    {
-                        Name = privilege
-                    },
-                }
+                Grantor = new() { Privilege = new() { Name = privilege } },
             }
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed Revoke role {0} privilege {1} on {2} {3}.", roleName, privilege, @object, objectName);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
-        _log.LogDebug("Select grant for role {0}.", roleName);
 
-        Grpc.SelectGrantResponse response = await _grpcClient.SelectGrantAsync(new Grpc.SelectGrantRequest()
+        SelectGrantResponse response = await InvokeAsync(_grpcClient.SelectGrantAsync, new SelectGrantRequest
         {
-            Entity = new Grpc.GrantEntity()
-            {
-                Role = new Grpc.RoleEntity()
-                {
-                    Name = roleName
-                }
-            }
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Failed select grant for role {0}.", roleName);
-            throw new MilvusException(response.Status);
-        }
+            Entity = new() { Role = new() { Name = roleName } }
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return MilvusGrantEntity.Parse(response.Entities);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
         string roleName,
         string @object,
@@ -286,29 +182,16 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(roleName);
         Verify.NotNullOrWhiteSpace(@object);
         Verify.NotNullOrWhiteSpace(objectName);
-        _log.LogDebug("Select grant for role and object: {0}.", roleName);
 
-        Grpc.SelectGrantResponse response = await _grpcClient.SelectGrantAsync(new Grpc.SelectGrantRequest()
+        SelectGrantResponse response = await InvokeAsync(_grpcClient.SelectGrantAsync, new SelectGrantRequest
         {
-            Entity = new Grpc.GrantEntity()
+            Entity = new()
             {
-                Role = new Grpc.RoleEntity()
-                {
-                    Name = roleName
-                },
-                Object = new Grpc.ObjectEntity()
-                {
-                    Name = @object
-                },
+                Role = new() { Name = roleName },
+                Object = new() { Name = @object },
                 ObjectName = objectName
             }
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Select grant for role and object: {0}.", roleName);
-            throw new MilvusException(response.Status);
-        }
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return MilvusGrantEntity.Parse(response.Entities);
     }

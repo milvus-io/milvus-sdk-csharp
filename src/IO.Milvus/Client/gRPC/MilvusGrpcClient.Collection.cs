@@ -1,8 +1,7 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
+using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,8 +12,7 @@ namespace IO.Milvus.Client.gRPC;
 
 public partial class MilvusGrpcClient
 {
-    #region Collection
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateCollectionAsync(
         string collectionName,
         IList<FieldType> fieldTypes,
@@ -26,26 +24,18 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(dbName);
-        CreateCollectionRequest.ValidateFieldTypes(fieldTypes);
+        ApiSchema.CreateCollectionRequest.ValidateFieldTypes(fieldTypes);
 
-        _log.LogDebug("Create collection {0}, {1}", collectionName, consistencyLevel);
-
-        Grpc.Status response = await _grpcClient.CreateCollectionAsync(new Grpc.CreateCollectionRequest()
+        await InvokeAsync(_grpcClient.CreateCollectionAsync, new CreateCollectionRequest
         {
             CollectionName = collectionName,
-            ConsistencyLevel = (Grpc.ConsistencyLevel)((int)consistencyLevel),
+            ConsistencyLevel = (ConsistencyLevel)(int)consistencyLevel,
             ShardsNum = shardsNum,
             Schema = new CollectionSchema() { Name = collectionName, Fields = fieldTypes, EnableDynamicField = enableDynamicField }.ConvertCollectionSchema().ToByteString()
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Create collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -54,19 +44,11 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Describe collection {0}", collectionName);
-
-        Grpc.DescribeCollectionResponse response = await _grpcClient.DescribeCollectionAsync(new Grpc.DescribeCollectionRequest()
+        DescribeCollectionResponse response = await InvokeAsync(_grpcClient.DescribeCollectionAsync, new DescribeCollectionRequest
         {
             CollectionName = collectionName,
             DbName = dbName,
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Describe collection failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
-        }
+        }, r=> r.Status, cancellationToken).ConfigureAwait(false);
 
         return new DetailedMilvusCollection(
             response.Aliases,
@@ -76,11 +58,10 @@ public partial class MilvusGrpcClient
             TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamp),
             response.Schema.ToCollectionSchema(),
             response.ShardsNum,
-            response.StartPositions.ToKeyDataPairs()
-            );
+            response.StartPositions.ToKeyDataPairs());
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -89,22 +70,14 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Drop collection {0}", collectionName);
-
-        Grpc.Status response = await _grpcClient.DropCollectionAsync(new Grpc.DropCollectionRequest
+        await InvokeAsync(_grpcClient.DropCollectionAsync, new DropCollectionRequest
         {
             CollectionName = collectionName,
             DbName = dbName
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Drop collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -113,24 +86,16 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Get collection statistics {0}", collectionName);
-
-        Grpc.GetCollectionStatisticsResponse response = await _grpcClient.GetCollectionStatisticsAsync(new Grpc.GetCollectionStatisticsRequest()
+        GetCollectionStatisticsResponse response = await InvokeAsync(_grpcClient.GetCollectionStatisticsAsync, new GetCollectionStatisticsRequest
         {
             CollectionName = collectionName,
             DbName = dbName
-        }, _callOptions.WithCancellationToken(cancellationToken));
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get collection statistics: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
-        }
-
-        return response.Stats.ToDictionary(p => p.Key, p => p.Value);
+        return response.Stats.ToDictionary();
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> HasCollectionAsync(
         string collectionName,
         DateTime? dateTime = null,
@@ -140,24 +105,17 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Check if a {0} exists", collectionName);
-
-        var response = await _grpcClient.HasCollectionAsync(new Grpc.HasCollectionRequest()
+        BoolResponse response = await InvokeAsync(_grpcClient.HasCollectionAsync, new HasCollectionRequest
         {
             CollectionName = collectionName,
             TimeStamp = (ulong)(dateTime is not null ? dateTime.Value.ToUtcTimestamp() : 0),
             DbName = dbName
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            throw new MilvusException(response.Status);
-        }
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Value;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task LoadCollectionAsync(
         string collectionName,
         int replicaNumber = 1,
@@ -168,23 +126,15 @@ public partial class MilvusGrpcClient
         Verify.GreaterThanOrEqualTo(replicaNumber, 1);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Load collection {0}", collectionName);
-
-        Grpc.Status response = await _grpcClient.LoadCollectionAsync(new Grpc.LoadCollectionRequest()
+        await InvokeAsync(_grpcClient.LoadCollectionAsync, new LoadCollectionRequest
         {
             CollectionName = collectionName,
             ReplicaNumber = replicaNumber,
             DbName = dbName
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Load collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task ReleaseCollectionAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -193,22 +143,14 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Release collection {0}", collectionName);
-
-        Grpc.Status response = await _grpcClient.ReleaseCollectionAsync(new Grpc.ReleaseCollectionRequest()
+        await InvokeAsync(_grpcClient.ReleaseCollectionAsync, new ReleaseCollectionRequest
         {
             CollectionName = collectionName,
             DbName = dbName
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Release collection failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string> collectionNames = null,
         ShowType showType = ShowType.All,
@@ -217,9 +159,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Show collections {0}", collectionNames?.ToString());
-
-        var request = new Grpc.ShowCollectionsRequest
+        ShowCollectionsRequest request = new ShowCollectionsRequest
         {
             Type = (Grpc.ShowType)showType,
             DbName = dbName
@@ -229,18 +169,25 @@ public partial class MilvusGrpcClient
             request.CollectionNames.AddRange(collectionNames);
         }
 
-        Grpc.ShowCollectionsResponse response = await _grpcClient.ShowCollectionsAsync(request, _callOptions.WithCancellationToken(cancellationToken));
+        ShowCollectionsResponse response = await InvokeAsync(_grpcClient.ShowCollectionsAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        List<MilvusCollection> collections = new List<MilvusCollection>();
+        if (response.CollectionIds is not null)
         {
-            _log.LogError("Show collections failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
+            for (int i = 0; i < response.CollectionIds.Count; i++)
+            {
+                collections.Add(new MilvusCollection(
+                    response.CollectionIds[i],
+                    response.CollectionNames[i],
+                    TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamps[i]),
+                    response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
+            }
         }
 
-        return ToCollections(response).ToList();
+        return collections;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<long> GetLoadingProgressAsync(
        string collectionName,
        IList<string> partitionNames,
@@ -248,9 +195,7 @@ public partial class MilvusGrpcClient
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        _log.LogDebug("Get loading progress for collection: {0}", collectionName);
-
-        Grpc.GetLoadingProgressRequest request = new Grpc.GetLoadingProgressRequest()
+        GetLoadingProgressRequest request = new()
         {
             CollectionName = collectionName,
         };
@@ -259,18 +204,12 @@ public partial class MilvusGrpcClient
             request.PartitionNames.AddRange(partitionNames);
         }
 
-        Grpc.GetLoadingProgressResponse response = await _grpcClient.GetLoadingProgressAsync(request, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get loading progress failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
-        }
+        GetLoadingProgressResponse response = await InvokeAsync(_grpcClient.GetLoadingProgressAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Progress;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
@@ -281,40 +220,13 @@ public partial class MilvusGrpcClient
         Verify.NotNullOrWhiteSpace(partitionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Get partition statistics: {0}", collectionName);
-
-        Grpc.GetPartitionStatisticsResponse response = await _grpcClient.GetPartitionStatisticsAsync(
-            new Grpc.GetPartitionStatisticsRequest()
-            {
-                CollectionName = collectionName,
-                PartitionName = partitionName,
-                DbName = dbName
-            }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
+        GetPartitionStatisticsResponse response = await InvokeAsync(_grpcClient.GetPartitionStatisticsAsync, new GetPartitionStatisticsRequest
         {
-            _log.LogError("Get partition statistics failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
-        }
+            CollectionName = collectionName,
+            PartitionName = partitionName,
+            DbName = dbName
+        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        return response.Stats.ToDictionary(_ => _.Key, _ => _.Value);
+        return response.Stats.ToDictionary();
     }
-    #endregion
-
-    #region Private =================================================================================================
-    private static IEnumerable<MilvusCollection> ToCollections(Grpc.ShowCollectionsResponse response)
-    {
-        if (response.CollectionIds == null)
-            yield break;
-
-        for (int i = 0; i < response.CollectionIds.Count; i++)
-        {
-            yield return new MilvusCollection(
-                response.CollectionIds[i],
-                response.CollectionNames[i],
-                TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamps[i]),
-                response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1);
-        }
-    }
-    #endregion
 }

@@ -19,7 +19,7 @@ internal sealed class DescribeIndexResponse
             yield break;
         }
 
-        foreach (var index in IndexDescriptions)
+        foreach (IndexDescription index in IndexDescriptions)
         {
             yield return new MilvusIndex(index.FieldName, index.IndexName, index.IndexId, index.Params);
         }

@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
-using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -12,7 +11,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateIndexAsync(
         string collectionName,
         string fieldName,
@@ -38,7 +37,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropIndexAsync(
         string collectionName,
         string fieldName,
@@ -60,7 +59,7 @@ public partial class MilvusRestClient
         ValidateResponse(responseContent);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName,
         string fieldName,
@@ -77,13 +76,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<DescribeIndexResponse>(responseContent);
+        DescribeIndexResponse data = JsonSerializer.Deserialize<DescribeIndexResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.ToMilvusIndexes().ToList();
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
@@ -100,13 +99,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetIndexBuildProgressResponse>(responseContent);
+        GetIndexBuildProgressResponse data = JsonSerializer.Deserialize<GetIndexBuildProgressResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.ToIndexBuildProgress();
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IndexState> GetIndexStateAsync(
         string collectionName,
         string fieldName,
@@ -123,7 +122,7 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetIndexStateResponse>(responseContent);
+        GetIndexStateResponse data = JsonSerializer.Deserialize<GetIndexStateResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.IndexState;

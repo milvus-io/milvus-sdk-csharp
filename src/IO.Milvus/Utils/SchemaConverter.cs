@@ -20,19 +20,19 @@ internal static class SchemaConverter
             grpcCollectionSchema.Description = collectionSchema.Description;
         }
 
-        foreach (var field in collectionSchema.Fields)
+        foreach (FieldType field in collectionSchema.Fields)
         {
             grpcCollectionSchema.Fields.Add(ConvertFieldSchema(field));
         }
 
-        grpcCollectionSchema.AutoID = collectionSchema.Fields.Any(p => p.AutoId);
+        grpcCollectionSchema.AutoID = collectionSchema.Fields.Any(static p => p.AutoId);
 
         return grpcCollectionSchema;
     }
 
     internal static CollectionSchema ToCollectionSchema(this Grpc.CollectionSchema collectionSchema)
     {
-        var milvusCollectionSchema = new CollectionSchema()
+        CollectionSchema milvusCollectionSchema = new()
         {
             Name = collectionSchema.Name,
             Description = collectionSchema.Description,
@@ -40,7 +40,7 @@ internal static class SchemaConverter
             Fields = new List<FieldType>()
         };
 
-        foreach (var field in collectionSchema.Fields)
+        foreach (Grpc.FieldSchema field in collectionSchema.Fields)
         {
             milvusCollectionSchema.Fields.Add(ToFieldSchema(field));
         }
@@ -50,7 +50,7 @@ internal static class SchemaConverter
 
     private static FieldType ToFieldSchema(Grpc.FieldSchema fieldType)
     {
-        var milvusField = new FieldType(fieldType.Name, (MilvusDataType)fieldType.DataType, fieldType.IsPrimaryKey, fieldType.IsDynamic)
+        FieldType milvusField = new(fieldType.Name, (MilvusDataType)fieldType.DataType, fieldType.IsPrimaryKey, fieldType.IsDynamic)
         {
             FieldId = fieldType.FieldID,
         };
@@ -69,7 +69,7 @@ internal static class SchemaConverter
         {
             return;
         }
-        foreach (var parameter in indexParams)
+        foreach (Grpc.KeyValuePair parameter in indexParams)
         {
             typeParams[parameter.Key] = parameter.Value;
         }
@@ -77,7 +77,7 @@ internal static class SchemaConverter
 
     internal static Grpc.FieldSchema ConvertFieldSchema(FieldType fieldType)
     {
-        var grpcField = new Grpc.FieldSchema()
+        Grpc.FieldSchema grpcField = new()
         {
             Name = fieldType.Name,
             DataType = ((Grpc.DataType)(int)fieldType.DataType),
@@ -99,7 +99,7 @@ internal static class SchemaConverter
         {
             yield break;
         }
-        foreach (var parameter in indexParams)
+        foreach (KeyValuePair<string, string> parameter in indexParams)
         {
             yield return new Grpc.KeyValuePair()
             {
@@ -114,9 +114,9 @@ internal static class SchemaConverter
     {
         Dictionary<string, IList<int>> dictionary = new();
 
-        foreach (var keyDataPair in keyDataPairs)
+        foreach (Grpc.KeyDataPair keyDataPair in keyDataPairs)
         {
-            dictionary[keyDataPair.Key] = keyDataPair.Data.Select(p => (int)p).ToList();
+            dictionary[keyDataPair.Key] = keyDataPair.Data.Select(static p => (int)p).ToList();
         }
 
         return dictionary;

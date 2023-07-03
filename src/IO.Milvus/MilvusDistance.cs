@@ -1,5 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace IO.Milvus;
 
@@ -25,7 +24,7 @@ public sealed class MilvusCalDistanceResult
             calcDistanceResults.FloatDist?.Data);
     }
 
-    internal static MilvusCalDistanceResult From(CalDistanceResponse data)
+    internal static MilvusCalDistanceResult From(ApiSchema.CalDistanceResponse data)
     {
         return new MilvusCalDistanceResult(
             data.MilvusDistance?.IntDistance?.Data,

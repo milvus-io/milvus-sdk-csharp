@@ -1,7 +1,6 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
 using System.Text.Json;
@@ -12,7 +11,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<long> ManualCompactionAsync(
         long collectionId,
         DateTime? timeTravel = null,
@@ -26,16 +25,16 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<ManualCompactionResponse>(responseContent);
+        ManualCompactionResponse data = JsonSerializer.Deserialize<ManualCompactionResponse>(responseContent);
         if (data.Status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            throw new MilvusException(data.Status);
+            throw new MilvusException(MilvusException.GetErrorMessage(data.Status.ErrorCode, data.Status.Reason));
         }
 
         return data.CompactionId;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusCompactionState> GetCompactionStateAsync(
         long compactionId,
         CancellationToken cancellationToken = default)
@@ -48,13 +47,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetCompactionStateResponse>(responseContent);
+        GetCompactionStateResponse data = JsonSerializer.Deserialize<GetCompactionStateResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.State;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusCompactionPlans> GetCompactionPlansAsync(
         long compactionId,
         CancellationToken cancellationToken = default)
@@ -67,7 +66,7 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetCompactionPlansResponse>(responseContent);
+        GetCompactionPlansResponse data = JsonSerializer.Deserialize<GetCompactionPlansResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusCompactionPlans.From(data);

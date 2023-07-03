@@ -50,7 +50,7 @@ public sealed class MilvusVectors
     /// <returns></returns>
     public static MilvusVectors CreateFloatVectors(IList<Field<float>> floatFields)
     {
-        return new MilvusVectors(floatFields.Select(p => p.Data.ToList()).ToList());
+        return new MilvusVectors(floatFields.Select(static p => p.Data.ToList()).ToList());
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public sealed class MilvusVectors
 
     internal Grpc.VectorsArray ToVectorsArray()
     {
-        var vectorArray = new Grpc.VectorsArray();
+        Grpc.VectorsArray vectorArray = new();
 
         if (MilvusVectorsType == MilvusVectorsType.FloatVectors)
         {
@@ -127,7 +127,7 @@ public sealed class MilvusVectors
         }
         else if (MilvusVectorsType == MilvusVectorsType.Ids)
         {
-            var grpcIds = Ids.ToGrpcIds();
+            Grpc.VectorIDs grpcIds = Ids.ToGrpcIds();
             vectorArray.IdArray = grpcIds;
         }
 
@@ -184,7 +184,7 @@ public sealed class MilvusVectors
     {
         MilvusVectorsType = MilvusVectorsType.FloatVectors;
         Dim = floatFields.First().Count;
-        Vectors = floatFields.SelectMany(_ => _).ToList();
+        Vectors = floatFields.SelectMany(static list => list).ToList();
     }
 
     private MilvusVectors(IList<float> floatFields, int dim)
@@ -286,13 +286,13 @@ public sealed class MilvusVectorIds
 
     internal Grpc.VectorIDs ToGrpcIds()
     {
-        var idArray = new Grpc.VectorIDs()
+        Grpc.VectorIDs idArray = new()
         {
             FieldName = FieldName,
             CollectionName = CollectionName,
         };
 
-        var ids = new Grpc.IDs();
+        Grpc.IDs ids = new();
 
         if (IntIds != null)
         {

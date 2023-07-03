@@ -2,6 +2,7 @@
 using IO.Milvus.Grpc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace IO.Milvus.Utils;
 
@@ -21,7 +22,7 @@ public static class FieldUtils
     {
         Verify.NotNullOrEmpty(floatVectors);
 
-        var floatArray = new FloatArray();
+        FloatArray floatArray = new();
 
         int dim = floatVectors[0].Count;
 
@@ -32,4 +33,8 @@ public static class FieldUtils
 
         return (floatArray, dim);
     }
+
+    /// <summary>Creates a <see cref="Dictionary{TKey, TValue}"/> from GRPC KeyValuePairs.</summary>
+    public static Dictionary<string, string> ToDictionary(this IEnumerable<Grpc.KeyValuePair> source) =>
+        source.ToDictionary(static p => p.Key, static p => p.Value);
 }

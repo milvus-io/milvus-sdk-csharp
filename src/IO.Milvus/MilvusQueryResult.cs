@@ -1,6 +1,4 @@
-﻿using IO.Milvus.ApiSchema;
-using IO.Milvus.Grpc;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace IO.Milvus;
@@ -20,13 +18,13 @@ public sealed class MilvusQueryResult
     /// </summary>
     public IList<Field> FieldsData { get; }
 
-    internal static MilvusQueryResult From(QueryResults response)
+    internal static MilvusQueryResult From(Grpc.QueryResults response)
     {
-        var fields = response.FieldsData.Select(p => Field.FromGrpcFieldData(p)).ToList();
+        List<Field> fields = response.FieldsData.Select(Field.FromGrpcFieldData).ToList();
         return new MilvusQueryResult(response.CollectionName, fields);
     }
 
-    internal static MilvusQueryResult From(QueryResponse data)
+    internal static MilvusQueryResult From(ApiSchema.QueryResponse data)
     {
         return new MilvusQueryResult(data.CollectionName, data.FieldsData);
     }

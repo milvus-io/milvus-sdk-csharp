@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.ApiSchema;
 using IO.Milvus.Diagnostics;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,7 +12,7 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusMutationResult> InsertAsync(
         string collectionName,
         IList<Field> fields,
@@ -37,13 +36,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
+        MilvusMutationResponse data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusMutationResult.From(data);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
         string expr,
@@ -67,13 +66,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
+        MilvusMutationResponse data = JsonSerializer.Deserialize<MilvusMutationResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusMutationResult.From(data);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusSearchResult> SearchAsync(
         MilvusSearchParameters searchParameters,
         CancellationToken cancellationToken = default)
@@ -85,13 +84,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<SearchResponse>(responseContent);
+        SearchResponse data = JsonSerializer.Deserialize<SearchResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusSearchResult.From(data);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusCalDistanceResult> CalDistanceAsync(
         MilvusVectors leftVectors,
         MilvusVectors rightVectors,
@@ -105,20 +104,20 @@ public partial class MilvusRestClient
             throw new ArgumentOutOfRangeException(nameof(milvusMetricType));
         }
 
-        var payload = new CalcDistanceRequest { VectorsLeft = leftVectors, VectorsRight = rightVectors };
+        CalcDistanceRequest payload = new() { VectorsLeft = leftVectors, VectorsRight = rightVectors };
         payload.Params["metric"] = milvusMetricType.ToString().ToUpperInvariant();
 
         using HttpRequestMessage request = HttpRequest.CreateGetRequest($"{ApiVersion.V1}/distance", payload);
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<CalDistanceResponse>(responseContent);
+        CalDistanceResponse data = JsonSerializer.Deserialize<CalDistanceResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusCalDistanceResult.From(data);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -133,13 +132,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<FlushResponse>(responseContent);
+        FlushResponse data = JsonSerializer.Deserialize<FlushResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusFlushResult.From(data);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -154,13 +153,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetPersistentSegmentInfoResponse>(responseContent);
+        GetPersistentSegmentInfoResponse data = JsonSerializer.Deserialize<GetPersistentSegmentInfoResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.Infos;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<bool> GetFlushStateAsync(
         IList<long> segmentIds,
         CancellationToken cancellationToken = default)
@@ -173,13 +172,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetFlushStateResponse>(responseContent);
+        GetFlushStateResponse data = JsonSerializer.Deserialize<GetFlushStateResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.Flushed;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusQueryResult> QueryAsync(
         string collectionName,
         string expr,
@@ -202,7 +201,7 @@ public partial class MilvusRestClient
         Verify.GreaterThanOrEqualTo(limit, 0);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        var payload = new QueryRequest
+        QueryRequest payload = new()
         {
             CollectionName = collectionName,
             DbName = dbName,
@@ -226,13 +225,13 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<QueryResponse>(responseContent);
+        QueryResponse data = JsonSerializer.Deserialize<QueryResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return MilvusQueryResult.From(data);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
         string collectionName,
         CancellationToken cancellationToken = default)
@@ -245,7 +244,7 @@ public partial class MilvusRestClient
 
         string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<GetQuerySegmentInfoResponse>(responseContent);
+        GetQuerySegmentInfoResponse data = JsonSerializer.Deserialize<GetQuerySegmentInfoResponse>(responseContent);
         ValidateStatus(data.Status);
 
         return data.Infos;

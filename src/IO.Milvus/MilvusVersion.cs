@@ -45,7 +45,7 @@ public sealed record MilvusVersion
     {
         Verify.NotNull(version);
 
-        var versions = version.Substring(1, version.Length - 1).Split('.', '-');
+        string[] versions = version.Substring(1, version.Length - 1).Split('.', '-');
         return new MilvusVersion(
             int.Parse(versions[0], CultureInfo.InvariantCulture),
             int.Parse(versions[1], CultureInfo.InvariantCulture),
@@ -74,7 +74,7 @@ public sealed record MilvusVersion
         return false;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override string ToString()
     {
         return string.IsNullOrEmpty(Suffix) ?

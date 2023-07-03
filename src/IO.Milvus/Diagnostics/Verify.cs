@@ -95,7 +95,7 @@ internal static class Verify
             throw new ArgumentException($"The {name} `{url}` is incomplete, enter a valid URL starting with 'https://", name);
         }
 
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || string.IsNullOrEmpty(uri.Host))
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri) || string.IsNullOrEmpty(uri.Host))
         {
             throw new ArgumentException($"The {name} `{url}` is not valid", name);
         }

@@ -37,7 +37,7 @@ public sealed class MilvusHealthState
     /// </summary>
     public override string ToString()
     {
-        var state = $"{{{nameof(IsHealthy)}:{IsHealthy}}}";
+        string state = $"{{{nameof(IsHealthy)}:{IsHealthy}}}";
         if (!IsHealthy)
         {
             state = $"{state}, {{{nameof(ErrorCode)}:{ErrorCode}}}, {{{nameof(ErrorMsg)}:{ErrorMsg}}}";

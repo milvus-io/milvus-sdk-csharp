@@ -25,10 +25,10 @@ public sealed class ByteStringField : Field
     /// </summary>
     public ByteString ByteString { get; set; }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override long RowCount { get; protected set; }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override Grpc.FieldData ToGrpcFieldData()
     {
         return new Grpc.FieldData()

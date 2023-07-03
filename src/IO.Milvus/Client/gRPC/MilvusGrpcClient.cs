@@ -5,6 +5,7 @@ using IO.Milvus.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,7 +62,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
     {
         Verify.NotNull(endpoint);
 
-        var address = SanitizeEndpoint(endpoint, port);
+        Uri address = SanitizeEndpoint(endpoint, port);
 
         _log = log ?? NullLogger<MilvusGrpcClient>.Instance;
         if (grpcChannel is not null)
@@ -84,47 +85,35 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
         _grpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public string Address => _grpcChannel.Target;
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Check if connection is health");
+        CheckHealthResponse response = await InvokeAsync(_grpcClient.CheckHealthAsync, new CheckHealthRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        var response = await _grpcClient.CheckHealthAsync(new CheckHealthRequest(), _callOptions.WithCancellationToken(cancellationToken));
-        if (!response.IsHealthy)
+        if (_log.IsEnabled(LogLevel.Warning))
         {
-            foreach (var reason in response.Reasons)
+            if (!response.IsHealthy)
             {
-                _log.LogWarning("Reason: {0}", reason);
+                _log.LogWarning("Unhealthy: {0}", string.Join(", ", response.Reasons));
             }
         }
 
         return new MilvusHealthState(response.IsHealthy, response.Status.Reason, response.Status.ErrorCode);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("Get milvus collection");
-
-        GetVersionResponse response = await _grpcClient.GetVersionAsync(new GetVersionRequest(), _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Get milvus version failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
-        }
+        GetVersionResponse response = await InvokeAsync(_grpcClient.GetVersionAsync, new GetVersionRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Version;
     }
 
-    ///<inheritdoc/>
-    public override string ToString()
-    {
-        return $"{{{nameof(MilvusGrpcClient)}:{Address}}}";
-    }
+    /// <inheritdoc />
+    public override string ToString() => $"{{{nameof(MilvusGrpcClient)}:{Address}}}";
 
     /// <summary>
     /// Close milvus connection.
@@ -153,5 +142,43 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
 
         return builder.Uri;
     }
+
+    private Task<Grpc.Status> InvokeAsync<TRequest>(
+        Func<TRequest, CallOptions, AsyncUnaryCall<Grpc.Status>> func,
+        TRequest request,
+        CancellationToken cancellationToken,
+        [CallerMemberName] string callerName = null) =>
+        InvokeAsync(func, request, r => r, cancellationToken, callerName);
+
+    private async Task<TResponse> InvokeAsync<TRequest, TResponse>(
+        Func<TRequest, CallOptions, AsyncUnaryCall<TResponse>> func,
+        TRequest request,
+        Func<TResponse, Grpc.Status> getStatus,
+        CancellationToken cancellationToken,
+        [CallerMemberName] string callerName = null)
+    {
+        if (_log.IsEnabled(LogLevel.Debug))
+        {
+            _log.LogDebug("{0} invoked: {1}", callerName, request);
+        }
+
+        TResponse response = await func(request, _callOptions.WithCancellationToken(cancellationToken)).ConfigureAwait(false);
+        Grpc.Status status = getStatus(response);
+
+        if (status.ErrorCode != ErrorCode.Success)
+        {
+            if (_log.IsEnabled(LogLevel.Error))
+            {
+                _log.LogError("{0} failed: {1}, {2}", callerName, status.ErrorCode, status.Reason);
+            }
+
+            throw new MilvusException(MilvusException.GetErrorMessage(status.ErrorCode, status.Reason));
+        }
+
+        return response;
+    }
+
+    private static string Base64Encode(string input) =>
+        Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
     #endregion
 }

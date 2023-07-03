@@ -107,22 +107,22 @@ public abstract class Field
 
                 for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i += dim)
                 {
-                    var list = new List<float>(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
+                    List<float> list = new(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
                     floatVectors.Add(list);
                 }
 
-                var field = Field.CreateFloatVector(fieldData.FieldName, floatVectors);
+                FloatVectorField field = Field.CreateFloatVector(fieldData.FieldName, floatVectors);
 
                 return field;
             }
             else if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.BinaryVector)
             {
-                var bytes = fieldData.Vectors.BinaryVector.ToByteArray();
+                byte[] bytes = fieldData.Vectors.BinaryVector.ToByteArray();
 
                 List<byte[]> byteArray = new();
 
-                using var stream = new MemoryStream(bytes);
-                using var reader = new BinaryReader(stream);
+                using MemoryStream stream = new(bytes);
+                using BinaryReader reader = new(stream);
 
                 Byte[] subBytes = reader.ReadBytes(dim);
                 while (subBytes.Length > 0)
@@ -165,7 +165,7 @@ public abstract class Field
     /// <exception cref="NotSupportedException"></exception>
     internal static MilvusDataType EnsureDataType<TDataType>()
     {
-        var type = typeof(TDataType);
+        Type type = typeof(TDataType);
         MilvusDataType dataType = MilvusDataType.Double;
 
         if (type == typeof(bool))
@@ -270,8 +270,8 @@ public abstract class Field
 
         List<byte[]> byteArray = new();
 
-        using var stream = new MemoryStream(bytes);
-        using var reader = new BinaryReader(stream);
+        using MemoryStream stream = new(bytes);
+        using BinaryReader reader = new(stream);
 
         Byte[] subBytes = reader.ReadBytes((int)dimension);
         while (subBytes.Length > 0)
@@ -280,7 +280,7 @@ public abstract class Field
             subBytes = reader.ReadBytes((int)dimension);
         }
 
-        var field = new BinaryVectorField(fieldName, byteArray);
+        BinaryVectorField field = new(fieldName, byteArray);
         return field;
     }
 
@@ -293,7 +293,7 @@ public abstract class Field
     public static BinaryVectorField CreateBinaryVectors(string fieldName, IList<byte[]> data)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        var field = new BinaryVectorField(fieldName, data);
+        BinaryVectorField field = new(fieldName, data);
         return field;
     }
 
@@ -321,7 +321,7 @@ public abstract class Field
 
         for (int i = 0; i < floatVector.Count; i += (int)dimension)
         {
-            var subVector = floatVector.GetRange(i, (int)dimension);
+            List<float> subVector = floatVector.GetRange(i, (int)dimension);
             floatVectors.Add(subVector);
         }
 
@@ -338,7 +338,7 @@ public abstract class Field
     public static ByteStringField CreateFromByteString(string fieldName, ByteString byteString, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        var field = new ByteStringField(fieldName, byteString, dimension);
+        ByteStringField field = new(fieldName, byteString, dimension);
 
         return field;
     }
@@ -353,7 +353,7 @@ public abstract class Field
     public static Field CreateFromStream(string fieldName, Stream stream, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        var field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
+        ByteStringField field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
 
         return field;
     }
@@ -427,12 +427,12 @@ public class Field<TData> : Field
         protected set { }
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override Grpc.FieldData ToGrpcFieldData()
     {
         Check();
 
-        var fieldData = new Grpc.FieldData()
+        Grpc.FieldData fieldData = new()
         {
             FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
@@ -445,7 +445,7 @@ public class Field<TData> : Field
                 throw new MilvusException($"DataType Error:{DataType}");
             case MilvusDataType.Bool:
                 {
-                    var boolData = new Grpc.BoolArray();
+                    Grpc.BoolArray boolData = new();
                     boolData.Data.AddRange(Data as IEnumerable<bool>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -456,8 +456,8 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Int8:
                 {
-                    var intData = new Grpc.IntArray();
-                    intData.Data.AddRange((Data as IEnumerable<sbyte>).Select(p => (int)p));
+                    Grpc.IntArray intData = new();
+                    intData.Data.AddRange((Data as IEnumerable<sbyte>).Select(static p => (int)p));
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -467,8 +467,8 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Int16:
                 {
-                    var intData = new Grpc.IntArray();
-                    intData.Data.AddRange((Data as IEnumerable<Int16>).Select(p => (int)p));
+                    Grpc.IntArray intData = new();
+                    intData.Data.AddRange((Data as IEnumerable<Int16>).Select(static p => (int)p));
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -478,7 +478,7 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Int32:
                 {
-                    var intData = new Grpc.IntArray();
+                    Grpc.IntArray intData = new();
                     intData.Data.AddRange(Data as IEnumerable<int>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -489,7 +489,7 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Int64:
                 {
-                    var longData = new Grpc.LongArray();
+                    Grpc.LongArray longData = new();
                     longData.Data.AddRange(Data as IEnumerable<long>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -500,7 +500,7 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Float:
                 {
-                    var floatData = new Grpc.FloatArray();
+                    Grpc.FloatArray floatData = new();
                     floatData.Data.AddRange(Data as IEnumerable<float>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -511,7 +511,7 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Double:
                 {
-                    var doubleData = new Grpc.DoubleArray();
+                    Grpc.DoubleArray doubleData = new();
                     doubleData.Data.AddRange(Data as IEnumerable<double>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -522,7 +522,7 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.String:
                 {
-                    var stringData = new Grpc.StringArray();
+                    Grpc.StringArray stringData = new();
                     stringData.Data.AddRange(Data as IEnumerable<string>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -533,7 +533,7 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.VarChar:
                 {
-                    var stringData = new Grpc.StringArray();
+                    Grpc.StringArray stringData = new();
                     stringData.Data.AddRange(Data as IEnumerable<string>);
 
                     fieldData.Scalars = new Grpc.ScalarField()
@@ -545,7 +545,7 @@ public class Field<TData> : Field
             case MilvusDataType.Json:
                 {
                     Grpc.JSONArray jsonData = new Grpc.JSONArray();
-                    foreach (var jsonString in (Data as IList<string>))
+                    foreach (string jsonString in (Data as IList<string>))
                     {
                         jsonData.Data.Add(ByteString.CopyFromUtf8(jsonString));
                     }

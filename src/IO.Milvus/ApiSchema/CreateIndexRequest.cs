@@ -51,7 +51,7 @@ internal sealed class CreateIndexRequest
         if (extraParams == null)
             return this;
 
-        foreach (var param in extraParams)
+        foreach (KeyValuePair<string, string> param in extraParams)
         {
             ExtraParams[param.Key] = param.Value;
         }
@@ -60,7 +60,7 @@ internal sealed class CreateIndexRequest
 
     public Grpc.CreateIndexRequest BuildGrpc()
     {
-        var request = new Grpc.CreateIndexRequest()
+        Grpc.CreateIndexRequest request = new()
         {
             CollectionName = CollectionName,
             FieldName = FieldName,
@@ -108,8 +108,8 @@ internal sealed class CreateIndexRequest
     }
 
     #region Private ==================================================================================
-    private MilvusMetricType _milvusMetricType;
-    private MilvusIndexType _milvusIndexType;
+    private readonly MilvusMetricType _milvusMetricType;
+    private readonly MilvusIndexType _milvusIndexType;
 
     private CreateIndexRequest(
         string collectionName,

@@ -1,5 +1,5 @@
 ﻿using IO.Milvus.Diagnostics;
-using Microsoft.Extensions.Logging;
+using IO.Milvus.Grpc;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,57 +8,33 @@ namespace IO.Milvus.Client.gRPC;
 
 public partial class MilvusGrpcClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Create database {0}", dbName);
-        Grpc.Status response = await _grpcClient.CreateDatabaseAsync(new Grpc.CreateDatabaseRequest()
+        await InvokeAsync(_grpcClient.CreateDatabaseAsync, new CreateDatabaseRequest
         {
             DbName = dbName,
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Create database failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
-        _log.LogDebug("List databases");
-
-        Grpc.ListDatabasesResponse response = await _grpcClient.ListDatabasesAsync(
-            new Grpc.ListDatabasesRequest(),
-            _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.Status.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("List databases failed: {0}, {1}", response.Status.ErrorCode, response.Status.Reason);
-            throw new MilvusException(response.Status);
-        }
+        ListDatabasesResponse response = await InvokeAsync(_grpcClient.ListDatabasesAsync, new ListDatabasesRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.DbNames;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public async Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(dbName);
 
-        _log.LogDebug("Drop database {0}", dbName);
-        var response = await _grpcClient.DropDatabaseAsync(new Grpc.DropDatabaseRequest()
+        await InvokeAsync(_grpcClient.DropDatabaseAsync, new DropDatabaseRequest
         {
             DbName = dbName,
-        }, _callOptions.WithCancellationToken(cancellationToken));
-
-        if (response.ErrorCode != Grpc.ErrorCode.Success)
-        {
-            _log.LogError("Drop database failed: {0}, {1}", response.ErrorCode, response.Reason);
-            throw new MilvusException(response);
-        }
+        }, cancellationToken).ConfigureAwait(false);
     }
 }

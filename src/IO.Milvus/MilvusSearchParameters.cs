@@ -1,5 +1,4 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.ApiSchema;
 using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
@@ -152,12 +151,9 @@ public sealed class MilvusSearchParameters
     /// <exception cref="ArgumentNullException"></exception>
     public MilvusSearchParameters WithOutputFields(IList<string> outputFields)
     {
-        if (outputFields is null)
-        {
-            throw new ArgumentNullException(nameof(outputFields));
-        }
+        Verify.NotNull(outputFields);
 
-        foreach (var outField in outputFields)
+        foreach (string outField in outputFields)
         {
             OutputFields.Add(outField);
         }
@@ -175,12 +171,9 @@ public sealed class MilvusSearchParameters
     /// <param name="partitionNames">The name list of the partitions to query.</param>
     public MilvusSearchParameters WithPartitionNames(IList<string> partitionNames)
     {
-        if (partitionNames is null)
-        {
-            throw new ArgumentNullException(nameof(partitionNames));
-        }
+        Verify.NotNull(partitionNames);
 
-        foreach (var partitionName in partitionNames)
+        foreach (string partitionName in partitionNames)
         {
             PartitionNames.Add(partitionName);
         }
@@ -408,7 +401,7 @@ public sealed class MilvusSearchParameters
     /// <returns></returns>
     internal HttpRequestMessage BuildRest()
     {
-        var request = new SearchRequest()
+        ApiSchema.SearchRequest request = new()
         {
             CollectionName = CollectionName,
             Dsl = Expr,
@@ -424,7 +417,7 @@ public sealed class MilvusSearchParameters
         PrepareRestParameters(request);
 
         return HttpRequest.CreatePostRequest(
-            $"{ApiVersion.V1}/search",
+            $"{ApiSchema.ApiVersion.V1}/search",
             payload: request);
     }
 
@@ -482,7 +475,7 @@ public sealed class MilvusSearchParameters
 
     private Grpc.SearchRequest InitSearchRequest()
     {
-        var request = new Grpc.SearchRequest()
+        Grpc.SearchRequest request = new()
         {
             CollectionName = CollectionName,
             TravelTimestamp = (ulong)TravelTimestamp,
@@ -512,7 +505,7 @@ public sealed class MilvusSearchParameters
         }
     }
 
-    private void PrepareRestParameters(SearchRequest request)
+    private void PrepareRestParameters(ApiSchema.SearchRequest request)
     {
         request.SearchParams[Constants.VECTOR_FIELD] = VectorFieldName;
         request.SearchParams[Constants.TOP_K] = TopK.ToString(CultureInfo.InvariantCulture);
@@ -540,7 +533,7 @@ public sealed class MilvusSearchParameters
     {
         Grpc.PlaceholderGroup placeholderGroup = new();
 
-        var placeholderValue = new Grpc.PlaceholderValue()
+        Grpc.PlaceholderValue placeholderValue = new()
         {
             Tag = Constants.VECTOR_TAG
         };
@@ -548,11 +541,11 @@ public sealed class MilvusSearchParameters
         if (MilvusFloatVectors != null)
         {
             placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
-            foreach (var milvusVector in MilvusFloatVectors)
+            foreach (List<float> milvusVector in MilvusFloatVectors)
             {
 
-                using var memoryStream = new MemoryStream(milvusVector.Count * sizeof(float));
-                using var binaryWriter = new BinaryWriter(memoryStream);
+                using MemoryStream memoryStream = new(milvusVector.Count * sizeof(float));
+                using BinaryWriter binaryWriter = new(memoryStream);
 
                 for (int i = 0; i < milvusVector.Count; i++)
                     binaryWriter.Write(milvusVector[i]);
@@ -564,7 +557,7 @@ public sealed class MilvusSearchParameters
         {
             placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
 
-            foreach (var milvusVector in MilvusBinaryVectors)
+            foreach (byte[] milvusVector in MilvusBinaryVectors)
             {
                 placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector));
             }
@@ -574,11 +567,11 @@ public sealed class MilvusSearchParameters
         request.PlaceholderGroup = placeholderGroup.ToByteString();
     }
 
-    private void PrepareRestTargetVectors(SearchRequest request)
+    private void PrepareRestTargetVectors(ApiSchema.SearchRequest request)
     {
         if (MilvusFloatVectors != null)
         {
-            foreach (var milvusVector in MilvusFloatVectors)
+            foreach (List<float> milvusVector in MilvusFloatVectors)
             {
                 request.SearchVectors.Add(milvusVector);
             }

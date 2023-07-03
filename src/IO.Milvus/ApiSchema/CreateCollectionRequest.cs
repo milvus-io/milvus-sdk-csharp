@@ -71,7 +71,7 @@ internal sealed class CreateCollectionRequest
         {
             if (fieldTypes[i].IsPrimaryKey)
             {
-                throw new ArgumentException("FieldTypes needs at most one primary key field type", "Schema.Fields");
+                throw new ArgumentException("FieldTypes needs at most one primary key field type", nameof(fieldTypes));
             }
         }
     }

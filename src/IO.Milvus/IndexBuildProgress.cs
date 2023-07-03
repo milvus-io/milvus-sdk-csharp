@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IO.Milvus.ApiSchema;
+namespace IO.Milvus;
 
 /// <summary>
 /// Indicate build progress of an index.
@@ -40,7 +40,7 @@ public readonly struct IndexBuildProgress : IEquatable<IndexBuildProgress>
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(IndexedRows, TotalRows);
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override string ToString() => $"Progress: {IndexedRows}/{TotalRows}";
 
     /// <inheritdoc />

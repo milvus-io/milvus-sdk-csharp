@@ -30,11 +30,11 @@ public sealed class MilvusUserResult
         if (results == null)
             yield break;
 
-        foreach (var result in results)
+        foreach (UserResult result in results)
         {
             yield return new MilvusUserResult(
                 result.User.Name,
-                result.Roles?.Select(r => r.Name) ?? Enumerable.Empty<string>());
+                result.Roles?.Select(static r => r.Name) ?? Enumerable.Empty<string>());
         }
     }
 }

@@ -158,7 +158,7 @@ public static class MilvusClientExtensions
             throw new NotSupportedException("Not support restful api");
         }
 
-        var progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
+        long progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
         yield return progress;
 
         while (progress < 100)

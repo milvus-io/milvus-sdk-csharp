@@ -24,7 +24,7 @@ public sealed class MilvusDictionaryConverter : JsonConverter<IDictionary<string
             throw new JsonException();
         }
 
-        var dictionary = new Dictionary<string, string>();
+        Dictionary<string, string> dictionary = new();
 
         while (reader.Read())
         {
@@ -71,7 +71,7 @@ public sealed class MilvusDictionaryConverter : JsonConverter<IDictionary<string
 
         writer.WriteStartArray();
 
-        foreach (var keyValue in value)
+        foreach (KeyValuePair<string, string> keyValue in value)
         {
             writer.WriteStartObject();
 

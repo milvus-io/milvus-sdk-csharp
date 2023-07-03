@@ -7,19 +7,19 @@ namespace IO.Milvus.Client.REST;
 
 public partial class MilvusRestClient
 {
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("Not support in MilvusRestClient");
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("Not support in MilvusRestClient");

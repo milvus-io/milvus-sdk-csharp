@@ -49,7 +49,7 @@ public sealed class MilvusPersistentSegmentInfo
     internal static IEnumerable<MilvusPersistentSegmentInfo> From(
         IEnumerable<PersistentSegmentInfo> infos)
     {
-        foreach (var info in infos)
+        foreach (PersistentSegmentInfo info in infos)
         {
             yield return new MilvusPersistentSegmentInfo(
                 info.CollectionID,
