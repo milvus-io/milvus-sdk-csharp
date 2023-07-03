@@ -33,6 +33,30 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
         string password = "milvus",
         GrpcChannel grpcChannel = null,
         CallOptions? callOptions = default,
+        ILogger log = null):
+        this(endpoint, port, $"{name}:{password}", grpcChannel, callOptions, log)
+    { }
+
+    /// <summary>
+    /// The constructor for the <see cref="MilvusGrpcClient"/>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see href="https://docs.zilliz.com/docs/connect-to-cluster"/> 
+    /// </para>
+    /// </remarks>
+    /// <param name="endpoint">Endpoint.</param>
+    /// <param name="port"></param>
+    /// <param name="authorization">Authorization.</param>
+    /// <param name="grpcChannel">Optional.</param>
+    /// <param name="callOptions">Optional.</param>
+    /// <param name="log">Optional.</param>
+    public MilvusGrpcClient(
+        string endpoint,
+        int? port,
+        string authorization,
+        GrpcChannel grpcChannel = null,
+        CallOptions? callOptions = default,
         ILogger log = null)
     {
         Verify.NotNull(endpoint);
@@ -54,7 +78,7 @@ public sealed partial class MilvusGrpcClient : IMilvusClient
         _callOptions = callOptions ?? new CallOptions(
             new Metadata()
             {
-                { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{name}:{password}")) }
+                { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes(authorization)) }
             });
 
         _grpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
