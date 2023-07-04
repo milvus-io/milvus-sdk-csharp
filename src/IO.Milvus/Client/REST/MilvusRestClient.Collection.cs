@@ -53,6 +53,11 @@ public partial class MilvusRestClient
     }
 
     /// <inheritdoc />
+    public Task RenameCollectionAsync(string oldName, string newName, string dbName = Constants.DEFAULT_DATABASE_NAME,
+        CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("Renaming collections isn't supported via REST.");
+
+    /// <inheritdoc />
     public async Task CreateCollectionAsync(
         string collectionName,
         IList<FieldType> fieldTypes,

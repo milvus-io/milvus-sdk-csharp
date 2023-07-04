@@ -283,9 +283,9 @@ public sealed class FieldType
     /// <summary>
     /// Sets a type parameter for the field.
     /// </summary>
-    public FieldType WithTypeParameter(string key, string vlaue)
+    public FieldType WithTypeParameter(string key, string value)
     {
-        TypeParams[key] = vlaue;
+        TypeParams[key] = value;
         return this;
     }
 

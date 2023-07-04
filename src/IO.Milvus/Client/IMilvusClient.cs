@@ -46,6 +46,19 @@ public interface IMilvusClient : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Rename a collection.
+    /// </summary>
+    /// <param name="oldName">The old collection name.</param>
+    /// <param name="newName">The new collection name.</param>
+    /// <param name="dbName">Database name, available in <c>Milvus 2.2.9</c></param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public Task RenameCollectionAsync(
+        string oldName,
+        string newName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Create a collection.
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.</param>
@@ -118,7 +131,7 @@ public interface IMilvusClient : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Show all collections
+    /// Show all collections.
     /// </summary>
     /// <param name="collectionNames">
     /// When type is InMemory, will return these collection's inMemory_percentages.(Optional)
@@ -667,7 +680,7 @@ public interface IMilvusClient : IDisposable
     Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Drops a database. 
+    /// Drops a database.
     /// </summary>
     /// <remarks>
     /// <para>

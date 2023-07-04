@@ -32,7 +32,7 @@ public static class MilvusClientExtensions
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="InvalidOperationException">Collection not found in milvus.</exception>
     /// <exception cref="TimeoutException">Time out.</exception>
-    [Obsolete("This method will be removed in the next version. Please use WaitForLoadingCollectionAsync instead.")]
+    [Obsolete("This method will be removed in the next version. Please use WaitForLoadingProgressCollectionAsync instead.")]
     public static async Task WaitForLoadingCollectionAsync(
         this IMilvusClient milvusClient,
         string collectionName,

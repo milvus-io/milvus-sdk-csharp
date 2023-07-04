@@ -176,15 +176,15 @@ public abstract class Field
         {
             dataType = MilvusDataType.Int8;
         }
-        else if (type == typeof(Int16))
+        else if (type == typeof(short))
         {
             dataType = MilvusDataType.Int16;
         }
-        else if (type == typeof(int) || type == typeof(Int32))
+        else if (type == typeof(int))
         {
             dataType = MilvusDataType.Int32;
         }
-        else if (type == typeof(Int64) || type == typeof(long))
+        else if (type == typeof(long))
         {
             dataType = MilvusDataType.Int64;
         }
@@ -201,6 +201,7 @@ public abstract class Field
             dataType = MilvusDataType.VarChar;
             //dataType = MilvusDataType.String;Not support now.
         }
+        // TODO: Support arbitrary IList<float> since that's what Field supports
         else if (type == typeof(List<float>) || type == typeof(Grpc.FloatArray))
         {
             dataType = MilvusDataType.FloatVector;

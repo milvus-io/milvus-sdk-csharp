@@ -61,6 +61,25 @@ public partial class MilvusGrpcClient
             response.StartPositions.ToKeyDataPairs());
     }
 
+    ///<inheritdoc/>
+    public async Task RenameCollectionAsync(
+        string oldName,
+        string newName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(oldName);
+        Verify.NotNullOrWhiteSpace(newName);
+        Verify.NotNullOrWhiteSpace(dbName);
+
+        await InvokeAsync(_grpcClient.RenameCollectionAsync, new RenameCollectionRequest
+        {
+            OldName = oldName,
+            NewName = newName,
+            DbName = dbName
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public async Task DropCollectionAsync(
         string collectionName,
