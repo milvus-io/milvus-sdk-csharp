@@ -433,40 +433,6 @@ public interface IMilvusClient : IDisposable
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Calculate distance between vectors with Milvus.
-    /// </summary>
-    /// <remarks>
-    /// It's a deny api for zilliz cloud.
-    /// </remarks>
-    /// <param name="leftVectors">Vectors on the left side of the operator</param>
-    /// <param name="rightVectors">Vectors on the right side of the operator</param>
-    /// <param name="milvusMetricType"><see cref="MilvusMetricType"/>
-    /// <para>
-    /// <term>For floating-point vectors:</term> 
-    /// </para>
-    /// <list type="bullet">
-    /// <item>L2 (Euclidean distance)</item>
-    /// <item>IP (Inner product)</item>
-    /// </list>
-    /// <para>
-    /// <term>For binary vectors:</term> 
-    /// </para>
-    /// <list type="bullet">
-    /// <item>JACCARD (Jaccard distance)</item>
-    /// <item>TANIMOTO (Tanimoto distance)</item>
-    /// <item>HAMMING (Hamming distance)</item>
-    /// <item>SUPERSTRUCTURE (Superstructure)</item>
-    /// </list>
-    /// </param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task<MilvusCalDistanceResult> CalDistanceAsync(
-        MilvusVectors leftVectors,
-        MilvusVectors rightVectors,
-        MilvusMetricType milvusMetricType,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Flush a collection's data to disk. Milvus data will be auto flushed.
     /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism.
     /// It will be removed in the future.

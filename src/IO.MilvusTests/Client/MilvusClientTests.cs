@@ -184,26 +184,6 @@ public partial class MilvusClientTests
         queryResult.FieldsData.Count.Should().Be(3);
         Assert.All(queryResult.FieldsData, p => Assert.Equal(4, p.RowCount));
 
-        //Cal distance
-        if (!milvusClient.IsZillizCloud())
-        {
-            var vectorsLeft = MilvusVectors.CreateIds(
-                collectionName,
-                "book_intro",
-                new long[] { 1, 2 });
-            var vectorsRight = MilvusVectors.CreateFloatVectors(
-                    new List<List<float>> {
-                    new List<float> { 1,2},
-                    new List<float> { 3,4},
-                    new List<float> { 5,6},
-                    new List<float> { 7,8},
-                    }
-                );
-            var result = await milvusClient.CalDistanceAsync(vectorsLeft, vectorsRight, MilvusMetricType.IP);
-            result.FloatDistance.Should().NotBeNullOrEmpty();
-            result.FloatDistance.Count.Should().Be(8);
-        }
-
         //Delete
         MilvusMutationResult deleteResult = await milvusClient.DeleteAsync(collectionName, "book_id in [0,1]", partitionName);
         deleteResult.DeleteCount.Should().BeGreaterThan(0);

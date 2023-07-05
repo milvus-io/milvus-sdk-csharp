@@ -91,33 +91,6 @@ public partial class MilvusRestClient
     }
 
     /// <inheritdoc />
-    public async Task<MilvusCalDistanceResult> CalDistanceAsync(
-        MilvusVectors leftVectors,
-        MilvusVectors rightVectors,
-        MilvusMetricType milvusMetricType,
-        CancellationToken cancellationToken = default)
-    {
-        Verify.NotNull(leftVectors);
-        Verify.NotNull(rightVectors);
-        if (milvusMetricType is not (MilvusMetricType.L2 or MilvusMetricType.IP or MilvusMetricType.Hamming or MilvusMetricType.Tanimoto))
-        {
-            throw new ArgumentOutOfRangeException(nameof(milvusMetricType));
-        }
-
-        CalcDistanceRequest payload = new() { VectorsLeft = leftVectors, VectorsRight = rightVectors };
-        payload.Params["metric"] = milvusMetricType.ToString().ToUpperInvariant();
-
-        using HttpRequestMessage request = HttpRequest.CreateGetRequest($"{ApiVersion.V1}/distance", payload);
-
-        string responseContent = await ExecuteHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        CalDistanceResponse data = JsonSerializer.Deserialize<CalDistanceResponse>(responseContent);
-        ValidateStatus(data.Status);
-
-        return MilvusCalDistanceResult.From(data);
-    }
-
-    /// <inheritdoc />
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
         string dbName = Constants.DEFAULT_DATABASE_NAME,

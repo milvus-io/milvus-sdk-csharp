@@ -107,32 +107,6 @@ public partial class MilvusGrpcClient
     }
 
     /// <inheritdoc />
-    public async Task<MilvusCalDistanceResult> CalDistanceAsync(
-        MilvusVectors leftVectors,
-        MilvusVectors rightVectors,
-        MilvusMetricType milvusMetricType,
-        CancellationToken cancellationToken = default)
-    {
-        Verify.NotNull(leftVectors);
-        Verify.NotNull(rightVectors);
-        if (milvusMetricType is not (MilvusMetricType.L2 or MilvusMetricType.IP or MilvusMetricType.Hamming or MilvusMetricType.Tanimoto))
-        {
-            throw new ArgumentOutOfRangeException(nameof(milvusMetricType));
-        }
-
-        CalcDistanceRequest request = new()
-        {
-            OpLeft = leftVectors.ToVectorsArray(),
-            OpRight = rightVectors.ToVectorsArray(),
-        };
-        request.Params.Add(new Grpc.KeyValuePair() { Key = "metric", Value = milvusMetricType.ToString().ToUpperInvariant() });
-
-        CalcDistanceResults response = await InvokeAsync(_grpcClient.CalcDistanceAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
-
-        return MilvusCalDistanceResult.From(response);
-    }
-
-    /// <inheritdoc />
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
