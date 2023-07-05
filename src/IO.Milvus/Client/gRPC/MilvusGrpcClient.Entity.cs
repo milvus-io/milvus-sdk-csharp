@@ -203,6 +203,7 @@ public partial class MilvusGrpcClient
         }
         if (offset > 0)
         {
+            Verify.GreaterThan(limit, 0);
             request.QueryParams.Add(new Grpc.KeyValuePair() { Key = "offset", Value = offset.ToString(CultureInfo.InvariantCulture) });
         }
         if (limit > 0)
