@@ -214,6 +214,7 @@ public partial class MilvusRestClient
         };
         if (offset > 0)
         {
+            Verify.GreaterThan(limit, 0);
             payload.QueryParams.Add("offset", offset.ToString(CultureInfo.InvariantCulture));
         }
         if (limit > 0)

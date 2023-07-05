@@ -71,13 +71,13 @@ partial class Build
                     Username = "root",
                     Password = "milvus"
                 },
-                new MilvusConfig(){
-                    Endpoint = "http://localhost",
-                    Port = 9091,
-                    ConnectionType = "rest",
-                    Username = "root",
-                    Password = "milvus"
-                },
+                //new MilvusConfig(){
+                //    Endpoint = "http://localhost",
+                //    Port = 9091,
+                //    ConnectionType = "rest",
+                //    Username = "root",
+                //    Password = "milvus"
+                //},
             };
 
             string configText = JsonSerializer.Serialize(configs);
@@ -90,7 +90,7 @@ partial class Build
                 .EnableNoBuild()                
                 .When(true, _ => _
                     .SetLoggers("trx")
-                    .SetResultsDirectory(TestResultsDirectory)));            
+                    .SetResultsDirectory(TestResultsDirectory)));
         });
 
     Target ComposeDown => _ => _

@@ -41,7 +41,7 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
             v => Assert.Equal(new List<float> { 5f, 6f }, v));
     }
 
-    [Theory(Skip = "Fails")]
+    [Theory]
     [ClassData(typeof(TestClients))]
     public async Task Query_with_offset(IMilvusClient client)
     {
@@ -49,7 +49,8 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
             QueryCollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
-            offset: 1);
+            offset: 1,
+            limit: 2);
 
         var idData = (Field<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
