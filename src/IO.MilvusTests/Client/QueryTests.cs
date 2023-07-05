@@ -4,7 +4,7 @@ using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-public class QueryTests : IClassFixture<QueryCollectionFixture>
+public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
 {
     private string QueryCollectionName { get; }
 
@@ -41,6 +41,21 @@ public class QueryTests : IClassFixture<QueryCollectionFixture>
             v => Assert.Equal(new List<float> { 5f, 6f }, v));
     }
 
+    [Theory(Skip = "Fails")]
+    [ClassData(typeof(TestClients))]
+    public async Task Query_with_offset(IMilvusClient client)
+    {
+        var queryResult = await client.QueryAsync(
+            QueryCollectionName,
+            "id in [2, 3]",
+            outputFields: new[] { "float_vector" },
+            offset: 1);
+
+        var idData = (Field<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
+        Assert.Equal(1, idData.RowCount);
+        Assert.Collection(idData.Data, id => Assert.Equal(3, id));
+    }
+
     [Theory]
     [ClassData(typeof(TestClients))]
     public async Task Query_with_limit(IMilvusClient client)
@@ -55,59 +70,59 @@ public class QueryTests : IClassFixture<QueryCollectionFixture>
         Assert.Equal(1, idData.RowCount);
         Assert.Collection(idData.Data, id => Assert.Equal(2, id));
     }
-}
 
-public class QueryCollectionFixture : IAsyncLifetime
-{
-    public string CollectionName => "QueryCollection";
-
-    public async Task InitializeAsync()
+    public class QueryCollectionFixture : IAsyncLifetime
     {
-        var config = MilvusConfig.Load().FirstOrDefault();
-        if (config is null)
+        public string CollectionName => "QueryCollection";
+
+        public async Task InitializeAsync()
         {
-            throw new InvalidOperationException("No client configs");
+            var config = MilvusConfig.Load().FirstOrDefault();
+            if (config is null)
+            {
+                throw new InvalidOperationException("No client configs");
+            }
+
+            var client = config.CreateClient();
+
+            await client.DropCollectionAsync(CollectionName);
+            await client.CreateCollectionAsync(
+                CollectionName,
+                new[]
+                {
+                    FieldType.Create<long>("id", isPrimaryKey: true),
+                    FieldType.CreateVarchar("varchar", 256),
+                    FieldType.CreateFloatVector("float_vector", 2)
+                });
+
+            await client.CreateIndexAsync(
+                CollectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
+
+            var ids = new long[] { 1, 2, 3, 4, 5 };
+            var strings = new[] { "one", "two", "three", "four", "five" };
+            var floatVectors = new[]
+            {
+                new List<float> { 1f, 2f },
+                new List<float> { 3.5f, 4.5f },
+                new List<float> { 5f, 6f },
+                new List<float> { 7.7f, 8.8f },
+                new List<float> { 9f, 10f }
+            };
+
+            await client.InsertAsync(
+                CollectionName,
+                new Field[]
+                {
+                    Field.Create("id", ids),
+                    Field.Create("varchar", strings),
+                    Field.CreateFloatVector("float_vector", floatVectors)
+                });
+
+            await client.LoadCollectionAsync(CollectionName);
+            await client.WaitForLoadingProgressCollectionAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
         }
 
-        var client = config.CreateClient();
-
-        await client.DropCollectionAsync(CollectionName);
-        await client.CreateCollectionAsync(
-            CollectionName,
-            new[]
-            {
-                FieldType.Create<long>("id", isPrimaryKey: true),
-                FieldType.CreateVarchar("varchar", 256),
-                FieldType.CreateFloatVector("float_vector", 2)
-            });
-
-        var ids = new long[] { 1, 2, 3, 4, 5 };
-        var strings = new[] { "one", "two", "three", "four", "five" };
-        var floatVectors = new[]
-        {
-            new List<float> { 1f, 2f },
-            new List<float> { 3.5f, 4.5f },
-            new List<float> { 5f, 6f },
-            new List<float> { 7.7f, 8.8f },
-            new List<float> { 9f, 10f }
-        };
-
-        await client.CreateIndexAsync(
-            CollectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
-
-        await client.InsertAsync(
-            CollectionName,
-            new Field[]
-            {
-                Field.Create("id", ids),
-                Field.Create("varchar", strings),
-                Field.CreateFloatVector("float_vector", floatVectors)
-            });
-
-        await client.LoadCollectionAsync(CollectionName);
-        await client.WaitForLoadingProgressCollectionAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
+        public Task DisposeAsync()
+            => Task.CompletedTask;
     }
-
-    public Task DisposeAsync()
-        => Task.CompletedTask;
 }

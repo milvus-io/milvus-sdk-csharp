@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Utils;
+﻿using System;
+using IO.Milvus.Utils;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -75,14 +76,13 @@ internal sealed class DescribeCollectionResponse
     public DetailedMilvusCollection ToDetailedMilvusCollection()
     {
         return new DetailedMilvusCollection(
-            Aliases,
+            (IReadOnlyList<string>)Aliases ?? Array.Empty<string>(),
             CollectionName,
             CollectionId,
             ConsistencyLevel,
             TimestampUtils.GetTimeFromTimstamp(CreatedUTCTimestamp),
             Schema,
             ShardsNum,
-            StartPositions
-            );
+            StartPositions);
     }
 }
