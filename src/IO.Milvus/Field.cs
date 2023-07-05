@@ -117,21 +117,7 @@ public abstract class Field
             }
             else if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.BinaryVector)
             {
-                byte[] bytes = fieldData.Vectors.BinaryVector.ToByteArray();
-
-                List<byte[]> byteArray = new();
-
-                using MemoryStream stream = new(bytes);
-                using BinaryReader reader = new(stream);
-
-                Byte[] subBytes = reader.ReadBytes(dim);
-                while (subBytes.Length > 0)
-                {
-                    byteArray.Add(subBytes);
-                    subBytes = reader.ReadBytes(dim);
-                }
-
-                return Field.CreateBinaryVectors(fieldData.FieldName, byteArray);
+                return CreateFromBytes(fieldData.FieldName, fieldData.Vectors.BinaryVector.Span, dim);
             }
             else
             {
@@ -224,7 +210,7 @@ public abstract class Field
     /// <list type="bullet">
     /// <item><see cref="bool"/> : bool <see cref="MilvusDataType.Bool"/></item>
     /// <item><see cref="sbyte"/> : int8 <see cref="MilvusDataType.Int8"/></item>
-    /// <item><see cref="Int16"/> : int16 <see cref="MilvusDataType.Int16"/></item>
+    /// <item><see cref="short"/> : int16 <see cref="MilvusDataType.Int16"/></item>
     /// <item><see cref="int"/> : int32 <see cref="MilvusDataType.Int32"/></item>
     /// <item><see cref="long"/> : int64 <see cref="MilvusDataType.Int64"/></item>
     /// <item><see cref="float"/> : float <see cref="MilvusDataType.Float"/></item>
@@ -265,24 +251,25 @@ public abstract class Field
     /// <param name="bytes">Byte array data.</param>
     /// <param name="dimension">Dimension of data.</param>
     /// <returns></returns>
-    public static BinaryVectorField CreateFromBytes(string fieldName, byte[] bytes, long dimension)
+    public static BinaryVectorField CreateFromBytes(string fieldName, ReadOnlySpan<byte> bytes, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.GreaterThan(dimension, 0);
 
-        List<byte[]> byteArray = new();
+        List<byte[]> byteArray = new((int)Math.Ceiling((double)bytes.Length / dimension));
 
-        using MemoryStream stream = new(bytes);
-        using BinaryReader reader = new(stream);
-
-        Byte[] subBytes = reader.ReadBytes((int)dimension);
-        while (subBytes.Length > 0)
+        while (bytes.Length > dimension)
         {
-            byteArray.Add(subBytes);
-            subBytes = reader.ReadBytes((int)dimension);
+            byteArray.Add(bytes.Slice(0, (int)dimension).ToArray());
+            bytes = bytes.Slice((int)dimension);
         }
 
-        BinaryVectorField field = new(fieldName, byteArray);
-        return field;
+        if (!bytes.IsEmpty)
+        {
+            byteArray.Add(bytes.ToArray());
+        }
+
+        return new BinaryVectorField(fieldName, byteArray);
     }
 
     /// <summary>
@@ -322,8 +309,7 @@ public abstract class Field
 
         for (int i = 0; i < floatVector.Count; i += (int)dimension)
         {
-            List<float> subVector = floatVector.GetRange(i, (int)dimension);
-            floatVectors.Add(subVector);
+            floatVectors.Add(floatVector.GetRange(i, (int)dimension));
         }
 
         return new FloatVectorField(fieldName, floatVectors);
@@ -469,7 +455,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int16:
                 {
                     Grpc.IntArray intData = new();
-                    intData.Data.AddRange((Data as IEnumerable<Int16>).Select(static p => (int)p));
+                    intData.Data.AddRange((Data as IEnumerable<short>).Select(static p => (int)p));
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {

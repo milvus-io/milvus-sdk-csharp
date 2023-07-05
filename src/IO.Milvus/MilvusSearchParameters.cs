@@ -3,10 +3,12 @@ using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 
 namespace IO.Milvus;
 
@@ -438,7 +440,6 @@ public sealed class MilvusSearchParameters
         Verify.NotNullOrWhiteSpace(DbName);
     }
 
-    #region Private =======================================================================
     private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields, string dbName)
     {
         CollectionName = collectionName;
@@ -543,14 +544,40 @@ public sealed class MilvusSearchParameters
             placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
             foreach (List<float> milvusVector in MilvusFloatVectors)
             {
+#if NET6_0_OR_GREATER
+                if (BitConverter.IsLittleEndian)
+                {
+                    placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(milvusVector))));
+                    continue;
+                }
+#endif
 
-                using MemoryStream memoryStream = new(milvusVector.Count * sizeof(float));
-                using BinaryWriter binaryWriter = new(memoryStream);
+                int length = milvusVector.Count * sizeof(float);
+
+                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
                 for (int i = 0; i < milvusVector.Count; i++)
-                    binaryWriter.Write(milvusVector[i]);
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                placeholderValue.Values.Add(ByteString.FromStream(memoryStream));
+                {
+                    Span<byte> destination = bytes.AsSpan(i * sizeof(float));
+                    float f = milvusVector[i];
+#if NET6_0_OR_GREATER
+                    BinaryPrimitives.WriteSingleLittleEndian(destination, f);
+#else
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        unsafe
+                        {
+                            int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
+                            f = *(float*)&tmp;
+                        }
+                    }
+                    MemoryMarshal.Write(destination, ref f);
+#endif
+                }
+
+                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+
+                ArrayPool<byte>.Shared.Return(bytes);
             }
         }
         else if (MilvusBinaryVectors != null)
@@ -581,5 +608,4 @@ public sealed class MilvusSearchParameters
             throw new NotSupportedException();
         }
     }
-    #endregion
 }

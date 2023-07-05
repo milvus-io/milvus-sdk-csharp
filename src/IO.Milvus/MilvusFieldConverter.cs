@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -16,7 +17,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
     public override IList<Field> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         List<Field> list = new();
-        DeserializePropertyList<Field>(ref reader, list);
+        DeserializePropertyList(ref reader, list);
         return list;
     }
 
@@ -36,9 +37,9 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
 
         while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
         {
-            if (TryCastValue(ref reader, typeof(T), out Object item))
+            if (TryCastValue(ref reader, out T item))
             {
-                list.Add((T)item);
+                list.Add(item);
             }
 
             System.Diagnostics.Debug.Assert(reader.TokenType != JsonTokenType.StartArray);
@@ -51,41 +52,40 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
         System.Diagnostics.Debug.Assert(reader.TokenType == JsonTokenType.EndArray);
     }
 
-    private static bool TryCastValue(ref Utf8JsonReader reader, Type vtype, out Object value)
+    private static bool TryCastValue<T>(ref Utf8JsonReader reader, out T value)
     {
-        value = null;
-
-        if (reader.TokenType == JsonTokenType.EndArray) return false;
-        if (reader.TokenType == JsonTokenType.EndObject) return false;
-        // if (reader.TokenType == JsonToken.EndConstructor) return false;
-
-        if (reader.TokenType == JsonTokenType.PropertyName) reader.Read();
-
-        // untangle nullable
-        Type ntype = Nullable.GetUnderlyingType(vtype);
-        if (ntype != null) vtype = ntype;
-
-        if (vtype == typeof(String)) { value = reader.GetString(); return true; }
-        if (vtype == typeof(Boolean)) { value = reader.GetBoolean(); return true; }
-        if (vtype == typeof(SByte)) { value = reader.GetInt16(); return true; }
-        if (vtype == typeof(Int16)) { value = reader.GetInt16(); return true; }
-        if (vtype == typeof(Int32)) { value = reader.GetInt32(); return true; }
-        if (vtype == typeof(Int64)) { value = reader.GetInt64(); return true; }
-        if (vtype == typeof(UInt16)) { value = reader.GetUInt16(); return true; }
-        if (vtype == typeof(UInt32)) { value = reader.GetUInt32(); return true; }
-        if (vtype == typeof(UInt64)) { value = reader.GetUInt64(); return true; }
-        if (vtype == typeof(Single)) { value = reader.GetSingle(); return true; }
-        if (vtype == typeof(Double)) { value = reader.GetDouble(); return true; }
-        if (vtype == typeof(Decimal)) { value = reader.GetDecimal(); return true; }
-        if (vtype == typeof(byte)) { value = reader.GetByte(); return true; }
-
-        if (vtype == typeof(Field))
+        if (reader.TokenType is JsonTokenType.EndArray or JsonTokenType.EndObject)
         {
-            value = DeserializeField(ref reader);
+            value = default;
+            return false;
+        }
+
+        if (reader.TokenType == JsonTokenType.PropertyName)
+        {
+            reader.Read();
+        }
+
+        if (typeof(T) == typeof(string)) { value = (T)(object)reader.GetString(); return true; }
+        if (typeof(T) == typeof(bool)) { value = (T)(object)reader.GetBoolean(); return true; }
+        if (typeof(T) == typeof(sbyte)) { value = (T)(object)reader.GetInt16(); return true; }
+        if (typeof(T) == typeof(short)) { value = (T)(object)reader.GetInt16(); return true; }
+        if (typeof(T) == typeof(int)) { value = (T)(object)reader.GetInt32(); return true; }
+        if (typeof(T) == typeof(long)) { value = (T)(object)reader.GetInt64(); return true; }
+        if (typeof(T) == typeof(ushort)) { value = (T)(object)reader.GetUInt16(); return true; }
+        if (typeof(T) == typeof(uint)) { value = (T)(object)reader.GetUInt32(); return true; }
+        if (typeof(T) == typeof(ulong)) { value = (T)(object)reader.GetUInt64(); return true; }
+        if (typeof(T) == typeof(float)) { value = (T)(object)reader.GetSingle(); return true; }
+        if (typeof(T) == typeof(double)) { value = (T)(object)reader.GetDouble(); return true; }
+        if (typeof(T) == typeof(decimal)) { value = (T)(object)reader.GetDecimal(); return true; }
+        if (typeof(T) == typeof(byte)) { value = (T)(object)reader.GetByte(); return true; }
+
+        if (typeof(T) == typeof(Field))
+        {
+            value = (T)(object)DeserializeField(ref reader);
             return true;
         }
 
-        throw new NotImplementedException($"Can't deserialize {vtype}");
+        throw new NotImplementedException($"Can't deserialize {typeof(T)}");
     }
 
     private static Field DeserializeField(ref Utf8JsonReader reader)
@@ -148,25 +148,25 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
                                     switch (scalarTypeName)
                                     {
                                         case "BoolData":
-                                            DeserializePropertyList<bool>(ref reader, boolData);
+                                            DeserializePropertyList(ref reader, boolData);
                                             break;
                                         case "BytesData":
-                                            DeserializePropertyList<byte>(ref reader, bytesData);
+                                            DeserializePropertyList(ref reader, bytesData);
                                             break;
                                         case "IntData":
-                                            DeserializePropertyList<int>(ref reader, intData);
+                                            DeserializePropertyList(ref reader, intData);
                                             break;
                                         case "FloatData":
-                                            DeserializePropertyList<float>(ref reader, floatData);
+                                            DeserializePropertyList(ref reader, floatData);
                                             break;
                                         case "DoubleData":
-                                            DeserializePropertyList<double>(ref reader, doubleData);
+                                            DeserializePropertyList(ref reader, doubleData);
                                             break;
                                         case "StringData":
-                                            DeserializePropertyList<string>(ref reader, stringData);
+                                            DeserializePropertyList(ref reader, stringData);
                                             break;
                                         case "LongData":
-                                            DeserializePropertyList<long>(ref reader, longData);
+                                            DeserializePropertyList(ref reader, longData);
                                             break;
                                         default:
                                             throw new JsonException($"Unexpected property {scalarTypeName}");
@@ -197,31 +197,38 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
         switch (dataType)
         {
             case MilvusDataType.Bool:
-                field = Field.Create<bool>(fieldName, boolData);
+                field = Field.Create(fieldName, boolData);
                 break;
             case MilvusDataType.Int8:
-                field = Field.Create<sbyte>(fieldName, intData.Select(static s => (sbyte)s).ToList());
+                field = Field.Create(fieldName, intData.Select(static s => (sbyte)s).ToList());
                 break;
             case MilvusDataType.Int16:
-                field = Field.Create<Int16>(fieldName, intData.Select(static s => (short)s).ToList()); ;
+                field = Field.Create(fieldName, intData.Select(static s => (short)s).ToList()); ;
                 break;
             case MilvusDataType.Int32:
-                field = Field.Create<int>(fieldName, intData);
+                field = Field.Create(fieldName, intData);
                 break;
             case MilvusDataType.Int64:
-                field = Field.Create<long>(fieldName, longData);
+                field = Field.Create(fieldName, longData);
                 break;
             case MilvusDataType.Float:
-                field = Field.Create<float>(fieldName, floatData);
+                field = Field.Create(fieldName, floatData);
                 break;
             case MilvusDataType.Double:
-                field = Field.Create<double>(fieldName, doubleData);
+                field = Field.Create(fieldName, doubleData);
                 break;
             case MilvusDataType.VarChar:
                 field = Field.CreateVarChar(fieldName, stringData);
                 break;
             case MilvusDataType.BinaryVector:
-                field = Field.CreateFromBytes(fieldName, binaryVector.ToArray(), dim);
+                field = Field.CreateFromBytes(
+                    fieldName,
+#if NET6_0_OR_GREATER
+                    CollectionsMarshal.AsSpan(binaryVector),
+#else
+                    binaryVector.ToArray(),
+#endif
+                    dim);
                 break;
             case MilvusDataType.FloatVector:
                 field = Field.CreateFloatVector(fieldName, floatVector, dim);
@@ -264,12 +271,12 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
                         {
                             case "FloatVector":
                                 {
-                                    DeserializePropertyList<float>(ref reader, floatVector);
+                                    DeserializePropertyList(ref reader, floatVector);
                                 }
                                 break;
                             case "BinaryVector":
                                 {
-                                    DeserializePropertyList<byte>(ref reader, binaryVector);
+                                    DeserializePropertyList(ref reader, binaryVector);
                                 }
                                 break;
                             default:
@@ -289,7 +296,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
         return dim;
     }
 
-    private static Object DeserializeUnknownObject(ref Utf8JsonReader reader)
+    private static object DeserializeUnknownObject(ref Utf8JsonReader reader)
     {
         if (reader.TokenType == JsonTokenType.PropertyName) reader.Read();
 
@@ -336,7 +343,7 @@ public sealed class MilvusFieldConverter : JsonConverter<IList<Field>>
 
 internal static class JsonConverterExtension
 {
-    public static Object GetAnyValue(this in Utf8JsonReader reader)
+    public static object GetAnyValue(this in Utf8JsonReader reader)
     {
         return reader.TokenType switch
         {

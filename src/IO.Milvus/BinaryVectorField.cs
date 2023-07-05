@@ -1,7 +1,9 @@
 ﻿using Google.Protobuf;
+using IO.Milvus.Diagnostics;
+using System;
+using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Diagnostics;
 
 namespace IO.Milvus;
 
@@ -23,32 +25,48 @@ public sealed class BinaryVectorField : Field<byte[]>
     /// <inheritdoc />
     public override Grpc.FieldData ToGrpcFieldData()
     {
-        Grpc.FloatArray floatArray = new();
-
-        int dim = Data.First().Length;
-        if (!Data.All(p => p.Length == dim))
+        int dataCount = Data.Count;
+        if (dataCount <= 0)
         {
-            throw new Diagnostics.MilvusException("Row count of fields must be equal");
+            throw new MilvusException("Number of rows must be positive.");
         }
 
-        using MemoryStream stream = new();
-        using BinaryWriter writer = new(stream);
-        foreach (byte[] value in Data)
+        int dim = Data[0].Length;
+        int lengthSum = 0;
+        for (int i = 1; i < dataCount; i++)
         {
-            writer.Write(value);
+            int rowLength = Data[i].Length;
+            if (rowLength != dim)
+            {
+                throw new MilvusException("Row count of fields must be equal.");
+            }
+
+            checked { lengthSum += rowLength; }
         }
 
-        ByteString byteString = ByteString.CopyFrom(stream.ToArray());
+        byte[] bytes = ArrayPool<byte>.Shared.Rent(lengthSum);
+        int pos = 0;
+        for (int i = 0; i < dataCount; i++)
+        {
+            byte[] row = Data[i];
+            Array.Copy(row, 0, bytes, pos, row.Length);
+            pos += row.Length;
+        }
+        Debug.Assert(pos == lengthSum);
 
-        return new Grpc.FieldData()
+        var result = new Grpc.FieldData()
         {
             FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
             Vectors = new Grpc.VectorField()
             {
-                BinaryVector = byteString,
+                BinaryVector = ByteString.CopyFrom(bytes.AsSpan(0, lengthSum)),
                 Dim = dim,
             },
         };
+
+        ArrayPool<byte>.Shared.Return(bytes);
+
+        return result;
     }
 }

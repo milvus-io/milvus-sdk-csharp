@@ -174,7 +174,7 @@ public sealed class MilvusIds
 
         if (ids.StrId?.Data?.Count > 0)
         {
-            idField.StrId = new MilvusId<String>
+            idField.StrId = new MilvusId<string>
             {
                 Data = ids.StrId.Data.ToList(),
             };

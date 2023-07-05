@@ -1,7 +1,6 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
@@ -50,7 +49,31 @@ public sealed class MilvusVectors
     /// <returns></returns>
     public static MilvusVectors CreateFloatVectors(IList<Field<float>> floatFields)
     {
-        return new MilvusVectors(floatFields.Select(static p => p.Data.ToList()).ToList());
+        Verify.NotNullOrEmpty(floatFields);
+
+        // Flatten all of the fields into a single vector.
+        // Every field is expected to have the same dimension.
+
+        int numLists = floatFields.Count;
+        int dim = floatFields[0].Data.Count;
+        int totalLength = numLists * dim;
+
+        var floats = new float[totalLength];
+        int pos = 0;
+        for (int i = 0; i < numLists; i++)
+        {
+            IList<float> list = floatFields[i].Data;
+            int listCount = list.Count;
+            if (listCount != dim)
+            {
+                throw new MilvusException("Row count of fields must be equal.");
+            }
+
+            list.CopyTo(floats, pos);
+            pos += listCount;
+        }
+
+        return new MilvusVectors(floats, dim);
     }
 
     /// <summary>
@@ -60,7 +83,30 @@ public sealed class MilvusVectors
     /// <returns></returns>
     public static MilvusVectors CreateFloatVectors(IList<List<float>> floatFields)
     {
-        return new MilvusVectors(floatFields);
+        Verify.NotNullOrEmpty(floatFields);
+
+        // Flatten all of the fields into a single vector.
+        // Every field is expected to have the same dimension.
+
+        int numLists = floatFields.Count;
+        int dim = floatFields[0].Count;
+        int totalLength = numLists * dim;
+
+        var floats = new float[totalLength];
+        int pos = 0;
+        for (int i = 0; i < numLists; i++)
+        {
+            List<float> list = floatFields[i];
+            if (list.Count != dim)
+            {
+                throw new MilvusException("Row count of fields must be equal.");
+            }
+
+            list.CopyTo(floats, pos);
+            pos += list.Count;
+        }
+
+        return new MilvusVectors(floats, dim);
     }
 
     /// <summary>
@@ -71,6 +117,7 @@ public sealed class MilvusVectors
     /// <returns></returns>
     public static MilvusVectors CreateFloatVectors(IList<float> floatFields, int dim)
     {
+        Verify.NotNullOrEmpty(floatFields);
         return new MilvusVectors(floatFields, dim);
     }
 
@@ -109,7 +156,6 @@ public sealed class MilvusVectors
 
         if (MilvusVectorsType == MilvusVectorsType.FloatVectors)
         {
-
             vectorArray.DataArray = new Grpc.VectorField()
             {
                 FloatVector = new Grpc.FloatArray(),
@@ -178,13 +224,6 @@ public sealed class MilvusVectors
         MilvusVectorsType = MilvusVectorsType.Ids;
         Ids = ids;
         Dim = ids.Dim;
-    }
-
-    private MilvusVectors(IList<List<float>> floatFields)
-    {
-        MilvusVectorsType = MilvusVectorsType.FloatVectors;
-        Dim = floatFields.First().Count;
-        Vectors = floatFields.SelectMany(static list => list).ToList();
     }
 
     private MilvusVectors(IList<float> floatFields, int dim)

@@ -74,7 +74,7 @@ public sealed class FieldType
     /// <list type="bullet">
     /// <item><see cref="bool"/> : bool <see cref="MilvusDataType.Bool"/></item>
     /// <item><see cref="sbyte"/> : int8 <see cref="MilvusDataType.Int8"/></item>
-    /// <item><see cref="Int16"/> : int16 <see cref="MilvusDataType.Int16"/></item>
+    /// <item><see cref="short"/> : int16 <see cref="MilvusDataType.Int16"/></item>
     /// <item><see cref="int"/> : int32 <see cref="MilvusDataType.Int32"/></item>
     /// <item><see cref="long"/> : int64 <see cref="MilvusDataType.Int64"/></item>
     /// <item><see cref="float"/> : float <see cref="MilvusDataType.Float"/></item>
