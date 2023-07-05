@@ -20,7 +20,7 @@ public class IndexTests
         // been fully created, expose IProgress and poll internally?
 
         // TODO: Add rows to exercise this  better
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await client.WaitForIndexBuildAsync(collectionName, "float_vector");
     }
 
     [Theory]
@@ -39,7 +39,7 @@ public class IndexTests
             });
 
         // TODO: Add rows to exercise this  better
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await client.WaitForIndexBuildAsync(collectionName, "float_vector");
     }
 
     // TODO: Create scalar index; the API wrapper currently requires index type/metrics which are specific to vectors;
@@ -55,7 +55,7 @@ public class IndexTests
 
         await client.CreateIndexAsync(
             collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await client.WaitForIndexBuildAsync(collectionName, "float_vector");
 
         Assert.Equal(IndexState.Finished, await client.GetIndexStateAsync(collectionName, "float_vector"));
     }
@@ -71,7 +71,7 @@ public class IndexTests
 
         await client.CreateIndexAsync(
             collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await client.WaitForIndexBuildAsync(collectionName, "float_vector");
 
         var progress = await client.GetIndexBuildProgressAsync(collectionName, "float_vector");
         Assert.Equal(progress.TotalRows, progress.IndexedRows);
@@ -92,7 +92,7 @@ public class IndexTests
             {
                 ["nlist"] = "1024"
             });
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await client.WaitForIndexBuildAsync(collectionName, "float_vector");
 
         var indexes = await client.DescribeIndexAsync(collectionName, "float_vector");
         var index = Assert.Single(indexes);
@@ -115,25 +115,11 @@ public class IndexTests
         var collectionName = await CreateCollection(client);
         await client.CreateIndexAsync(
             collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await client.WaitForIndexBuildAsync(collectionName, "float_vector");
 
         await client.DropIndexAsync(collectionName, "float_vector", "float_vector_idx");
 
         Assert.Equal(IndexState.None, await client.GetIndexStateAsync(collectionName, "float_vector"));
-    }
-
-    private async Task WaitForIndexBuild(IMilvusClient client, string collectionName, string fieldName)
-    {
-        while (true)
-        {
-            var indexState = await client.GetIndexStateAsync(collectionName, fieldName);
-            if (indexState == IndexState.Finished)
-            {
-                return;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
-        }
     }
 
     private async Task<string> CreateCollection(IMilvusClient client)

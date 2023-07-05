@@ -69,7 +69,7 @@ public partial class MilvusClientTests
 
         if (milvusClient is MilvusGrpcClient)
         {
-            await milvusClient.WaitForLoadingProgressCollectionAsync(
+            await milvusClient.WaitForCollectionLoadAsync(
                 collectionName,
                 null,
                 TimeSpan.FromSeconds(1),

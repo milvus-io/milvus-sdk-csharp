@@ -119,7 +119,7 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                 });
 
             await client.LoadCollectionAsync(CollectionName);
-            await client.WaitForLoadingProgressCollectionAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
+            await client.WaitForCollectionLoadAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
         }
 
         public Task DisposeAsync()

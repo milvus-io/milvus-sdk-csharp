@@ -4,9 +4,11 @@ using IO.Milvus.Diagnostics;
 using IO.MilvusTests.Client;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using IO.Milvus.Client.gRPC;
 
 namespace IO.Milvus;
 
@@ -16,91 +18,93 @@ namespace IO.Milvus;
 public static class MilvusClientExtensions
 {
     /// <summary>
-    /// Use <see cref="IMilvusClient.GetLoadingProgressAsync(string, IList{string}, CancellationToken)"/> to check loading percentages of the collection.
+    /// Polls Milvus for loading progress of a collection until it is fully loaded.
+    /// To perform a single progress check, use <see cref="IMilvusClient.GetLoadingProgressAsync" />.
     /// </summary>
     /// <remarks>
-    /// Not support restful api.Only <see cref="Client.gRPC.MilvusGrpcClient"/>
+    /// This API requires <see cref="MilvusGrpcClient" />, and is not supported on <see cref="MilvusRestClient" />.
     /// </remarks>
     /// <param name="milvusClient">Milvus client.</param>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="partitionName">Partition name.</param>
-    /// <param name="waitingInterval">Waiting interval.</param>
+    /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">Timeout.</param>
+    /// <param name="progress">Provides information about the progress of the loading operation.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="NotSupportedException">When you are using <see cref="MilvusRestClient"/>.</exception>
     /// <exception cref="TimeoutException">Time out.</exception>
-    public static async Task WaitForLoadingProgressCollectionAsync(
+    public static async Task WaitForCollectionLoadAsync(
         this IMilvusClient milvusClient,
         string collectionName,
         IList<string> partitionName,
-        TimeSpan waitingInterval,
-        TimeSpan timeout,
+        TimeSpan? waitingInterval = null,
+        TimeSpan? timeout = null,
+        IProgress<long> progress = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);
+
         if (milvusClient is MilvusRestClient)
         {
             throw new NotSupportedException("Not support restful api");
         }
 
-        long progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
-
-        while (progress < 100)
-        {
-            await Task.Delay(waitingInterval, cancellationToken).ConfigureAwait(false);
-            timeout -= waitingInterval;
-            if (timeout <= TimeSpan.Zero)
+        await Poll(
+            async () =>
             {
-                throw new TimeoutException($"Wait for loading collection {collectionName} timeout");
-            }
-
-            progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
-        }
+                long progress = await milvusClient
+                    .GetLoadingProgressAsync(collectionName, partitionName, cancellationToken)
+                    .ConfigureAwait(false);
+                return (progress == 100, progress);
+            },
+            $"Timeout when waiting for collection '{collectionName}' to load",
+            waitingInterval, timeout, progress, cancellationToken);
     }
 
     /// <summary>
-    /// Use <see cref="IMilvusClient.GetLoadingProgressAsync(string, IList{string}, CancellationToken)"/> to check loading percentages of the collection and yield value.
+    /// Polls Milvus for building progress of an index until it is fully built.
+    /// To perform a single progress check, use <see cref="IMilvusClient.GetIndexBuildProgressAsync" />.
     /// </summary>
     /// <remarks>
-    /// Not support restful api.Only <see cref="Client.gRPC.MilvusGrpcClient"/>
+    /// This API requires <see cref="MilvusGrpcClient" />, and is not supported on <see cref="MilvusRestClient" />.
     /// </remarks>
     /// <param name="milvusClient">Milvus client.</param>
     /// <param name="collectionName">Collection name.</param>
-    /// <param name="partitionName">Partition name.</param>
-    /// <param name="waitingInterval">Waiting interval.</param>
+    /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
+    /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">Timeout.</param>
+    /// <param name="progress">Provides information about the progress of the loading operation.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="NotSupportedException">When you are using <see cref="MilvusRestClient"/>.</exception>
     /// <exception cref="TimeoutException">Time out.</exception>
-    public static async IAsyncEnumerable<long> WaitForLoadingProgressCollectionValueAsync(
+    public static async Task WaitForIndexBuildAsync(
         this IMilvusClient milvusClient,
         string collectionName,
-        IList<string> partitionName,
-        TimeSpan waitingInterval,
-        TimeSpan timeout,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        string fieldName,
+        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        TimeSpan? waitingInterval = null,
+        TimeSpan? timeout = null,
+        IProgress<IndexBuildProgress> progress = null,
+        CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);
+
         if (milvusClient is MilvusRestClient)
         {
             throw new NotSupportedException("Not support restful api");
         }
 
-        long progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
-        yield return progress;
-
-        while (progress < 100)
-        {
-            await Task.Delay(waitingInterval, cancellationToken).ConfigureAwait(false);
-            timeout -= waitingInterval;
-            if (timeout <= TimeSpan.Zero)
+        await Poll(
+            async () =>
             {
-                throw new TimeoutException($"Wait for loading collection {collectionName} timeout");
-            }
-
-            progress = await milvusClient.GetLoadingProgressAsync(collectionName, partitionName, cancellationToken).ConfigureAwait(false);
-            yield return progress;
-        }
+                IndexBuildProgress progress = await milvusClient
+                    .GetIndexBuildProgressAsync(collectionName, fieldName, dbName, cancellationToken)
+                    .ConfigureAwait(false);
+                return (progress.IsComplete, progress);
+            },
+            $"Timeout when waiting for index '{collectionName}' to build",
+            waitingInterval, timeout, progress, cancellationToken);
     }
 
     /// <summary>
@@ -120,5 +124,37 @@ public static class MilvusClientExtensions
 
         string version = await milvusClient.GetVersionAsync(cancellationToken).ConfigureAwait(false);
         return MilvusVersion.Parse(version);
+    }
+
+    private static async Task Poll<TProgress>(
+        Func<Task<(bool, TProgress)>> pollingAction,
+        string timeoutExceptionMessage,
+        TimeSpan? waitingInterval = null,
+        TimeSpan? timeout = null,
+        IProgress<TProgress> progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        waitingInterval ??= TimeSpan.FromMilliseconds(500);
+
+        var stopWatch = timeout is null ? null : Stopwatch.StartNew();
+
+        while (true)
+        {
+            (bool isComplete, TProgress currentProgress) = await pollingAction().ConfigureAwait(false);
+
+            progress?.Report(currentProgress);
+
+            if (isComplete)
+            {
+                return;
+            }
+
+            if (stopWatch is not null && stopWatch.Elapsed + waitingInterval.Value >= timeout)
+            {
+                throw new TimeoutException(timeoutExceptionMessage);
+            }
+
+            await Task.Delay(waitingInterval.Value, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

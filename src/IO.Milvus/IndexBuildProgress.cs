@@ -28,14 +28,18 @@ public readonly struct IndexBuildProgress : IEquatable<IndexBuildProgress>
     /// </summary>
     public long TotalRows { get; }
 
-    /// <inheritdoc />
-    public override bool Equals(object obj) =>
-        obj is IndexBuildProgress other && Equals(other);
+    /// <summary>
+    /// Whether the index has been fully built.
+    /// </summary>
+    public bool IsComplete => IndexedRows == TotalRows;
 
     /// <inheritdoc />
-    public bool Equals(IndexBuildProgress other) =>
-        IndexedRows == other.IndexedRows &&
-        TotalRows == other.TotalRows;
+    public override bool Equals(object obj)
+        => obj is IndexBuildProgress other && Equals(other);
+
+    /// <inheritdoc />
+    public bool Equals(IndexBuildProgress other)
+        => IndexedRows == other.IndexedRows && TotalRows == other.TotalRows;
 
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(IndexedRows, TotalRows);

@@ -154,7 +154,7 @@ public partial class MilvusClientTests
         }
         else
         {
-            await milvusClient.WaitForLoadingProgressCollectionAsync(
+            await milvusClient.WaitForCollectionLoadAsync(
                 collectionName,
                 string.IsNullOrEmpty(partitionName) ? null : new[] { partitionName },
                 TimeSpan.FromSeconds(1),
