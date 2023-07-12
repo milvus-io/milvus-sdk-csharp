@@ -1,59 +1,55 @@
 using IO.Milvus;
 using IO.Milvus.Client;
-using IO.Milvus.Client.gRPC;
 using Xunit;
 
 namespace IO.MilvusTests.Client;
 
 public class AliasTests : IAsyncLifetime
 {
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Create(IMilvusClient client)
+    [Fact]
+    public async Task Create()
     {
-        await client.DropAliasAsync("a");
-        await client.DropAliasAsync("b");
+        await Client.DropAliasAsync("a");
+        await Client.DropAliasAsync("b");
 
-        await client.CreateAliasAsync(CollectionName, "a");
-        await client.CreateAliasAsync(CollectionName, "b");
+        await Client.CreateAliasAsync(CollectionName, "a");
+        await Client.CreateAliasAsync(CollectionName, "b");
 
-        var description = await client.DescribeCollectionAsync(CollectionName);
+        var description = await Client.DescribeCollectionAsync(CollectionName);
         Assert.Collection(description.Aliases.Order(),
             alias => Assert.Equal("a", alias),
             alias => Assert.Equal("b", alias));
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Alter(IMilvusClient client)
+    [Fact]
+    public async Task Alter()
     {
-        await client.DropAliasAsync("a");
-        await client.CreateAliasAsync(CollectionName, "a");
+        await Client.DropAliasAsync("a");
+        await Client.CreateAliasAsync(CollectionName, "a");
 
-        await client.DropCollectionAsync("AnotherCollection");
-        await client.CreateCollectionAsync(
+        await Client.DropCollectionAsync("AnotherCollection");
+        await Client.CreateCollectionAsync(
             "AnotherCollection",
             new[] { FieldType.Create<long>("id", isPrimaryKey: true) });
 
-        await client.AlterAliasAsync("AnotherCollection", "a");
+        await Client.AlterAliasAsync("AnotherCollection", "a");
 
-        var description1 = await client.DescribeCollectionAsync(CollectionName);
+        var description1 = await Client.DescribeCollectionAsync(CollectionName);
         Assert.DoesNotContain(description1.Aliases, alias => alias == "a");
 
-        var description2 = await client.DescribeCollectionAsync("AnotherCollection");
+        var description2 = await Client.DescribeCollectionAsync("AnotherCollection");
         Assert.Collection(description2.Aliases, alias => Assert.Equal("a", alias));
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Drop(IMilvusClient client)
+    [Fact]
+    public async Task Drop()
     {
-        await client.DropAliasAsync("a");
-        await client.CreateAliasAsync(CollectionName, "a");
+        await Client.DropAliasAsync("a");
+        await Client.CreateAliasAsync(CollectionName, "a");
 
-        await client.DropAliasAsync("a");
+        await Client.DropAliasAsync("a");
 
-        var description = await client.DescribeCollectionAsync(CollectionName);
+        var description = await Client.DescribeCollectionAsync(CollectionName);
         Assert.DoesNotContain(description.Aliases, alias => alias == "a");
     }
 
@@ -61,16 +57,8 @@ public class AliasTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        var config = MilvusConfig.Load().FirstOrDefault();
-        if (config is null)
-        {
-            throw new InvalidOperationException("No client configs");
-        }
-
-        var client = config.CreateClient();
-
-        await client.DropCollectionAsync(CollectionName);
-        await client.CreateCollectionAsync(
+        await Client.DropCollectionAsync(CollectionName);
+        await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -79,6 +67,8 @@ public class AliasTests : IAsyncLifetime
                 FieldType.CreateFloatVector("float_vector", 2)
             });
     }
+
+    private MilvusClient Client => TestEnvironment.Client;
 
     public Task DisposeAsync()
         => Task.CompletedTask;

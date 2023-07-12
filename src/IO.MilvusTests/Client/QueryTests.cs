@@ -11,11 +11,10 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
     public QueryTests(QueryCollectionFixture queryCollectionFixture)
         => QueryCollectionName = queryCollectionFixture.CollectionName;
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Query(IMilvusClient client)
+    [Fact]
+    public async Task Query()
     {
-        var queryResult = await client.QueryAsync(
+        var queryResult = await Client.QueryAsync(
             QueryCollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" });
@@ -41,11 +40,10 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
             v => Assert.Equal(new List<float> { 5f, 6f }, v));
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Query_with_offset(IMilvusClient client)
+    [Fact]
+    public async Task Query_with_offset()
     {
-        var queryResult = await client.QueryAsync(
+        var queryResult = await Client.QueryAsync(
             QueryCollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
@@ -57,11 +55,10 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
         Assert.Collection(idData.Data, id => Assert.Equal(3, id));
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Query_with_limit(IMilvusClient client)
+    [Fact]
+    public async Task Query_with_limit()
     {
-        var queryResult = await client.QueryAsync(
+        var queryResult = await Client.QueryAsync(
             QueryCollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
@@ -78,16 +75,8 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
 
         public async Task InitializeAsync()
         {
-            var config = MilvusConfig.Load().FirstOrDefault();
-            if (config is null)
-            {
-                throw new InvalidOperationException("No client configs");
-            }
-
-            var client = config.CreateClient();
-
-            await client.DropCollectionAsync(CollectionName);
-            await client.CreateCollectionAsync(
+            await TestEnvironment.Client.DropCollectionAsync(CollectionName);
+            await TestEnvironment.Client.CreateCollectionAsync(
                 CollectionName,
                 new[]
                 {
@@ -96,8 +85,9 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                     FieldType.CreateFloatVector("float_vector", 2)
                 });
 
-            await client.CreateIndexAsync(
-                CollectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
+            await TestEnvironment.Client.CreateIndexAsync(
+                CollectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+                new Dictionary<string, string>());
 
             var ids = new long[] { 1, 2, 3, 4, 5 };
             var strings = new[] { "one", "two", "three", "four", "five" };
@@ -110,7 +100,7 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                 new List<float> { 9f, 10f }
             };
 
-            await client.InsertAsync(
+            await TestEnvironment.Client.InsertAsync(
                 CollectionName,
                 new Field[]
                 {
@@ -119,11 +109,13 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                     Field.CreateFloatVector("float_vector", floatVectors)
                 });
 
-            await client.LoadCollectionAsync(CollectionName);
-            await client.WaitForCollectionLoadAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
+            await TestEnvironment.Client.LoadCollectionAsync(CollectionName);
+            await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
         }
 
         public Task DisposeAsync()
             => Task.CompletedTask;
     }
+
+    private MilvusClient Client => TestEnvironment.Client;
 }

@@ -7,8 +7,8 @@ namespace IO.Milvus;
 /// Milvus grant entity.
 /// </summary>
 /// <remarks>
-/// <see cref="Client.IMilvusClient.SelectGrantForRoleAsync(string, System.Threading.CancellationToken)"/> and
-/// <see cref="Client.IMilvusClient.SelectGrantForRoleAndObjectAsync(string, string, string, System.Threading.CancellationToken)"/>
+/// <see cref="Client.MilvusClient.SelectGrantForRoleAsync(string, System.Threading.CancellationToken)"/> and
+/// <see cref="Client.MilvusClient.SelectGrantForRoleAndObjectAsync(string, string, string, System.Threading.CancellationToken)"/>
 /// </remarks>
 public sealed class MilvusGrantEntity
 {

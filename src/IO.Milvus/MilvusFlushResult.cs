@@ -32,14 +32,6 @@ public sealed class MilvusFlushResult
             response.CollSealTimes);
     }
 
-    internal static MilvusFlushResult From(ApiSchema.FlushResponse data)
-    {
-        return new MilvusFlushResult(
-            data.CollSegIDs.ToDictionary(static p => p.Key, static p => p.Value),
-            data.FlushCollSegIds,
-            data.CollSealTimes);
-    }
-
     #region Private ==========================================================================================
     private MilvusFlushResult(
         IDictionary<string, MilvusId<long>> collSegIDs,

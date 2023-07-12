@@ -6,69 +6,65 @@ namespace IO.MilvusTests.Client;
 
 public class PartitionTests
 {
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Create(IMilvusClient client)
+    [Fact]
+    public async Task Create()
     {
-        var collectionName = await CreateCollection(client);
+        var collectionName = await CreateCollection();
 
-        await client.CreatePartitionAsync(collectionName, "partition");
+        await Client.CreatePartitionAsync(collectionName, "partition");
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Exists(IMilvusClient client)
+    [Fact]
+    public async Task Exists()
     {
-        var collectionName = await CreateCollection(client);
+        var collectionName = await CreateCollection();
 
-        await client.CreatePartitionAsync(collectionName, "partition");
-        Assert.True(await client.HasPartitionAsync(collectionName, "partition"));
+        await Client.CreatePartitionAsync(collectionName, "partition");
+        Assert.True(await Client.HasPartitionAsync(collectionName, "partition"));
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task List(IMilvusClient client)
+    [Fact]
+    public async Task List()
     {
-        var collectionName = await CreateCollection(client);
+        var collectionName = await CreateCollection();
 
-        await client.CreatePartitionAsync(collectionName, "partition1");
-        await client.CreatePartitionAsync(collectionName, "partition2");
+        await Client.CreatePartitionAsync(collectionName, "partition1");
+        await Client.CreatePartitionAsync(collectionName, "partition2");
 
-        var partitions = await client.ShowPartitionsAsync(collectionName);
+        var partitions = await Client.ShowPartitionsAsync(collectionName);
 
         Assert.Contains(partitions, p => p.PartitionName == "partition1");
         Assert.Contains(partitions, p => p.PartitionName == "partition2");
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Load_and_Release(IMilvusClient client)
+    [Fact]
+    public async Task Load_and_Release()
     {
-        var collectionName = await CreateCollection(client);
+        var collectionName = await CreateCollection();
 
-        await client.CreatePartitionAsync(collectionName, "partition");
-        await client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2);
-        await WaitForIndexBuild(client, collectionName, "float_vector");
+        await Client.CreatePartitionAsync(collectionName, "partition");
+        await Client.CreateIndexAsync(
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+            new Dictionary<string, string>());
+        await WaitForIndexBuild(collectionName, "float_vector");
 
-        await client.LoadPartitionsAsync(collectionName, new[] { "partition" });
-        await client.ReleasePartitionAsync(collectionName, new[] { "partition" });
+        await Client.LoadPartitionsAsync(collectionName, new[] { "partition" });
+        await Client.ReleasePartitionAsync(collectionName, new[] { "partition" });
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Drop(IMilvusClient client)
+    [Fact]
+    public async Task Drop()
     {
-        var collectionName = await CreateCollection(client);
+        var collectionName = await CreateCollection();
 
-        await client.DropPartitionsAsync(collectionName, "partition");
-        Assert.False(await client.HasPartitionAsync(collectionName, "partition"));
+        await Client.DropPartitionsAsync(collectionName, "partition");
+        Assert.False(await Client.HasPartitionAsync(collectionName, "partition"));
     }
 
-    private async Task<string> CreateCollection(IMilvusClient client)
+    private async Task<string> CreateCollection()
     {
-        await client.DropCollectionAsync(nameof(PartitionTests));
-        await client.CreateCollectionAsync(
+        await Client.DropCollectionAsync(nameof(PartitionTests));
+        await Client.CreateCollectionAsync(
             nameof(PartitionTests),
             new[]
             {
@@ -79,11 +75,11 @@ public class PartitionTests
         return nameof(PartitionTests);
     }
 
-    private async Task WaitForIndexBuild(IMilvusClient client, string collectionName, string fieldName)
+    private async Task WaitForIndexBuild(string collectionName, string fieldName)
     {
         while (true)
         {
-            var indexState = await client.GetIndexStateAsync(collectionName, fieldName);
+            var indexState = await Client.GetIndexStateAsync(collectionName, fieldName);
             if (indexState == IndexState.Finished)
             {
                 return;
@@ -92,4 +88,6 @@ public class PartitionTests
             await Task.Delay(TimeSpan.FromMilliseconds(100));
         }
     }
+
+    private MilvusClient Client => TestEnvironment.Client;
 }

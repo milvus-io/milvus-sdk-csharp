@@ -49,20 +49,6 @@ public sealed class MilvusMutationResult
             );
     }
 
-    internal static MilvusMutationResult From(ApiSchema.MilvusMutationResponse insertResponse)
-    {
-        return new MilvusMutationResult(
-            insertResponse.InsertCount,
-            insertResponse.DeletedCount,
-            insertResponse.UpsertCount,
-            insertResponse.Acknowledged,
-            insertResponse.SuccessIndex,
-            insertResponse.ErrorIndex,
-            TimestampUtils.GetTimeFromTimstamp(insertResponse.Timestamp),
-            insertResponse.Ids
-            );
-    }
-
     /// <summary>
     /// Source mutation result from grpc response.
     /// </summary>
@@ -275,6 +261,5 @@ public sealed class MilvusId<TId>
     /// <summary>
     /// Value
     /// </summary>
-    [JsonPropertyName("data")]
     public IList<TId> Data { get; set; }
 }

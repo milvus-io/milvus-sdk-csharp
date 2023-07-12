@@ -9,32 +9,13 @@ public partial class MilvusClientTests
     [Fact]
     public async Task DisposeTest()
     {
-        var clients = MilvusConfig
-            .Load()
-            .Select(p => p.CreateClient())
-            .ToList();
+        var client = TestEnvironment.CreateClient();
 
-        foreach (var client in clients)
-        {
-            MilvusHealthState state = await client.HealthAsync();
-            state.IsHealthy.Should().BeTrue();
+        MilvusHealthState state = await client.HealthAsync();
+        Assert.True(state.IsHealthy);
 
-            client.Dispose();
+        client.Dispose();
 
-            bool exceptionThrown = false;
-            try
-            {
-                state = await client.HealthAsync();
-            }
-            catch (ObjectDisposedException)
-            {
-                exceptionThrown = true;
-            }
-
-            if (!exceptionThrown)
-            {
-                Assert.Fail("Close failed");
-            }
-        }
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => client.HealthAsync());
     }
 }

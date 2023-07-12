@@ -1,0 +1,12 @@
+{
+  "Test":
+  {
+    "Milvus":
+    {
+      "Address": "http://localhost/",
+      "Port": 19530,
+      "Username": "root",
+      "Password": "milvus"
+    }
+  }
+}

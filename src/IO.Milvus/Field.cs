@@ -11,19 +11,6 @@ namespace IO.Milvus;
 /// <summary>
 /// Represents a milvus field/
 /// </summary>
-[JsonPolymorphic(
-    UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
-[JsonDerivedType(typeof(BinaryVectorField))]
-[JsonDerivedType(typeof(ByteStringField))]
-[JsonDerivedType(typeof(FloatVectorField))]
-[JsonDerivedType(typeof(Field<bool>))]
-[JsonDerivedType(typeof(Field<sbyte>))]
-[JsonDerivedType(typeof(Field<short>))]
-[JsonDerivedType(typeof(Field<int>))]
-[JsonDerivedType(typeof(Field<long>))]
-[JsonDerivedType(typeof(Field<float>))]
-[JsonDerivedType(typeof(Field<double>))]
-[JsonDerivedType(typeof(Field<string>))]
 public abstract class Field
 {
     /// <summary>
@@ -43,31 +30,26 @@ public abstract class Field
     /// <summary>
     /// Field name
     /// </summary>
-    [JsonPropertyName("field_name")]
     public string FieldName { get; private set; }
 
     /// <summary>
     /// Row count.
     /// </summary>
-    [JsonIgnore]
     public abstract long RowCount { get; protected set; }
 
     /// <summary>
     /// Field id.
     /// </summary>
-    [JsonPropertyName("field_id")]
     public long FieldId { get; internal set; }
 
     /// <summary>
     /// <see cref="MilvusDataType"/>
     /// </summary>
-    [JsonPropertyName("type")]
     public MilvusDataType DataType { get; protected set; }
 
     /// <summary>
     /// Is dynamic.
     /// </summary>
-    [JsonIgnore]
     public bool IsDynamic { get; set; }
     #endregion
 
@@ -398,13 +380,11 @@ public class Field<TData> : Field
     /// <summary>
     /// Vector data
     /// </summary>
-    [JsonPropertyName("field")]
     public IList<TData> Data { get; set; }
 
     /// <summary>
     /// Row count
     /// </summary>
-    [JsonIgnore]
     public override long RowCount
     {
         get

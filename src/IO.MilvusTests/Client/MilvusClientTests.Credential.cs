@@ -6,11 +6,10 @@ namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task CredentialTest(IMilvusClient milvusClient)
+    [Fact]
+    public async Task CredentialTest()
     {
-        if (milvusClient.ToString().Contains("zilliz"))
+        if (Client.ToString().Contains("zilliz"))
         {
             return;
         }
@@ -19,22 +18,22 @@ public partial class MilvusClientTests
         string password = "bbbB1.,";
 
         //Check
-        IList<string> users = await milvusClient.ListCredUsersAsync();
+        IList<string> users = await Client.ListCredUsersAsync();
         users.Should().NotBeNullOrEmpty();
         if (users.Contains(username))
         {
-            await milvusClient.DeleteCredentialAsync(username);
+            await Client.DeleteCredentialAsync(username);
         }
 
         //Create
-        await milvusClient.CreateCredentialAsync(username, password);
-        users = await milvusClient.ListCredUsersAsync();
+        await Client.CreateCredentialAsync(username, password);
+        users = await Client.ListCredUsersAsync();
         users.Should().NotBeNullOrEmpty();
         users.Should().Contain("abb1bW");
 
         //Delete
-        await milvusClient.DeleteCredentialAsync(username);
-        users = await milvusClient.ListCredUsersAsync();
+        await Client.DeleteCredentialAsync(username);
+        users = await Client.ListCredUsersAsync();
         users.Should().NotBeNullOrEmpty();
         users.Should().NotContain("abb1bW");
     }

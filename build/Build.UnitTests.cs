@@ -7,10 +7,7 @@ using System.Threading;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using IO.MilvusTests;
-using System.Collections.Generic;
 using Nuke.Common.IO;
-using System.Text.Json;
 using System.Diagnostics;
 using Nuke.Common.Tooling;
 
@@ -58,51 +55,26 @@ partial class Build
 
     AbsolutePath TestDir => RootDirectory / "src" / "IO.MilvusTests" / "bin" / "Release" / "net7.0" / "milvusclients.json";
 
-    Target Test => _ => _        
+    Target Test => _ => _
         .DependsOn(ComposeUp)
         .Produces(TestResultsDirectory / "*.trx")
-        .Executes(() =>{
-            //Generate milvus client config file
-            List<MilvusConfig> configs = new (){
-                new MilvusConfig(){
-                    Endpoint = "http://localhost",
-                    Port = 19530,
-                    ConnectionType = "grpc",
-                    Username = "root",
-                    Password = "milvus"
-                },
-                //new MilvusConfig(){
-                //    Endpoint = "http://localhost",
-                //    Port = 9091,
-                //    ConnectionType = "rest",
-                //    Username = "root",
-                //    Password = "milvus"
-                //},
-            };
-
-            string configText = JsonSerializer.Serialize(configs);
-            Log.Logger.Information(configText);
-            TestDir.WriteAllText(configText);
-
-            DotNetTest(s => s
-                .SetProjectFile(Solution)
-                .SetConfiguration(Configuration.Release)
-                .EnableNoBuild()                
-                .When(true, _ => _
-                    .SetLoggers("trx")
-                    .SetResultsDirectory(TestResultsDirectory)));
-        });
+        .Executes(() => DotNetTest(s => s
+            .SetProjectFile(Solution)
+            .SetConfiguration(Configuration.Release)
+            .EnableNoBuild()
+            .When(true, _ => _
+                .SetLoggers("trx")
+                .SetResultsDirectory(TestResultsDirectory))));
 
     Target ComposeDown => _ => _
         .AssuredAfterFailure()
         .TriggeredBy(Test)
         .After(Test)
-        .Executes(() =>{
-            var process = Process.Start(new ProcessStartInfo(){
-                FileName = "docker-compose",
-                Arguments = $"-f {MilvusYmlName} down"
-             });
-        });
+        .Executes(() => Process.Start(new ProcessStartInfo()
+        {
+            FileName = "docker-compose",
+            Arguments = $"-f {MilvusYmlName} down"
+        }));
 
     private static async Task DownloadFileAsync(string url, string fileName){
         var uri = new Uri(url);

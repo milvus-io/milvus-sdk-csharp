@@ -166,9 +166,6 @@ public sealed class FieldType
     /// <summary>
     /// Create a json type field.
     /// </summary>
-    /// <remarks>
-    /// Not support <see cref="Client.REST.MilvusRestClient"/>
-    /// </remarks>
     /// <param name="name">Field name.</param>
     /// <param name="isDynamic">Is dynamic.</param>
     /// <returns></returns>
@@ -182,51 +179,41 @@ public sealed class FieldType
     /// <summary>
     /// Auto id.
     /// </summary>
-    [JsonPropertyName("autoID")]
     public bool AutoId { get; set; } = false;
 
     /// <summary>
     /// Data type.
     /// </summary>
-    [JsonPropertyName("data_type")]
     public MilvusDataType DataType { get; set; }
 
     /// <summary>
     /// Description.
     /// </summary>
-    [JsonPropertyName("description")]
     public string Description { get; set; }
 
     /// <summary>
     /// Field id.
     /// </summary>
-    [JsonPropertyName("fieldID")]
     public long FieldId { get; set; }
 
     /// <summary>
     /// Index params.
     /// </summary>
-    [JsonPropertyName("index_params")]
-    [JsonConverter(typeof(MilvusDictionaryConverter))]
     public IDictionary<string, string> IndexParams { get; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Is primary key.
     /// </summary>
-    [JsonPropertyName("is_primary_key")]
     public bool IsPrimaryKey { get; set; }
 
     /// <summary>
     /// Name.
     /// </summary>
-    [JsonPropertyName("name")]
     public string Name { get; }
 
     /// <summary>
     /// Type params.
     /// </summary>
-    [JsonPropertyName("type_params")]
-    [JsonConverter(typeof(MilvusDictionaryConverter))]
     public IDictionary<string, string> TypeParams { get; } = new Dictionary<string, string>();
 
     /// <summary>

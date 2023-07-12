@@ -1,8 +1,6 @@
 ﻿using FluentAssertions;
 using IO.Milvus.Client;
 using IO.Milvus;
-using IO.Milvus.Client.REST;
-using IO.MilvusTests.Utils;
 using Xunit;
 
 namespace IO.MilvusTests.Client;
@@ -17,44 +15,42 @@ public partial class MilvusClientTests
     /// 
     /// <see href="https://milvus.io/docs/manage_databases.md"/>
     /// </remarks>
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task DatabaseTest(IMilvusClient milvusClient)
+    [Fact]
+    public async Task DatabaseTest()
     {
-        //Not support milvusRestClient
-        if (milvusClient is MilvusRestClient || milvusClient.IsZillizCloud())
+        if (TestEnvironment.IsZillizCloud)
         {
             return;
         }
 
         //Not support below milvus 2.2.9
-        MilvusVersion version = await milvusClient.GetMilvusVersionAsync();
+        MilvusVersion version = await Client.GetMilvusVersionAsync();
         if (!version.GreaterThan(2, 2, 8))
         {
             return;
         }
 
-        string databaseName = milvusClient.GetType().Name;
+        string databaseName = Client.GetType().Name;
 
         //List original database
-        IEnumerable<string> databases = await milvusClient.ListDatabasesAsync();
+        IEnumerable<string> databases = await Client.ListDatabasesAsync();
         databases.Should().NotBeNullOrEmpty();
 
         //Check if it exists.
         if (databases.Contains(databaseName))
         {
-            await milvusClient.DropDatabaseAsync(databaseName);
+            await Client.DropDatabaseAsync(databaseName);
         }
 
         //Create database
-        await milvusClient.CreateDatabaseAsync(databaseName);
-        databases = await milvusClient.ListDatabasesAsync();
+        await Client.CreateDatabaseAsync(databaseName);
+        databases = await Client.ListDatabasesAsync();
         databases.Should().NotBeNullOrEmpty();
         databases.Should().Contain(databaseName);
 
         //Drop database
-        await milvusClient.DropDatabaseAsync(databaseName);
-        databases = await milvusClient.ListDatabasesAsync();
+        await Client.DropDatabaseAsync(databaseName);
+        databases = await Client.ListDatabasesAsync();
         databases.Should().NotBeNullOrEmpty();
         databases.Should().NotContain(databaseName);
     }

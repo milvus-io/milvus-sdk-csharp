@@ -1,7 +1,4 @@
-﻿using IO.Milvus.Client;
-using IO.Milvus.Client.REST;
-using IO.MilvusTests.Utils;
-using IO.Milvus;
+﻿using IO.Milvus;
 using Xunit;
 using FluentAssertions;
 
@@ -14,95 +11,94 @@ public partial class MilvusClientTests
     /// </summary>
     /// <param name="milvusClient"></param>
     /// <returns></returns>
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task RBACTests(IMilvusClient milvusClient)
+    [Fact]
+    public async Task RBACTests()
     {
         //Not support milvusRestClient
-        if (milvusClient is MilvusRestClient || milvusClient.IsZillizCloud())
+        if (TestEnvironment.IsZillizCloud)
         {
             return;
         }
 
         //Not support below milvus 2.2.9
-        MilvusVersion version = await milvusClient.GetMilvusVersionAsync();
+        MilvusVersion version = await Client.GetMilvusVersionAsync();
         if (!version.GreaterThan(2, 2, 8))
         {
             return;
         }
 
         //username
-        string username = milvusClient.GetType().Name;
+        string username = Client.GetType().Name;
         //role name
         string roleName = "roleA";
 
         //1.Create a user.
         //Check if the user exists.
-        IList<string> users = await milvusClient.ListCredUsersAsync();
+        IList<string> users = await Client.ListCredUsersAsync();
         if (users.Contains(username))
         {
-            await milvusClient.DeleteCredentialAsync(username);
+            await Client.DeleteCredentialAsync(username);
         }
-        await milvusClient.CreateCredentialAsync(username, "abccab");
+        await Client.CreateCredentialAsync(username, "abccab");
 
         //Check if the user exists.
-        users = await milvusClient.ListCredUsersAsync();
+        users = await Client.ListCredUsersAsync();
         users.Should().Contain(username);
 
         //Check user role information.
-        IEnumerable<MilvusUserResult> userResults = await milvusClient.SelectUserAsync(username, true);
+        IEnumerable<MilvusUserResult> userResults = await Client.SelectUserAsync(username, true);
         userResults.Should().Contain(x => x.Username == username);
         MilvusUserResult user = userResults.First(x => x.Username == username);
         if (user.Roles.Contains(roleName) && user.Roles?.Any() == true)
         {
             foreach (var userRole in user.Roles)
             {
-                await milvusClient.RemoveUserFromRoleAsync(username, userRole);
+                await Client.RemoveUserFromRoleAsync(username, userRole);
             }
         }
 
         //2.Create a role.
         //Check if this role exist.
-        IEnumerable<MilvusRoleResult> roles = await milvusClient.SelectRoleAsync(roleName, true);
+        IEnumerable<MilvusRoleResult> roles = await Client.SelectRoleAsync(roleName, true);
         var role = roles.FirstOrDefault(x => x.RoleName == roleName);
         if (role != null && role.Users != null)
         {
             foreach (var roleUser in role.Users)
             {
-                await milvusClient.RemoveUserFromRoleAsync(roleUser, roleName);
+                await Client.RemoveUserFromRoleAsync(roleUser, roleName);
             }
 
-            IEnumerable<MilvusGrantEntity> grantors = await milvusClient.SelectGrantForRoleAsync(roleName);
+            IEnumerable<MilvusGrantEntity> grantors = await Client.SelectGrantForRoleAsync(roleName);
             foreach (var grantor in grantors)
             {
-                await milvusClient.RevokeRolePrivilegeAsync(
+                await Client.RevokeRolePrivilegeAsync(
                     grantor.Role,
                     grantor.Object,
                     grantor.ObjectName,
                     grantor.Grantor.Privilege);
             }
-            await milvusClient.RevokeRolePrivilegeAsync(roleName, "Collection", "*", "*");
-            await milvusClient.DropRoleAsync(roleName);
+            await Client.RevokeRolePrivilegeAsync(roleName, "Collection", "*", "*");
+            await Client.DropRoleAsync(roleName);
         }
-        await milvusClient.CreateRoleAsync(roleName);
+        await Client.CreateRoleAsync(roleName);
 
         //3.Grant a privilege to a role.
-        await milvusClient.GrantRolePrivilegeAsync(
+        await Client.GrantRolePrivilegeAsync(
             roleName: roleName,
             @object: "Collection",
             objectName: "*",
             privilege: "Search");
 
         //Check if it has the privilege.
-        IEnumerable<MilvusGrantEntity> milvusGrantEntities = await milvusClient.SelectGrantForRoleAsync(roleName);
+        IEnumerable<MilvusGrantEntity> milvusGrantEntities = await Client.SelectGrantForRoleAsync(roleName);
         milvusGrantEntities.Should().Contain(x => x.Role == roleName);
         milvusGrantEntities.First(x => x.Role == roleName).Grantor.Privilege.Should().Be("Search");
 
         //4.Bind a role to a user.
-        await milvusClient.AddUserToRoleAsync(username, roleName);
+        await Client.AddUserToRoleAsync(username, roleName);
 
         //Check if user has this role.
-        IEnumerable<MilvusRoleResult> roleResult = await milvusClient.SelectRoleAsync(roleName, true);
+        IEnumerable<MilvusRoleResult> roleResult = await Client.SelectRoleAsync(roleName, true);
         roleResult.First(x => x.RoleName == roleName).Users.Should().Contain(username);
     }
 }

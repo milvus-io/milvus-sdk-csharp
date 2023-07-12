@@ -183,32 +183,26 @@ public sealed class MilvusVectors
     /// <summary>
     /// Ids
     /// </summary>
-    [JsonPropertyName("ids")]
     public MilvusVectorIds Ids { get; }
 
     /// <summary>
     /// Vectors is an array of binary vector divided by given dim. Disabled when IDs is set.
     /// </summary>
-    [JsonPropertyName("vectors")]
     public IList<float> Vectors { get; }
 
     /// <summary>
     /// Binary vector field.
     /// </summary>
-    [JsonIgnore]
-    [JsonPropertyName("binary_vectors")]
     public BinaryVectorField BinaryVectorField { get; }
 
     /// <summary>
     /// Milvus vectors type.
     /// </summary>
-    [JsonIgnore]
     public MilvusVectorsType MilvusVectorsType { get; }
 
     /// <summary>
     /// Dim of vectors or binary_vectors, not needed when use ids
     /// </summary>
-    [JsonPropertyName("dim")]
     public long Dim { get; set; }
 
     #region Private Methods ===================================================================
@@ -243,31 +237,26 @@ public sealed class MilvusVectorIds
     /// <summary>
     /// Collection name.
     /// </summary>
-    [JsonPropertyName("collection_name")]
     public string CollectionName { get; }
 
     /// <summary>
     /// Field name.
     /// </summary>
-    [JsonPropertyName("field_name")]
     public string FieldName { get; }
 
     /// <summary>
     /// Ids.
     /// </summary>
-    [JsonIgnore]
     public IList<long> IntIds { get; }
 
     /// <summary>
     /// String Ids.
     /// </summary>
-    [JsonIgnore]
     public IList<string> StringIds { get; }
 
     /// <summary>
     /// Ids.
     /// </summary>
-    [JsonPropertyName("id_array")]
     public object IdArray
     {
         get
@@ -280,13 +269,11 @@ public sealed class MilvusVectorIds
     /// <summary>
     /// Partition names.
     /// </summary>
-    [JsonPropertyName("partition_names")]
     public IList<string> PartitionNames { get; }
 
     /// <summary>
     /// Dimension of ids.
     /// </summary>
-    [JsonIgnore]
     public long Dim => IntIds?.Count ?? StringIds?.Count ?? 0;
 
     /// <summary>

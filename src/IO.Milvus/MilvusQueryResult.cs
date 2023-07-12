@@ -24,11 +24,6 @@ public sealed class MilvusQueryResult
         return new MilvusQueryResult(response.CollectionName, fields);
     }
 
-    internal static MilvusQueryResult From(ApiSchema.QueryResponse data)
-    {
-        return new MilvusQueryResult(data.CollectionName, data.FieldsData);
-    }
-
     #region Private ==========================================================================
     private MilvusQueryResult(string collectionName, IList<Field> fields)
     {

@@ -37,11 +37,6 @@ public sealed class MilvusSearchResult
         };
     }
 
-    internal static MilvusSearchResult From(ApiSchema.SearchResponse searchResponse)
-    {
-        return new MilvusSearchResult(searchResponse.CollectionName, searchResponse.Results);
-    }
-
     private MilvusSearchResult(string collectionName, MilvusSearchResultData results)
     {
         CollectionName = collectionName;

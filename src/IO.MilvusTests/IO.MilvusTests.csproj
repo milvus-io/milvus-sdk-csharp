@@ -19,6 +19,8 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     </ItemGroup>
 
 <!--    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">-->
@@ -37,6 +39,13 @@
       <None Update="xunit.runner.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="config.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Utils\" />
     </ItemGroup>
 
 </Project>

@@ -19,11 +19,6 @@ public sealed class MilvusCompactionPlans
     /// </summary>
     public MilvusCompactionState State { get; }
 
-    internal static MilvusCompactionPlans From(ApiSchema.GetCompactionPlansResponse getCompactionPlansResponse)
-    {
-        return new MilvusCompactionPlans(getCompactionPlansResponse.MergeInfos, getCompactionPlansResponse.State);
-    }
-
     internal static MilvusCompactionPlans From(Grpc.GetCompactionPlansResponse response)
     {
         return new MilvusCompactionPlans(response.MergeInfos.Select(static x => new MilvusCompactionPlan()
@@ -52,12 +47,10 @@ public sealed class MilvusCompactionPlan
     /// <summary>
     /// Sources
     /// </summary>
-    [JsonPropertyName("sources")]
     public IList<long> Sources { get; set; }
 
     /// <summary>
     /// Target
     /// </summary>
-    [JsonPropertyName("target")]
     public long Target { get; set; }
 }

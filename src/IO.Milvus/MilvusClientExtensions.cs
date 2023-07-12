@@ -1,29 +1,23 @@
-﻿using IO.Milvus.Client;
-using IO.Milvus.Client.REST;
-using IO.Milvus.Diagnostics;
+﻿using IO.Milvus.Diagnostics;
 using IO.MilvusTests.Client;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using IO.Milvus.Client.gRPC;
+using IO.Milvus.Client;
 
 namespace IO.Milvus;
 
 /// <summary>
-/// Extension methods for <see cref="Client.IMilvusClient"/>
+/// Extension methods for <see cref="Client.MilvusClient"/>
 /// </summary>
 public static class MilvusClientExtensions
 {
     /// <summary>
     /// Polls Milvus for loading progress of a collection until it is fully loaded.
-    /// To perform a single progress check, use <see cref="IMilvusClient.GetLoadingProgressAsync" />.
+    /// To perform a single progress check, use <see cref="MilvusClient.GetLoadingProgressAsync" />.
     /// </summary>
-    /// <remarks>
-    /// This API requires <see cref="MilvusGrpcClient" />, and is not supported on <see cref="MilvusRestClient" />.
-    /// </remarks>
     /// <param name="milvusClient">Milvus client.</param>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="partitionName">Partition name.</param>
@@ -31,10 +25,9 @@ public static class MilvusClientExtensions
     /// <param name="timeout">Timeout.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <exception cref="NotSupportedException">When you are using <see cref="MilvusRestClient"/>.</exception>
     /// <exception cref="TimeoutException">Time out.</exception>
     public static async Task WaitForCollectionLoadAsync(
-        this IMilvusClient milvusClient,
+        this MilvusClient milvusClient,
         string collectionName,
         IList<string> partitionName,
         TimeSpan? waitingInterval = null,
@@ -43,11 +36,6 @@ public static class MilvusClientExtensions
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);
-
-        if (milvusClient is MilvusRestClient)
-        {
-            throw new NotSupportedException("Not support restful api");
-        }
 
         await Poll(
             async () =>
@@ -63,11 +51,8 @@ public static class MilvusClientExtensions
 
     /// <summary>
     /// Polls Milvus for building progress of an index until it is fully built.
-    /// To perform a single progress check, use <see cref="IMilvusClient.GetIndexBuildProgressAsync" />.
+    /// To perform a single progress check, use <see cref="MilvusClient.GetIndexBuildProgressAsync" />.
     /// </summary>
-    /// <remarks>
-    /// This API requires <see cref="MilvusGrpcClient" />, and is not supported on <see cref="MilvusRestClient" />.
-    /// </remarks>
     /// <param name="milvusClient">Milvus client.</param>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
@@ -76,10 +61,9 @@ public static class MilvusClientExtensions
     /// <param name="timeout">Timeout.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <exception cref="NotSupportedException">When you are using <see cref="MilvusRestClient"/>.</exception>
     /// <exception cref="TimeoutException">Time out.</exception>
     public static async Task WaitForIndexBuildAsync(
-        this IMilvusClient milvusClient,
+        this MilvusClient milvusClient,
         string collectionName,
         string fieldName,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
@@ -89,11 +73,6 @@ public static class MilvusClientExtensions
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);
-
-        if (milvusClient is MilvusRestClient)
-        {
-            throw new NotSupportedException("Not support restful api");
-        }
 
         await Poll(
             async () =>
@@ -108,7 +87,7 @@ public static class MilvusClientExtensions
     }
 
     /// <summary>
-    /// Wrapper methods for <see cref="IMilvusClient.GetVersionAsync(CancellationToken)"/>.
+    /// Wrapper methods for <see cref="MilvusClient.GetVersionAsync(CancellationToken)"/>.
     /// </summary>
     /// <remarks>
     /// Return <see cref="MilvusVersion"/> instead of <see cref="string"/>.
@@ -117,7 +96,7 @@ public static class MilvusClientExtensions
     /// <param name="cancellationToken"></param>
     /// <returns>Milvus version</returns>
     public static async Task<MilvusVersion> GetMilvusVersionAsync(
-        this IMilvusClient milvusClient,
+        this MilvusClient milvusClient,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);

@@ -1,5 +1,4 @@
 ﻿using Google.Protobuf;
-using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using IO.Milvus.Utils;
 using System;
@@ -7,7 +6,6 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 
 namespace IO.Milvus;
@@ -398,32 +396,6 @@ public sealed class MilvusSearchParameters
     }
 
     /// <summary>
-    /// Build a rest request.
-    /// </summary>
-    /// <returns></returns>
-    internal HttpRequestMessage BuildRest()
-    {
-        ApiSchema.SearchRequest request = new()
-        {
-            CollectionName = CollectionName,
-            Dsl = Expr,
-            DslType = (int)MilvusDslType.BoolExprV1,
-            PartitionNames = PartitionNames,
-            OutputFields = OutputFields,
-        };
-
-        request.GuaranteeTimestamp = GetGuaranteeTimestamp(ConsistencyLevel, GuaranteeTimestamp, 0);
-
-        PrepareRestTargetVectors(request);
-
-        PrepareRestParameters(request);
-
-        return HttpRequest.CreatePostRequest(
-            $"{ApiSchema.ApiVersion.V1}/search",
-            payload: request);
-    }
-
-    /// <summary>
     /// Validate search parameter.
     /// </summary>
     internal void Validate()
@@ -506,16 +478,6 @@ public sealed class MilvusSearchParameters
         }
     }
 
-    private void PrepareRestParameters(ApiSchema.SearchRequest request)
-    {
-        request.SearchParams[Constants.VECTOR_FIELD] = VectorFieldName;
-        request.SearchParams[Constants.TOP_K] = TopK.ToString(CultureInfo.InvariantCulture);
-        request.SearchParams[Constants.METRIC_TYPE] = MetricType.ToString();
-        request.SearchParams[Constants.ROUND_DECIMAL] = RoundDecimal.ToString(CultureInfo.InvariantCulture);
-        request.SearchParams[Constants.IGNORE_GROWING] = IgnoreGrowing.ToString();
-        request.SearchParams[Constants.PARAMS] = Parameters?.Count > 0 ? Parameters.Combine() : "{}";
-    }
-
     private void PrepareParameters(Grpc.SearchRequest request)
     {
         request.SearchParams.AddRange(
@@ -592,20 +554,5 @@ public sealed class MilvusSearchParameters
 
         placeholderGroup.Placeholders.Add(placeholderValue);
         request.PlaceholderGroup = placeholderGroup.ToByteString();
-    }
-
-    private void PrepareRestTargetVectors(ApiSchema.SearchRequest request)
-    {
-        if (MilvusFloatVectors != null)
-        {
-            foreach (List<float> milvusVector in MilvusFloatVectors)
-            {
-                request.SearchVectors.Add(milvusVector);
-            }
-        }
-        else if (MilvusBinaryVectors != null)
-        {
-            throw new NotSupportedException();
-        }
     }
 }

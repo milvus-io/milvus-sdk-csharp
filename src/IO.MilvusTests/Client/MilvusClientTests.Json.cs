@@ -1,11 +1,9 @@
 ﻿using IO.Milvus.Client;
 using Xunit;
 using IO.Milvus;
-using IO.Milvus.Client.gRPC;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using FluentAssertions;
-using IO.Milvus.Client.REST;
 
 namespace IO.MilvusTests.Client;
 
@@ -18,28 +16,22 @@ public partial class MilvusClientTests
     /// </summary>
     /// <param name="milvusClient"></param>
     /// <returns></returns>
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task JsonTest(IMilvusClient milvusClient)
+    [Fact]
+    public async Task JsonTest()
     {
-        if (milvusClient is MilvusRestClient)
-        {
-            return;
-        }
-        
-        var version = await milvusClient.GetMilvusVersionAsync();
+        var version = await Client.GetMilvusVersionAsync();
         if (!version.GreaterThan(2, 2, 8))
         {
             return;
         }
 
-        var collectionName = milvusClient.GetType().Name + "Json";
+        var collectionName = Client.GetType().Name + "Json";
 
         //Check if collection exists.
-        var collectionExist = await milvusClient.HasCollectionAsync(collectionName);
+        var collectionExist = await Client.HasCollectionAsync(collectionName);
         if (collectionExist)
         {
-            await milvusClient.DropCollectionAsync(collectionName);
+            await Client.DropCollectionAsync(collectionName);
         }
 
         //Define fields.
@@ -52,33 +44,27 @@ public partial class MilvusClientTests
             };
 
         //Create collection.
-        await milvusClient.CreateCollectionAsync(
+        await Client.CreateCollectionAsync(
             collectionName,
             fields
             );
 
         //Create index.
-        await milvusClient.CreateIndexAsync(
+        await Client.CreateIndexAsync(
             collectionName,
             "title_vector",
             Constants.DEFAULT_INDEX_NAME,
             MilvusIndexType.AUTOINDEX,
-            MilvusMetricType.L2);
+            MilvusMetricType.L2,
+            new Dictionary<string, string>());
 
-        await milvusClient.LoadCollectionAsync(collectionName);
+        await Client.LoadCollectionAsync(collectionName);
 
-        if (milvusClient is MilvusGrpcClient)
-        {
-            await milvusClient.WaitForCollectionLoadAsync(
-                collectionName,
-                null,
-                TimeSpan.FromSeconds(1),
-                TimeSpan.FromSeconds(10));
-        }
-        else
-        {
-            await Task.Delay(TimeSpan.FromSeconds(10));
-        }
+        await Client.WaitForCollectionLoadAsync(
+            collectionName,
+            null,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(10));
 
         List<List<float>> vectors = new();
         List<ArticleMeta> articleMetas = new();
@@ -110,7 +96,7 @@ public partial class MilvusClientTests
             .Select(p => JsonSerializer.Serialize(p))
             .ToList();
 
-        await milvusClient.InsertAsync(
+        await Client.InsertAsync(
             collectionName,
             new Field[]
             {
@@ -120,7 +106,7 @@ public partial class MilvusClientTests
             }
             );
 
-        MilvusSearchResult searchResult = await milvusClient.SearchAsync(MilvusSearchParameters.Create(
+        MilvusSearchResult searchResult = await Client.SearchAsync(MilvusSearchParameters.Create(
             collectionName,
             vectorFieldName: "title_vector",
             outFields: new[] { "title", " article_meta" })

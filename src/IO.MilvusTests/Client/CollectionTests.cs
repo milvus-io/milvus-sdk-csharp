@@ -1,6 +1,5 @@
 using IO.Milvus;
 using IO.Milvus.Client;
-using IO.Milvus.Client.REST;
 using IO.Milvus.Diagnostics;
 using Xunit;
 
@@ -8,50 +7,47 @@ namespace IO.MilvusTests.Client;
 
 public class CollectionTests
 {
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Create_Exists_and_Drop(IMilvusClient client)
+    [Fact]
+    public async Task Create_Exists_and_Drop()
     {
         var collectionName = nameof(Create_Exists_and_Drop);
 
-        await client.DropCollectionAsync(collectionName);
-        Assert.False(await client.HasCollectionAsync(collectionName));
+        await Client.DropCollectionAsync(collectionName);
+        Assert.False(await Client.HasCollectionAsync(collectionName));
 
-        await client.CreateCollectionAsync(
+        await Client.CreateCollectionAsync(
             collectionName,
             new[] { FieldType.Create<long>("id", isPrimaryKey: true) });
 
-        Assert.True(await client.HasCollectionAsync(collectionName));
+        Assert.True(await Client.HasCollectionAsync(collectionName));
 
-        await client.DropCollectionAsync(collectionName);
-        Assert.False(await client.HasCollectionAsync(collectionName));
+        await Client.DropCollectionAsync(collectionName);
+        Assert.False(await Client.HasCollectionAsync(collectionName));
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task List(IMilvusClient client)
+    [Fact]
+    public async Task List()
     {
         var collectionName = nameof(List);
 
-        await client.DropCollectionAsync(collectionName);
-        await client.CreateCollectionAsync(
+        await Client.DropCollectionAsync(collectionName);
+        await Client.CreateCollectionAsync(
             collectionName,
             new[] { FieldType.Create<long>("id", isPrimaryKey: true) });
 
-        Assert.Single(await client.ShowCollectionsAsync(), c => c.CollectionName == collectionName);
+        Assert.Single(await Client.ShowCollectionsAsync(), c => c.CollectionName == collectionName);
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Describe(IMilvusClient client)
+    [Fact]
+    public async Task Describe()
     {
         var collectionName = nameof(Describe);
 
-        await client.DropCollectionAsync(collectionName);
+        await Client.DropCollectionAsync(collectionName);
 
-        await Assert.ThrowsAsync<MilvusException>(() => client.DescribeCollectionAsync(collectionName));
+        await Assert.ThrowsAsync<MilvusException>(() => Client.DescribeCollectionAsync(collectionName));
 
-        await client.CreateCollectionAsync(
+        await Client.CreateCollectionAsync(
             collectionName,
             new[]
             {
@@ -69,7 +65,7 @@ public class CollectionTests
             shardsNum: 2,
             consistencyLevel: MilvusConsistencyLevel.Eventually);
 
-        var collectionDescription = await client.DescribeCollectionAsync(collectionName);
+        var collectionDescription = await Client.DescribeCollectionAsync(collectionName);
 
         Assert.Equal(collectionName, collectionDescription.CollectionName);
         Assert.Equal(2, collectionDescription.ShardsNum);
@@ -140,32 +136,28 @@ public class CollectionTests
             });
     }
 
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task Rename(IMilvusClient client)
+    [Fact]
+    public async Task Rename()
     {
-        if (client is MilvusRestClient)
-        {
-            return; // Collection rename not supported over REST
-        }
-
         var oldCollectionName = nameof(Rename);
         var newCollectionName = oldCollectionName + "New";
 
-        await client.DropCollectionAsync(oldCollectionName);
-        await client.DropCollectionAsync(newCollectionName);
-        await client.CreateCollectionAsync(
+        await Client.DropCollectionAsync(oldCollectionName);
+        await Client.DropCollectionAsync(newCollectionName);
+        await Client.CreateCollectionAsync(
             oldCollectionName,
             new[] { FieldType.Create<long>("id", isPrimaryKey: true) });
 
-        await client.RenameCollectionAsync(oldCollectionName, newCollectionName);
+        await Client.RenameCollectionAsync(oldCollectionName, newCollectionName);
 
-        Assert.False(await client.HasCollectionAsync(oldCollectionName));
-        Assert.True(await client.HasCollectionAsync(newCollectionName));
+        Assert.False(await Client.HasCollectionAsync(oldCollectionName));
+        Assert.True(await Client.HasCollectionAsync(newCollectionName));
 
-        Assert.Equal(newCollectionName, (await client.DescribeCollectionAsync(newCollectionName)).CollectionName);
+        Assert.Equal(newCollectionName, (await Client.DescribeCollectionAsync(newCollectionName)).CollectionName);
     }
 
     // TODO: Load
     // TODO: Release
+
+    private MilvusClient Client => TestEnvironment.Client;
 }

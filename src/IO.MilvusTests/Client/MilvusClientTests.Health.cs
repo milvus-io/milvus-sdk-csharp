@@ -6,11 +6,10 @@ namespace IO.MilvusTests.Client;
 
 public partial class MilvusClientTests
 {
-    [Theory]
-    [ClassData(typeof(TestClients))]
-    public async Task HealthTest(IMilvusClient milvusClient)
+    [Fact]
+    public async Task HealthTest()
     {
-        MilvusHealthState result = await milvusClient.HealthAsync();
+        MilvusHealthState result = await Client.HealthAsync();
         Assert.True(result.IsHealthy, result.ToString());
     }
 }

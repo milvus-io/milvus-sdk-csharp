@@ -14,13 +14,11 @@ public sealed class CollectionSchema
     /// <remarks>
     /// deprecated later, keep compatible with c++ part now
     /// </remarks>
-    [JsonPropertyName("autoID")]
     public bool AutoId { get; set; } = false;
 
     /// <summary>
     /// Collection description
     /// </summary>
-    [JsonPropertyName("description")]
     public string Description { get; set; }
 
     /// <summary>
@@ -29,13 +27,11 @@ public sealed class CollectionSchema
     /// <remarks>
     /// Array of <see cref="FieldType"/>
     /// </remarks>
-    [JsonPropertyName("fields")]
     public IList<FieldType> Fields { get; set; }
 
     /// <summary>
     /// Name
     /// </summary>
-    [JsonPropertyName("name")]
     public string Name { get; set; }
 
     /// <summary>
@@ -44,7 +40,6 @@ public sealed class CollectionSchema
     /// <remarks>
     /// <see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/>
     /// </remarks>
-    [JsonIgnore]
     public bool EnableDynamicField { get; set; }
 
     /// <summary>
