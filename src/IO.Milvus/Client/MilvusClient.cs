@@ -32,9 +32,9 @@ public sealed partial class MilvusClient : IDisposable
         int port = 19530,
         string name = "root",
         string password = "milvus",
-        GrpcChannel grpcChannel = null,
+        GrpcChannel? grpcChannel = null,
         CallOptions? callOptions = default,
-        ILogger log = null):
+        ILogger? log = null):
         this(endpoint, port, $"{name}:{password}", grpcChannel, callOptions, log)
     { }
 
@@ -56,9 +56,9 @@ public sealed partial class MilvusClient : IDisposable
         string endpoint,
         int? port,
         string authorization,
-        GrpcChannel grpcChannel = null,
+        GrpcChannel? grpcChannel = null,
         CallOptions? callOptions = default,
-        ILogger log = null)
+        ILogger? log = null)
     {
         Verify.NotNull(endpoint);
 
@@ -159,7 +159,7 @@ public sealed partial class MilvusClient : IDisposable
         Func<TRequest, CallOptions, AsyncUnaryCall<Grpc.Status>> func,
         TRequest request,
         CancellationToken cancellationToken,
-        [CallerMemberName] string callerName = null) =>
+        [CallerMemberName] string callerName = "") =>
         InvokeAsync(func, request, r => r, cancellationToken, callerName);
 
     private async Task<TResponse> InvokeAsync<TRequest, TResponse>(
@@ -167,7 +167,7 @@ public sealed partial class MilvusClient : IDisposable
         TRequest request,
         Func<TResponse, Grpc.Status> getStatus,
         CancellationToken cancellationToken,
-        [CallerMemberName] string callerName = null)
+        [CallerMemberName] string callerName = "")
     {
         if (_log.IsEnabled(LogLevel.Debug))
         {

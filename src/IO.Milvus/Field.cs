@@ -424,7 +424,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int8:
                 {
                     Grpc.IntArray intData = new();
-                    intData.Data.AddRange((Data as IEnumerable<sbyte>).Select(static p => (int)p));
+                    intData.Data.AddRange(((IEnumerable<sbyte>)Data).Select(static p => (int)p));
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -435,7 +435,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int16:
                 {
                     Grpc.IntArray intData = new();
-                    intData.Data.AddRange((Data as IEnumerable<short>).Select(static p => (int)p));
+                    intData.Data.AddRange(((IEnumerable<short>)Data).Select(static p => (int)p));
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -446,7 +446,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int32:
                 {
                     Grpc.IntArray intData = new();
-                    intData.Data.AddRange(Data as IEnumerable<int>);
+                    intData.Data.AddRange((IEnumerable<int>)Data);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -457,7 +457,7 @@ public class Field<TData> : Field
             case MilvusDataType.Int64:
                 {
                     Grpc.LongArray longData = new();
-                    longData.Data.AddRange(Data as IEnumerable<long>);
+                    longData.Data.AddRange((IEnumerable<long>)Data);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -468,7 +468,7 @@ public class Field<TData> : Field
             case MilvusDataType.Float:
                 {
                     Grpc.FloatArray floatData = new();
-                    floatData.Data.AddRange(Data as IEnumerable<float>);
+                    floatData.Data.AddRange((IEnumerable<float>)Data);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -479,7 +479,7 @@ public class Field<TData> : Field
             case MilvusDataType.Double:
                 {
                     Grpc.DoubleArray doubleData = new();
-                    doubleData.Data.AddRange(Data as IEnumerable<double>);
+                    doubleData.Data.AddRange((IEnumerable<double>)Data);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -490,7 +490,7 @@ public class Field<TData> : Field
             case MilvusDataType.String:
                 {
                     Grpc.StringArray stringData = new();
-                    stringData.Data.AddRange(Data as IEnumerable<string>);
+                    stringData.Data.AddRange((IEnumerable<string>)Data);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -501,7 +501,7 @@ public class Field<TData> : Field
             case MilvusDataType.VarChar:
                 {
                     Grpc.StringArray stringData = new();
-                    stringData.Data.AddRange(Data as IEnumerable<string>);
+                    stringData.Data.AddRange((IEnumerable<string>)Data);
 
                     fieldData.Scalars = new Grpc.ScalarField()
                     {
@@ -512,7 +512,7 @@ public class Field<TData> : Field
             case MilvusDataType.Json:
                 {
                     Grpc.JSONArray jsonData = new Grpc.JSONArray();
-                    foreach (string jsonString in (Data as IList<string>))
+                    foreach (string jsonString in (IList<string>)Data)
                     {
                         jsonData.Data.Add(ByteString.CopyFromUtf8(jsonString));
                     }

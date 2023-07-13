@@ -14,12 +14,12 @@ public sealed class CollectionSchema
     /// <remarks>
     /// deprecated later, keep compatible with c++ part now
     /// </remarks>
-    public bool AutoId { get; set; } = false;
+    public bool AutoId { get; set; }
 
     /// <summary>
     /// Collection description
     /// </summary>
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// Fields
@@ -27,12 +27,12 @@ public sealed class CollectionSchema
     /// <remarks>
     /// Array of <see cref="FieldType"/>
     /// </remarks>
-    public IList<FieldType> Fields { get; set; }
+    public required IList<FieldType> Fields { get; set; }
 
     /// <summary>
     /// Name
     /// </summary>
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     /// <summary>
     /// Enable dynamic field.

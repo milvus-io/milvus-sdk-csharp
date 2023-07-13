@@ -110,7 +110,8 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                 });
 
             await TestEnvironment.Client.LoadCollectionAsync(CollectionName);
-            await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName, Array.Empty<string>(), TimeSpan.FromMilliseconds(100), TimeSpan.FromMinutes(1));
+            await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName,
+                waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
         }
 
         public Task DisposeAsync()

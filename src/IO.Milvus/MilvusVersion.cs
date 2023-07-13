@@ -8,7 +8,7 @@ namespace IO.MilvusTests.Client;
 /// </summary>
 public sealed record MilvusVersion
 {
-    internal MilvusVersion(int major, int minor, int patch, string suffix)
+    internal MilvusVersion(int major, int minor, int patch, string? suffix)
     {
         Major = major;
         Minor = minor;
@@ -34,7 +34,7 @@ public sealed record MilvusVersion
     /// <summary>
     /// Suffix version
     /// </summary>
-    public string Suffix { get; }
+    public string? Suffix { get; }
 
     /// <summary>
     /// Parse version string
@@ -57,22 +57,7 @@ public sealed record MilvusVersion
     /// Compare version
     /// </summary>
     public bool GreaterThan(int major, int minor, int patch)
-    {
-        if (Major > major)
-        {
-            return true;
-        }
-        else if (Minor > minor)
-        {
-            return true;
-        }
-        else if (Patch > patch)
-        {
-            return true;
-        }
-
-        return false;
-    }
+        => Major > major || Minor > minor || Patch > patch;
 
     /// <inheritdoc />
     public override string ToString()

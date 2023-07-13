@@ -47,7 +47,7 @@ public sealed class MilvusCompactionPlan
     /// <summary>
     /// Sources
     /// </summary>
-    public IList<long> Sources { get; set; }
+    public required IList<long> Sources { get; set; }
 
     /// <summary>
     /// Target

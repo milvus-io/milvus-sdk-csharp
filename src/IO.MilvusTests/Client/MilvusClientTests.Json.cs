@@ -62,9 +62,8 @@ public partial class MilvusClientTests
 
         await Client.WaitForCollectionLoadAsync(
             collectionName,
-            null,
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(10));
+            waitingInterval: TimeSpan.FromSeconds(1),
+            timeout: TimeSpan.FromSeconds(10));
 
         List<List<float>> vectors = new();
         List<ArticleMeta> articleMetas = new();

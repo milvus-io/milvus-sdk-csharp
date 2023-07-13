@@ -65,10 +65,6 @@ internal static class SchemaConverter
         IDictionary<string, string> typeParams,
         RepeatedField<Grpc.KeyValuePair> indexParams)
     {
-        if (indexParams == null)
-        {
-            return;
-        }
         foreach (Grpc.KeyValuePair parameter in indexParams)
         {
             typeParams[parameter.Key] = parameter.Value;
@@ -95,10 +91,6 @@ internal static class SchemaConverter
     internal static IEnumerable<Grpc.KeyValuePair> ConverterParams(
         IEnumerable<KeyValuePair<string, string>> indexParams)
     {
-        if (indexParams == null)
-        {
-            yield break;
-        }
         foreach (KeyValuePair<string, string> parameter in indexParams)
         {
             yield return new Grpc.KeyValuePair()

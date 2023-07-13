@@ -20,7 +20,7 @@ public static class MilvusClientExtensions
     /// </summary>
     /// <param name="milvusClient">Milvus client.</param>
     /// <param name="collectionName">Collection name.</param>
-    /// <param name="partitionName">Partition name.</param>
+    /// <param name="partitionNames">Partition names.</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">Timeout.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
@@ -29,19 +29,21 @@ public static class MilvusClientExtensions
     public static async Task WaitForCollectionLoadAsync(
         this MilvusClient milvusClient,
         string collectionName,
-        IList<string> partitionName,
+        IList<string>? partitionNames = null,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
-        IProgress<long> progress = null,
+        IProgress<long>? progress = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);
+
+        partitionNames ??= Array.Empty<string>();
 
         await Poll(
             async () =>
             {
                 long progress = await milvusClient
-                    .GetLoadingProgressAsync(collectionName, partitionName, cancellationToken)
+                    .GetLoadingProgressAsync(collectionName, partitionNames, cancellationToken)
                     .ConfigureAwait(false);
                 return (progress == 100, progress);
             },
@@ -69,7 +71,7 @@ public static class MilvusClientExtensions
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
-        IProgress<IndexBuildProgress> progress = null,
+        IProgress<IndexBuildProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(milvusClient);
@@ -110,7 +112,7 @@ public static class MilvusClientExtensions
         string timeoutExceptionMessage,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
-        IProgress<TProgress> progress = null,
+        IProgress<TProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         waitingInterval ??= TimeSpan.FromMilliseconds(500);

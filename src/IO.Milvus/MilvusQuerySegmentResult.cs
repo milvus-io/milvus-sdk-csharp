@@ -17,7 +17,7 @@ public sealed class MilvusQuerySegmentInfoResult
     /// <summary>
     /// Index name.
     /// </summary>
-    public string IndexName { get; set; }
+    public required string IndexName { get; set; }
 
     /// <summary>
     /// Index id.

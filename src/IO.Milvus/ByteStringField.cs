@@ -17,6 +17,7 @@ public sealed class ByteStringField : Field
         base(fieldName, MilvusDataType.BinaryVector)
     {
         DataType = MilvusDataType.BinaryVector;
+        ByteString = byteString;
         RowCount = dimension;
     }
 

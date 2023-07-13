@@ -70,7 +70,7 @@ public partial class MilvusClient
     public async Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
         string expr,
-        string partitionName = null,
+        string? partitionName = null,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
     {
@@ -212,7 +212,7 @@ public partial class MilvusClient
         string expr,
         IList<string> outputFields,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
-        IList<string> partitionNames = null,
+        IList<string>? partitionNames = null,
         long travelTimestamp = 0,
         long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
         long offset = 0,

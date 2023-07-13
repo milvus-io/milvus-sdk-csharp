@@ -7,46 +7,45 @@ namespace IO.Milvus.Diagnostics;
 
 internal static class Verify
 {
-    internal static void NotNull([NotNull] object argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
+    internal static void NotNull([NotNull] object? argument, [CallerArgumentExpression(nameof(argument))] string paramName = "")
     {
         if (argument is null)
         {
             ThrowNullException(paramName);
         }
 
-        static void ThrowNullException(string paramName) =>
-            throw new ArgumentNullException(paramName);
+        [DoesNotReturn]
+        static void ThrowNullException(string paramName) => throw new ArgumentNullException(paramName);
     }
 
-    internal static void NotNullOrWhiteSpace([NotNull] string argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
+    internal static void NotNullOrWhiteSpace([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string paramName = "")
     {
+        NotNull(argument, paramName);
+
         if (string.IsNullOrWhiteSpace(argument))
         {
-            ThrowNullOrWhiteSpaceException(argument, paramName);
+            ThrowWhiteSpaceException(paramName);
         }
 
-        static void ThrowNullOrWhiteSpaceException(string argument, string paramName)
-        {
-            NotNull(argument, paramName);
-            throw new ArgumentException("The value cannot be an empty string or composed entirely of whitespace.", paramName);
-        }
+        [DoesNotReturn]
+        static void ThrowWhiteSpaceException(string paramName)
+            => throw new ArgumentException("The value cannot be an empty string or composed entirely of whitespace.", paramName);
     }
 
-    internal static void NotNullOrEmpty<T>(IList<T> argument, [CallerArgumentExpression(nameof(argument))] string paramName = null)
+    internal static void NotNullOrEmpty<T>([NotNull] IList<T>? argument, [CallerArgumentExpression(nameof(argument))] string paramName = "")
     {
-        if (argument is null || argument.Count == 0)
+        NotNull(argument);
+
+        if (argument.Count == 0)
         {
-            ThrowNullOrEmptyException(argument, paramName);
+            ThrowEmptyException(paramName);
         }
 
-        static void ThrowNullOrEmptyException(object argument, string paramName)
-        {
-            NotNull(argument, paramName);
-            throw new ArgumentException("The collection cannot empty", paramName);
-        }
+        static void ThrowEmptyException(string paramName)
+            => throw new ArgumentException("The collection cannot empty", paramName);
     }
 
-    internal static void GreaterThan(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = null)
+    internal static void GreaterThan(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = "")
     {
         if (value <= other)
         {
@@ -57,7 +56,7 @@ internal static class Verify
             throw new ArgumentOutOfRangeException(paramName, $"The value must be greater than {other}.");
     }
 
-    internal static void GreaterThanOrEqualTo(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = null)
+    internal static void GreaterThanOrEqualTo(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = "")
     {
         if (value < other)
         {
@@ -95,7 +94,7 @@ internal static class Verify
             throw new ArgumentException($"The {name} `{url}` is incomplete, enter a valid URL starting with 'https://", name);
         }
 
-        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri uri) || string.IsNullOrEmpty(uri.Host))
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || string.IsNullOrEmpty(uri.Host))
         {
             throw new ArgumentException($"The {name} `{url}` is not valid", name);
         }

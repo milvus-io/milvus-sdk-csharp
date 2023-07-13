@@ -3,7 +3,7 @@
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-<!--    <Nullable>enable</Nullable>-->
+    <Nullable>enable</Nullable>
 <!--    <AnalysisLevel>latest</AnalysisLevel>-->
 <!--    <AnalysisMode>All</AnalysisMode>-->
 

@@ -1,9 +1,12 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
+
+// TODO: This is currently unused - find out what's going on, possibly remove
 
 /// <summary>
 /// Milvus vectors type.
@@ -145,7 +148,7 @@ public sealed class MilvusVectors
         string collectionName,
         string fieldName,
         IList<long> ids,
-        IList<string> partitionNames = null)
+        IList<string>? partitionNames = null)
     {
         return new MilvusVectors(ids: MilvusVectorIds.Create(collectionName, fieldName, ids, partitionNames));
     }
@@ -154,27 +157,29 @@ public sealed class MilvusVectors
     {
         Grpc.VectorsArray vectorArray = new();
 
-        if (MilvusVectorsType == MilvusVectorsType.FloatVectors)
+        switch (MilvusVectorsType)
         {
-            vectorArray.DataArray = new Grpc.VectorField()
-            {
-                FloatVector = new Grpc.FloatArray(),
-                Dim = Dim
-            };
-            vectorArray.DataArray.FloatVector.Data.AddRange(Vectors);
-        }
-        else if (MilvusVectorsType == MilvusVectorsType.BinaryVectors)
-        {
-            vectorArray.DataArray = new Grpc.VectorField()
-            {
-                BinaryVector = BinaryVectorField.ToGrpcFieldData().ToByteString(),
-                Dim = Dim
-            };
-        }
-        else if (MilvusVectorsType == MilvusVectorsType.Ids)
-        {
-            Grpc.VectorIDs grpcIds = Ids.ToGrpcIds();
-            vectorArray.IdArray = grpcIds;
+            case MilvusVectorsType.FloatVectors:
+                vectorArray.DataArray = new Grpc.VectorField()
+                {
+                    FloatVector = new Grpc.FloatArray(),
+                    Dim = Dim
+                };
+                vectorArray.DataArray.FloatVector.Data.AddRange(Vectors);
+                break;
+
+            case MilvusVectorsType.BinaryVectors:
+                vectorArray.DataArray = new Grpc.VectorField()
+                {
+                    BinaryVector = BinaryVectorField!.ToGrpcFieldData().ToByteString(),
+                    Dim = Dim
+                };
+                break;
+
+            case MilvusVectorsType.Ids:
+                Grpc.VectorIDs grpcIds = Ids!.ToGrpcIds();
+                vectorArray.IdArray = grpcIds;
+                break;
         }
 
         return vectorArray;
@@ -183,17 +188,17 @@ public sealed class MilvusVectors
     /// <summary>
     /// Ids
     /// </summary>
-    public MilvusVectorIds Ids { get; }
+    public MilvusVectorIds? Ids { get; }
 
     /// <summary>
     /// Vectors is an array of binary vector divided by given dim. Disabled when IDs is set.
     /// </summary>
-    public IList<float> Vectors { get; }
+    public IList<float>? Vectors { get; }
 
     /// <summary>
     /// Binary vector field.
     /// </summary>
-    public BinaryVectorField BinaryVectorField { get; }
+    public BinaryVectorField? BinaryVectorField { get; }
 
     /// <summary>
     /// Milvus vectors type.
@@ -247,29 +252,22 @@ public sealed class MilvusVectorIds
     /// <summary>
     /// Ids.
     /// </summary>
-    public IList<long> IntIds { get; }
+    public IList<long>? IntIds { get; }
 
     /// <summary>
     /// String Ids.
     /// </summary>
-    public IList<string> StringIds { get; }
+    public IList<string>? StringIds { get; }
 
     /// <summary>
     /// Ids.
     /// </summary>
-    public object IdArray
-    {
-        get
-        {
-            if (IntIds != null) { return IntIds; }
-            else { return StringIds; }
-        }
-    }
+    public object IdArray => IntIds is null ? StringIds! : IntIds;
 
     /// <summary>
     /// Partition names.
     /// </summary>
-    public IList<string> PartitionNames { get; }
+    public IList<string>? PartitionNames { get; }
 
     /// <summary>
     /// Dimension of ids.
@@ -288,7 +286,7 @@ public sealed class MilvusVectorIds
         string collectionName,
         string fieldName,
         IList<long> ids,
-        IList<string> partitionNames = null)
+        IList<string>? partitionNames = null)
     {
         return new MilvusVectorIds(collectionName, fieldName, ids, partitionNames);
     }
@@ -305,7 +303,7 @@ public sealed class MilvusVectorIds
         string collectionName,
         string fieldName,
         IList<string> ids,
-        IList<string> partitionNames = null)
+        IList<string>? partitionNames = null)
     {
         return new MilvusVectorIds(collectionName, fieldName, ids, partitionNames);
     }
@@ -341,7 +339,7 @@ public sealed class MilvusVectorIds
         string collectionName,
         string fieldName,
         IList<long> ids,
-        IList<string> partitionNames = null)
+        IList<string>? partitionNames = null)
     {
         CollectionName = collectionName;
         FieldName = fieldName;
@@ -353,7 +351,7 @@ public sealed class MilvusVectorIds
         string collectionName,
         string fieldName,
         IList<string> ids,
-        IList<string> partitionNames = null)
+        IList<string>? partitionNames = null)
     {
         CollectionName = collectionName;
         FieldName = fieldName;

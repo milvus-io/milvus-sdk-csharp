@@ -46,7 +46,7 @@ public sealed class MilvusSearchParameters
     /// <remarks>
     /// (Optional)
     /// </remarks>
-    public string Expr { get; private set; }
+    public string? Expr { get; private set; }
 
     /// <summary>
     /// The name of the collection to query.
@@ -86,12 +86,12 @@ public sealed class MilvusSearchParameters
     /// <summary>
     /// Milvus Vector
     /// </summary>
-    public IList<List<float>> MilvusFloatVectors { get; private set; }
+    public IList<List<float>>? MilvusFloatVectors { get; private set; }
 
     /// <summary>
     /// Milvus vector.
     /// </summary>
-    public IList<byte[]> MilvusBinaryVectors { get; private set; }
+    public IList<byte[]>? MilvusBinaryVectors { get; private set; }
 
     /// <summary>
     /// Ignore the growing segments to get best search performance. Default is False.

@@ -27,8 +27,8 @@ public sealed class MilvusFlushResult
     internal static MilvusFlushResult From(FlushResponse response)
     {
         return new MilvusFlushResult(
-            response.CollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>() { Data = p.Value.Data }),
-            response.FlushCollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>() { Data = p.Value.Data }),
+            response.CollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>(p.Value.Data)),
+            response.FlushCollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>(p.Value.Data)),
             response.CollSealTimes);
     }
 

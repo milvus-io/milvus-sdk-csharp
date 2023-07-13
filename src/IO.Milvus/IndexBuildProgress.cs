@@ -34,7 +34,7 @@ public readonly struct IndexBuildProgress : IEquatable<IndexBuildProgress>
     public bool IsComplete => IndexedRows == TotalRows;
 
     /// <inheritdoc />
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
         => obj is IndexBuildProgress other && Equals(other);
 
     /// <inheritdoc />

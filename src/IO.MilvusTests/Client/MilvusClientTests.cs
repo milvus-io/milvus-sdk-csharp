@@ -68,7 +68,7 @@ public partial class MilvusClientTests
             detailedMilvusCollection.Aliases.Should().BeNullOrEmpty();
 
             //Create Partition
-            await Client.CreatePartitionAsync(collectionName, partitionName);
+            await Client.CreatePartitionAsync(collectionName, partitionName!);
             IList<MilvusPartition> partitions = await Client.ShowPartitionsAsync(collectionName);
             partitions.Should().Contain(x => x.PartitionName == partitionName);
         }
@@ -119,7 +119,7 @@ public partial class MilvusClientTests
                 Field.Create<double>("double_weight",doubleWeight),
                 Field.Create<string>("book_name",bookNames),
                 Field.CreateFloatVector("book_intro",bookIntros),},
-            partitionName);
+            partitionName!);
 
         //Create index
         await Client.CreateIndexAsync(
@@ -190,7 +190,7 @@ public partial class MilvusClientTests
         }
         else
         {
-            await Client.ReleasePartitionAsync(collectionName, new[] { partitionName });
+            await Client.ReleasePartitionAsync(collectionName, new[] { partitionName! });
         }
 
         //Drop index
@@ -201,7 +201,7 @@ public partial class MilvusClientTests
         if (!TestEnvironment.IsZillizCloud)
         {
             //Drop partition
-            await Client.DropPartitionsAsync(collectionName, partitionName);
+            await Client.DropPartitionsAsync(collectionName, partitionName!);
             IList<MilvusPartition> partitions = await Client.ShowPartitionsAsync(collectionName);
             partitions.Should().NotContain(p => p.PartitionName == partitionName);
         }

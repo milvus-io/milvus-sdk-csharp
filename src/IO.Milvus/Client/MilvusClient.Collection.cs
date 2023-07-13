@@ -50,12 +50,19 @@ public partial class MilvusClient
             }
         }
 
+        var schema = new CollectionSchema
+        {
+            Name = collectionName,
+            Fields = fieldTypes,
+            EnableDynamicField = enableDynamicField
+        };
+
         await InvokeAsync(_grpcClient.CreateCollectionAsync, new CreateCollectionRequest
         {
             CollectionName = collectionName,
             ConsistencyLevel = (ConsistencyLevel)(int)consistencyLevel,
             ShardsNum = shardsNum,
-            Schema = new CollectionSchema() { Name = collectionName, Fields = fieldTypes, EnableDynamicField = enableDynamicField }.ConvertCollectionSchema().ToByteString()
+            Schema = schema.ConvertCollectionSchema().ToByteString()
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -245,7 +252,7 @@ public partial class MilvusClient
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
-        IList<string> collectionNames = null,
+        IList<string>? collectionNames = null,
         ShowType showType = ShowType.All,
         string dbName = Constants.DEFAULT_DATABASE_NAME,
         CancellationToken cancellationToken = default)
@@ -301,7 +308,8 @@ public partial class MilvusClient
         {
             CollectionName = collectionName,
         };
-        if (partitionNames?.Count > 0)
+
+        if (partitionNames.Count > 0)
         {
             request.PartitionNames.AddRange(partitionNames);
         }
