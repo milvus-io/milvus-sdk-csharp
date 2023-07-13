@@ -54,11 +54,11 @@ public sealed class BinaryVectorField : Field<byte[]>
         }
         Debug.Assert(pos == lengthSum);
 
-        var result = new Grpc.FieldData()
+        var result = new Grpc.FieldData
         {
             FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
-            Vectors = new Grpc.VectorField()
+            Vectors = new Grpc.VectorField
             {
                 BinaryVector = ByteString.CopyFrom(bytes.AsSpan(0, lengthSum)),
                 Dim = dim,

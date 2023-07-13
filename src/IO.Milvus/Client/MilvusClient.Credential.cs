@@ -68,7 +68,7 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(password);
 
-        ulong timestamp = (ulong)TimestampUtils.GetNowUTCTimestamp();
+        ulong timestamp = (ulong)TimestampUtils.GetNowUtcTimestamp();
         await InvokeAsync(_grpcClient.CreateCredentialAsync, new CreateCredentialRequest
         {
             Username = username,

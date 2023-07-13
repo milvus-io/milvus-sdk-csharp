@@ -43,7 +43,7 @@ public sealed partial class MilvusClient : IDisposable
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <see href="https://docs.zilliz.com/docs/connect-to-cluster"/> 
+    /// <see href="https://docs.zilliz.com/docs/connect-to-cluster"/>
     /// </para>
     /// </remarks>
     /// <param name="endpoint">Endpoint.</param>
@@ -77,7 +77,7 @@ public sealed partial class MilvusClient : IDisposable
         }
 
         _callOptions = callOptions ?? new CallOptions(
-            new Metadata()
+            new Metadata
             {
                 { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes(authorization)) }
             });
@@ -103,7 +103,7 @@ public sealed partial class MilvusClient : IDisposable
         {
             if (!response.IsHealthy)
             {
-                _log.LogWarning("Unhealthy: {0}", string.Join(", ", response.Reasons));
+                _log.LogWarning("Unhealthy: {Reasons}", string.Join(", ", response.Reasons));
             }
         }
 
@@ -138,7 +138,6 @@ public sealed partial class MilvusClient : IDisposable
         }
     }
 
-    #region Private ===============================================================================
     private readonly ILogger _log;
     private readonly GrpcChannel _grpcChannel;
     private readonly CallOptions _callOptions;
@@ -171,7 +170,7 @@ public sealed partial class MilvusClient : IDisposable
     {
         if (_log.IsEnabled(LogLevel.Debug))
         {
-            _log.LogDebug("{0} invoked: {1}", callerName, request);
+            _log.LogDebug("{CallerName} invoked: {Request}", callerName, request);
         }
 
         TResponse response = await func(request, _callOptions.WithCancellationToken(cancellationToken)).ConfigureAwait(false);
@@ -181,7 +180,7 @@ public sealed partial class MilvusClient : IDisposable
         {
             if (_log.IsEnabled(LogLevel.Error))
             {
-                _log.LogError("{0} failed: {1}, {2}", callerName, status.ErrorCode, status.Reason);
+                _log.LogError("{CallerName} failed: {ErrorCode}, {Reason}", callerName, status.ErrorCode, status.Reason);
             }
 
             throw new MilvusException(MilvusException.GetErrorMessage(status.ErrorCode, status.Reason));
@@ -192,5 +191,4 @@ public sealed partial class MilvusClient : IDisposable
 
     private static string Base64Encode(string input) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-    #endregion
 }

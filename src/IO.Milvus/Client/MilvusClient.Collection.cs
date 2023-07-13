@@ -4,7 +4,6 @@ using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,7 +28,7 @@ public partial class MilvusClient
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shardsNum = 1,
         bool enableDynamicField = false,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -40,7 +39,7 @@ public partial class MilvusClient
         if (!firstField.IsPrimaryKey ||
             (firstField.DataType is not (MilvusDataType)DataType.Int64 and not (MilvusDataType)DataType.VarChar))
         {
-            throw new MilvusException("The first FieldTypes's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
+            throw new MilvusException("The first FieldType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
         }
         for (int i = 1; i < fieldTypes.Count; i++)
         {
@@ -74,7 +73,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -91,7 +90,7 @@ public partial class MilvusClient
             response.CollectionName,
             response.CollectionID,
             (MilvusConsistencyLevel)response.ConsistencyLevel,
-            TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamp),
+            TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamp),
             response.Schema.ToCollectionSchema(),
             response.ShardsNum,
             response.StartPositions.ToKeyDataPairs());
@@ -107,7 +106,7 @@ public partial class MilvusClient
     public async Task RenameCollectionAsync(
         string oldName,
         string newName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(oldName);
@@ -130,7 +129,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task DropCollectionAsync(
         string collectionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -151,7 +150,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
         string collectionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -180,7 +179,7 @@ public partial class MilvusClient
     public async Task<bool> HasCollectionAsync(
         string collectionName,
         DateTime? dateTime = null,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -189,7 +188,7 @@ public partial class MilvusClient
         BoolResponse response = await InvokeAsync(_grpcClient.HasCollectionAsync, new HasCollectionRequest
         {
             CollectionName = collectionName,
-            TimeStamp = (ulong)(dateTime is not null ? dateTime.Value.ToUtcTimestamp() : 0),
+            TimeStamp = (ulong)(dateTime?.ToUtcTimestamp() ?? 0),
             DbName = dbName
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
@@ -206,7 +205,7 @@ public partial class MilvusClient
     public async Task LoadCollectionAsync(
         string collectionName,
         int replicaNumber = 1,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -229,7 +228,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task ReleaseCollectionAsync(
         string collectionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -254,12 +253,12 @@ public partial class MilvusClient
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string>? collectionNames = null,
         ShowType showType = ShowType.All,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(dbName);
 
-        ShowCollectionsRequest request = new ShowCollectionsRequest
+        ShowCollectionsRequest request = new()
         {
             Type = (Grpc.ShowType)showType,
             DbName = dbName
@@ -271,7 +270,7 @@ public partial class MilvusClient
 
         ShowCollectionsResponse response = await InvokeAsync(_grpcClient.ShowCollectionsAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        List<MilvusCollection> collections = new List<MilvusCollection>();
+        List<MilvusCollection> collections = new();
         if (response.CollectionIds is not null)
         {
             for (int i = 0; i < response.CollectionIds.Count; i++)
@@ -279,7 +278,7 @@ public partial class MilvusClient
                 collections.Add(new MilvusCollection(
                     response.CollectionIds[i],
                     response.CollectionNames[i],
-                    TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamps[i]),
+                    TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamps[i]),
                     response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
             }
         }
@@ -330,7 +329,7 @@ public partial class MilvusClient
     public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);

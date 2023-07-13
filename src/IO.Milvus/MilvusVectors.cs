@@ -1,8 +1,6 @@
 ﻿using Google.Protobuf;
 using IO.Milvus.Diagnostics;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
@@ -160,7 +158,7 @@ public sealed class MilvusVectors
         switch (MilvusVectorsType)
         {
             case MilvusVectorsType.FloatVectors:
-                vectorArray.DataArray = new Grpc.VectorField()
+                vectorArray.DataArray = new Grpc.VectorField
                 {
                     FloatVector = new Grpc.FloatArray(),
                     Dim = Dim
@@ -169,7 +167,7 @@ public sealed class MilvusVectors
                 break;
 
             case MilvusVectorsType.BinaryVectors:
-                vectorArray.DataArray = new Grpc.VectorField()
+                vectorArray.DataArray = new Grpc.VectorField
                 {
                     BinaryVector = BinaryVectorField!.ToGrpcFieldData().ToByteString(),
                     Dim = Dim
@@ -210,7 +208,6 @@ public sealed class MilvusVectors
     /// </summary>
     public long Dim { get; set; }
 
-    #region Private Methods ===================================================================
     private MilvusVectors(BinaryVectorField binaryVectorField)
     {
         MilvusVectorsType = MilvusVectorsType.BinaryVectors;
@@ -231,7 +228,6 @@ public sealed class MilvusVectors
         Dim = dim;
         Vectors = floatFields;
     }
-    #endregion
 }
 
 /// <summary>
@@ -334,7 +330,6 @@ public sealed class MilvusVectorIds
         return idArray;
     }
 
-    #region Private =================================================================
     private MilvusVectorIds(
         string collectionName,
         string fieldName,
@@ -358,5 +353,4 @@ public sealed class MilvusVectorIds
         StringIds = ids;
         PartitionNames = partitionNames;
     }
-    #endregion
 }

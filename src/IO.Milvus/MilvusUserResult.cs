@@ -9,7 +9,7 @@ namespace IO.Milvus;
 /// </summary>
 public sealed class MilvusUserResult
 {
-    internal MilvusUserResult(string username, IEnumerable<string> roles)
+    private MilvusUserResult(string username, IEnumerable<string> roles)
     {
         Username = username;
         Roles = roles;

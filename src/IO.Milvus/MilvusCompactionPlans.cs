@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
@@ -20,15 +19,12 @@ public sealed class MilvusCompactionPlans
     public MilvusCompactionState State { get; }
 
     internal static MilvusCompactionPlans From(Grpc.GetCompactionPlansResponse response)
-    {
-        return new MilvusCompactionPlans(response.MergeInfos.Select(static x => new MilvusCompactionPlan()
+        => new(response.MergeInfos.Select(static x => new MilvusCompactionPlan
         {
             Sources = x.Sources,
             Target = x.Target
         }), (MilvusCompactionState)response.State);
-    }
 
-    #region Private =========================================================================================================
     private MilvusCompactionPlans(
         IEnumerable<MilvusCompactionPlan> collection,
         MilvusCompactionState state)
@@ -36,7 +32,6 @@ public sealed class MilvusCompactionPlans
         MergeInfos = collection.ToList();
         State = state;
     }
-    #endregion
 }
 
 /// <summary>

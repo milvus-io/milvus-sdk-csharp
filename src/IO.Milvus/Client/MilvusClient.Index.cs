@@ -2,7 +2,6 @@
 using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,7 +29,7 @@ public partial class MilvusClient
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -52,16 +51,16 @@ public partial class MilvusClient
         request.ExtraParams.Add(new Grpc.KeyValuePair
         {
             Key = "metric_type",
-            Value = milvusMetricType.ToString()
+            Value = GetGrpcMetricType(milvusMetricType)
         });
 
         request.ExtraParams.Add(new Grpc.KeyValuePair
         {
             Key = "index_type",
-            Value = milvusIndexType.ToString()
+            Value = GetGrpcIndexType(milvusIndexType)
         });
 
-        if (extraParams?.Count > 0)
+        if (extraParams.Count > 0)
         {
             request.ExtraParams.Add(new Grpc.KeyValuePair
             {
@@ -78,14 +77,14 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The particular collection name you want to drop index.</param>
     /// <param name="fieldName">The vector field name in this particular collection.</param>
-    /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DEFAULT_INDEX_NAME"/></param>
+    /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DefaultIndexName"/></param>
     /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task DropIndexAsync(
         string collectionName,
         string fieldName,
-        string indexName = Constants.DEFAULT_INDEX_NAME,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string indexName = Constants.DefaultIndexName,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -113,7 +112,7 @@ public partial class MilvusClient
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName,
         string fieldName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -127,7 +126,7 @@ public partial class MilvusClient
             DbName = dbName,
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        List<MilvusIndex> indexes = new List<MilvusIndex>();
+        List<MilvusIndex> indexes = new();
         if (response.IndexDescriptions is not null)
         {
             foreach (IndexDescription index in response.IndexDescriptions)
@@ -154,7 +153,7 @@ public partial class MilvusClient
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -182,7 +181,7 @@ public partial class MilvusClient
     public async Task<IndexState> GetIndexStateAsync(
         string collectionName,
         string fieldName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);

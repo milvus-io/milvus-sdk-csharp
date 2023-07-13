@@ -10,7 +10,7 @@ public partial class MilvusClient
     /// <summary>
     /// Get metrics.
     /// </summary>
-    /// <param name="request">request is of jsonic format.</param>
+    /// <param name="request">Request in JSON format.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>metrics from which component.</returns>
     public async Task<MilvusMetrics> GetMetricsAsync(

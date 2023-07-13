@@ -6,7 +6,7 @@
 
 namespace System.Runtime.CompilerServices;
 
-using System.ComponentModel;
+using ComponentModel;
 
 #if !NETCOREAPP3_0_OR_GREATER
 

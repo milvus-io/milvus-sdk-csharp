@@ -9,12 +9,13 @@ internal static class SchemaConverter
     internal static Grpc.CollectionSchema ConvertCollectionSchema(
         this CollectionSchema collectionSchema)
     {
-        Grpc.CollectionSchema grpcCollectionSchema = new Grpc.CollectionSchema()
+        Grpc.CollectionSchema grpcCollectionSchema = new()
         {
             Name = collectionSchema.Name,
             AutoID = collectionSchema.AutoId,
             EnableDynamicField = collectionSchema.EnableDynamicField,
         };
+
         if (!string.IsNullOrEmpty(collectionSchema.Description))
         {
             grpcCollectionSchema.Description = collectionSchema.Description;
@@ -71,7 +72,7 @@ internal static class SchemaConverter
         }
     }
 
-    internal static Grpc.FieldSchema ConvertFieldSchema(FieldType fieldType)
+    private static Grpc.FieldSchema ConvertFieldSchema(FieldType fieldType)
     {
         Grpc.FieldSchema grpcField = new()
         {
@@ -88,12 +89,11 @@ internal static class SchemaConverter
         return grpcField;
     }
 
-    internal static IEnumerable<Grpc.KeyValuePair> ConverterParams(
-        IEnumerable<KeyValuePair<string, string>> indexParams)
+    private static IEnumerable<Grpc.KeyValuePair> ConverterParams(IEnumerable<KeyValuePair<string, string>> indexParams)
     {
         foreach (KeyValuePair<string, string> parameter in indexParams)
         {
-            yield return new Grpc.KeyValuePair()
+            yield return new Grpc.KeyValuePair
             {
                 Key = parameter.Key,
                 Value = parameter.Value
@@ -101,8 +101,7 @@ internal static class SchemaConverter
         }
     }
 
-    internal static Dictionary<string, IList<int>> ToKeyDataPairs(
-        this IEnumerable<Grpc.KeyDataPair> keyDataPairs)
+    internal static Dictionary<string, IList<int>> ToKeyDataPairs(this IEnumerable<Grpc.KeyDataPair> keyDataPairs)
     {
         Dictionary<string, IList<int>> dictionary = new();
 

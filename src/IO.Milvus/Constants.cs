@@ -8,127 +8,127 @@ public static class Constants
     /// <summary>
     /// Vector tag for <see cref="Grpc.PlaceholderValue"/>
     /// </summary>
-    public const string VECTOR_TAG = "$0";
+    public const string VectorTag = "$0";
 
     /// <summary>
     /// Key name in parameters.
     /// </summary>
-    public const string VECTOR_FIELD = "anns_field";
+    public const string VectorField = "anns_field";
 
     /// <summary>
     /// Key name in parameters.
     /// </summary>
-    public const string VECTOR_DIM = "dim";
+    public const string VectorDim = "dim";
 
     /// <summary>
     /// Key name in parameters.Indicate the max length of varchar datatype.
     /// </summary>
-    public const string VARCHAR_MAX_LENGTH = "max_length";
+    public const string VarcharMaxLength = "max_length";
 
     /// <summary>
     /// Top parameter key name.
     /// </summary>
-    public const string TOP_K = "topk";
+    public const string TopK = "topk";
 
     /// <summary>
     /// Key name in parameters.<see cref="MilvusIndexType"/>
     /// </summary>
-    public const string INDEX_TYPE = "index_type";
+    public const string IndexType = "index_type";
 
     /// <summary>
     /// Key name in parameters.<see cref="MilvusMetricType"/>
     /// </summary>
-    public const string METRIC_TYPE = "metric_type";
+    public const string MetricType = "metric_type";
 
     /// <summary>
     /// Key name in search parameters.
     /// </summary>
-    public const string ROUND_DECIMAL = "round_decimal";
+    public const string RoundDecimal = "round_decimal";
 
     /// <summary>
     /// Key name.
     /// </summary>
-    public const string PARAMS = "params";
+    public const string Params = "params";
 
     /// <summary>
     /// Row count key name.
     /// </summary>
-    public const string ROW_COUNT = "row_count";
+    public const string RowCount = "row_count";
 
     /// <summary>
     /// Key name.
     /// </summary>
-    public const string BUCKET = "bucket";
+    public const string Bucket = "bucket";
 
     /// <summary>
     /// Key name.
     /// </summary>
-    public const string FAILED_REASON = "failed_reason";
+    public const string FailedReason = "failed_reason";
 
     /// <summary>
     /// Files.
     /// </summary>
-    public const string IMPORT_FILES = "files";
+    public const string ImportFiles = "files";
 
     /// <summary>
     /// Collection.
     /// </summary>
-    public const string IMPORT_COLLECTION = "collection";
+    public const string ImportCollection = "collection";
 
     /// <summary>
     /// Partition.
     /// </summary>
-    public const string IMPORT_PARTITION = "partition";
+    public const string ImportPartition = "partition";
 
     /// <summary>
     /// Default index name.
     /// </summary>
-    public const string DEFAULT_INDEX_NAME = "_default_idx";
+    public const string DefaultIndexName = "_default_idx";
 
     /// <summary>
     /// Key name.
     /// </summary>
-    public const string IGNORE_GROWING = "ignore_growing";
+    public const string IgnoreGrowing = "ignore_growing";
 
     /// <summary>
     /// Default database name.
     /// </summary>
-    public const string DEFAULT_DATABASE_NAME = "default";
+    public const string DefaultDatabaseName = "default";
 
     /// <summary>
     ///  max value for waiting loading collection/partition interval, unit: millisecond
     /// </summary>
-    public const long MAX_WAITING_LOADING_INTERVAL = 2000L;
+    public const long MaxWaitingLoadingInterval = 2000L;
 
     /// <summary>
     /// max value for waiting loading collection/partition timeout,  unit: second
     /// </summary>
-    public const long MAX_WAITING_LOADING_TIMEOUT = 300L;
+    public const long MaxWaitingLoadingTimeout = 300L;
 
     /// <summary>
     /// max value for waiting flushing collection/partition interval, unit: millisecond
     /// </summary>
-    public const long MAX_WAITING_FLUSHING_INTERVAL = 2000L;
+    public const long MaxWaitingFlushingInterval = 2000L;
 
     /// <summary>
     /// max value for waiting flushing collection/partition timeout,  unit: second
     /// </summary>
-    public const long MAX_WAITING_FLUSHING_TIMEOUT = 300L;
+    public const long MaxWaitingFlushingTimeout = 300L;
 
     /// <summary>
     /// max value for waiting create index interval, unit: millisecond
     /// </summary>
-    public const long MAX_WAITING_INDEX_INTERVAL = 2000L;
+    public const long MaxWaitingIndexInterval = 2000L;
 
     /// <summary>
     /// set this value for "withGuaranteeTimestamp" of QueryParam/SearchParam
     /// to instruct server execute query/search immediately. 
     /// </summary>
-    public const long GUARANTEE_EVENTUALLY_TS = 1L;
+    public const long GuaranteeEventuallyTs = 1L;
 
     /// <summary>
     /// set this value for "withGuaranteeTimestamp" of QueryParam/SearchParam
     /// to instruct server execute query/search after all DML operations finished.
     /// </summary>
-    public const long GUARANTEE_STRONG_TS = 0L;
+    public const long GuaranteeStrongTs = 0L;
 }

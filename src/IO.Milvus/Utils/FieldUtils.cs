@@ -15,10 +15,9 @@ public static class FieldUtils
     /// Convert to float array.
     /// </summary>
     /// <param name="floatVectors">Float vectors</param>
-    /// <returns>Floatarray and dimension</returns>
+    /// <returns>FloatArray and dimension</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static (FloatArray, int) ToFloatArray(
-        this IList<List<float>> floatVectors)
+    public static (FloatArray, int) ToFloatArray(this IList<List<float>> floatVectors)
     {
         Verify.NotNullOrEmpty(floatVectors);
 
@@ -35,6 +34,6 @@ public static class FieldUtils
     }
 
     /// <summary>Creates a <see cref="Dictionary{TKey, TValue}"/> from GRPC KeyValuePairs.</summary>
-    public static Dictionary<string, string> ToDictionary(this IEnumerable<Grpc.KeyValuePair> source) =>
-        source.ToDictionary(static p => p.Key, static p => p.Value);
+    public static Dictionary<string, string> ToDictionary(this IEnumerable<Grpc.KeyValuePair> source)
+        => source.ToDictionary(static p => p.Key, static p => p.Value);
 }

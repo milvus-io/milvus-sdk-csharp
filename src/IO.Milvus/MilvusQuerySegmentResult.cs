@@ -1,6 +1,5 @@
 ﻿using IO.Milvus.Grpc;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
@@ -59,7 +58,7 @@ public sealed class MilvusQuerySegmentInfoResult
     {
         foreach (QuerySegmentInfo info in response.Infos)
         {
-            yield return new MilvusQuerySegmentInfoResult()
+            yield return new MilvusQuerySegmentInfoResult
             {
                 CollectionId = info.CollectionID,
                 IndexName = info.IndexName,

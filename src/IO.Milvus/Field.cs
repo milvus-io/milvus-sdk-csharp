@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
@@ -26,7 +25,6 @@ public abstract class Field
         IsDynamic = isDynamic;
     }
 
-    #region Properties
     /// <summary>
     /// Field name
     /// </summary>
@@ -51,18 +49,14 @@ public abstract class Field
     /// Is dynamic.
     /// </summary>
     public bool IsDynamic { get; set; }
-    #endregion
 
     /// <summary>
     /// Get string data.
     /// </summary>
     /// <returns>string data.</returns>
     public override string ToString()
-    {
-        return $"{{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(RowCount)}: {RowCount}}}";
-    }
+        => $"{{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(RowCount)}: {RowCount}}}";
 
-    #region Converter
     /// <summary>
     /// Convert to a grpc generated field.
     /// </summary>
@@ -79,51 +73,60 @@ public abstract class Field
     {
         Verify.NotNull(fieldData);
 
-        if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Vectors)
+        switch (fieldData.FieldCase)
         {
-            int dim = (int)fieldData.Vectors.Dim;
-
-            if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.FloatVector)
+            case Grpc.FieldData.FieldOneofCase.Vectors:
             {
-                List<List<float>> floatVectors = new();
+                int dim = (int)fieldData.Vectors.Dim;
 
-                for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i += dim)
+                switch (fieldData.Vectors.DataCase)
                 {
-                    List<float> list = new(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
-                    floatVectors.Add(list);
+                    case Grpc.VectorField.DataOneofCase.FloatVector:
+                    {
+                        List<List<float>> floatVectors = new();
+
+                        for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i += dim)
+                        {
+                            List<float> list = new(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
+                            floatVectors.Add(list);
+                        }
+
+                        FloatVectorField field = CreateFloatVector(fieldData.FieldName, floatVectors);
+
+                        return field;
+                    }
+
+                    case Grpc.VectorField.DataOneofCase.BinaryVector:
+                        return CreateFromBytes(fieldData.FieldName, fieldData.Vectors.BinaryVector.Span, dim);
+
+                    default:
+                        throw new NotSupportedException("VectorField.DataOneofCase.None not support");
                 }
+            }
+            case Grpc.FieldData.FieldOneofCase.Scalars:
+            {
+                Field field = fieldData.Scalars.DataCase switch
+                {
+                    Grpc.ScalarField.DataOneofCase.BoolData
+                        => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data),
+                    Grpc.ScalarField.DataOneofCase.FloatData
+                        => Create(fieldData.FieldName, fieldData.Scalars.FloatData.Data),
+                    Grpc.ScalarField.DataOneofCase.IntData
+                        => Create(fieldData.FieldName, fieldData.Scalars.IntData.Data),
+                    Grpc.ScalarField.DataOneofCase.LongData
+                        => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data),
+                    Grpc.ScalarField.DataOneofCase.StringData
+                        => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
+                    Grpc.ScalarField.DataOneofCase.JsonData
+                        => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data
+                            .Select(p => p.ToStringUtf8()).ToList()),
 
-                FloatVectorField field = Field.CreateFloatVector(fieldData.FieldName, floatVectors);
-
+                    _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
+                };
                 return field;
             }
-            else if (fieldData.Vectors.DataCase == Grpc.VectorField.DataOneofCase.BinaryVector)
-            {
-                return CreateFromBytes(fieldData.FieldName, fieldData.Vectors.BinaryVector.Span, dim);
-            }
-            else
-            {
-                throw new NotSupportedException("VectorField.DataOneofCase.None not support");
-            }
-
-        }
-        else if (fieldData.FieldCase == Grpc.FieldData.FieldOneofCase.Scalars)
-        {
-            Field field = fieldData.Scalars.DataCase switch
-            {
-                Grpc.ScalarField.DataOneofCase.BoolData => Field.Create<bool>(fieldData.FieldName, fieldData.Scalars.BoolData.Data),
-                Grpc.ScalarField.DataOneofCase.FloatData => Field.Create<float>(fieldData.FieldName, fieldData.Scalars.FloatData.Data),
-                Grpc.ScalarField.DataOneofCase.IntData => Field.Create<int>(fieldData.FieldName, fieldData.Scalars.IntData.Data),
-                Grpc.ScalarField.DataOneofCase.LongData => Field.Create<long>(fieldData.FieldName, fieldData.Scalars.LongData.Data),
-                Grpc.ScalarField.DataOneofCase.StringData => Field.CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
-                Grpc.ScalarField.DataOneofCase.JsonData => Field.CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList()),
-                _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
-            };
-            return field;
-        }
-        else
-        {
-            throw new NotSupportedException("Cannot convert None FieldData to Field");
+            default:
+                throw new NotSupportedException("Cannot convert None FieldData to Field");
         }
     }
 
@@ -181,9 +184,7 @@ public abstract class Field
 
         return dataType;
     }
-    #endregion
 
-    #region Creation
     /// <summary>
     /// Create a field
     /// </summary>
@@ -203,13 +204,8 @@ public abstract class Field
     /// <param name="fieldName">Field name</param>
     /// <param name="data">Data in this field</param>
     /// <returns></returns>
-    public static Field<TData> Create<TData>(
-        string fieldName,
-        IList<TData> data
-        )
-    {
-        return new Field<TData>(fieldName, data);
-    }
+    public static Field<TData> Create<TData>(string fieldName, IList<TData> data)
+        => new(fieldName, data);
 
     /// <summary>
     /// Create a varchar field.
@@ -222,9 +218,7 @@ public abstract class Field
         string fieldName,
         IList<string> data,
         bool isDynamic = false)
-    {
-        return new Field<string>(fieldName, data, MilvusDataType.VarChar, isDynamic);
-    }
+        => new(fieldName, data, MilvusDataType.VarChar, isDynamic);
 
     /// <summary>
     /// Create a field from <see cref="byte"/> array.
@@ -274,9 +268,7 @@ public abstract class Field
     /// <param name="data">Data</param>
     /// <returns></returns>
     public static FloatVectorField CreateFloatVector(string fieldName, IList<List<float>> data)
-    {
-        return new FloatVectorField(fieldName, data);
-    }
+        => new(fieldName, data);
 
     /// <summary>
     /// Create a float vector.
@@ -322,7 +314,7 @@ public abstract class Field
     public static Field CreateFromStream(string fieldName, Stream stream, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        ByteStringField field = new ByteStringField(fieldName, ByteString.FromStream(stream), dimension);
+        ByteStringField field = new(fieldName, ByteString.FromStream(stream), dimension);
 
         return field;
     }
@@ -339,7 +331,6 @@ public abstract class Field
         Verify.NotNullOrWhiteSpace(fieldName);
         return new Field<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
-    #endregion
 }
 
 /// <summary>
@@ -354,11 +345,9 @@ public class Field<TData> : Field
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <param name="isDynamic"></param>
-    public Field(string fieldName, IList<TData> data, bool isDynamic = false) :
-        base(fieldName, EnsureDataType<TData>(), isDynamic)
-    {
-        Data = data;
-    }
+    public Field(string fieldName, IList<TData> data, bool isDynamic = false)
+        : base(fieldName, EnsureDataType<TData>(), isDynamic)
+        => Data = data;
 
     /// <summary>
     /// Construct a field
@@ -367,15 +356,9 @@ public class Field<TData> : Field
     /// <param name="data"></param>
     /// <param name="milvusDataType">Milvus data type.</param>
     /// <param name="isDynamic"></param>
-    public Field(
-        string fieldName,
-        IList<TData> data,
-        MilvusDataType milvusDataType,
-        bool isDynamic) :
-        base(fieldName, milvusDataType, isDynamic)
-    {
-        Data = data;
-    }
+    public Field(string fieldName, IList<TData> data, MilvusDataType milvusDataType, bool isDynamic)
+        : base(fieldName, milvusDataType, isDynamic)
+        => Data = data;
 
     /// <summary>
     /// Vector data
@@ -387,10 +370,7 @@ public class Field<TData> : Field
     /// </summary>
     public override long RowCount
     {
-        get
-        {
-            return Data?.Count ?? 0;
-        }
+        get => Data.Count;
         protected set { }
     }
 
@@ -415,7 +395,7 @@ public class Field<TData> : Field
                     Grpc.BoolArray boolData = new();
                     boolData.Data.AddRange(Data as IEnumerable<bool>);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         BoolData = boolData
                     };
@@ -426,7 +406,7 @@ public class Field<TData> : Field
                     Grpc.IntArray intData = new();
                     intData.Data.AddRange(((IEnumerable<sbyte>)Data).Select(static p => (int)p));
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         IntData = intData
                     };
@@ -437,7 +417,7 @@ public class Field<TData> : Field
                     Grpc.IntArray intData = new();
                     intData.Data.AddRange(((IEnumerable<short>)Data).Select(static p => (int)p));
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         IntData = intData
                     };
@@ -448,7 +428,7 @@ public class Field<TData> : Field
                     Grpc.IntArray intData = new();
                     intData.Data.AddRange((IEnumerable<int>)Data);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         IntData = intData
                     };
@@ -459,7 +439,7 @@ public class Field<TData> : Field
                     Grpc.LongArray longData = new();
                     longData.Data.AddRange((IEnumerable<long>)Data);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         LongData = longData
                     };
@@ -470,7 +450,7 @@ public class Field<TData> : Field
                     Grpc.FloatArray floatData = new();
                     floatData.Data.AddRange((IEnumerable<float>)Data);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         FloatData = floatData
                     };
@@ -481,7 +461,7 @@ public class Field<TData> : Field
                     Grpc.DoubleArray doubleData = new();
                     doubleData.Data.AddRange((IEnumerable<double>)Data);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         DoubleData = doubleData
                     };
@@ -492,7 +472,7 @@ public class Field<TData> : Field
                     Grpc.StringArray stringData = new();
                     stringData.Data.AddRange((IEnumerable<string>)Data);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         StringData = stringData
                     };
@@ -503,7 +483,7 @@ public class Field<TData> : Field
                     Grpc.StringArray stringData = new();
                     stringData.Data.AddRange((IEnumerable<string>)Data);
 
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         StringData = stringData
                     };
@@ -511,12 +491,12 @@ public class Field<TData> : Field
                 break;
             case MilvusDataType.Json:
                 {
-                    Grpc.JSONArray jsonData = new Grpc.JSONArray();
+                    Grpc.JSONArray jsonData = new();
                     foreach (string jsonString in (IList<string>)Data)
                     {
                         jsonData.Data.Add(ByteString.CopyFromUtf8(jsonString));
                     }
-                    fieldData.Scalars = new Grpc.ScalarField()
+                    fieldData.Scalars = new Grpc.ScalarField
                     {
                         JsonData = jsonData,
                     };
@@ -534,14 +514,13 @@ public class Field<TData> : Field
     /// </summary>
     /// <returns></returns>
     public override string ToString()
-    {
-        return $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data?.Count}, {nameof(RowCount)}: {RowCount}}}";
-    }
+        => $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data?.Count}, {nameof(RowCount)}: {RowCount}}}";
 
-    internal void Check()
+    private void Check()
     {
         Verify.NotNullOrWhiteSpace(FieldName);
-        if (Data?.Any() != true)
+
+        if (Data.Any() != true)
         {
             throw new MilvusException($"{nameof(Field)}.{nameof(Data)} is empty");
         }

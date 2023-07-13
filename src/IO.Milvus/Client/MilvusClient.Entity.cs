@@ -24,7 +24,7 @@ public partial class MilvusClient
         string collectionName,
         IList<Field> fields,
         string partitionName = "",
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -71,7 +71,7 @@ public partial class MilvusClient
         string collectionName,
         string expr,
         string? partitionName = null,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -118,7 +118,7 @@ public partial class MilvusClient
     /// <returns></returns>
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(collectionNames);
@@ -144,7 +144,7 @@ public partial class MilvusClient
     /// <returns></returns>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -214,10 +214,10 @@ public partial class MilvusClient
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
         IList<string>? partitionNames = null,
         long travelTimestamp = 0,
-        long guaranteeTimestamp = Constants.GUARANTEE_EVENTUALLY_TS,
+        long guaranteeTimestamp = Constants.GuaranteeEventuallyTs,
         long offset = 0,
         long limit = 0,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -245,11 +245,11 @@ public partial class MilvusClient
         if (offset > 0)
         {
             Verify.GreaterThan(limit, 0);
-            request.QueryParams.Add(new Grpc.KeyValuePair() { Key = "offset", Value = offset.ToString(CultureInfo.InvariantCulture) });
+            request.QueryParams.Add(new Grpc.KeyValuePair { Key = "offset", Value = offset.ToString(CultureInfo.InvariantCulture) });
         }
         if (limit > 0)
         {
-            request.QueryParams.Add(new Grpc.KeyValuePair() { Key = "limit", Value = limit.ToString(CultureInfo.InvariantCulture) });
+            request.QueryParams.Add(new Grpc.KeyValuePair { Key = "limit", Value = limit.ToString(CultureInfo.InvariantCulture) });
         }
 
         QueryResults response = await InvokeAsync(_grpcClient.QueryAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);

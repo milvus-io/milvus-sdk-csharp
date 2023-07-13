@@ -8,7 +8,7 @@ public enum MilvusCompactionState
     /// <summary>
     /// Unknown.
     /// </summary>
-    UndefiedState = 0,
+    Undefined = 0,
 
     /// <summary>
     /// Executing.

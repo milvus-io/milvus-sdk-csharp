@@ -32,11 +32,11 @@ public sealed class ByteStringField : Field
     /// <inheritdoc />
     public override Grpc.FieldData ToGrpcFieldData()
     {
-        return new Grpc.FieldData()
+        return new Grpc.FieldData
         {
             FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
-            Vectors = new Grpc.VectorField()
+            Vectors = new Grpc.VectorField
             {
                 BinaryVector = ByteString,
                 Dim = RowCount,

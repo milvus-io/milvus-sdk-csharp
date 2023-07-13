@@ -16,8 +16,8 @@ namespace IO.Milvus;
 public sealed class MilvusSearchParameters
 {
     /// <summary>
-    /// the consistency level used in the query. 
-    /// If the consistency level is not specified, 
+    /// the consistency level used in the query.
+    /// If the consistency level is not specified,
     /// the default level is ConsistencyLevelEnum.BOUNDED.
     /// </summary>
     public MilvusConsistencyLevel ConsistencyLevel { get; private set; } = MilvusConsistencyLevel.Bounded;
@@ -66,7 +66,7 @@ public sealed class MilvusSearchParameters
     /// <summary>
     /// Guarantee timestamp
     /// </summary>
-    public long GuaranteeTimestamp { get; private set; } = Constants.GUARANTEE_EVENTUALLY_TS;
+    public long GuaranteeTimestamp { get; private set; } = Constants.GuaranteeEventuallyTs;
 
     /// <summary>
     /// Metric type of ANN searching.
@@ -115,10 +115,8 @@ public sealed class MilvusSearchParameters
         string collectionName,
         string vectorFieldName,
         IList<string> outFields,
-        string dbName = Constants.DEFAULT_DATABASE_NAME)
-    {
-        return new MilvusSearchParameters(collectionName, vectorFieldName, outFields, dbName);
-    }
+        string dbName = Constants.DefaultDatabaseName)
+        => new(collectionName, vectorFieldName, outFields, dbName);
 
     /// <summary>
     /// Sets the target vectors.
@@ -143,8 +141,8 @@ public sealed class MilvusSearchParameters
     }
 
     /// <summary>
-    /// Specifies the output scalar fields (Optional). 
-    /// If the output fields are specified, 
+    /// Specifies the output scalar fields (Optional).
+    /// If the output fields are specified,
     /// the QueryResults returned by query() will contains the values of these fields.
     /// </summary>
     /// <param name="outputFields">The name list of output fields.</param>
@@ -296,8 +294,8 @@ public sealed class MilvusSearchParameters
     /// Use an operation's TSO to set this parameter, the server will execute search after this operation is finished.
     /// </item>
     /// <item>
-    /// Default value is <see cref="Constants.GUARANTEE_EVENTUALLY_TS"/> , server executes search immediately.
-    /// </item> 
+    /// Default value is <see cref="Constants.GuaranteeEventuallyTs"/> , server executes search immediately.
+    /// </item>
     /// </list>
     /// </summary>
     /// <remarks>
@@ -430,20 +428,13 @@ public sealed class MilvusSearchParameters
             return guaranteeTimestamp;
         }
 
-        switch (consistencyLevel)
+        return consistencyLevel switch
         {
-            case MilvusConsistencyLevel.Strong:
-                guaranteeTimestamp = 0L;
-                break;
-            case MilvusConsistencyLevel.Bounded:
-                guaranteeTimestamp = DateTime.UtcNow.ToUtcTimestamp() - gracefulTime;
-                break;
-            case MilvusConsistencyLevel.Eventually:
-                guaranteeTimestamp = 1L;
-                break;
-        }
-
-        return guaranteeTimestamp;
+            MilvusConsistencyLevel.Strong => 0L,
+            MilvusConsistencyLevel.Bounded => DateTime.UtcNow.ToUtcTimestamp() - gracefulTime,
+            MilvusConsistencyLevel.Eventually => 1L,
+            _ => guaranteeTimestamp
+        };
     }
 
     private Grpc.SearchRequest InitSearchRequest()
@@ -483,12 +474,12 @@ public sealed class MilvusSearchParameters
         request.SearchParams.AddRange(
             new[]
             {
-                new Grpc.KeyValuePair() { Key = Constants.VECTOR_FIELD, Value = VectorFieldName },
-                new Grpc.KeyValuePair() { Key = Constants.TOP_K, Value = TopK.ToString(CultureInfo.InvariantCulture) },
-                new Grpc.KeyValuePair() { Key = Constants.METRIC_TYPE, Value = MetricType.ToString().ToUpperInvariant() },
-                new Grpc.KeyValuePair() { Key = Constants.IGNORE_GROWING, Value = IgnoreGrowing.ToString() },
-                new Grpc.KeyValuePair() { Key = Constants.ROUND_DECIMAL, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) },
-                new Grpc.KeyValuePair() { Key = Constants.PARAMS, Value = Parameters?.Count > 0 ? Parameters.Combine() : "{}" }
+                new Grpc.KeyValuePair { Key = Constants.VectorField, Value = VectorFieldName },
+                new Grpc.KeyValuePair { Key = Constants.TopK, Value = TopK.ToString(CultureInfo.InvariantCulture) },
+                new Grpc.KeyValuePair { Key = Constants.MetricType, Value = MetricType.ToString().ToUpperInvariant() },
+                new Grpc.KeyValuePair { Key = Constants.IgnoreGrowing, Value = IgnoreGrowing.ToString() },
+                new Grpc.KeyValuePair { Key = Constants.RoundDecimal, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) },
+                new Grpc.KeyValuePair { Key = Constants.Params, Value = Parameters?.Count > 0 ? Parameters.Combine() : "{}" }
             });
     }
 
@@ -498,7 +489,7 @@ public sealed class MilvusSearchParameters
 
         Grpc.PlaceholderValue placeholderValue = new()
         {
-            Tag = Constants.VECTOR_TAG
+            Tag = Constants.VectorTag
         };
 
         if (MilvusFloatVectors != null)

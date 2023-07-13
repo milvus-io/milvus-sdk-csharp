@@ -19,7 +19,7 @@ public partial class MilvusClient
     public async Task CreatePartitionAsync(
         string collectionName,
         string partitionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -44,7 +44,7 @@ public partial class MilvusClient
     public async Task<bool> HasPartitionAsync(
         string collectionName,
         string partitionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -71,7 +71,7 @@ public partial class MilvusClient
     /// <returns></returns>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -83,7 +83,7 @@ public partial class MilvusClient
             DbName = dbName
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        List<MilvusPartition> partitions = new List<MilvusPartition>();
+        List<MilvusPartition> partitions = new();
         if (response.PartitionIDs is not null)
         {
             for (int i = 0; i < response.PartitionIDs.Count; i++)
@@ -91,7 +91,7 @@ public partial class MilvusClient
                 partitions.Add(new MilvusPartition(
                     response.PartitionIDs[i],
                     response.PartitionNames[i],
-                    TimestampUtils.GetTimeFromTimstamp((long)response.CreatedUtcTimestamps[i]),
+                    TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamps[i]),
                     response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
             }
         }
@@ -112,14 +112,14 @@ public partial class MilvusClient
         string collectionName,
         IList<string> partitionNames,
         int replicaNumber = 1,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrEmpty(partitionNames);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        LoadPartitionsRequest request = new LoadPartitionsRequest
+        LoadPartitionsRequest request = new()
         {
             CollectionName = collectionName,
             ReplicaNumber = replicaNumber,
@@ -141,7 +141,7 @@ public partial class MilvusClient
     public async Task ReleasePartitionAsync(
         string collectionName,
         IList<string> partitionNames,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -169,14 +169,14 @@ public partial class MilvusClient
     public async Task DropPartitionsAsync(
         string collectionName,
         string partitionName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(partitionName);
         Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.DropPartitionAsync, new DropPartitionRequest()
+        await InvokeAsync(_grpcClient.DropPartitionAsync, new DropPartitionRequest
         {
             CollectionName = collectionName,
             PartitionName = partitionName

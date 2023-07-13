@@ -10,7 +10,7 @@ namespace IO.Milvus;
 /// </summary>
 public sealed class MilvusMutationResult
 {
-    internal MilvusMutationResult(
+    private MilvusMutationResult(
         long insertCount,
         long deletedCount,
         long upsertCount,
@@ -40,7 +40,7 @@ public sealed class MilvusMutationResult
             mutationResult.Acknowledged,
             mutationResult.SuccIndex.ToList(),
             mutationResult.ErrIndex.ToList(),
-            TimestampUtils.GetTimeFromTimstamp((long)mutationResult.Timestamp),
+            TimestampUtils.GetTimeFromTimestamp((long)mutationResult.Timestamp),
             MilvusIds.From(mutationResult.IDs),
             mutationResult);
 
@@ -100,7 +100,7 @@ public sealed class MilvusIds
     /// Construct a new instance of <see cref="MilvusIds"/>
     /// </summary>
     /// <param name="idField"></param>
-    public MilvusIds(IdField idField)
+    private MilvusIds(IdField idField)
         => IdField = idField;
 
     /// <summary>

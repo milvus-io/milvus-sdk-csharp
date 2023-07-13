@@ -9,7 +9,7 @@ public class PartitionTests
     [Fact]
     public async Task Create()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.CreatePartitionAsync(collectionName, "partition");
     }
@@ -17,7 +17,7 @@ public class PartitionTests
     [Fact]
     public async Task Exists()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.CreatePartitionAsync(collectionName, "partition");
         Assert.True(await Client.HasPartitionAsync(collectionName, "partition"));
@@ -26,7 +26,7 @@ public class PartitionTests
     [Fact]
     public async Task List()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.CreatePartitionAsync(collectionName, "partition1");
         await Client.CreatePartitionAsync(collectionName, "partition2");
@@ -40,11 +40,11 @@ public class PartitionTests
     [Fact]
     public async Task Load_and_Release()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.CreatePartitionAsync(collectionName, "partition");
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
             new Dictionary<string, string>());
         await WaitForIndexBuild(collectionName, "float_vector");
 
@@ -55,7 +55,7 @@ public class PartitionTests
     [Fact]
     public async Task Drop()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.DropPartitionsAsync(collectionName, "partition");
         Assert.False(await Client.HasPartitionAsync(collectionName, "partition"));

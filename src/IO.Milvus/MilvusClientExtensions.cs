@@ -68,7 +68,7 @@ public static class MilvusClientExtensions
         this MilvusClient milvusClient,
         string collectionName,
         string fieldName,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
         IProgress<IndexBuildProgress>? progress = null,

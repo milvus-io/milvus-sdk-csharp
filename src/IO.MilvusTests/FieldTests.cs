@@ -8,7 +8,7 @@ public class FieldTests
     [Fact()]
     public void ToStringTest()
     {
-        var field = Field.Create<int>("Id", new[] { 1, 2, 3 });
+        var field = Field.Create("Id", new[] { 1, 2, 3 });
         field.RowCount.Should().Be(3);
         field.ToString().Should().Be("Field: {FieldName: Id, DataType: Int32, Data: 3, RowCount: 3}");
     }
@@ -16,7 +16,7 @@ public class FieldTests
     [Fact()]
     public void ToGrpcFieldDataTest()
     {
-        var field = Field.Create<int>("Id", new[] { 1, 2, 3 });
+        var field = Field.Create("Id", new[] { 1, 2, 3 });
         var grpcField = field.ToGrpcFieldData();
         grpcField.Should().NotBeNull();
         grpcField.FieldName.Should().Be("Id");
@@ -27,11 +27,11 @@ public class FieldTests
     [Fact()]
     public void FromGrpcFieldDataTest()
     {
-        var grpcField = new Grpc.FieldData()
+        var grpcField = new Grpc.FieldData
         {
             FieldName = "Id",
             Type = Grpc.DataType.Int32,
-            Scalars = new Grpc.ScalarField()
+            Scalars = new Grpc.ScalarField
             {
                 IntData = new Grpc.IntArray()
             }
@@ -50,7 +50,7 @@ public class FieldTests
     [Fact()]
     public void CreateTest()
     {
-        var field = Field.Create<int>("Id", new[] { 1, 2, 3 });
+        var field = Field.Create("Id", new[] { 1, 2, 3 });
         field.Should().NotBeNull();
         field.FieldName.Should().Be("Id");
         field.DataType.Should().Be(MilvusDataType.Int32);
@@ -84,7 +84,8 @@ public class FieldTests
     {
         var field = Field.CreateBinaryVectors(
             "byte"
-            , new List<byte[]>() {
+            , new List<byte[]>
+            {
                 new byte[] { 1,2},
                 new byte[] { 3,4}
             });
@@ -100,9 +101,10 @@ public class FieldTests
     {
         var field = Field.CreateFloatVector(
             "vector",
-            new List<List<float>>() {
-                new List<float>() { 1, 2 },
-                new List<float>() { 3, 4 }
+            new List<List<float>>
+            {
+                new() { 1, 2 },
+                new() { 3, 4 }
             });
 
         field.Should().NotBeNull();

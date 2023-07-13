@@ -11,9 +11,7 @@ public static class MilvusMetricUtils
     /// <param name="metric">Metric type</param>
     /// <returns></returns>
     public static bool IsFloatMetric(this MilvusMetricType metric)
-    {
-        return metric == MilvusMetricType.L2 || metric == MilvusMetricType.IP;
-    }
+        => metric is MilvusMetricType.L2 or MilvusMetricType.IP;
 
     /// <summary>
     /// Checks if a metric is for binary vector.
@@ -21,7 +19,5 @@ public static class MilvusMetricUtils
     /// <param name="metric">Metric type</param>
     /// <returns></returns>
     public static bool IsBinaryMetric(this MilvusMetricType metric)
-    {
-        return !IsFloatMetric(metric);
-    }
+        => !IsFloatMetric(metric);
 }

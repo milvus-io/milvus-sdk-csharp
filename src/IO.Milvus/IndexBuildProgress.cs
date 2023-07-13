@@ -47,9 +47,13 @@ public readonly struct IndexBuildProgress : IEquatable<IndexBuildProgress>
     /// <inheritdoc />
     public override string ToString() => $"Progress: {IndexedRows}/{TotalRows}";
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Compares two <see cref="IndexBuildProgress" /> instances for equality.
+    /// </summary>
     public static bool operator ==(IndexBuildProgress left, IndexBuildProgress right) => left.Equals(right);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Compares two <see cref="IndexBuildProgress" /> instances for inequality.
+    /// </summary>
     public static bool operator !=(IndexBuildProgress left, IndexBuildProgress right) => !(left == right);
 }

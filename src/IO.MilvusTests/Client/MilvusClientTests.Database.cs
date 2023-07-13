@@ -12,7 +12,7 @@ public partial class MilvusClientTests
     /// </summary>
     /// <remarks>
     /// Available in Milvus 2.2.9
-    /// 
+    ///
     /// <see href="https://milvus.io/docs/manage_databases.md"/>
     /// </remarks>
     [Fact]
@@ -33,7 +33,7 @@ public partial class MilvusClientTests
         string databaseName = Client.GetType().Name;
 
         //List original database
-        IEnumerable<string> databases = await Client.ListDatabasesAsync();
+        IReadOnlyList<string> databases = await Client.ListDatabasesAsync();
         databases.Should().NotBeNullOrEmpty();
 
         //Check if it exists.

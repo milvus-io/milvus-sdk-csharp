@@ -61,9 +61,9 @@ public partial class MilvusClientTests
         //Check if this role exist.
         IEnumerable<MilvusRoleResult> roles = await Client.SelectRoleAsync(roleName, true);
         var role = roles.FirstOrDefault(x => x.RoleName == roleName);
-        if (role != null && role.Users != null)
+        if (role is { Users: not null })
         {
-            foreach (var roleUser in role.Users)
+            foreach (string roleUser in role.Users)
             {
                 await Client.RemoveUserFromRoleAsync(roleUser, roleName);
             }

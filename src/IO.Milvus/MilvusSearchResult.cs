@@ -26,7 +26,7 @@ public sealed class MilvusSearchResult
 
     private static MilvusSearchResultData Converter(Grpc.SearchResultData results)
     {
-        return new MilvusSearchResultData()
+        return new MilvusSearchResultData
         {
             FieldsData = results.FieldsData.Select(Field.FromGrpcFieldData).ToList(),
             Ids = MilvusIds.From(results.Ids),

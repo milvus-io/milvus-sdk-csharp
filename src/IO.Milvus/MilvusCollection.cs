@@ -43,7 +43,5 @@ public sealed class MilvusCollection
     /// Return string value of <see cref="MilvusCollection"/>.
     /// </summary>
     public override string ToString()
-    {
-        return $"MilvusCollection: {{{nameof(CollectionName)}: {CollectionName}, {nameof(CollectionId)}: {CollectionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
-    }
+        => $"MilvusCollection: {{{nameof(CollectionName)}: {CollectionName}, {nameof(CollectionId)}: {CollectionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
 }

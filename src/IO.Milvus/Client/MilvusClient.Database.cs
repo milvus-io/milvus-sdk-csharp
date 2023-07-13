@@ -38,7 +38,7 @@ public partial class MilvusClient
     /// </para>
     /// </remarks>
     /// <returns>Databases</returns>
-    public async Task<IEnumerable<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
         ListDatabasesResponse response = await InvokeAsync(_grpcClient.ListDatabasesAsync, new ListDatabasesRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 

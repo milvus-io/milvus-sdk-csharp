@@ -12,7 +12,7 @@ namespace IO.Milvus;
 /// </remarks>
 public sealed class MilvusGrantEntity
 {
-    internal MilvusGrantEntity(
+    private MilvusGrantEntity(
         MilvusGrantorEntity grantor,
         string dbName,
         string @object,
@@ -73,7 +73,7 @@ public sealed class MilvusGrantEntity
 /// </summary>
 public sealed class MilvusGrantorEntity
 {
-    internal MilvusGrantorEntity(string privilege, string userName)
+    private MilvusGrantorEntity(string privilege, string userName)
     {
         Privilege = privilege;
         UserName = userName;
@@ -90,7 +90,5 @@ public sealed class MilvusGrantorEntity
     public string UserName { get; }
 
     internal static MilvusGrantorEntity Parse(GrantorEntity grantor)
-    {
-        return new MilvusGrantorEntity(grantor.Privilege.Name, grantor.User.Name);
-    }
+        => new(grantor.Privilege.Name, grantor.User.Name);
 }

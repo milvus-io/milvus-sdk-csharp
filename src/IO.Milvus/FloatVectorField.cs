@@ -39,16 +39,17 @@ public sealed class FloatVectorField : Field<List<float>>
         {
             throw new Diagnostics.MilvusException("Row count of fields must be equal");
         }
+
         foreach (List<float> value in Data)
         {
             floatArray.Data.AddRange(value);
         }
 
-        return new Grpc.FieldData()
+        return new Grpc.FieldData
         {
             FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
-            Vectors = new Grpc.VectorField()
+            Vectors = new Grpc.VectorField
             {
                 FloatVector = floatArray,
                 Dim = dim,

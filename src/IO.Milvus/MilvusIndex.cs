@@ -51,7 +51,5 @@ public sealed class MilvusIndex
     /// </summary>
     /// <returns></returns>
     public override string ToString()
-    {
-        return $"MilvusIndex: {{{nameof(FieldName)}: {FieldName}, {nameof(IndexName)}: {IndexName}, {nameof(IndexId)}: {IndexId}}}";
-    }
+        => $"MilvusIndex: {{{nameof(FieldName)}: {FieldName}, {nameof(IndexName)}: {IndexName}, {nameof(IndexId)}: {IndexId}}}";
 }

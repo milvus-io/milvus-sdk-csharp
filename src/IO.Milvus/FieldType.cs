@@ -10,7 +10,6 @@ namespace IO.Milvus;
 /// </summary>
 public sealed class FieldType
 {
-    #region Ctor
     /// <summary>
     /// Construct a field type.
     /// </summary>
@@ -142,7 +141,7 @@ public sealed class FieldType
         long dim)
     {
         FieldType field = new(name, MilvusDataType.FloatVector, false, false);
-        field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
+        field.WithTypeParameter(Constants.VectorDim, dim.ToString(CultureInfo.InvariantCulture));
         field.Validate();
         return field;
     }
@@ -157,8 +156,8 @@ public sealed class FieldType
         string name,
         long dim)
     {
-        FieldType field = new(name, MilvusDataType.BinaryVector, false, false);
-        field.WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
+        FieldType field = new(name, MilvusDataType.BinaryVector);
+        field.WithTypeParameter(Constants.VectorDim, dim.ToString(CultureInfo.InvariantCulture));
         field.Validate();
         return field;
     }
@@ -170,16 +169,12 @@ public sealed class FieldType
     /// <param name="isDynamic">Is dynamic.</param>
     /// <returns></returns>
     public static FieldType CreateJson(string name, bool isDynamic = false)
-    {
-        return new FieldType(name, MilvusDataType.Json, false, isDynamic: isDynamic);
-    }
-    #endregion
+        => new(name, MilvusDataType.Json, false, isDynamic: isDynamic);
 
-    #region Properties
     /// <summary>
     /// Auto id.
     /// </summary>
-    public bool AutoId { get; set; } = false;
+    public bool AutoId { get; set; }
 
     /// <summary>
     /// Data type.
@@ -244,18 +239,14 @@ public sealed class FieldType
     /// To keep compatible with older version, the default value is <see cref="MilvusFieldState.FieldCreated"/>.
     /// </summary>
     public MilvusFieldState FieldState { get; set; } = MilvusFieldState.FieldCreated;
-    #endregion
 
-    #region Methods
     /// <summary>
     /// Sets the max length of a <see cref="MilvusDataType.VarChar"/> field. The value must be greater than zero.
     /// </summary>
     /// <param name="maxLength"></param>
     /// <returns></returns>
     public FieldType WithMaxLength(int maxLength)
-    {
-        return WithTypeParameter(Constants.VARCHAR_MAX_LENGTH, maxLength.ToString(CultureInfo.InvariantCulture));
-    }
+        => WithTypeParameter(Constants.VarcharMaxLength, maxLength.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>
     ///  Sets the dimension of a <see cref="MilvusDataType.FloatVector"/>. Dimension value must be greater than zero.
@@ -263,9 +254,7 @@ public sealed class FieldType
     /// <param name="dim"></param>
     /// <returns></returns>
     public FieldType WithDimension(int dim)
-    {
-        return WithTypeParameter(Constants.VECTOR_DIM, dim.ToString(CultureInfo.InvariantCulture));
-    }
+        => WithTypeParameter(Constants.VectorDim, dim.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>
     /// Sets a type parameter for the field.
@@ -290,47 +279,34 @@ public sealed class FieldType
     /// </summary>
     public void Validate()
     {
-        if (DataType is MilvusDataType.None)
+        switch (DataType)
         {
-            throw new ArgumentOutOfRangeException(nameof(DataType), "Milvus field datatype cannot be None");
-        }
+            case MilvusDataType.None:
+                throw new ArgumentOutOfRangeException(nameof(DataType), "Milvus field datatype cannot be None");
 
-        if (DataType is MilvusDataType.String)
-        {
-            throw new ArgumentOutOfRangeException(nameof(DataType), "String type is not supported, use Varchar instead");
-        }
+            case MilvusDataType.String:
+                throw new ArgumentOutOfRangeException(nameof(DataType), "String type is not supported, use Varchar instead");
 
-        if (DataType is MilvusDataType.FloatVector or MilvusDataType.BinaryVector)
-        {
-            if (!TypeParams.ContainsKey(Constants.VECTOR_DIM))
-            {
+            case MilvusDataType.FloatVector or MilvusDataType.BinaryVector
+                when !TypeParams.ContainsKey(Constants.VectorDim):
                 throw new ArgumentException("Vector field dimension must be specified");
-            }
 
-            if (!int.TryParse(TypeParams[Constants.VECTOR_DIM], out int dim) || dim <= 0)
-            {
+            case MilvusDataType.FloatVector or MilvusDataType.BinaryVector
+                when !int.TryParse(TypeParams[Constants.VectorDim], out int dim) || dim <= 0:
                 throw new ArgumentException("Vector field dimension must be a positive integer number");
-            }
-        }
-        else if (DataType == MilvusDataType.VarChar)
-        {
-            if (!TypeParams.ContainsKey(Constants.VARCHAR_MAX_LENGTH))
-            {
+
+            case MilvusDataType.VarChar
+                when !TypeParams.ContainsKey(Constants.VarcharMaxLength):
                 throw new ArgumentException("Varchar field max length must be specified");
-            }
 
-            if (!int.TryParse(TypeParams[Constants.VARCHAR_MAX_LENGTH], out int maxLength) || maxLength <= 0)
-            {
+            case MilvusDataType.VarChar
+                when !int.TryParse(TypeParams[Constants.VarcharMaxLength], out int maxLength) || maxLength <= 0:
                 throw new ArgumentException("Varchar field max length must be a positive integer number");
-            }
         }
 
-        if (IsPrimaryKey || IsPartitionKey)
+        if (IsPrimaryKey || IsPartitionKey && DataType is not MilvusDataType.Int64 and not MilvusDataType.VarChar)
         {
-            if (DataType is not MilvusDataType.Int64 and not MilvusDataType.VarChar)
-            {
-                throw new ArgumentException("Only Int64 and Varchar type field can be primary key or partition key");
-            }
+            throw new ArgumentException("Only Int64 and Varchar type field can be primary key or partition key");
         }
 
         if (IsPartitionKey && IsPrimaryKey)
@@ -338,5 +314,4 @@ public sealed class FieldType
             throw new ArgumentException("Primary key field can not be partition key");
         }
     }
-    #endregion
 }

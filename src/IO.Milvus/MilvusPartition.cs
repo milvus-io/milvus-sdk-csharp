@@ -57,7 +57,5 @@ public sealed class MilvusPartition
     /// Return string value of <see cref="MilvusPartition"/>.
     /// </summary>
     public override string ToString()
-    {
-        return $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
-    }
+        => $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
 }

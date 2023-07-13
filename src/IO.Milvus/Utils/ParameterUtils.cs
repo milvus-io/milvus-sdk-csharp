@@ -5,8 +5,7 @@ namespace IO.Milvus.Utils;
 
 internal static class ParameterUtils
 {
-    internal static string Combine(
-        this IDictionary<string, string> parameters)
+    internal static string Combine(this IDictionary<string, string> parameters)
     {
         StringBuilder stringBuilder = new();
         stringBuilder.Append('{');

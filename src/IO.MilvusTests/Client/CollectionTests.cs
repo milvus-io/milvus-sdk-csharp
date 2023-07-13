@@ -10,7 +10,7 @@ public class CollectionTests
     [Fact]
     public async Task Create_Exists_and_Drop()
     {
-        var collectionName = nameof(Create_Exists_and_Drop);
+        string collectionName = nameof(Create_Exists_and_Drop);
 
         await Client.DropCollectionAsync(collectionName);
         Assert.False(await Client.HasCollectionAsync(collectionName));
@@ -28,7 +28,7 @@ public class CollectionTests
     [Fact]
     public async Task List()
     {
-        var collectionName = nameof(List);
+        string collectionName = nameof(List);
 
         await Client.DropCollectionAsync(collectionName);
         await Client.CreateCollectionAsync(
@@ -41,7 +41,7 @@ public class CollectionTests
     [Fact]
     public async Task Describe()
     {
-        var collectionName = nameof(Describe);
+        string collectionName = nameof(Describe);
 
         await Client.DropCollectionAsync(collectionName);
 
@@ -139,8 +139,8 @@ public class CollectionTests
     [Fact]
     public async Task Rename()
     {
-        var oldCollectionName = nameof(Rename);
-        var newCollectionName = oldCollectionName + "New";
+        string oldCollectionName = nameof(Rename);
+        string newCollectionName = oldCollectionName + "New";
 
         await Client.DropCollectionAsync(oldCollectionName);
         await Client.DropCollectionAsync(newCollectionName);

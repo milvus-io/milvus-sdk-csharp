@@ -20,7 +20,7 @@ public partial class MilvusClient
     public async Task CreateAliasAsync(
         string collectionName,
         string alias,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -43,7 +43,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task DropAliasAsync(
         string alias,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(alias);
@@ -66,7 +66,7 @@ public partial class MilvusClient
     public async Task AlterAliasAsync(
         string collectionName,
         string alias,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);

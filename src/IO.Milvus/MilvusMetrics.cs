@@ -8,7 +8,7 @@ public sealed class MilvusMetrics
     /// <summary>
     /// Constructor a milvus metrics.
     /// </summary>
-    /// <param name="response">response is of jsonic format.</param>
+    /// <param name="response">A response in JSON format.</param>
     /// <param name="componentName">metrics from which component.</param>
     public MilvusMetrics(string response, string componentName)
     {

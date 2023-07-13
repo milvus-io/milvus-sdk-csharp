@@ -76,7 +76,7 @@ public partial class MilvusClientTests
         collectionStatistics.Should().ContainKey("row_count");
 
         //Insert data
-        Random ran = new Random();
+        Random ran = new();
         List<long> bookIds = new();
         List<bool> isCartoon = new();
         List<sbyte> chapterCount = new();
@@ -109,15 +109,15 @@ public partial class MilvusClientTests
         await Client.InsertAsync(collectionName,
             new Field[]
             {
-                Field.Create<long>("book_id",bookIds),
-                Field.Create<bool>("is_cartoon",isCartoon),
-                Field.Create<sbyte>("chapter_count",chapterCount),
-                Field.Create<short>("short_page_count",shortPageCount),
-                Field.Create<int>("int32_page_count",int32PageCount),
-                Field.Create<long>("word_count",wordCounts),
-                Field.Create<float>("float_weight",floatWeight),
-                Field.Create<double>("double_weight",doubleWeight),
-                Field.Create<string>("book_name",bookNames),
+                Field.Create("book_id",bookIds),
+                Field.Create("is_cartoon",isCartoon),
+                Field.Create("chapter_count",chapterCount),
+                Field.Create("short_page_count",shortPageCount),
+                Field.Create("int32_page_count",int32PageCount),
+                Field.Create("word_count",wordCounts),
+                Field.Create("float_weight",floatWeight),
+                Field.Create("double_weight",doubleWeight),
+                Field.Create("book_name",bookNames),
                 Field.CreateFloatVector("book_intro",bookIntros),},
             partitionName!);
 
@@ -125,13 +125,13 @@ public partial class MilvusClientTests
         await Client.CreateIndexAsync(
             collectionName,
             "book_intro",
-            Constants.DEFAULT_INDEX_NAME,
-            TestEnvironment.IsZillizCloud ? MilvusIndexType.AUTOINDEX : MilvusIndexType.IVF_FLAT,
+            Constants.DefaultIndexName,
+            TestEnvironment.IsZillizCloud ? MilvusIndexType.AutoIndex : MilvusIndexType.IvfFlat,
             MilvusMetricType.L2,
             new Dictionary<string, string> { { "nlist", "1024" } });
         IList<MilvusIndex> indexes = await Client.DescribeIndexAsync(collectionName, "book_intro");
         indexes.Should().ContainSingle();
-        indexes.First().IndexName.Should().Be(Constants.DEFAULT_INDEX_NAME);
+        indexes.First().IndexName.Should().Be(Constants.DefaultIndexName);
         indexes.First().FieldName.Should().Be("book_intro");
 
         //Load
@@ -161,8 +161,7 @@ public partial class MilvusClientTests
             .WithMetricType(MilvusMetricType.L2)
             .WithTopK(topK: 2)
             .WithParameter("nprobe", "10")
-            .WithParameter("offset", "5")
-            );
+            .WithParameter("offset", "5"));
         searchResult.Results.FieldsData.Should().ContainSingle();
 
         //Query
@@ -194,7 +193,7 @@ public partial class MilvusClientTests
         }
 
         //Drop index
-        await Client.DropIndexAsync(collectionName, "book_intro", Constants.DEFAULT_INDEX_NAME);
+        await Client.DropIndexAsync(collectionName, "book_intro", Constants.DefaultIndexName);
         await Assert.ThrowsAsync<MilvusException>(async () => await Client.DescribeIndexAsync(collectionName, "book_intro"));
 
         //Drop partition

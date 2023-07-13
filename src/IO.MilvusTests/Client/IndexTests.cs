@@ -10,10 +10,10 @@ public class IndexTests
     [Fact]
     public async Task Create_vector()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2, new Dictionary<string, string>());
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2, new Dictionary<string, string>());
 
         // TODO: Consider adding a more idiomatic API here (e.g. have CheckIndexAsync only return when the index has
         // been fully created, expose IProgress and poll internally?
@@ -25,10 +25,10 @@ public class IndexTests
     [Fact]
     public async Task Create_vector_with_param()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
             // TODO: Consider making the parameter Dictionary instead of IDictionary for target-typed new
             // TODO: Should it be Dictionary<string, object>?
             extraParams: new Dictionary<string, string>
@@ -46,12 +46,12 @@ public class IndexTests
     [Fact]
     public async Task GetState()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         Assert.Equal(IndexState.None, await Client.GetIndexStateAsync(collectionName, "float_vector"));
 
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2, new Dictionary<string, string>());
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2, new Dictionary<string, string>());
         await Client.WaitForIndexBuildAsync(collectionName, "float_vector");
 
         Assert.Equal(IndexState.Finished, await Client.GetIndexStateAsync(collectionName, "float_vector"));
@@ -60,13 +60,13 @@ public class IndexTests
     [Fact]
     public async Task GetBuildProgress()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Assert.ThrowsAsync<MilvusException>(() =>
             Client.GetIndexBuildProgressAsync(collectionName, "float_vector"));
 
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
             new Dictionary<string, string>());
         await Client.WaitForIndexBuildAsync(collectionName, "float_vector");
 
@@ -77,13 +77,13 @@ public class IndexTests
     [Fact]
     public async Task Describe()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
 
         await Assert.ThrowsAsync<MilvusException>(() =>
             Client.DescribeIndexAsync(collectionName, "float_vector"));
 
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
             extraParams: new Dictionary<string, string>
             {
                 ["nlist"] = "1024"
@@ -107,9 +107,9 @@ public class IndexTests
     [Fact]
     public async Task Drop()
     {
-        var collectionName = await CreateCollection();
+        string collectionName = await CreateCollection();
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.FLAT, MilvusMetricType.L2,
+            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
             new Dictionary<string, string>());
         await Client.WaitForIndexBuildAsync(collectionName, "float_vector");
 

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace IO.Milvus;
 
@@ -47,7 +46,5 @@ public sealed class CollectionSchema
     /// </summary>
     /// <returns></returns>
     public override string ToString()
-    {
-        return $"CollectionSchema: {{{nameof(AutoId)}: {AutoId}, {nameof(Description)}, {Description}, {nameof(Fields)}: {Fields?.Count}}}";
-    }
+        => $"CollectionSchema: {{{nameof(AutoId)}: {AutoId}, {nameof(Description)}, {Description}, {nameof(Fields)}: {Fields?.Count}}}";
 }

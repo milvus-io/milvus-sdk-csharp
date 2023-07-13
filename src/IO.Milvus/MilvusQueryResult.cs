@@ -24,11 +24,9 @@ public sealed class MilvusQueryResult
         return new MilvusQueryResult(response.CollectionName, fields);
     }
 
-    #region Private ==========================================================================
     private MilvusQueryResult(string collectionName, IList<Field> fields)
     {
         CollectionName = collectionName;
         FieldsData = fields;
     }
-    #endregion
 }

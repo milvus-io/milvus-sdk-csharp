@@ -1,5 +1,4 @@
-﻿using IO.Milvus.Client;
-using Xunit;
+﻿using Xunit;
 using IO.Milvus;
 using System.Text.Json.Serialization;
 using System.Text.Json;
@@ -25,10 +24,10 @@ public partial class MilvusClientTests
             return;
         }
 
-        var collectionName = Client.GetType().Name + "Json";
+        string collectionName = Client.GetType().Name + "Json";
 
         //Check if collection exists.
-        var collectionExist = await Client.HasCollectionAsync(collectionName);
+        bool collectionExist = await Client.HasCollectionAsync(collectionName);
         if (collectionExist)
         {
             await Client.DropCollectionAsync(collectionName);
@@ -37,24 +36,21 @@ public partial class MilvusClientTests
         //Define fields.
         var fields = new[]
             {
-                FieldType.Create<long>("id",isPrimaryKey: true, autoId: true),
-                FieldType.CreateVarchar("title",maxLength:512),
-                FieldType.CreateFloatVector("title_vector",dim:2),
+                FieldType.Create<long>("id", isPrimaryKey: true, autoId: true),
+                FieldType.CreateVarchar("title", maxLength: 512),
+                FieldType.CreateFloatVector("title_vector", dim: 2),
                 FieldType.CreateJson("article_meta")
             };
 
         //Create collection.
-        await Client.CreateCollectionAsync(
-            collectionName,
-            fields
-            );
+        await Client.CreateCollectionAsync(collectionName, fields);
 
         //Create index.
         await Client.CreateIndexAsync(
             collectionName,
             "title_vector",
-            Constants.DEFAULT_INDEX_NAME,
-            MilvusIndexType.AUTOINDEX,
+            Constants.DefaultIndexName,
+            MilvusIndexType.AutoIndex,
             MilvusMetricType.L2,
             new Dictionary<string, string>());
 
@@ -76,34 +72,30 @@ public partial class MilvusClientTests
             vector.Add(i / 10f);
             vector.Add(9 * i / 10f);
 
-            titles.Add("title" + i.ToString());
+            titles.Add("title" + i);
             articleMetas.Add(new ArticleMeta(
                         link: Link,
                         readingTime: r.Next(0, 40),
                         publication: "The Startup",
                         claps: r.Next(20, 50),
-                        responses: 18
-                        ));
+                        responses: 18));
 
             vectors.Add(vector);
         }
 
-        var count = articleMetas
-            .Where(p => p.ReadingTime < 10 && p.Claps > 30)
-            .Count();
+        int count = articleMetas.Count(p => p is { ReadingTime: < 10, Claps: > 30 });
         List<string> metaList = articleMetas
             .Select(p => JsonSerializer.Serialize(p))
             .ToList();
 
         await Client.InsertAsync(
             collectionName,
-            new Field[]
+            new[]
             {
-                Field.Create<string>("title", titles),
+                Field.Create("title", titles),
                 Field.CreateFloatVector("title_vector",vectors),
                 Field.CreateJson("article_meta",metaList)
-            }
-            );
+            });
 
         MilvusSearchResult searchResult = await Client.SearchAsync(MilvusSearchParameters.Create(
             collectionName,
@@ -114,14 +106,13 @@ public partial class MilvusClientTests
             .WithMetricType(MilvusMetricType.L2)
             .WithParameter("nprobe", 10.ToString())
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
-            .WithVectors(new[] { new List<float> { 0.5f, 0.5f } })
-            );
+            .WithVectors(new[] { new List<float> { 0.5f, 0.5f } }));
 
-        var metaField = searchResult.Results.FieldsData.First(p => p.FieldName == "article_meta")
-            as Field<string>;
+        var metaField = Assert.IsType<Field<string>>(
+            searchResult.Results.FieldsData.First(p => p.FieldName == "article_meta"));
         metaField.DataType.Should().Be(MilvusDataType.Json);
         ArticleMeta? sampleArticleMeta = JsonSerializer.Deserialize<ArticleMeta>(metaField.Data.First());
-        sampleArticleMeta.Should().NotBeNull();
+        Assert.NotNull(sampleArticleMeta);
         sampleArticleMeta.Link.Should().Be(Link);
     }
 }

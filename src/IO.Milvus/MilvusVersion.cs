@@ -8,7 +8,7 @@ namespace IO.MilvusTests.Client;
 /// </summary>
 public sealed record MilvusVersion
 {
-    internal MilvusVersion(int major, int minor, int patch, string? suffix)
+    private MilvusVersion(int major, int minor, int patch, string? suffix)
     {
         Major = major;
         Minor = minor;
@@ -61,9 +61,7 @@ public sealed record MilvusVersion
 
     /// <inheritdoc />
     public override string ToString()
-    {
-        return string.IsNullOrEmpty(Suffix) ?
+        => string.IsNullOrEmpty(Suffix) ?
             $"{Major}.{Minor}.{Patch}" :
             $"{Major}.{Minor}.{Patch}-{Suffix}";
-    }
 }

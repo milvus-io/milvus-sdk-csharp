@@ -30,7 +30,7 @@ public sealed class MilvusHealthState
     /// <summary>
     /// Error code.
     /// </summary>
-    public Grpc.ErrorCode ErrorCode { get; }
+    public ErrorCode ErrorCode { get; }
 
     /// <summary>
     /// Get string data.

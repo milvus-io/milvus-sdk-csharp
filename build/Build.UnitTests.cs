@@ -44,7 +44,8 @@ partial class Build
     Target ComposeUp => _ => _
         .DependsOn(DownloadYml)        
         .Executes(() =>{
-            var process = Process.Start(new ProcessStartInfo(){
+            var process = Process.Start(new ProcessStartInfo
+            {
                 FileName = "docker-compose",
                 Arguments = $"-f {MilvusYmlName} up --build"
              });
@@ -70,7 +71,7 @@ partial class Build
         .AssuredAfterFailure()
         .TriggeredBy(Test)
         .After(Test)
-        .Executes(() => Process.Start(new ProcessStartInfo()
+        .Executes(() => Process.Start(new ProcessStartInfo
         {
             FileName = "docker-compose",
             Arguments = $"-f {MilvusYmlName} down"

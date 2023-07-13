@@ -26,7 +26,7 @@ public partial class MilvusClient
 
         await InvokeAsync(_grpcClient.CreateRoleAsync, new CreateRoleRequest
         {
-            Entity = new RoleEntity() { Name = roleName },
+            Entity = new RoleEntity { Name = roleName },
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -136,7 +136,7 @@ public partial class MilvusClient
 
         SelectRoleResponse response = await InvokeAsync(_grpcClient.SelectRoleAsync, new SelectRoleRequest
         {
-            Role = new RoleEntity() { Name = roleName },
+            Role = new RoleEntity { Name = roleName },
             IncludeUserInfo = includeUserInfo
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
@@ -164,7 +164,7 @@ public partial class MilvusClient
 
         SelectUserResponse response = await InvokeAsync(_grpcClient.SelectUserAsync, new SelectUserRequest
         {
-            User = new UserEntity() { Name = username },
+            User = new UserEntity { Name = username },
             IncludeRoleInfo = includeRoleInfo
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
@@ -192,7 +192,7 @@ public partial class MilvusClient
         string @object,
         string objectName,
         string privilege,
-        string dbName = Constants.DEFAULT_DATABASE_NAME,
+        string dbName = Constants.DefaultDatabaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
@@ -204,7 +204,7 @@ public partial class MilvusClient
         await InvokeAsync(_grpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
         {
             Type = OperatePrivilegeType.Grant,
-            Entity = new GrantEntity()
+            Entity = new GrantEntity
             {
                 Role = new() { Name = roleName },
                 Object = new() { Name = @object },
@@ -245,7 +245,7 @@ public partial class MilvusClient
         await InvokeAsync(_grpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
         {
             Type = OperatePrivilegeType.Revoke,
-            Entity = new GrantEntity()
+            Entity = new GrantEntity
             {
                 Role = new() { Name = roleName },
                 Object = new() { Name = @object },
