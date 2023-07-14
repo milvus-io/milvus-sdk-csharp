@@ -21,6 +21,7 @@
         <PackageReference Include="FluentAssertions" />
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+        <PackageReference Include="GitHubActionsTestLogger" />
     </ItemGroup>
 
 <!--    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">-->

@@ -10,29 +10,37 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        # TODO: Test against latest previews too. This currently doesn't work because preview releases don't publish
+        # a milvus-standalone-docker-compose.yml
+        milvus_version: [latest]
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: 'recursive'
           fetch-depth: 0
+
+      - name: Start Milvus
+        run: |
+          wget https://github.com/milvus-io/milvus/releases/${{ matrix.milvus_version }}/download/milvus-standalone-docker-compose.yml -O docker-compose.yml
+          sudo docker-compose up -d
 
       - name: Setup .NET SDKs
         uses: actions/setup-dotnet@v3
         with:
           global-json-file: src/global.json
 
+      - name: Wait for Milvus to become available
+        run: sleep 30 # TODO: Find a better way to do this, e.g. try polling with curl until we detect that milvus is up
+
       - name: Test
-        run: ./src/build.sh --target Test
-        env:
-          NuGetApiKey: ${{ secrets.NugetKey }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet test src/IO.MilvusTests --logger "GitHubActions;report-warnings=false"
 
       - name: Pack
-        run: ./src/build.sh --target Pack
-        env:
-          NuGetApiKey: ${{ secrets.NugetKey }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet pack src -c Release -o Artifacts
 
       - name: Upload artifacts (nupkg)
         uses: actions/upload-artifact@v3
