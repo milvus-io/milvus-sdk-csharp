@@ -3,10 +3,9 @@
   {
     "Milvus":
     {
-      "Address": "http://localhost/",
-      "Port": 19530,
+      "Address": "http://localhost:19530",
       "Username": "root",
-      "Password": "milvus"
+      "Password": "Milvus"
     }
   }
 }

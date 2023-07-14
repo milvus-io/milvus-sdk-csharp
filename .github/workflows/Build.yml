@@ -14,7 +14,7 @@ jobs:
       matrix:
         # TODO: Test against latest previews too. This currently doesn't work because preview releases don't publish
         # a milvus-standalone-docker-compose.yml
-        milvus_version: [latest]
+        milvus_version: [v2.2.11]
 
     steps:
       - name: Checkout
@@ -25,7 +25,20 @@ jobs:
 
       - name: Start Milvus
         run: |
-          wget https://github.com/milvus-io/milvus/releases/${{ matrix.milvus_version }}/download/milvus-standalone-docker-compose.yml -O docker-compose.yml
+          wget https://github.com/milvus-io/milvus/releases/download/${{ matrix.milvus_version }}/milvus-standalone-docker-compose.yml -O docker-compose.yml
+
+          # Turn on authorization. This involves downloading milvus.yml and setting authorization to true, and then
+          # using a docker-compose.override.yml file to get it picked up.
+          wget https://raw.githubusercontent.com/milvus-io/milvus/${{ matrix.milvus_version }}/configs/milvus.yaml
+          sed -i 's/authorizationEnabled: false/authorizationEnabled: true/' milvus.yaml
+
+          cat <<EOF > docker-compose.override.yml
+          services:
+            standalone:
+              volumes:
+                - ${PWD}/milvus.yaml:/milvus/configs/milvus.yaml
+          EOF
+
           sudo docker-compose up -d
 
       - name: Setup .NET SDKs

@@ -14,23 +14,20 @@ public static class TestEnvironment
         .GetSection("Test:Milvus");
 
     static TestEnvironment()
-        => Client = CreateClient();
+    {
+        Address = Config["Address"] ?? "http://localhost";
+        Username = Config["Username"] ?? "root";
+        Password = Config["Password"] ?? "Milvus";
+
+        Client = CreateClient();
+    }
+
+    public static string Address { get; private set; }
+    public static string Username { get; private set; }
+    public static string Password { get; private set; }
 
     public static MilvusClient CreateClient()
-    {
-        var port = 19530;
-
-        if (Config["Port"] is string p && !int.TryParse(p, out port))
-        {
-            throw new Exception("Couldn't parse port: " + p);
-        }
-
-        return new MilvusClient(
-            Config["Address"] ?? "http://localhost",
-            port,
-            Config["Username"] ?? "root",
-            Config["password"] ?? "milvus");
-    }
+        => new(Address, Username, Password);
 
     public static MilvusClient Client { get; }
 
