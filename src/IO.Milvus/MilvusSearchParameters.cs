@@ -99,24 +99,17 @@ public sealed class MilvusSearchParameters
     public bool IgnoreGrowing { get; private set; }
 
     /// <summary>
-    /// Database name.
-    /// </summary>
-    public string DbName { get; private set; }
-
-    /// <summary>
     ///  Create a search parameters.
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="vectorFieldName">Vector field name.</param>
     /// <param name="outFields">Out fields. Vector field is not supported.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <returns></returns>
     public static MilvusSearchParameters Create(
         string collectionName,
         string vectorFieldName,
-        IList<string> outFields,
-        string dbName = Constants.DefaultDatabaseName)
-        => new(collectionName, vectorFieldName, outFields, dbName);
+        IList<string> outFields)
+        => new(collectionName, vectorFieldName, outFields);
 
     /// <summary>
     /// Sets the target vectors.
@@ -407,15 +400,13 @@ public sealed class MilvusSearchParameters
             throw new ArgumentOutOfRangeException(nameof(MetricType), "Metric type is invalid");
         }
         Verify.NotNullOrEmpty(MilvusFloatVectors);
-        Verify.NotNullOrWhiteSpace(DbName);
     }
 
-    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields, string dbName)
+    private MilvusSearchParameters(string collectionName, string vectorFieldName, IList<string> outFields)
     {
         CollectionName = collectionName;
         VectorFieldName = vectorFieldName;
         OutputFields = outFields;
-        DbName = dbName;
     }
 
     private static long GetGuaranteeTimestamp(

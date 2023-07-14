@@ -16,7 +16,7 @@ partial class Build
     const string MilvusYmlName = "milvus-standalone-docker-compose.yml";
 
     [Parameter]
-    string MilvusVersion = "v2.2.10";
+    string MilvusVersion = "v2.2.11";
 
     string MilvusYmlFileAddress => $"https://github.com/milvus-io/milvus/releases/download/{MilvusVersion}/milvus-standalone-docker-compose.yml";
 

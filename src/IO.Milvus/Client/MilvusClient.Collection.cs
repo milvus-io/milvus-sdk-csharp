@@ -28,19 +28,19 @@ public partial class MilvusClient
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shardsNum = 1,
         bool enableDynamicField = false,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
         // Validate field types
         FieldType firstField = fieldTypes[0];
         if (!firstField.IsPrimaryKey ||
-            (firstField.DataType is not (MilvusDataType)DataType.Int64 and not (MilvusDataType)DataType.VarChar))
+            firstField.DataType is not (MilvusDataType)DataType.Int64 and not (MilvusDataType)DataType.VarChar)
         {
             throw new MilvusException("The first FieldType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
         }
+
         for (int i = 1; i < fieldTypes.Count; i++)
         {
             if (fieldTypes[i].IsPrimaryKey)
@@ -56,13 +56,20 @@ public partial class MilvusClient
             EnableDynamicField = enableDynamicField
         };
 
-        await InvokeAsync(_grpcClient.CreateCollectionAsync, new CreateCollectionRequest
+        var request = new CreateCollectionRequest
         {
             CollectionName = collectionName,
             ConsistencyLevel = (ConsistencyLevel)(int)consistencyLevel,
             ShardsNum = shardsNum,
             Schema = schema.ConvertCollectionSchema().ToByteString()
-        }, cancellationToken).ConfigureAwait(false);
+        };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.CreateCollectionAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -73,17 +80,21 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<DetailedMilvusCollection> DescribeCollectionAsync(
         string collectionName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        DescribeCollectionResponse response = await InvokeAsync(_grpcClient.DescribeCollectionAsync, new DescribeCollectionRequest
+        var request = new DescribeCollectionRequest { CollectionName = collectionName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            DbName = dbName,
-        }, r=> r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        DescribeCollectionResponse response =
+            await InvokeAsync(_grpcClient.DescribeCollectionAsync, request, r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return new DetailedMilvusCollection(
             response.Aliases,
@@ -106,19 +117,20 @@ public partial class MilvusClient
     public async Task RenameCollectionAsync(
         string oldName,
         string newName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(oldName);
         Verify.NotNullOrWhiteSpace(newName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.RenameCollectionAsync, new RenameCollectionRequest
+        var request = new RenameCollectionRequest { OldName = oldName, NewName = newName };
+
+        if (dbName is not null)
         {
-            OldName = oldName,
-            NewName = newName,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.RenameCollectionAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -129,17 +141,19 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task DropCollectionAsync(
         string collectionName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.DropCollectionAsync, new DropCollectionRequest
+        var request = new DropCollectionRequest { CollectionName = collectionName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.DropCollectionAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -150,17 +164,22 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
         string collectionName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        GetCollectionStatisticsResponse response = await InvokeAsync(_grpcClient.GetCollectionStatisticsAsync, new GetCollectionStatisticsRequest
+        var request = new GetCollectionStatisticsRequest { CollectionName = collectionName, };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            DbName = dbName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        GetCollectionStatisticsResponse response = await InvokeAsync(
+            _grpcClient.GetCollectionStatisticsAsync,
+            request,
+            static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Stats.ToDictionary();
     }
@@ -179,18 +198,25 @@ public partial class MilvusClient
     public async Task<bool> HasCollectionAsync(
         string collectionName,
         DateTime? dateTime = null,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        BoolResponse response = await InvokeAsync(_grpcClient.HasCollectionAsync, new HasCollectionRequest
+        var request = new HasCollectionRequest
         {
             CollectionName = collectionName,
             TimeStamp = (ulong)(dateTime?.ToUtcTimestamp() ?? 0),
-            DbName = dbName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        };
+
+        if (dbName is not null)
+        {
+            request.DbName = null;
+        }
+
+        BoolResponse response =
+            await InvokeAsync(_grpcClient.HasCollectionAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return response.Value;
     }
@@ -205,19 +231,20 @@ public partial class MilvusClient
     public async Task LoadCollectionAsync(
         string collectionName,
         int replicaNumber = 1,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.GreaterThanOrEqualTo(replicaNumber, 1);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.LoadCollectionAsync, new LoadCollectionRequest
+        var request = new LoadCollectionRequest { CollectionName = collectionName, ReplicaNumber = replicaNumber };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            ReplicaNumber = replicaNumber,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.LoadCollectionAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -228,17 +255,19 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task ReleaseCollectionAsync(
         string collectionName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.ReleaseCollectionAsync, new ReleaseCollectionRequest
+        var request = new ReleaseCollectionRequest { CollectionName = collectionName, DbName = dbName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.ReleaseCollectionAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -253,22 +282,24 @@ public partial class MilvusClient
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
         IList<string>? collectionNames = null,
         ShowType showType = ShowType.All,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrWhiteSpace(dbName);
+        ShowCollectionsRequest request = new() { Type = (Grpc.ShowType)showType, };
 
-        ShowCollectionsRequest request = new()
+        if (dbName is not null)
         {
-            Type = (Grpc.ShowType)showType,
-            DbName = dbName
-        };
+            request.DbName = dbName;
+
+        }
         if (collectionNames is not null)
         {
             request.CollectionNames.AddRange(collectionNames);
         }
 
-        ShowCollectionsResponse response = await InvokeAsync(_grpcClient.ShowCollectionsAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        ShowCollectionsResponse response =
+            await InvokeAsync(_grpcClient.ShowCollectionsAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         List<MilvusCollection> collections = new();
         if (response.CollectionIds is not null)
@@ -294,26 +325,32 @@ public partial class MilvusClient
     /// </remarks>
     /// <param name="collectionName">Collection name of milvus.</param>
     /// <param name="partitionNames">Partition names.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     public async Task<long> GetLoadingProgressAsync(
        string collectionName,
        IList<string> partitionNames,
+       string? dbName = null,
        CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        GetLoadingProgressRequest request = new()
+        GetLoadingProgressRequest request = new() { CollectionName = collectionName, };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-        };
+            request.DbName = dbName;
+        }
 
         if (partitionNames.Count > 0)
         {
             request.PartitionNames.AddRange(partitionNames);
         }
 
-        GetLoadingProgressResponse response = await InvokeAsync(_grpcClient.GetLoadingProgressAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        GetLoadingProgressResponse response =
+            await InvokeAsync(_grpcClient.GetLoadingProgressAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return response.Progress;
     }
@@ -329,19 +366,26 @@ public partial class MilvusClient
     public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string collectionName,
         string partitionName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(partitionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        GetPartitionStatisticsResponse response = await InvokeAsync(_grpcClient.GetPartitionStatisticsAsync, new GetPartitionStatisticsRequest
+        var request = new GetPartitionStatisticsRequest
         {
             CollectionName = collectionName,
-            PartitionName = partitionName,
-            DbName = dbName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            PartitionName = partitionName
+        };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
+        GetPartitionStatisticsResponse response =
+            await InvokeAsync(_grpcClient.GetPartitionStatisticsAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return response.Stats.ToDictionary();
     }

@@ -43,7 +43,7 @@ public static class MilvusClientExtensions
             async () =>
             {
                 long progress = await milvusClient
-                    .GetLoadingProgressAsync(collectionName, partitionNames, cancellationToken)
+                    .GetLoadingProgressAsync(collectionName, partitionNames, cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
                 return (progress == 100, progress);
             },
@@ -68,7 +68,7 @@ public static class MilvusClientExtensions
         this MilvusClient milvusClient,
         string collectionName,
         string fieldName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
         IProgress<IndexBuildProgress>? progress = null,

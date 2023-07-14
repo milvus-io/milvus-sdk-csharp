@@ -26,7 +26,7 @@ public partial class MilvusClient
 
         await InvokeAsync(_grpcClient.CreateRoleAsync, new CreateRoleRequest
         {
-            Entity = new RoleEntity { Name = roleName },
+            Entity = new RoleEntity { Name = roleName }
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -192,16 +192,15 @@ public partial class MilvusClient
         string @object,
         string objectName,
         string privilege,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
         Verify.NotNullOrWhiteSpace(@object);
         Verify.NotNullOrWhiteSpace(objectName);
         Verify.NotNullOrWhiteSpace(privilege);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
+        var request = new OperatePrivilegeRequest
         {
             Type = OperatePrivilegeType.Grant,
             Entity = new GrantEntity
@@ -209,10 +208,16 @@ public partial class MilvusClient
                 Role = new() { Name = roleName },
                 Object = new() { Name = @object },
                 ObjectName = objectName,
-                Grantor = new() { Privilege = new() { Name = privilege }, },
-                DbName = dbName
+                Grantor = new() { Privilege = new() { Name = privilege } }
             }
-        }, cancellationToken).ConfigureAwait(false);
+        };
+
+        if (dbName is not null)
+        {
+            request.Entity.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.OperatePrivilegeAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

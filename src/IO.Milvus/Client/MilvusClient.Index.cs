@@ -29,19 +29,22 @@ public partial class MilvusClient
         MilvusIndexType milvusIndexType,
         MilvusMetricType milvusMetricType,
         IDictionary<string, string> extraParams,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
         var request = new CreateIndexRequest
         {
             CollectionName = collectionName,
-            FieldName = fieldName,
-            DbName = dbName,
+            FieldName = fieldName
         };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
 
         if (!string.IsNullOrEmpty(indexName))
         {
@@ -84,21 +87,26 @@ public partial class MilvusClient
         string collectionName,
         string fieldName,
         string indexName = Constants.DefaultIndexName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
         Verify.NotNullOrWhiteSpace(indexName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.DropIndexAsync, new DropIndexRequest
+        var request = new DropIndexRequest
         {
             CollectionName = collectionName,
             FieldName = fieldName,
-            IndexName = indexName,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            IndexName = indexName
+        };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.DropIndexAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -112,19 +120,22 @@ public partial class MilvusClient
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName,
         string fieldName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        DescribeIndexResponse response = await InvokeAsync(_grpcClient.DescribeIndexAsync, new DescribeIndexRequest
+        var request = new DescribeIndexRequest { CollectionName = collectionName, FieldName = fieldName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            FieldName = fieldName,
-            DbName = dbName,
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        DescribeIndexResponse response =
+            await InvokeAsync(_grpcClient.DescribeIndexAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         List<MilvusIndex> indexes = new();
         if (response.IndexDescriptions is not null)
@@ -153,19 +164,22 @@ public partial class MilvusClient
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        GetIndexBuildProgressResponse response = await InvokeAsync(_grpcClient.GetIndexBuildProgressAsync, new GetIndexBuildProgressRequest
+        var request = new GetIndexBuildProgressRequest { CollectionName = collectionName, FieldName = fieldName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            FieldName = fieldName,
-            DbName = dbName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        GetIndexBuildProgressResponse response =
+            await InvokeAsync(_grpcClient.GetIndexBuildProgressAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return new IndexBuildProgress(response.IndexedRows, response.TotalRows);
     }
@@ -181,19 +195,22 @@ public partial class MilvusClient
     public async Task<IndexState> GetIndexStateAsync(
         string collectionName,
         string fieldName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        GetIndexStateResponse response = await InvokeAsync(_grpcClient.GetIndexStateAsync, new GetIndexStateRequest
+        var request = new GetIndexStateRequest { CollectionName = collectionName, FieldName = fieldName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            FieldName = fieldName,
-            DbName = dbName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        GetIndexStateResponse response =
+            await InvokeAsync(_grpcClient.GetIndexStateAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return (IndexState)response.State;
     }

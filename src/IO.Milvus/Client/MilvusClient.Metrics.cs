@@ -21,7 +21,7 @@ public partial class MilvusClient
 
         GetMetricsResponse response = await InvokeAsync(_grpcClient.GetMetricsAsync, new GetMetricsRequest
         {
-            Request = request,
+            Request = request
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return new MilvusMetrics(response.Response, response.ComponentName);

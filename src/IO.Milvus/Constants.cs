@@ -5,6 +5,8 @@
 /// </summary>
 public static class Constants
 {
+    // TODO: Decide whether we want to publicly expose these constants.
+
     /// <summary>
     /// Vector tag for <see cref="Grpc.PlaceholderValue"/>
     /// </summary>
@@ -122,7 +124,7 @@ public static class Constants
 
     /// <summary>
     /// set this value for "withGuaranteeTimestamp" of QueryParam/SearchParam
-    /// to instruct server execute query/search immediately. 
+    /// to instruct server execute query/search immediately.
     /// </summary>
     public const long GuaranteeEventuallyTs = 1L;
 

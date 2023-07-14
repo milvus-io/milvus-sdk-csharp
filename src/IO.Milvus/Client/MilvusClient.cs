@@ -183,7 +183,7 @@ public sealed partial class MilvusClient : IDisposable
                 _log.LogError("{CallerName} failed: {ErrorCode}, {Reason}", callerName, status.ErrorCode, status.Reason);
             }
 
-            throw new MilvusException(MilvusException.GetErrorMessage(status.ErrorCode, status.Reason));
+            throw new MilvusException(status.ErrorCode, status.Reason);
         }
 
         return response;

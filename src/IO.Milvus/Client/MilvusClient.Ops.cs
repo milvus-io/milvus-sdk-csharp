@@ -26,7 +26,7 @@ public partial class MilvusClient
         ManualCompactionResponse response = await InvokeAsync(_grpcClient.ManualCompactionAsync, new ManualCompactionRequest
         {
             CollectionID = collectionId,
-            Timetravel = timeTravel is not null ? (ulong)timeTravel.Value.ToUtcTimestamp() : 0,
+            Timetravel = timeTravel is not null ? (ulong)timeTravel.Value.ToUtcTimestamp() : 0
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.CompactionID;
@@ -46,7 +46,7 @@ public partial class MilvusClient
 
         GetCompactionStateResponse response = await InvokeAsync(_grpcClient.GetCompactionStateAsync, new GetCompactionStateRequest
         {
-            CompactionID = compactionId,
+            CompactionID = compactionId
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return (MilvusCompactionState)response.State;

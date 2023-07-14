@@ -24,18 +24,19 @@ public partial class MilvusClient
         string collectionName,
         IList<Field> fields,
         string partitionName = "",
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrEmpty(fields);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        InsertRequest request = new()
+        InsertRequest request = new() { CollectionName = collectionName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            DbName = dbName
-        };
+            request.DbName = dbName;
+        }
+
         if (!string.IsNullOrEmpty(partitionName))
         {
             request.PartitionName = partitionName;
@@ -71,20 +72,27 @@ public partial class MilvusClient
         string collectionName,
         string expr,
         string? partitionName = null,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(expr);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        MutationResult response = await InvokeAsync(_grpcClient.DeleteAsync, new DeleteRequest
+        var request = new DeleteRequest
         {
             CollectionName = collectionName,
             Expr = expr,
-            DbName = dbName,
             PartitionName = !string.IsNullOrEmpty(partitionName) ? partitionName : string.Empty
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
+        MutationResult response =
+            await InvokeAsync(_grpcClient.DeleteAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return MilvusMutationResult.From(response);
     }
@@ -93,16 +101,27 @@ public partial class MilvusClient
     /// Do a k nearest neighbors search with bool expression.
     /// </summary>
     /// <param name="searchParameters"></param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public async Task<MilvusSearchResult> SearchAsync(
         MilvusSearchParameters searchParameters,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNull(searchParameters);
         searchParameters.Validate();
 
-        SearchResults response = await InvokeAsync(_grpcClient.SearchAsync, searchParameters.BuildGrpc(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        var request = searchParameters.BuildGrpc();
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
+        SearchResults response =
+            await InvokeAsync(_grpcClient.SearchAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return MilvusSearchResult.From(response);
     }
@@ -118,16 +137,18 @@ public partial class MilvusClient
     /// <returns></returns>
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(collectionNames);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        FlushRequest request = new()
+        FlushRequest request = new();
+
+        if (dbName is not null)
         {
-            DbName = dbName
-        };
+            request.DbName = dbName;
+        }
+
         request.CollectionNames.AddRange(collectionNames);
 
         FlushResponse response = await InvokeAsync(_grpcClient.FlushAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
@@ -144,17 +165,20 @@ public partial class MilvusClient
     /// <returns></returns>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         string collectionName,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        GetPersistentSegmentInfoResponse response = await InvokeAsync(_grpcClient.GetPersistentSegmentInfoAsync, new GetPersistentSegmentInfoRequest
+        var request = new GetPersistentSegmentInfoRequest { CollectionName = collectionName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            DbName = dbName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        GetPersistentSegmentInfoResponse response = await InvokeAsync(_grpcClient.GetPersistentSegmentInfoAsync,
+            request, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return MilvusPersistentSegmentInfo.From(response.Infos);
     }
@@ -174,7 +198,9 @@ public partial class MilvusClient
         GetFlushStateRequest request = new();
         request.SegmentIDs.AddRange(segmentIds);
 
-        GetFlushStateResponse response = await InvokeAsync(_grpcClient.GetFlushStateAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        GetFlushStateResponse response =
+            await InvokeAsync(_grpcClient.GetFlushStateAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return response.Flushed;
     }
@@ -217,7 +243,7 @@ public partial class MilvusClient
         long guaranteeTimestamp = Constants.GuaranteeEventuallyTs,
         long offset = 0,
         long limit = 0,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
@@ -227,7 +253,6 @@ public partial class MilvusClient
         Verify.GreaterThanOrEqualTo(travelTimestamp, 0);
         Verify.GreaterThanOrEqualTo(offset, 0);
         Verify.GreaterThanOrEqualTo(limit, 0);
-        Verify.NotNullOrWhiteSpace(dbName);
 
         QueryRequest request = new()
         {
@@ -235,24 +260,40 @@ public partial class MilvusClient
             Expr = expr,
             GuaranteeTimestamp = (ulong)guaranteeTimestamp,
             TravelTimestamp = (ulong)travelTimestamp,
-            DbName = dbName,
         };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
         request.OutputFields.AddRange(outputFields);
+
         if (partitionNames?.Count > 0)
         {
             request.PartitionNames.AddRange(partitionNames);
         }
+
         if (offset > 0)
         {
             Verify.GreaterThan(limit, 0);
-            request.QueryParams.Add(new Grpc.KeyValuePair { Key = "offset", Value = offset.ToString(CultureInfo.InvariantCulture) });
-        }
-        if (limit > 0)
-        {
-            request.QueryParams.Add(new Grpc.KeyValuePair { Key = "limit", Value = limit.ToString(CultureInfo.InvariantCulture) });
+            request.QueryParams.Add(new Grpc.KeyValuePair
+            {
+                Key = "offset", Value = offset.ToString(CultureInfo.InvariantCulture)
+            });
         }
 
-        QueryResults response = await InvokeAsync(_grpcClient.QueryAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        if (limit > 0)
+        {
+            request.QueryParams.Add(new Grpc.KeyValuePair
+            {
+                Key = "limit", Value = limit.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        QueryResults response =
+            await InvokeAsync(_grpcClient.QueryAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return MilvusQueryResult.From(response);
     }
@@ -261,18 +302,26 @@ public partial class MilvusClient
     /// Get query segment information.
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><see cref="MilvusQuerySegmentInfoResult"/></returns>
     public async Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
         string collectionName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        GetQuerySegmentInfoResponse response = await InvokeAsync(_grpcClient.GetQuerySegmentInfoAsync, new GetQuerySegmentInfoRequest
+        var request = new GetQuerySegmentInfoRequest { CollectionName = collectionName };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName
-        }, static r => r.Status, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        GetQuerySegmentInfoResponse response =
+            await InvokeAsync(_grpcClient.GetQuerySegmentInfoAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return MilvusQuerySegmentInfoResult.From(response).ToList();
     }

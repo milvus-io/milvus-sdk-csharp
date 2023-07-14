@@ -1,4 +1,5 @@
 ﻿using System;
+using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Diagnostics;
 
@@ -7,6 +8,15 @@ namespace IO.Milvus.Diagnostics;
 /// </summary>
 public sealed class MilvusException : Exception
 {
+    // TODO: Decide how to expose the error code (string or enum?)
+
+    /// <summary>
+    /// The error code.
+    /// </summary>
+    public string? ErrorCode { get; }
+
+    // TODO: Make sure whether we want this to be publicly-constructed
+
     /// <inheritdoc />
     public MilvusException()
     {
@@ -22,5 +32,9 @@ public sealed class MilvusException : Exception
     {
     }
 
-    internal static string GetErrorMessage<TErrorCode>(TErrorCode errorCode, string reason) => $"ErrorCode: {errorCode} Reason: {reason}";
+    internal MilvusException(ErrorCode errorCode, string reason)
+        : base($"ErrorCode: {errorCode} Reason: {reason}")
+    {
+        ErrorCode = errorCode.ToString();
+    }
 }

@@ -20,19 +20,20 @@ public partial class MilvusClient
     public async Task CreateAliasAsync(
         string collectionName,
         string alias,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(alias);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.CreateAliasAsync, new CreateAliasRequest
+        var request = new CreateAliasRequest { CollectionName = collectionName, Alias = alias };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            Alias = alias,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.CreateAliasAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -43,17 +44,19 @@ public partial class MilvusClient
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task DropAliasAsync(
         string alias,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(alias);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.DropAliasAsync, new DropAliasRequest
+        var request = new DropAliasRequest { Alias = alias };
+
+        if (dbName is not null)
         {
-            Alias = alias,
-            DbName = dbName
-        }, cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.DropAliasAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -66,18 +69,20 @@ public partial class MilvusClient
     public async Task AlterAliasAsync(
         string collectionName,
         string alias,
-        string dbName = Constants.DefaultDatabaseName,
+        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(alias);
-        Verify.NotNullOrWhiteSpace(dbName);
 
-        await InvokeAsync(_grpcClient.AlterAliasAsync, new AlterAliasRequest
+        var request = new AlterAliasRequest { CollectionName = collectionName, Alias = alias };
+
+        if (dbName is not null)
         {
-            CollectionName = collectionName,
-            Alias = alias,
-            DbName = dbName
-        }, cancellationToken: cancellationToken).ConfigureAwait(false);
+            request.DbName = dbName;
+        }
+
+        await InvokeAsync(_grpcClient.AlterAliasAsync, request, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
     }
 }

@@ -156,6 +156,18 @@ public class CollectionTests
         Assert.Equal(newCollectionName, (await Client.DescribeCollectionAsync(newCollectionName)).CollectionName);
     }
 
+    [Fact]
+    public async Task Create_in_non_existing_database()
+    {
+        var exception = await Assert.ThrowsAsync<MilvusException>(() => Client.CreateCollectionAsync(
+            "foo",
+            new[] { FieldType.Create<long>("id", isPrimaryKey: true) },
+            dbName: "non_existing_db"));
+
+        Assert.Equal("UnexpectedError", exception.ErrorCode);
+        Assert.Equal("ErrorCode: UnexpectedError Reason: database:non_existing_db not found", exception.Message);
+    }
+
     // TODO: Load
     // TODO: Release
 
