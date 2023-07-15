@@ -3,9 +3,9 @@
 /// <summary>
 /// Describe a milvus collection
 /// </summary>
-public sealed class DetailedMilvusCollection
+public sealed class MilvusCollectionDescription
 {
-    internal DetailedMilvusCollection(
+    internal MilvusCollectionDescription(
         IReadOnlyList<string> aliases,
         string collectionName,
         long collectionId,

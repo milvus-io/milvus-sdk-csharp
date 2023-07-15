@@ -80,9 +80,9 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                 CollectionName,
                 new[]
                 {
-                    FieldType.Create<long>("id", isPrimaryKey: true),
-                    FieldType.CreateVarchar("varchar", 256),
-                    FieldType.CreateFloatVector("float_vector", 2)
+                    FieldSchema.Create<long>("id", isPrimaryKey: true),
+                    FieldSchema.CreateVarchar("varchar", 256),
+                    FieldSchema.CreateFloatVector("float_vector", 2)
                 });
 
             await TestEnvironment.Client.CreateIndexAsync(

@@ -1,4 +1,6 @@
-﻿namespace IO.Milvus;
+﻿using System;
+
+namespace IO.Milvus;
 
 /// <summary>
 /// Data type

@@ -26,7 +26,7 @@ public class DatabaseTests
 
         await Client.CreateCollectionAsync(
             "foo",
-            new[] { FieldType.Create<long>("id", isPrimaryKey: true) },
+            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) },
             dbName: dbName);
         Assert.Contains(dbName, await Client.ListDatabasesAsync());
 
@@ -36,7 +36,7 @@ public class DatabaseTests
         await Assert.ThrowsAsync<MilvusException>(() =>
             Client.CreateCollectionAsync(
                 "foo",
-                new[] { FieldType.Create<long>("id", isPrimaryKey: true) },
+                new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) },
                 dbName: dbName));
         Assert.DoesNotContain(dbName, await Client.ListDatabasesAsync());
     }

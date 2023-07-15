@@ -24,16 +24,16 @@ public partial class MilvusClientTests
         await Client.CreateCollectionAsync(
             collectionName,
             new[] {
-                FieldType.Create<long>("book_id",isPrimaryKey:true),
-                FieldType.Create<bool>("is_cartoon"),
-                FieldType.Create<sbyte>("chapter_count"),
-                FieldType.Create<short>("short_page_count"),
-                FieldType.Create<int>("int32_page_count"),
-                FieldType.Create<long>("word_count"),
-                FieldType.Create<float>("float_weight"),
-                FieldType.Create<double>("double_weight"),
-                FieldType.CreateVarchar("book_name",256),
-                FieldType.CreateFloatVector("book_intro",2),}
+                FieldSchema.Create<long>("book_id",isPrimaryKey:true),
+                FieldSchema.Create<bool>("is_cartoon"),
+                FieldSchema.Create<sbyte>("chapter_count"),
+                FieldSchema.Create<short>("short_page_count"),
+                FieldSchema.Create<int>("int32_page_count"),
+                FieldSchema.Create<long>("word_count"),
+                FieldSchema.Create<float>("float_weight"),
+                FieldSchema.Create<double>("double_weight"),
+                FieldSchema.CreateVarchar("book_name",256),
+                FieldSchema.CreateFloatVector("book_intro",2),}
             );
         collectionExist = await Client.HasCollectionAsync(collectionName);
         Assert.True(collectionExist, "Create collection failed");
@@ -41,30 +41,30 @@ public partial class MilvusClientTests
         //Get collection info
         IDictionary<string, string> statistics = await Client.GetCollectionStatisticsAsync(collectionName);
         Assert.True(statistics.Count == 1);
-        DetailedMilvusCollection detailedMilvusCollection = await Client.DescribeCollectionAsync(collectionName);
-        Assert.Equal(collectionName, detailedMilvusCollection.CollectionName);
+        MilvusCollectionDescription collectionDescription = await Client.DescribeCollectionAsync(collectionName);
+        Assert.Equal(collectionName, collectionDescription.CollectionName);
 
         //Check collection info
-        detailedMilvusCollection.Schema.Name.Should().Be(collectionName);
-        detailedMilvusCollection.Schema.Fields.Count.Should().Be(10);
-        detailedMilvusCollection.Schema.Fields[0].Name.Should().Be("book_id");
-        detailedMilvusCollection.ShardsNum.Should().Be(1);
-        detailedMilvusCollection.Aliases.Should().BeNullOrEmpty();
+        collectionDescription.Schema.Name.Should().Be(collectionName);
+        collectionDescription.Schema.Fields.Count.Should().Be(10);
+        collectionDescription.Schema.Fields[0].Name.Should().Be("book_id");
+        collectionDescription.ShardsNum.Should().Be(1);
+        collectionDescription.Aliases.Should().BeNullOrEmpty();
         string? partitionName = TestEnvironment.IsZillizCloud ? null : "partition1";
         if (!TestEnvironment.IsZillizCloud)
         {
             //Create alias
             string aliasName = "alias1";
             await Client.CreateAliasAsync(collectionName, aliasName);
-            detailedMilvusCollection = await Client.DescribeCollectionAsync(collectionName);
-            detailedMilvusCollection.Aliases.First().Should().Be(aliasName);
+            collectionDescription = await Client.DescribeCollectionAsync(collectionName);
+            collectionDescription.Aliases.First().Should().Be(aliasName);
 
             //TODO Create another collection to test alter alias.
 
             //Delete alias
             await Client.DropAliasAsync(aliasName);
-            detailedMilvusCollection = await Client.DescribeCollectionAsync(collectionName);
-            detailedMilvusCollection.Aliases.Should().BeNullOrEmpty();
+            collectionDescription = await Client.DescribeCollectionAsync(collectionName);
+            collectionDescription.Aliases.Should().BeNullOrEmpty();
 
             //Create Partition
             await Client.CreatePartitionAsync(collectionName, partitionName!);
@@ -177,7 +177,7 @@ public partial class MilvusClientTests
         deleteResult.DeleteCount.Should().BeGreaterThan(0);
 
         //Compaction
-        long compactionId = await Client.ManualCompactionAsync(detailedMilvusCollection.CollectionId); ;
+        long compactionId = await Client.ManualCompactionAsync(collectionDescription.CollectionId); ;
         compactionId.Should().NotBe(0);
         MilvusCompactionState state = await Client.GetCompactionStateAsync(compactionId);
 

@@ -68,8 +68,8 @@ public class PartitionTests
             nameof(PartitionTests),
             new[]
             {
-                FieldType.Create<long>("id", isPrimaryKey: true),
-                FieldType.CreateFloatVector("float_vector", 1)
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 1)
             });
 
         return nameof(PartitionTests);

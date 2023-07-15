@@ -1,48 +1,39 @@
-﻿namespace IO.Milvus;
+using System.Diagnostics;
+
+namespace IO.Milvus;
+using System.Collections.Generic;
 
 /// <summary>
-/// Collection Schema
+/// The logical definition of a collection, describing the fields which make it up.
 /// </summary>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class CollectionSchema
 {
     /// <summary>
-    /// Auto id
+    /// The name of the collection.
     /// </summary>
-    /// <remarks>
-    /// deprecated later, keep compatible with c++ part now
-    /// </remarks>
-    public bool AutoId { get; set; }
+    public string? Name { get; set; } // TODO: does the schema really have a name separate from the collection's?
 
     /// <summary>
-    /// Collection description
+    /// An optional description for the collection.
     /// </summary>
     public string? Description { get; set; }
 
     /// <summary>
-    /// Fields
+    /// The fields which make up the schema of the collection.
     /// </summary>
-    /// <remarks>
-    /// Array of <see cref="FieldType"/>
-    /// </remarks>
-    public required IList<FieldType> Fields { get; set; }
+    public List<FieldSchema> Fields { get; } = new();
 
     /// <summary>
-    /// Name
-    /// </summary>
-    public required string Name { get; set; }
-
-    /// <summary>
-    /// Enable dynamic field.
+    /// Whether to enable dynamic fields for this schema. Defaults to <c>false</c>.
     /// </summary>
     /// <remarks>
-    /// <see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/>
+    /// <see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type" />
     /// </remarks>
     public bool EnableDynamicField { get; set; }
 
-    /// <summary>
-    /// Return string value of <see cref="CollectionSchema"/>
-    /// </summary>
-    /// <returns></returns>
-    public override string ToString()
-        => $"CollectionSchema: {{{nameof(AutoId)}: {AutoId}, {nameof(Description)}, {Description}, {nameof(Fields)}: {Fields?.Count}}}";
+    // Note that an AutoId previously existed at the schema level, but is not deprecated.
+    // AutoId is now only defined at the field level.
+
+    private string DebuggerDisplay => $"{Name} ({Fields.Count} fields)";
 }

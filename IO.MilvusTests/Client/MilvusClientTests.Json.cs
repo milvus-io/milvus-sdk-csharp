@@ -36,10 +36,10 @@ public partial class MilvusClientTests
         //Define fields.
         var fields = new[]
             {
-                FieldType.Create<long>("id", isPrimaryKey: true, autoId: true),
-                FieldType.CreateVarchar("title", maxLength: 512),
-                FieldType.CreateFloatVector("title_vector", dim: 2),
-                FieldType.CreateJson("article_meta")
+                FieldSchema.Create<long>("id", isPrimaryKey: true, autoId: true),
+                FieldSchema.CreateVarchar("title", maxLength: 512),
+                FieldSchema.CreateFloatVector("title_vector", dimension: 2),
+                FieldSchema.CreateJson("article_meta")
             };
 
         //Create collection.

@@ -1,4 +1,6 @@
-﻿namespace IO.Milvus;
+﻿using IO.Milvus.Grpc;
+
+namespace IO.Milvus;
 
 /// <summary>
 /// Milvus field state.
@@ -6,22 +8,27 @@
 public enum MilvusFieldState
 {
     /// <summary>
-    /// FieldCreated.
+    /// The field has been created.
     /// </summary>
-    FieldCreated = 0,
+    FieldCreated = FieldState.FieldCreated,
 
     /// <summary>
-    /// FieldCreating.
+    /// The field is in the process of being created.
     /// </summary>
-    FieldCreating = 1,
+    FieldCreating = FieldState.FieldCreating,
 
     /// <summary>
-    /// FieldDropping.
+    /// The field is in the process of being dropped.
     /// </summary>
-    FieldDropping = 2,
+    FieldDropping = FieldState.FieldDropping,
 
     /// <summary>
-    /// FieldDropped
+    /// The field has been dropped.
     /// </summary>
-    FieldDropped = 3,
+    FieldDropped = FieldState.FieldDropped,
+
+    /// <summary>
+    /// The field state is unknown or not yet created.
+    /// </summary>
+    Unknown = int.MaxValue
 }

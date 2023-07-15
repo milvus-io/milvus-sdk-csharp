@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Grpc;
+﻿using System.Globalization;
+using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
@@ -9,53 +10,105 @@ public partial class MilvusClient
     /// Create a collection.
     /// </summary>
     /// <param name="collectionName">The unique collection name in milvus.</param>
+    /// <param name="fields">field types that represents this collection schema</param>
     /// <param name="consistencyLevel">
-    /// The consistency level that the collection used, modification is not supported now.</param>
-    /// <param name="fieldTypes">field types that represents this collection schema</param>
+    /// The consistency level that the collection used, modification is not supported now.
+    /// </param>
     /// <param name="shardsNum">Once set, no modification is allowed (Optional).</param>
-    /// <param name="enableDynamicField"><see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type"/></param>
+    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public Task CreateCollectionAsync(
+        string collectionName,
+        IList<FieldSchema> fields,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
+        int shardsNum = 1,
+        string? dbName = null,
+        CancellationToken cancellationToken = default)
+    {
+        CollectionSchema schema = new();
+        schema.Fields.AddRange(fields);
+        return CreateCollectionAsync(collectionName, schema, consistencyLevel, shardsNum, dbName, cancellationToken);
+    }
+
+    /// <summary>
+    /// Create a collection.
+    /// </summary>
+    /// <param name="collectionName">The unique collection name in milvus.</param>
+    /// <param name="schema">The schema definition for the collection.</param>
+    /// <param name="consistencyLevel">
+    /// The consistency level that the collection used, modification is not supported now.
+    /// </param>
+    /// <param name="shardsNum">Once set, no modification is allowed (Optional).</param>
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task CreateCollectionAsync(
         string collectionName,
-        IList<FieldType> fieldTypes,
+        CollectionSchema schema,
         MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
         int shardsNum = 1,
-        bool enableDynamicField = false,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        // Validate field types
-        FieldType firstField = fieldTypes[0];
-        if (!firstField.IsPrimaryKey ||
-            firstField.DataType is not (MilvusDataType)DataType.Int64 and not (MilvusDataType)DataType.VarChar)
+        Grpc.CollectionSchema grpcCollectionSchema = new()
         {
-            throw new MilvusException("The first FieldType's IsPrimaryKey must be true and DataType == Int64 or DataType == VarChar");
-        }
+            Name = schema.Name ?? collectionName,
+            EnableDynamicField = schema.EnableDynamicField
 
-        for (int i = 1; i < fieldTypes.Count; i++)
-        {
-            if (fieldTypes[i].IsPrimaryKey)
-            {
-                throw new ArgumentException("FieldTypes needs at most one primary key field type", nameof(fieldTypes));
-            }
-        }
-
-        var schema = new CollectionSchema
-        {
-            Name = collectionName,
-            Fields = fieldTypes,
-            EnableDynamicField = enableDynamicField
+            // Note that an AutoId previously existed at the schema level, but is not deprecated.
+            // AutoId is now only defined at the field level.
         };
+
+        if (schema.Description is not null)
+        {
+            grpcCollectionSchema.Description = schema.Description;
+        }
+
+        foreach (FieldSchema field in schema.Fields)
+        {
+            Grpc.FieldSchema grpcField = new()
+            {
+                Name = field.Name,
+                DataType = (DataType)(int)field.DataType,
+                FieldID = field.FieldId,
+                IsPrimaryKey = field.IsPrimaryKey,
+                IsPartitionKey = field.IsPartitionKey,
+                AutoID = field.AutoId,
+                Description = field.Description
+            };
+
+            if (field.MaxLength is not null)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.VarcharMaxLength,
+                    Value = field.MaxLength.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (field.Dimension is not null)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.VectorDim,
+                    Value = field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            // TODO: IndexParams
+
+            grpcCollectionSchema.Fields.Add(grpcField);
+        }
+
+        grpcCollectionSchema.AutoID = schema.Fields.Any(static p => p.AutoId);
 
         var request = new CreateCollectionRequest
         {
             CollectionName = collectionName,
             ConsistencyLevel = (ConsistencyLevel)(int)consistencyLevel,
             ShardsNum = shardsNum,
-            Schema = schema.ConvertCollectionSchema().ToByteString()
+            Schema = grpcCollectionSchema.ToByteString()
         };
 
         if (dbName is not null)
@@ -72,7 +125,7 @@ public partial class MilvusClient
     /// <param name="collectionName">collectionName</param>
     /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task<DetailedMilvusCollection> DescribeCollectionAsync(
+    public async Task<MilvusCollectionDescription> DescribeCollectionAsync(
         string collectionName,
         string? dbName = null,
         CancellationToken cancellationToken = default)
@@ -90,15 +143,56 @@ public partial class MilvusClient
             await InvokeAsync(_grpcClient.DescribeCollectionAsync, request, r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return new DetailedMilvusCollection(
+        CollectionSchema milvusCollectionSchema = new()
+        {
+            Name = response.Schema.Name,
+            Description = response.Schema.Description
+
+            // Note that an AutoId previously existed at the schema level, but is not deprecated.
+            // AutoId is now only defined at the field level.
+        };
+
+        foreach (Grpc.FieldSchema grpcField in response.Schema.Fields)
+        {
+            FieldSchema milvusField = new(
+                grpcField.FieldID, grpcField.Name, (MilvusDataType)grpcField.DataType,
+                (MilvusFieldState)grpcField.State, grpcField.IsPrimaryKey, grpcField.AutoID, grpcField.IsPartitionKey,
+                grpcField.IsDynamic, grpcField.Description);
+
+            foreach (Grpc.KeyValuePair parameter in grpcField.TypeParams)
+            {
+                switch (parameter.Key)
+                {
+                    case Constants.VarcharMaxLength:
+                        milvusField.MaxLength = int.Parse(parameter.Value);
+                        break;
+
+                    case Constants.VectorDim:
+                        milvusField.Dimension = long.Parse(parameter.Value);
+                        break;
+
+                    // TODO: Should we warn for unknown type params?
+                }
+            }
+
+            // TODO: IndexParams
+
+            milvusCollectionSchema.Fields.Add(milvusField);
+        }
+
+        Dictionary<string, IList<int>> startPositions = response.StartPositions.ToDictionary(
+            kdp => kdp.Key,
+            kdp => (IList<int>)kdp.Data.Select(static p => (int)p).ToList());
+
+        return new MilvusCollectionDescription(
             response.Aliases,
             response.CollectionName,
             response.CollectionID,
             (MilvusConsistencyLevel)response.ConsistencyLevel,
             TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamp),
-            response.Schema.ToCollectionSchema(),
+            milvusCollectionSchema,
             response.ShardsNum,
-            response.StartPositions.ToKeyDataPairs());
+            startPositions);
     }
 
     /// <summary>

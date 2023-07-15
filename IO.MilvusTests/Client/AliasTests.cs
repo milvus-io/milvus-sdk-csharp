@@ -30,7 +30,7 @@ public class AliasTests : IAsyncLifetime
         await Client.DropCollectionAsync("AnotherCollection");
         await Client.CreateCollectionAsync(
             "AnotherCollection",
-            new[] { FieldType.Create<long>("id", isPrimaryKey: true) });
+            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
 
         await Client.AlterAliasAsync("AnotherCollection", "a");
 
@@ -62,9 +62,9 @@ public class AliasTests : IAsyncLifetime
             CollectionName,
             new[]
             {
-                FieldType.Create<long>("id", isPrimaryKey: true),
-                FieldType.CreateVarchar("varchar", 256),
-                FieldType.CreateFloatVector("float_vector", 2)
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("varchar", 256),
+                FieldSchema.CreateFloatVector("float_vector", 2)
             });
     }
 
