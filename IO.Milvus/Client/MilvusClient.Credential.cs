@@ -44,7 +44,7 @@ public partial class MilvusClient
         await InvokeAsync(_grpcClient.UpdateCredentialAsync, new UpdateCredentialRequest
         {
             NewPassword = Base64Encode(newPassword),
-            OldPassword = oldPassword, // TODO: Is it correct that this isn't Base64 encoded?
+            OldPassword = Base64Encode(oldPassword),
             Username = username
         }, cancellationToken).ConfigureAwait(false);
     }
