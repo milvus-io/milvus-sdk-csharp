@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Describe a milvus collection

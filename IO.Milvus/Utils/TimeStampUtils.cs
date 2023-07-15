@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IO.Milvus.Utils;
+﻿namespace IO.Milvus.Utils;
 
 /// <summary>
 /// Timestamps methods

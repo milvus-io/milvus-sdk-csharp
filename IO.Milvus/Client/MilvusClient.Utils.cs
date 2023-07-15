@@ -1,5 +1,3 @@
-using System;
-
 namespace IO.Milvus.Client;
 
 // ReSharper disable StringLiteralTypo

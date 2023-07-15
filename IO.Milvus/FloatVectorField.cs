@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Float vector field
@@ -29,7 +26,7 @@ public sealed class FloatVectorField : Field<List<float>>
     /// Convert to grpc field data
     /// </summary>
     /// <returns>Field data</returns>
-    /// <exception cref="Diagnostics.MilvusException"></exception>
+    /// <exception cref="MilvusException"></exception>
     public override Grpc.FieldData ToGrpcFieldData()
     {
         Grpc.FloatArray floatArray = new();
@@ -37,7 +34,7 @@ public sealed class FloatVectorField : Field<List<float>>
         int dim = Data.First().Count;
         if (!Data.All(p => p.Count == dim))
         {
-            throw new Diagnostics.MilvusException("Row count of fields must be equal");
+            throw new MilvusException("Row count of fields must be equal");
         }
 
         foreach (List<float> value in Data)

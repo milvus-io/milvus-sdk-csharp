@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Indicate build progress of an index.

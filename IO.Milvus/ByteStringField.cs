@@ -1,6 +1,4 @@
-﻿using Google.Protobuf;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// ByteString Field

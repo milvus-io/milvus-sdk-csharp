@@ -1,8 +1,4 @@
-﻿using Google.Protobuf;
-using IO.Milvus.Diagnostics;
-using System;
-using System.Buffers;
-using System.Collections.Generic;
+﻿using System.Buffers;
 using System.Diagnostics;
 
 namespace IO.Milvus;

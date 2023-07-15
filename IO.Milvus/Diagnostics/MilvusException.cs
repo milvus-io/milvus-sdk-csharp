@@ -1,7 +1,7 @@
-﻿using System;
-using IO.Milvus.Grpc;
+﻿using IO.Milvus.Grpc;
 
-namespace IO.Milvus.Diagnostics;
+// ReSharper disable once CheckNamespace
+namespace IO.Milvus;
 
 /// <summary>
 ///  Exception thrown for errors related to the Milvus client.

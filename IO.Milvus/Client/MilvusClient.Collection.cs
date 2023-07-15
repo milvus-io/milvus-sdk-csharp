@@ -1,11 +1,5 @@
-﻿using Google.Protobuf;
-using IO.Milvus.Diagnostics;
-using IO.Milvus.Grpc;
+﻿using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace IO.Milvus.Client;
 

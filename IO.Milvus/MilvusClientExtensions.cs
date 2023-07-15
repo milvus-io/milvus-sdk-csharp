@@ -1,10 +1,5 @@
-﻿using IO.Milvus.Diagnostics;
-using IO.MilvusTests.Client;
-using System;
-using System.Collections.Generic;
+﻿using IO.MilvusTests.Client;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using IO.Milvus.Client;
 
 namespace IO.Milvus;

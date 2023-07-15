@@ -1,5 +1,4 @@
 ﻿using IO.Milvus;
-using IO.Milvus.Client;
 using Xunit;
 
 namespace IO.MilvusTests.Client;

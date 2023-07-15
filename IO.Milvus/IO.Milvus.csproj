@@ -46,4 +46,10 @@
     <PackageReference Include="Microsoft.Bcl.HashCode" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Google.Protobuf" />
+    <Using Include="Grpc.Core" />
+    <Using Include="Grpc.Net.Client" />
+  </ItemGroup>
+
 </Project>

@@ -1,11 +1,4 @@
-﻿using Google.Protobuf;
-using IO.Milvus.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Represents a milvus field/

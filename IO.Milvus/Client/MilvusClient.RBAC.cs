@@ -1,8 +1,4 @@
-﻿using IO.Milvus.Diagnostics;
-using IO.Milvus.Grpc;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using IO.Milvus.Grpc;
 
 namespace IO.Milvus.Client;
 

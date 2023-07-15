@@ -1,5 +1,4 @@
 ﻿using FluentAssertions;
-using IO.Milvus.Client;
 using IO.Milvus;
 using Xunit;
 

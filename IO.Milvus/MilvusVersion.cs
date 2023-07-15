@@ -1,5 +1,5 @@
-﻿using IO.Milvus.Diagnostics;
-using System.Globalization;
+﻿using System.Globalization;
+using IO.Milvus;
 
 namespace IO.MilvusTests.Client;
 

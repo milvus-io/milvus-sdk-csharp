@@ -1,5 +1,4 @@
 ﻿using IO.Milvus.Grpc;
-using System.Collections.Generic;
 
 namespace IO.Milvus;
 

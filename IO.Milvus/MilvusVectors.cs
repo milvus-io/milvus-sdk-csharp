@@ -1,8 +1,4 @@
-﻿using Google.Protobuf;
-using IO.Milvus.Diagnostics;
-using System.Collections.Generic;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 // TODO: This is currently unused - find out what's going on, possibly remove
 

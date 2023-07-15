@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using IO.Milvus;
 using IO.Milvus.Client;
-using IO.Milvus.Diagnostics;
 using Xunit;
 
 namespace IO.MilvusTests.Client;

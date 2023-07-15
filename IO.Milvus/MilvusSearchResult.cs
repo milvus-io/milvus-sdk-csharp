@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Milvus Search Result.

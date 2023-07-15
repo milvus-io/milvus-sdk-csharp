@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Milvus index.

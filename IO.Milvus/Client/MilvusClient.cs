@@ -1,14 +1,8 @@
-﻿using Grpc.Core;
-using Grpc.Net.Client;
-using IO.Milvus.Diagnostics;
-using IO.Milvus.Grpc;
+﻿using IO.Milvus.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace IO.Milvus.Client;
 
