@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
-        <TargetFrameworks>net7.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,29 +23,14 @@
         <PackageReference Include="GitHubActionsTestLogger" />
     </ItemGroup>
 
-<!--    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">-->
-<!--        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />-->
-<!--        <PackageReference Include="System.Net.Http.WinHttpHandler" />-->
-<!--    </ItemGroup>-->
-
     <ItemGroup>
         <ProjectReference Include="..\IO.Milvus\IO.Milvus.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="milvusclients.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="xunit.runner.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
       <None Update="config.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Utils\" />
     </ItemGroup>
 
 </Project>
