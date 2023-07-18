@@ -11,17 +11,11 @@ public partial class MilvusClientTests
     /// </summary>
     /// <remarks>
     /// Available in Milvus 2.2.9
-    ///
     /// <see href="https://milvus.io/docs/manage_databases.md"/>
     /// </remarks>
     [Fact]
     public async Task DatabaseTest()
     {
-        if (TestEnvironment.IsZillizCloud)
-        {
-            return;
-        }
-
         //Not support below milvus 2.2.9
         MilvusVersion version = await Client.GetMilvusVersionAsync();
         if (!version.GreaterThan(2, 2, 8))

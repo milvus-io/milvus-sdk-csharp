@@ -50,27 +50,26 @@ public partial class MilvusClientTests
         collectionDescription.Schema.Fields[0].Name.Should().Be("book_id");
         collectionDescription.ShardsNum.Should().Be(1);
         collectionDescription.Aliases.Should().BeNullOrEmpty();
-        string? partitionName = TestEnvironment.IsZillizCloud ? null : "partition1";
-        if (!TestEnvironment.IsZillizCloud)
-        {
-            //Create alias
-            string aliasName = "alias1";
-            await Client.CreateAliasAsync(collectionName, aliasName);
-            collectionDescription = await Client.DescribeCollectionAsync(collectionName);
-            collectionDescription.Aliases.First().Should().Be(aliasName);
 
-            //TODO Create another collection to test alter alias.
+        //Create alias
+        string aliasName = "alias1";
+        await Client.CreateAliasAsync(collectionName, aliasName);
+        collectionDescription = await Client.DescribeCollectionAsync(collectionName);
+        collectionDescription.Aliases.First().Should().Be(aliasName);
 
-            //Delete alias
-            await Client.DropAliasAsync(aliasName);
-            collectionDescription = await Client.DescribeCollectionAsync(collectionName);
-            collectionDescription.Aliases.Should().BeNullOrEmpty();
+        //TODO Create another collection to test alter alias.
 
-            //Create Partition
-            await Client.CreatePartitionAsync(collectionName, partitionName!);
-            IList<MilvusPartition> partitions = await Client.ShowPartitionsAsync(collectionName);
-            partitions.Should().Contain(x => x.PartitionName == partitionName);
-        }
+        //Delete alias
+        await Client.DropAliasAsync(aliasName);
+        collectionDescription = await Client.DescribeCollectionAsync(collectionName);
+        collectionDescription.Aliases.Should().BeNullOrEmpty();
+
+        //Create Partition
+        string? partitionName = "partition1";
+        await Client.CreatePartitionAsync(collectionName, partitionName!);
+        IList<MilvusPartition> partitions = await Client.ShowPartitionsAsync(collectionName);
+        partitions.Should().Contain(x => x.PartitionName == partitionName);
+
         IDictionary<string, string> collectionStatistics = await Client.GetCollectionStatisticsAsync(collectionName);
         collectionStatistics.Should().ContainKey("row_count");
 
@@ -125,7 +124,7 @@ public partial class MilvusClientTests
             collectionName,
             "book_intro",
             Constants.DefaultIndexName,
-            TestEnvironment.IsZillizCloud ? MilvusIndexType.AutoIndex : MilvusIndexType.IvfFlat,
+            MilvusIndexType.IvfFlat,
             MilvusMetricType.L2,
             new Dictionary<string, string> { { "nlist", "1024" } });
         IList<MilvusIndex> indexes = await Client.DescribeIndexAsync(collectionName, "book_intro");
@@ -134,14 +133,7 @@ public partial class MilvusClientTests
         indexes.First().FieldName.Should().Be("book_intro");
 
         //Load
-        if (TestEnvironment.IsZillizCloud)
-        {
-            await Client.LoadCollectionAsync(collectionName);
-        }
-        else if (partitionName != null)
-        {
-            await Client.LoadPartitionsAsync(collectionName, new List<string> { partitionName });
-        }
+        await Client.LoadPartitionsAsync(collectionName, new List<string> { partitionName });
 
         //Wait loaded
         await Client.WaitForCollectionLoadAsync(
@@ -182,27 +174,16 @@ public partial class MilvusClientTests
         MilvusCompactionState state = await Client.GetCompactionStateAsync(compactionId);
 
         //Release
-        if (TestEnvironment.IsZillizCloud)
-        {
-            await Client.ReleaseCollectionAsync(collectionName);
-        }
-        else
-        {
-            await Client.ReleasePartitionAsync(collectionName, new[] { partitionName! });
-        }
+        await Client.ReleasePartitionAsync(collectionName, new[] { partitionName! });
 
         //Drop index
         await Client.DropIndexAsync(collectionName, "book_intro", Constants.DefaultIndexName);
         await Assert.ThrowsAsync<MilvusException>(async () => await Client.DescribeIndexAsync(collectionName, "book_intro"));
 
         //Drop partition
-        if (!TestEnvironment.IsZillizCloud)
-        {
-            //Drop partition
-            await Client.DropPartitionsAsync(collectionName, partitionName!);
-            IList<MilvusPartition> partitions = await Client.ShowPartitionsAsync(collectionName);
-            partitions.Should().NotContain(p => p.PartitionName == partitionName);
-        }
+        await Client.DropPartitionsAsync(collectionName, partitionName!);
+        partitions = await Client.ShowPartitionsAsync(collectionName);
+        partitions.Should().NotContain(p => p.PartitionName == partitionName);
 
         //Drop collection
         await Client.DropCollectionAsync(collectionName);

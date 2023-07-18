@@ -30,7 +30,4 @@ public static class TestEnvironment
         => new(Address, Username, Password);
 
     public static MilvusClient Client { get; }
-
-    public static bool IsZillizCloud
-        => Client.Address.Contains("vectordb.zillizcloud.com", StringComparison.OrdinalIgnoreCase);
 }

@@ -9,11 +9,6 @@ public class CredentialTests : IAsyncLifetime
     [Fact]
     public async Task Create()
     {
-        if (TestEnvironment.IsZillizCloud)
-        {
-            return;
-        }
-
         // Create.
         await Client.CreateCredentialAsync("a", "bbbbbbb");
         Assert.Contains("a", await Client.ListCredUsersAsync());
@@ -26,11 +21,6 @@ public class CredentialTests : IAsyncLifetime
     [Fact]
     public async Task Update()
     {
-        if (TestEnvironment.IsZillizCloud)
-        {
-            return;
-        }
-
         //Create
         await Client.CreateCredentialAsync("b", "ccccccc");
         Assert.Contains("b", await Client.ListCredUsersAsync());
@@ -46,11 +36,6 @@ public class CredentialTests : IAsyncLifetime
     [Fact]
     public async Task Update_failed_with_wrong_old_password()
     {
-        if (TestEnvironment.IsZillizCloud)
-        {
-            return;
-        }
-
         //Create
         await Client.CreateCredentialAsync("c", "ddddddd");
         Assert.Contains("c", await Client.ListCredUsersAsync());
@@ -63,11 +48,6 @@ public class CredentialTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        if (TestEnvironment.IsZillizCloud)
-        {
-            return;
-        }
-
         //Check
         IList<string> users = await Client.ListCredUsersAsync();
         foreach (string username in new[] {"a", "b", "c"})

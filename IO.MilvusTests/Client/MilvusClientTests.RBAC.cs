@@ -14,12 +14,6 @@ public partial class MilvusClientTests
     [Fact]
     public async Task RBACTests()
     {
-        //Not support milvusRestClient
-        if (TestEnvironment.IsZillizCloud)
-        {
-            return;
-        }
-
         //Not support below milvus 2.2.9
         MilvusVersion version = await Client.GetMilvusVersionAsync();
         if (!version.GreaterThan(2, 2, 8))
