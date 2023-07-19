@@ -83,7 +83,7 @@ public partial class MilvusClientTests
         List<long> wordCounts = new();
         List<float> floatWeight = new();
         List<double> doubleWeight = new();
-        List<List<float>> bookIntros = new();
+        List<ReadOnlyMemory<float>> bookIntros = new();
         List<string> bookNames = new();
         for (long i = 0L; i < 2000; ++i)
         {
@@ -97,10 +97,10 @@ public partial class MilvusClientTests
             doubleWeight.Add(i + 0.1d);
             bookNames.Add($"Book Name {i}");
 
-            List<float> vector = new();
+            float[] vector = new float[2];
             for (int k = 0; k < 2; ++k)
             {
-                vector.Add(ran.Next());
+                vector[k] = ran.Next();
             }
             bookIntros.Add(vector);
         }

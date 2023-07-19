@@ -101,10 +101,10 @@ public class FieldTests
     {
         var field = Field.CreateFloatVector(
             "vector",
-            new List<List<float>>
+            new ReadOnlyMemory<float>[]
             {
-                new() { 1, 2 },
-                new() { 3, 4 }
+                new[] { 1f, 2f },
+                new[] { 3f, 4f }
             });
 
         field.Should().NotBeNull();

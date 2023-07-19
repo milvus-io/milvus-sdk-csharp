@@ -1,4 +1,7 @@
-﻿namespace IO.Milvus;
+﻿using System.Diagnostics;
+using Google.Protobuf.Collections;
+
+namespace IO.Milvus;
 
 /// <summary>
 /// Represents a milvus field/
@@ -76,17 +79,27 @@ public abstract class Field
                 {
                     case Grpc.VectorField.DataOneofCase.FloatVector:
                     {
-                        List<List<float>> floatVectors = new();
+                        RepeatedField<float> grpcData = fieldData.Vectors.FloatVector.Data;
+                        int totalElementCount = grpcData.Count;
+                        Debug.Assert(totalElementCount % dim == 0);
+                        int vectorCount = totalElementCount / dim;
 
-                        for (int i = 0; i < fieldData.Vectors.FloatVector.Data.Count; i += dim)
+                        ReadOnlyMemory<float>[] vectors = new ReadOnlyMemory<float>[vectorCount];
+
+                        for (int i = 0; i < vectorCount; i++)
                         {
-                            List<float> list = new(fieldData.Vectors.FloatVector.Data.Skip(i).Take(dim));
-                            floatVectors.Add(list);
+                            float[] vector = new float[dim];
+                            int vectorStart = i * dim;
+
+                            for (int j = 0; j < dim; j++)
+                            {
+                                vector[j] = grpcData[vectorStart + j];
+                            }
+
+                            vectors[i] = vector;
                         }
 
-                        FloatVectorField field = CreateFloatVector(fieldData.FieldName, floatVectors);
-
-                        return field;
+                        return CreateFloatVector(fieldData.FieldName, vectors);
                     }
 
                     case Grpc.VectorField.DataOneofCase.BinaryVector:
@@ -260,42 +273,8 @@ public abstract class Field
     /// <param name="fieldName">Field name.</param>
     /// <param name="data">Data</param>
     /// <returns></returns>
-    public static FloatVectorField CreateFloatVector(string fieldName, IList<List<float>> data)
+    public static FloatVectorField CreateFloatVector(string fieldName, IList<ReadOnlyMemory<float>> data)
         => new(fieldName, data);
-
-    /// <summary>
-    /// Create a float vector.
-    /// </summary>
-    /// <param name="fieldName">Field name.</param>
-    /// <param name="floatVector">Float vector.</param>
-    /// <param name="dimension">Dimension.</param>
-    /// <returns></returns>
-    internal static FloatVectorField CreateFloatVector(string fieldName, List<float> floatVector, long dimension)
-    {
-        List<List<float>> floatVectors = new();
-
-        for (int i = 0; i < floatVector.Count; i += (int)dimension)
-        {
-            floatVectors.Add(floatVector.GetRange(i, (int)dimension));
-        }
-
-        return new FloatVectorField(fieldName, floatVectors);
-    }
-
-    /// <summary>
-    /// Create a field from <see cref="ByteString"/>
-    /// </summary>
-    /// <param name="fieldName"></param>
-    /// <param name="byteString"><see cref="ByteString"/></param>
-    /// <param name="dimension">Dimension of this field.</param>
-    /// <returns></returns>
-    public static ByteStringField CreateFromByteString(string fieldName, ByteString byteString, long dimension)
-    {
-        Verify.NotNullOrWhiteSpace(fieldName);
-        ByteStringField field = new(fieldName, byteString, dimension);
-
-        return field;
-    }
 
     /// <summary>
     /// Create a field from stream

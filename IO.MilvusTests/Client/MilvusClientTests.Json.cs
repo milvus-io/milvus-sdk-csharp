@@ -59,16 +59,16 @@ public partial class MilvusClientTests
             waitingInterval: TimeSpan.FromSeconds(1),
             timeout: TimeSpan.FromSeconds(10));
 
-        List<List<float>> vectors = new();
+        List<ReadOnlyMemory<float>> vectors = new();
         List<ArticleMeta> articleMetas = new();
         List<string> titles = new();
 
         Random r = new();
         for (int i = 0; i < 100; i++)
         {
-            var vector = new List<float>(2);
-            vector.Add(i / 10f);
-            vector.Add(9 * i / 10f);
+            var vector = new float[2];
+            vector[0] = i / 10f;
+            vector[1] = 9 * i / 10f;
 
             titles.Add("title" + i);
             articleMetas.Add(new ArticleMeta(
@@ -91,8 +91,8 @@ public partial class MilvusClientTests
             new[]
             {
                 Field.Create("title", titles),
-                Field.CreateFloatVector("title_vector",vectors),
-                Field.CreateJson("article_meta",metaList)
+                Field.CreateFloatVector("title_vector", vectors),
+                Field.CreateJson("article_meta", metaList)
             });
 
         MilvusSearchResult searchResult = await Client.SearchAsync(MilvusSearchParameters.Create(

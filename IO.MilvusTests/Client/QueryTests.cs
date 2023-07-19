@@ -36,8 +36,16 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
         Assert.Equal(2, floatVectorData.RowCount);
         Assert.False(floatVectorData.IsDynamic);
         Assert.Collection(floatVectorData.Data,
-            v => Assert.Equal(new List<float> { 3.5f, 4.5f }, v),
-            v => Assert.Equal(new List<float> { 5f, 6f }, v));
+            v =>
+            {
+                Assert.Equal(3.5f, v.Span[0]);
+                Assert.Equal(4.5f, v.Span[1]);
+            },
+            v =>
+            {
+                Assert.Equal(5f, v.Span[0]);
+                Assert.Equal(6f, v.Span[1]);
+            });
     }
 
     [Fact]
@@ -91,13 +99,13 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
 
             long[] ids = { 1, 2, 3, 4, 5 };
             string[] strings = { "one", "two", "three", "four", "five" };
-            var floatVectors = new[]
+            ReadOnlyMemory<float>[] floatVectors =
             {
-                new List<float> { 1f, 2f },
-                new List<float> { 3.5f, 4.5f },
-                new List<float> { 5f, 6f },
-                new List<float> { 7.7f, 8.8f },
-                new List<float> { 9f, 10f }
+                new[] { 1f, 2f },
+                new[] { 3.5f, 4.5f },
+                new[] { 5f, 6f },
+                new[] { 7.7f, 8.8f },
+                new[] { 9f, 10f }
             };
 
             await TestEnvironment.Client.InsertAsync(

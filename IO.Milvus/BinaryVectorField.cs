@@ -22,9 +22,9 @@ public sealed class BinaryVectorField : Field<byte[]>
     public override Grpc.FieldData ToGrpcFieldData()
     {
         int dataCount = Data.Count;
-        if (dataCount <= 0)
+        if (dataCount == 0)
         {
-            throw new MilvusException("Number of rows must be positive.");
+            throw new MilvusException("The number of vectors must be positive.");
         }
 
         int dim = Data[0].Length;
@@ -34,7 +34,7 @@ public sealed class BinaryVectorField : Field<byte[]>
             int rowLength = Data[i].Length;
             if (rowLength != dim)
             {
-                throw new MilvusException("Row count of fields must be equal.");
+                throw new MilvusException("All vectors must have the same dimensionality.");
             }
 
             checked { lengthSum += rowLength; }
@@ -58,7 +58,7 @@ public sealed class BinaryVectorField : Field<byte[]>
             {
                 BinaryVector = ByteString.CopyFrom(bytes.AsSpan(0, lengthSum)),
                 Dim = dim,
-            },
+            }
         };
 
         ArrayPool<byte>.Shared.Return(bytes);

@@ -1,9 +1,11 @@
-﻿namespace IO.Milvus;
+﻿using System.Runtime.InteropServices;
+
+namespace IO.Milvus;
 
 /// <summary>
 /// Float vector field
 /// </summary>
-public sealed class FloatVectorField : Field<List<float>>
+public sealed class FloatVectorField : Field<ReadOnlyMemory<float>>
 {
     /// <summary>
     /// Create a float vector field.
@@ -12,15 +14,15 @@ public sealed class FloatVectorField : Field<List<float>>
     /// <param name="data">data</param>
     public FloatVectorField(
         string fieldName,
-        IList<List<float>> data) :
-        base(fieldName, data, MilvusDataType.FloatVector, false)
+        IList<ReadOnlyMemory<float>> data)
+        : base(fieldName, data, MilvusDataType.FloatVector, false)
     {
     }
 
     /// <summary>
     /// Row count.
     /// </summary>
-    public override long RowCount => Data?.Count ?? 0;
+    public override long RowCount => Data.Count;
 
     /// <summary>
     /// Convert to grpc field data
@@ -30,16 +32,40 @@ public sealed class FloatVectorField : Field<List<float>>
     public override Grpc.FieldData ToGrpcFieldData()
     {
         Grpc.FloatArray floatArray = new();
+        var destination = floatArray.Data;
 
-        int dim = Data.First().Count;
-        if (!Data.All(p => p.Count == dim))
+        if (Data.Count == 0)
         {
-            throw new MilvusException("Row count of fields must be equal");
+            throw new MilvusException("The number of vectors must be positive.");
         }
 
-        foreach (List<float> value in Data)
+        int dim = Data[0].Length;
+
+        // The gRPC representation of the vector data is a flat list of the elements (the dimension is known and all
+        // vectors have the same dimension)
+        destination.Capacity = dim * Data.Count;
+
+        foreach (ReadOnlyMemory<float> vector in Data)
         {
-            floatArray.Data.AddRange(value);
+            if (vector.Length != dim)
+            {
+                throw new MilvusException("All vectors must have the same dimensionality.");
+            }
+
+            // Special-case optimization for when the vector is an entire array
+            if (MemoryMarshal.TryGetArray(vector, out ArraySegment<float> segment) &&
+                segment.Offset == 0 &&
+                segment.Count == segment.Array!.Length)
+            {
+                destination.AddRange(segment.Array);
+            }
+            else
+            {
+                foreach (float f in vector.Span)
+                {
+                    destination.Add(f);
+                }
+            }
         }
 
         return new Grpc.FieldData
@@ -50,7 +76,7 @@ public sealed class FloatVectorField : Field<List<float>>
             {
                 FloatVector = floatArray,
                 Dim = dim,
-            },
+            }
         };
     }
 }
