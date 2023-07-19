@@ -2,9 +2,6 @@
 
 namespace IO.Milvus.Client;
 
-/// <summary>
-/// Milvus client
-/// </summary>
 public partial class MilvusClient
 {
     /// <summary>
@@ -12,8 +9,10 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">Collection Name.</param>
     /// <param name="alias">Alias.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task CreateAliasAsync(
         string collectionName,
         string alias,
@@ -37,8 +36,10 @@ public partial class MilvusClient
     /// Delete an Alias
     /// </summary>
     /// <param name="alias">Alias</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task DropAliasAsync(
         string alias,
         string? dbName = null,
@@ -61,8 +62,10 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">Collection name</param>
     /// <param name="alias">Alias</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task AlterAliasAsync(
         string collectionName,
         string alias,

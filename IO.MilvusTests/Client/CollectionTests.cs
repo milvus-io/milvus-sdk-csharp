@@ -19,16 +19,6 @@ public class CollectionTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task List()
-    {
-        await Client.CreateCollectionAsync(
-            CollectionName,
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
-
-        Assert.Single(await Client.ShowCollectionsAsync(), c => c.CollectionName == CollectionName);
-    }
-
-    [Fact]
     public async Task Describe()
     {
         await Assert.ThrowsAsync<MilvusException>(() => Client.DescribeCollectionAsync(CollectionName));
@@ -202,8 +192,60 @@ public class CollectionTests : IAsyncLifetime
         Assert.Equal(renamedCollectionName, (await Client.DescribeCollectionAsync(renamedCollectionName)).CollectionName);
     }
 
-    // TODO: Load
-    // TODO: Release
+    [Fact]
+    public async Task Load_Release()
+    {
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        await TestEnvironment.Client.CreateIndexAsync(
+            CollectionName, "float_vector", MilvusIndexType.Flat,
+            MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
+
+        await Client.LoadCollectionAsync(CollectionName);
+        await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName,
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        _ = await Client.QueryAsync(CollectionName, "id in [2, 3]", outputFields: new[] { "float_vector" });
+
+        await Client.ReleaseCollectionAsync(CollectionName);
+
+        await Assert.ThrowsAsync<MilvusException>(() =>
+            Client.QueryAsync(CollectionName, "id in [2, 3]", outputFields: new[] { "float_vector" }));
+    }
+
+    [Fact]
+    public async Task List()
+    {
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        await TestEnvironment.Client.CreateIndexAsync(
+            CollectionName, "float_vector", MilvusIndexType.Flat,
+            MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
+
+        Assert.Single(await Client.ShowCollectionsAsync(), c => c.CollectionName == CollectionName);
+        Assert.DoesNotContain(await Client.ShowCollectionsAsync(showType: ShowType.InMemory),
+            c => c.CollectionName == CollectionName);
+
+        await Client.LoadCollectionAsync(CollectionName);
+        await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName,
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        Assert.Single(await Client.ShowCollectionsAsync(), c => c.CollectionName == CollectionName);
+        Assert.Single(await Client.ShowCollectionsAsync(showType: ShowType.InMemory),
+            c => c.CollectionName == CollectionName);
+    }
 
     [Fact]
     public async Task Create_in_non_existing_database_fails()

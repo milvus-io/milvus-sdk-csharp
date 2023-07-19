@@ -16,7 +16,7 @@ public sealed class MilvusSearchParameters
     /// If the consistency level is not specified,
     /// the default level is ConsistencyLevelEnum.BOUNDED.
     /// </summary>
-    public MilvusConsistencyLevel ConsistencyLevel { get; private set; } = MilvusConsistencyLevel.Bounded;
+    public MilvusConsistencyLevel ConsistencyLevel { get; private set; } = MilvusConsistencyLevel.BoundedStaleness;
 
     /// <summary>
     /// The name list of output fields.
@@ -67,7 +67,7 @@ public sealed class MilvusSearchParameters
     /// <summary>
     /// Metric type of ANN searching.
     /// </summary>
-    public MilvusMetricType MetricType { get; private set; }
+    public MilvusSimilarityMetricType SimilarityMetricType { get; private set; }
 
     /// <summary>
     /// The decimal place of the returned results.
@@ -254,10 +254,10 @@ public sealed class MilvusSearchParameters
     /// <summary>
     /// Sets metric type of ANN searching.
     /// </summary>
-    /// <param name="metricType">metric type</param>
-    public MilvusSearchParameters WithMetricType(MilvusMetricType metricType)
+    /// <param name="similarityMetricType">metric type</param>
+    public MilvusSearchParameters WithMetricType(MilvusSimilarityMetricType similarityMetricType)
     {
-        MetricType = metricType;
+        SimilarityMetricType = similarityMetricType;
         return this;
     }
 
@@ -391,9 +391,9 @@ public sealed class MilvusSearchParameters
         Verify.NotNullOrWhiteSpace(VectorFieldName);
         Verify.NotNullOrEmpty(OutputFields);
         Verify.GreaterThanOrEqualTo(GuaranteeTimestamp, 0);
-        if (MetricType is MilvusMetricType.Invalid)
+        if (SimilarityMetricType is MilvusSimilarityMetricType.Invalid)
         {
-            throw new ArgumentOutOfRangeException(nameof(MetricType), "Metric type is invalid");
+            throw new ArgumentOutOfRangeException(nameof(SimilarityMetricType), "Metric type is invalid");
         }
         Verify.NotNullOrEmpty(MilvusFloatVectors);
     }
@@ -418,7 +418,7 @@ public sealed class MilvusSearchParameters
         return consistencyLevel switch
         {
             MilvusConsistencyLevel.Strong => 0L,
-            MilvusConsistencyLevel.Bounded => DateTime.UtcNow.ToUtcTimestamp() - gracefulTime,
+            MilvusConsistencyLevel.BoundedStaleness => DateTime.UtcNow.ToUtcTimestamp() - gracefulTime,
             MilvusConsistencyLevel.Eventually => 1L,
             _ => guaranteeTimestamp
         };
@@ -463,7 +463,7 @@ public sealed class MilvusSearchParameters
             {
                 new Grpc.KeyValuePair { Key = Constants.VectorField, Value = VectorFieldName },
                 new Grpc.KeyValuePair { Key = Constants.TopK, Value = TopK.ToString(CultureInfo.InvariantCulture) },
-                new Grpc.KeyValuePair { Key = Constants.MetricType, Value = MetricType.ToString().ToUpperInvariant() },
+                new Grpc.KeyValuePair { Key = Constants.MetricType, Value = SimilarityMetricType.ToString().ToUpperInvariant() },
                 new Grpc.KeyValuePair { Key = Constants.IgnoreGrowing, Value = IgnoreGrowing.ToString() },
                 new Grpc.KeyValuePair { Key = Constants.RoundDecimal, Value = RoundDecimal.ToString(CultureInfo.InvariantCulture) },
                 new Grpc.KeyValuePair { Key = Constants.Params, Value = Parameters?.Count > 0 ? Parameters.Combine() : "{}" }

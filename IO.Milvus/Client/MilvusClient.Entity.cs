@@ -11,7 +11,7 @@ public partial class MilvusClient
     /// <param name="collectionName">Collection name.</param>
     /// <param name="fields">Fields</param>
     /// <param name="partitionName">Partition name.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     public async Task<MilvusMutationResult> InsertAsync(
@@ -59,8 +59,10 @@ public partial class MilvusClient
     /// <param name="collectionName">Collection name.</param>
     /// <param name="expr">A predicate expression outputs a boolean value. <see href="https://milvus.io/docs/boolean.md"/></param>
     /// <param name="partitionName">Partition name.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
@@ -95,8 +97,10 @@ public partial class MilvusClient
     /// Do a k nearest neighbors search with bool expression.
     /// </summary>
     /// <param name="searchParameters"></param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<MilvusSearchResult> SearchAsync(
         MilvusSearchParameters searchParameters,
@@ -126,8 +130,10 @@ public partial class MilvusClient
     /// It will be removed in the future.
     /// </summary>
     /// <param name="collectionNames">Collection names.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
@@ -154,7 +160,7 @@ public partial class MilvusClient
     /// Returns sealed segments information of a collection.
     /// </summary>
     /// <param name="collectionName">Milvus collection name.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
@@ -181,7 +187,9 @@ public partial class MilvusClient
     /// Get the flush state of multiple segments.
     /// </summary>
     /// <param name="segmentIds">Segment ids</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>If segments flushed.</returns>
     public async Task<bool> GetFlushStateAsync(
         IList<long> segmentIds,
@@ -224,14 +232,16 @@ public partial class MilvusClient
     /// Default value is 0, will return without limit.
     /// </param>
     /// <param name="travelTimestamp">Travel time.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<MilvusQueryResult> QueryAsync(
         string collectionName,
         string expr,
         IList<string> outputFields,
-        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Bounded,
+        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.BoundedStaleness,
         IList<string>? partitionNames = null,
         long travelTimestamp = 0,
         long guaranteeTimestamp = Constants.GuaranteeEventuallyTs,
@@ -296,8 +306,10 @@ public partial class MilvusClient
     /// Get query segment information.
     /// </summary>
     /// <param name="collectionName">Collection name.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns><see cref="MilvusQuerySegmentInfoResult"/></returns>
     public async Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
         string collectionName,

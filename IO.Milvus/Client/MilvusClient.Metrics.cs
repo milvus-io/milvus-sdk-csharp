@@ -8,7 +8,9 @@ public partial class MilvusClient
     /// Get metrics.
     /// </summary>
     /// <param name="request">Request in JSON format.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>metrics from which component.</returns>
     public async Task<MilvusMetrics> GetMetricsAsync(
         string request,

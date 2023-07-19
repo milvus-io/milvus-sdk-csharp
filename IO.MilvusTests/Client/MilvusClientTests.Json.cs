@@ -49,10 +49,8 @@ public partial class MilvusClientTests
         await Client.CreateIndexAsync(
             collectionName,
             "title_vector",
-            Constants.DefaultIndexName,
             MilvusIndexType.AutoIndex,
-            MilvusMetricType.L2,
-            new Dictionary<string, string>());
+            MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "idx");
 
         await Client.LoadCollectionAsync(collectionName);
 
@@ -103,7 +101,7 @@ public partial class MilvusClientTests
             outFields: new[] { "title", " article_meta" })
             .WithTopK(3)
             .WithExpr("article_meta[\"claps\"] > 30 and article_meta[\"reading_time\"] < 10")
-            .WithMetricType(MilvusMetricType.L2)
+            .WithMetricType(MilvusSimilarityMetricType.L2)
             .WithParameter("nprobe", 10.ToString())
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
             .WithVectors(new[] { new List<float> { 0.5f, 0.5f } }));

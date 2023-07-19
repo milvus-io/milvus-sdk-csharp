@@ -19,7 +19,9 @@ public static class MilvusClientExtensions
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">Timeout.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <exception cref="TimeoutException">Time out.</exception>
     public static async Task WaitForCollectionLoadAsync(
         this MilvusClient milvusClient,
@@ -53,16 +55,20 @@ public static class MilvusClientExtensions
     /// <param name="milvusClient">Milvus client.</param>
     /// <param name="collectionName">Collection name.</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
-    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
+    /// <param name="indexName">An optional name for the index to be created.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">Timeout.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <exception cref="TimeoutException">Time out.</exception>
     public static async Task WaitForIndexBuildAsync(
         this MilvusClient milvusClient,
         string collectionName,
         string fieldName,
+        string? indexName = null,
         string? dbName = null,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
@@ -75,7 +81,7 @@ public static class MilvusClientExtensions
             async () =>
             {
                 IndexBuildProgress progress = await milvusClient
-                    .GetIndexBuildProgressAsync(collectionName, fieldName, dbName, cancellationToken)
+                    .GetIndexBuildProgressAsync(collectionName, fieldName, dbName, indexName, cancellationToken)
                     .ConfigureAwait(false);
                 return (progress.IsComplete, progress);
             },
@@ -90,7 +96,9 @@ public static class MilvusClientExtensions
     /// Return <see cref="MilvusVersion"/> instead of <see cref="string"/>.
     /// </remarks>
     /// <param name="milvusClient"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>Milvus version</returns>
     public static async Task<MilvusVersion> GetMilvusVersionAsync(
         this MilvusClient milvusClient,

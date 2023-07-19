@@ -7,16 +7,21 @@ namespace IO.Milvus.Client;
 public partial class MilvusClient
 {
     /// <summary>
-    /// Create a collection.
+    /// Creates a new collection.
     /// </summary>
-    /// <param name="collectionName">The unique collection name in milvus.</param>
-    /// <param name="fields">field types that represents this collection schema</param>
-    /// <param name="consistencyLevel">
-    /// The consistency level that the collection used, modification is not supported now.
+    /// <param name="collectionName">The name of the collection to create.</param>
+    /// <param name="fields">
+    /// Schema of the fields within the collection to create. Refer to
+    /// <see href="https://milvus.io/docs/schema.md" /> for more information.
     /// </param>
-    /// <param name="shardsNum">Once set, no modification is allowed (Optional).</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="consistencyLevel">
+    /// The consistency level to be used by the collection. Defaults to <see cref="MilvusConsistencyLevel.Session" />.
+    /// </param>
+    /// <param name="shardsNum">Number of the shards for the collection to create.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public Task CreateCollectionAsync(
         string collectionName,
         IList<FieldSchema> fields,
@@ -31,16 +36,18 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Create a collection.
+    /// Creates a new collection.
     /// </summary>
-    /// <param name="collectionName">The unique collection name in milvus.</param>
+    /// <param name="collectionName">The name of the collection to create.</param>
     /// <param name="schema">The schema definition for the collection.</param>
     /// <param name="consistencyLevel">
-    /// The consistency level that the collection used, modification is not supported now.
+    /// The consistency level to be used by the collection. Defaults to <see cref="MilvusConsistencyLevel.Session" />.
     /// </param>
-    /// <param name="shardsNum">Once set, no modification is allowed (Optional).</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="shardsNum">Number of the shards for the collection to create.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task CreateCollectionAsync(
         string collectionName,
         CollectionSchema schema,
@@ -120,11 +127,13 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Describe a collection.
+    /// Describes a collection, returning information about its configuration and schema.
     /// </summary>
-    /// <param name="collectionName">collectionName</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="collectionName">The name of the collection.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<MilvusCollectionDescription> DescribeCollectionAsync(
         string collectionName,
         string? dbName = null,
@@ -196,12 +205,14 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Rename a collection.
+    /// Renames a collection.
     /// </summary>
     /// <param name="oldName">The old collection name.</param>
     /// <param name="newName">The new collection name.</param>
-    /// <param name="dbName">Database name, available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task RenameCollectionAsync(
         string oldName,
         string newName,
@@ -222,11 +233,13 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Drop a collection.
+    /// Drops a collection.
     /// </summary>
-    /// <param name="collectionName">The unique collection name in milvus.(Required).</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="collectionName">The name of the collection.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task DropCollectionAsync(
         string collectionName,
         string? dbName = null,
@@ -245,11 +258,13 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Get a collection's statistics
+    /// Retrieves statistics for a collection.
     /// </summary>
-    /// <param name="collectionName">The collection name you want get statistics</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="collectionName">The name of the collection.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<IDictionary<string, string>> GetCollectionStatisticsAsync(
         string collectionName,
         string? dbName = null,
@@ -273,16 +288,16 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Get if a collection's existence
+    /// Checks whether a collection exists.
     /// </summary>
-    /// <param name="collectionName">The unique collection name in milvus.</param>
+    /// <param name="collectionName">The name of the collection.</param>
     /// <param name="dateTime">
-    /// If time_stamp is not zero,
-    /// will return true when time_stamp >= created collection timestamp,
-    /// otherwise will return false.
+    /// If non-null, returns <c>true</c> only if the collection was created before the given timestamp.
     /// </param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<bool> HasCollectionAsync(
         string collectionName,
         DateTime? dateTime = null,
@@ -310,22 +325,30 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// The collection name you want to load.
+    /// Loads a collection into memory so that it can be searched or queried.
     /// </summary>
-    /// <param name="collectionName">Collection name.</param>
-    /// <param name="replicaNumber">The replica number to load, default by 1.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="collectionName">The name of the collection.</param>
+    /// <param name="replicaNumber">An optional replica number to load.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task LoadCollectionAsync(
         string collectionName,
-        int replicaNumber = 1,
+        int? replicaNumber = null,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.GreaterThanOrEqualTo(replicaNumber, 1);
 
-        var request = new LoadCollectionRequest { CollectionName = collectionName, ReplicaNumber = replicaNumber };
+        var request = new LoadCollectionRequest { CollectionName = collectionName };
+
+        if (replicaNumber is not null)
+        {
+            Verify.GreaterThanOrEqualTo(replicaNumber.Value, 1);
+
+            request.ReplicaNumber = replicaNumber.Value;
+        }
 
         if (dbName is not null)
         {
@@ -339,7 +362,7 @@ public partial class MilvusClient
     /// Release a collection loaded before
     /// </summary>
     /// <param name="collectionName">The collection name you want to release.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task ReleaseCollectionAsync(
         string collectionName,
@@ -348,7 +371,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        var request = new ReleaseCollectionRequest { CollectionName = collectionName, DbName = dbName };
+        var request = new ReleaseCollectionRequest { CollectionName = collectionName };
 
         if (dbName is not null)
         {
@@ -359,16 +382,18 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Show all collections.
+    /// Lists the collections available in the database.
     /// </summary>
-    /// <param name="collectionNames">
-    /// When type is InMemory, will return these collection's inMemory_percentages.(Optional)
+    /// <param name="collectionNames">An optional list of collection names by which to filter.</param>
+    /// <param name="showType">
+    /// Determines whether all collections are returned, or only ones which have been loaded to memory.
     /// </param>
-    /// <param name="showType">Decide return Loaded collections or All collections(Optional)</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<IList<MilvusCollection>> ShowCollectionsAsync(
-        IList<string>? collectionNames = null,
+        IEnumerable<string>? collectionNames = null,
         ShowType showType = ShowType.All,
         string? dbName = null,
         CancellationToken cancellationToken = default)
@@ -378,8 +403,8 @@ public partial class MilvusClient
         if (dbName is not null)
         {
             request.DbName = dbName;
-
         }
+
         if (collectionNames is not null)
         {
             request.CollectionNames.AddRange(collectionNames);
@@ -406,32 +431,32 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Get loading progress of a collection or it's partition.
+    /// Returns the loading progress for a collection, and optionally one or more of its partitions.
     /// </summary>
-    /// <remarks>
-    /// Not support in restful api.
-    /// </remarks>
-    /// <param name="collectionName">Collection name of milvus.</param>
-    /// <param name="partitionNames">Partition names.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
+    /// <param name="collectionName">The name of the collection.</param>
+    /// <param name="partitionNames">
+    /// An optional list of partition names for which to check the loading progress.
+    /// </param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<long> GetLoadingProgressAsync(
        string collectionName,
-       IList<string> partitionNames,
+       IEnumerable<string>? partitionNames = null,
        string? dbName = null,
        CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        GetLoadingProgressRequest request = new() { CollectionName = collectionName, };
+        GetLoadingProgressRequest request = new() { CollectionName = collectionName };
 
         if (dbName is not null)
         {
             request.DbName = dbName;
         }
 
-        if (partitionNames.Count > 0)
+        if (partitionNames is not null)
         {
             request.PartitionNames.AddRange(partitionNames);
         }
@@ -441,40 +466,5 @@ public partial class MilvusClient
                 .ConfigureAwait(false);
 
         return response.Progress;
-    }
-
-    /// <summary>
-    /// Get a partition's statistics.
-    /// </summary>
-    /// <param name="collectionName">The collection name in milvus.</param>
-    /// <param name="partitionName">The partition name you want to collect statistics.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns></returns>
-    public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
-        string collectionName,
-        string partitionName,
-        string? dbName = null,
-        CancellationToken cancellationToken = default)
-    {
-        Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(partitionName);
-
-        var request = new GetPartitionStatisticsRequest
-        {
-            CollectionName = collectionName,
-            PartitionName = partitionName
-        };
-
-        if (dbName is not null)
-        {
-            request.DbName = dbName;
-        }
-
-        GetPartitionStatisticsResponse response =
-            await InvokeAsync(_grpcClient.GetPartitionStatisticsAsync, request, static r => r.Status, cancellationToken)
-                .ConfigureAwait(false);
-
-        return response.Stats.ToDictionary();
     }
 }

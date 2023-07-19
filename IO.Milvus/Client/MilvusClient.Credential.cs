@@ -9,7 +9,9 @@ public partial class MilvusClient
     /// Delete a user.
     /// </summary>
     /// <param name="username">Username.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task DeleteCredentialAsync(
         string username,
@@ -29,7 +31,9 @@ public partial class MilvusClient
     /// <param name="username">Username.</param>
     /// <param name="oldPassword">Old password.</param>
     /// <param name="newPassword">New password.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task UpdateCredentialAsync(
         string username,
@@ -54,7 +58,9 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="username">Username.</param>
     /// <param name="password">Password.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task CreateCredentialAsync(
         string username,
@@ -77,7 +83,9 @@ public partial class MilvusClient
     /// <summary>
     /// List all users in milvus.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)

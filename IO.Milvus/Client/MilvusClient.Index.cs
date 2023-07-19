@@ -6,25 +6,26 @@ namespace IO.Milvus.Client;
 public partial class MilvusClient
 {
     /// <summary>
-    /// Create an index.
+    /// Creates an index.
     /// </summary>
-    /// <param name="collectionName">The particular collection name you want to create index.</param>
-    /// <param name="fieldName">The vector field name in this particular collection.</param>
-    /// <param name="indexName">Index name</param>
-    /// <param name="milvusIndexType">Milvus index type.</param>
+    /// <param name="collectionName">The name of the collection for which the index will be created.</param>
+    /// <param name="fieldName">The name of the field in the collection for which the index will be created.</param>
+    /// <param name="milvusIndexType">The type of the index to be created.</param>
     /// <param name="milvusMetricType"></param>
     /// <param name="extraParams">
-    /// Support keys: index_type,metric_type, params.
-    /// Different index_type may has different params.</param>
-    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken"></param>
-    public async Task CreateIndexAsync(
-        string collectionName,
+    /// Extra parameters specific to each index type; consult the documentation for your index type for more details.
+    /// </param>
+    /// <param name="indexName">An optional name for the index to be created.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public async Task CreateIndexAsync(string collectionName,
         string fieldName,
-        string indexName,
-        MilvusIndexType milvusIndexType,
-        MilvusMetricType milvusMetricType,
-        IDictionary<string, string> extraParams,
+        MilvusIndexType? milvusIndexType = null,
+        MilvusSimilarityMetricType? milvusMetricType = null,
+        IDictionary<string, string>? extraParams = null,
+        string? indexName = null,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
@@ -42,24 +43,30 @@ public partial class MilvusClient
             request.DbName = dbName;
         }
 
-        if (!string.IsNullOrEmpty(indexName))
+        if (indexName is not null)
         {
             request.IndexName = indexName;
         }
 
-        request.ExtraParams.Add(new Grpc.KeyValuePair
+        if (milvusMetricType is not null)
         {
-            Key = "metric_type",
-            Value = GetGrpcMetricType(milvusMetricType)
-        });
+            request.ExtraParams.Add(new Grpc.KeyValuePair
+            {
+                Key = "metric_type",
+                Value = GetGrpcMetricType(milvusMetricType.Value)
+            });
+        }
 
-        request.ExtraParams.Add(new Grpc.KeyValuePair
+        if (milvusIndexType is not null)
         {
-            Key = "index_type",
-            Value = GetGrpcIndexType(milvusIndexType)
-        });
+            request.ExtraParams.Add(new Grpc.KeyValuePair
+            {
+                Key = "index_type",
+                Value = GetGrpcIndexType(milvusIndexType.Value)
+            });
+        }
 
-        if (extraParams.Count > 0)
+        if (extraParams is not null)
         {
             request.ExtraParams.Add(new Grpc.KeyValuePair
             {
@@ -69,20 +76,55 @@ public partial class MilvusClient
         }
 
         await InvokeAsync(_grpcClient.CreateIndexAsync, request, cancellationToken).ConfigureAwait(false);
+
+        static string GetGrpcIndexType(MilvusIndexType indexType)
+            => indexType switch
+            {
+                MilvusIndexType.Invalid => "INVALID",
+                MilvusIndexType.Flat => "FLAT",
+                MilvusIndexType.IvfFlat => "IVF_FLAT",
+                MilvusIndexType.IvfPq => "IVF_PQ",
+                MilvusIndexType.IvfSq8 => "IVF_SQ8",
+                MilvusIndexType.Hnsw => "HNSW",
+                MilvusIndexType.RhnswFlat => "RHNSW_FLAT",
+                MilvusIndexType.RhnswPq => "RHNSW_PQ",
+                MilvusIndexType.RhnswSq => "RHNSW_SQ",
+                MilvusIndexType.Annoy => "ANNOY",
+                MilvusIndexType.BinFlat => "BIN_FLAT",
+                MilvusIndexType.BinIvfFlat => "BIN_IVF_FLAT",
+                MilvusIndexType.AutoIndex => "AUTOINDEX",
+
+                _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
+            };
+
+        static string GetGrpcMetricType(MilvusSimilarityMetricType similarityMetricType)
+            => similarityMetricType switch
+            {
+                MilvusSimilarityMetricType.Invalid => "INVALID",
+                MilvusSimilarityMetricType.L2 => "L2",
+                MilvusSimilarityMetricType.Ip => "IP",
+                MilvusSimilarityMetricType.Jaccard => "JACCARD",
+                MilvusSimilarityMetricType.Tanimoto => "TANIMOTO",
+                MilvusSimilarityMetricType.Hamming => "HAMMING",
+                MilvusSimilarityMetricType.Superstructure => "SUPERSTRUCTURE",
+                MilvusSimilarityMetricType.Substructure => "SUBSTRUCTURE",
+
+                _ => throw new ArgumentOutOfRangeException(nameof(similarityMetricType), similarityMetricType, null)
+            };
     }
 
     /// <summary>
-    /// Drop an index.
+    /// Drops an index.
     /// </summary>
-    /// <param name="collectionName">The particular collection name you want to drop index.</param>
-    /// <param name="fieldName">The vector field name in this particular collection.</param>
-    /// <param name="indexName">Index name. The default Index name is <see cref="Constants.DefaultIndexName"/></param>
-    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
+    /// <param name="collectionName">The name of the collection containing the index to be dropped.</param>
+    /// <param name="fieldName">The name of the field which has the index to be dropped.</param>
+    /// <param name="indexName">An optional name of the index to be dropped.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task DropIndexAsync(
         string collectionName,
         string fieldName,
-        string indexName = Constants.DefaultIndexName,
+        string? indexName,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
@@ -106,16 +148,20 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Describe an index
+    /// Describes an index, returning information about it's configuration.
     /// </summary>
-    /// <param name="collectionName">The particular collection name in Milvus</param>
-    /// <param name="fieldName">The vector field name in this particular collection</param>
-    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="collectionName">The name of the collection containing the index to be described.</param>
+    /// <param name="fieldName">The name of the field which has the index to be described.</param>
+    /// <param name="indexName">An optional name of the index to be described.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string collectionName,
         string fieldName,
+        string? indexName = null,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
@@ -123,6 +169,11 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(fieldName);
 
         var request = new DescribeIndexRequest { CollectionName = collectionName, FieldName = fieldName };
+
+        if (indexName is not null)
+        {
+            request.IndexName = indexName;
+        }
 
         if (dbName is not null)
         {
@@ -150,16 +201,20 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Get the build progress of an index.
+    /// Gets the build progress of an index.
     /// </summary>
-    /// <param name="collectionName">The particular collection name in Milvus</param>
-    /// <param name="fieldName">The vector field name in this particular collection</param>
-    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="collectionName">The name of the collection containing the index.</param>
+    /// <param name="fieldName">The name of the field which has the index.</param>
+    /// <param name="indexName">An optional name of the index.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>Index build progress.</returns>
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string collectionName,
         string fieldName,
+        string? indexName = null,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
@@ -167,6 +222,11 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(fieldName);
 
         var request = new GetIndexBuildProgressRequest { CollectionName = collectionName, FieldName = fieldName };
+
+        if (indexName is not null)
+        {
+            request.IndexName = indexName;
+        }
 
         if (dbName is not null)
         {
@@ -181,12 +241,14 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Get the state of an index.
+    /// Gets the state of an index.
     /// </summary>
     /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
-    /// <param name="dbName">Database name. available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>Index state.</returns>
     public async Task<IndexState> GetIndexStateAsync(
         string collectionName,
@@ -208,6 +270,16 @@ public partial class MilvusClient
             await InvokeAsync(_grpcClient.GetIndexStateAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return (IndexState)response.State;
+        return response.State switch
+        {
+            Grpc.IndexState.None => IndexState.None,
+            Grpc.IndexState.Unissued => IndexState.Unissued,
+            Grpc.IndexState.InProgress => IndexState.InProgress,
+            Grpc.IndexState.Finished => IndexState.Finished,
+            Grpc.IndexState.Failed => IndexState.Failed,
+            Grpc.IndexState.Retry => IndexState.Retry,
+
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 }

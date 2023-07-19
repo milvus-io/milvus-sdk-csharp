@@ -3,10 +3,8 @@
 /// <summary>
 /// Constant/static values for internal usage.
 /// </summary>
-public static class Constants
+internal static class Constants
 {
-    // TODO: Decide whether we want to publicly expose these constants.
-
     /// <summary>
     /// Vector tag for <see cref="Grpc.PlaceholderValue"/>
     /// </summary>
@@ -38,7 +36,7 @@ public static class Constants
     public const string IndexType = "index_type";
 
     /// <summary>
-    /// Key name in parameters.<see cref="MilvusMetricType"/>
+    /// Key name in parameters.<see cref="MilvusSimilarityMetricType"/>
     /// </summary>
     public const string MetricType = "metric_type";
 

@@ -14,7 +14,7 @@ internal static class ParameterUtils
         {
             stringBuilder.Append('"').Append(parameter.Key).Append('"').Append(':').Append(parameter.Value);
 
-            if (index++ != (parameters.Count - 1))
+            if (index++ != parameters.Count - 1)
             {
                 stringBuilder.Append(", ");
             }

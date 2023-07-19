@@ -86,8 +86,8 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
                 });
 
             await TestEnvironment.Client.CreateIndexAsync(
-                CollectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
-                new Dictionary<string, string>());
+                CollectionName, "float_vector", MilvusIndexType.Flat,
+                MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
 
             long[] ids = { 1, 2, 3, 4, 5 };
             string[] strings = { "one", "two", "three", "four", "five" };

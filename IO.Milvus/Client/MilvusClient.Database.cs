@@ -13,7 +13,9 @@ public partial class MilvusClient
     /// </para>
     /// </remarks>
     /// <param name="dbName">Database name.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {

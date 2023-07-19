@@ -10,8 +10,10 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to create.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task CreatePartitionAsync(
         string collectionName,
         string partitionName,
@@ -36,8 +38,10 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to check.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<bool> HasPartitionAsync(
         string collectionName,
         string partitionName,
@@ -66,8 +70,10 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The collection name you want to describe,
     /// you can pass collection_name or collectionID.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(
         string collectionName,
@@ -109,8 +115,10 @@ public partial class MilvusClient
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionNames">The partition names you want to load.</param>
     /// <param name="replicaNumber">The replicas number you would load, 1 by default.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task LoadPartitionsAsync(
         string collectionName,
@@ -143,7 +151,7 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionNames">The partition names you want to release.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns></returns>
     public async Task ReleasePartitionAsync(
@@ -172,8 +180,10 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The collection name in milvus.</param>
     /// <param name="partitionName">The partition name you want to drop.</param>
-    /// <param name="dbName">Database name,available in <c>Milvus 2.2.9</c></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task DropPartitionsAsync(
         string collectionName,
@@ -192,5 +202,42 @@ public partial class MilvusClient
         }
 
         await InvokeAsync(_grpcClient.DropPartitionAsync, request, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Get a partition's statistics.
+    /// </summary>
+    /// <param name="collectionName">The collection name in milvus.</param>
+    /// <param name="partitionName">The partition name you want to collect statistics.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns></returns>
+    public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
+        string collectionName,
+        string partitionName,
+        string? dbName = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(partitionName);
+
+        var request = new GetPartitionStatisticsRequest
+        {
+            CollectionName = collectionName,
+            PartitionName = partitionName
+        };
+
+        if (dbName is not null)
+        {
+            request.DbName = dbName;
+        }
+
+        GetPartitionStatisticsResponse response =
+            await InvokeAsync(_grpcClient.GetPartitionStatisticsAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        return response.Stats.ToDictionary();
     }
 }

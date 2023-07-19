@@ -44,8 +44,8 @@ public class PartitionTests
 
         await Client.CreatePartitionAsync(collectionName, "partition");
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", "float_vector_idx", MilvusIndexType.Flat, MilvusMetricType.L2,
-            new Dictionary<string, string>());
+            collectionName, "float_vector", MilvusIndexType.Flat,
+            MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
         await WaitForIndexBuild(collectionName, "float_vector");
 
         await Client.LoadPartitionsAsync(collectionName, new[] { "partition" });

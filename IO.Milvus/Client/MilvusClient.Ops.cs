@@ -10,7 +10,9 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionId">Collection Id.</param>
     /// <param name="timeTravel">Time travel.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>CompactionId</returns>
     public async Task<long> ManualCompactionAsync(
         long collectionId,

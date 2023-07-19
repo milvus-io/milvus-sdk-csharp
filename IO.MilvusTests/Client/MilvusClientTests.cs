@@ -123,13 +123,11 @@ public partial class MilvusClientTests
         await Client.CreateIndexAsync(
             collectionName,
             "book_intro",
-            Constants.DefaultIndexName,
             MilvusIndexType.IvfFlat,
-            MilvusMetricType.L2,
-            new Dictionary<string, string> { { "nlist", "1024" } });
+            MilvusSimilarityMetricType.L2, new Dictionary<string, string> { { "nlist", "1024" } }, "idx");
         IList<MilvusIndex> indexes = await Client.DescribeIndexAsync(collectionName, "book_intro");
         indexes.Should().ContainSingle();
-        indexes.First().IndexName.Should().Be(Constants.DefaultIndexName);
+        indexes.First().IndexName.Should().Be("idx");
         indexes.First().FieldName.Should().Be("book_intro");
 
         //Load
@@ -149,7 +147,7 @@ public partial class MilvusClientTests
             MilvusSearchParameters.Create(collectionName, "book_intro", search_output_fields)
             .WithVectors(search_vectors)
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
-            .WithMetricType(MilvusMetricType.L2)
+            .WithMetricType(MilvusSimilarityMetricType.L2)
             .WithTopK(topK: 2)
             .WithParameter("nprobe", "10")
             .WithParameter("offset", "5"));
@@ -177,7 +175,7 @@ public partial class MilvusClientTests
         await Client.ReleasePartitionAsync(collectionName, new[] { partitionName! });
 
         //Drop index
-        await Client.DropIndexAsync(collectionName, "book_intro", Constants.DefaultIndexName);
+        await Client.DropIndexAsync(collectionName, "book_intro", "idx");
         await Assert.ThrowsAsync<MilvusException>(async () => await Client.DescribeIndexAsync(collectionName, "book_intro"));
 
         //Drop partition

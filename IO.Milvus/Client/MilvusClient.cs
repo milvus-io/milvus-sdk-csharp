@@ -129,7 +129,9 @@ public sealed partial class MilvusClient : IDisposable
     /// </summary>
     /// <remarks>
     /// </remarks>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns>Milvus version</returns>
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {

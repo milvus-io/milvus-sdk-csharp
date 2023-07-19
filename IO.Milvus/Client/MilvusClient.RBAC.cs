@@ -13,7 +13,9 @@ public partial class MilvusClient
     /// </para>
     /// </remarks>
     /// <param name="roleName">Role name that will be created.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task CreateRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
@@ -35,7 +37,9 @@ public partial class MilvusClient
     /// </para>
     /// </remarks>
     /// <param name="roleName"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task DropRoleAsync(
         string roleName,
@@ -62,7 +66,9 @@ public partial class MilvusClient
     /// </remarks>
     /// <param name="username">Username.</param>
     /// <param name="roleName">Role name.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task AddUserToRoleAsync(
         string username,
@@ -93,7 +99,9 @@ public partial class MilvusClient
     /// </remarks>
     /// <param name="username">Username.</param>
     /// <param name="roleName">RoleName.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task RemoveUserFromRoleAsync(
         string username,
@@ -149,7 +157,9 @@ public partial class MilvusClient
     /// </remarks>
     /// <param name="username">User name.</param>
     /// <param name="includeRoleInfo">Include user information</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task<IEnumerable<MilvusUserResult>> SelectUserAsync(
         string username,
