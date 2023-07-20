@@ -1,0 +1,5 @@
+[*.cs]
+
+# CA2007: Consider calling ConfigureAwait on the awaited task
+# We put it here because we don't want to enable it for the tests
+dotnet_diagnostic.CA2007.severity = warning

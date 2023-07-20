@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System.Globalization;
+using Xunit;
 using IO.Milvus;
 using System.Text.Json.Serialization;
 using System.Text.Json;
@@ -102,7 +103,7 @@ public partial class MilvusClientTests
             .WithTopK(3)
             .WithExpr("article_meta[\"claps\"] > 30 and article_meta[\"reading_time\"] < 10")
             .WithMetricType(MilvusSimilarityMetricType.L2)
-            .WithParameter("nprobe", 10.ToString())
+            .WithParameter("nprobe", "10")
             .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
             .WithVectors(new[] { new List<float> { 0.5f, 0.5f } }));
 

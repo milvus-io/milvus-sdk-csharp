@@ -14,7 +14,7 @@ public class CredentialTests : IAsyncLifetime
         Assert.Contains("a", await Client.ListCredUsersAsync());
 
         // Test if the new credential works.
-        var client = new MilvusClient(TestEnvironment.Address, "a", "bbbbbbb");
+        using var client = new MilvusClient(TestEnvironment.Address, "a", "bbbbbbb");
         _ = await client.HasCollectionAsync("foo");
     }
 
@@ -29,7 +29,7 @@ public class CredentialTests : IAsyncLifetime
         await Client.UpdateCredentialAsync("b", "ccccccc", "ddddddd");
 
         // Test if the new credential works.
-        var client = new MilvusClient(TestEnvironment.Address, "b", "ddddddd");
+        using var client = new MilvusClient(TestEnvironment.Address, "b", "ddddddd");
         _ = await client.HasCollectionAsync("foo");
     }
 
