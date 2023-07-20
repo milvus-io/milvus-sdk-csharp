@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Google.Protobuf.Collections;
 
 namespace IO.Milvus;
 
@@ -32,7 +33,7 @@ public sealed class FloatVectorField : Field<ReadOnlyMemory<float>>
     public override Grpc.FieldData ToGrpcFieldData()
     {
         Grpc.FloatArray floatArray = new();
-        var destination = floatArray.Data;
+        RepeatedField<float> destination = floatArray.Data;
 
         if (Data.Count == 0)
         {

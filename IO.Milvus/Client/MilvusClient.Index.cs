@@ -279,7 +279,7 @@ public partial class MilvusClient
             Grpc.IndexState.Failed => IndexState.Failed,
             Grpc.IndexState.Retry => IndexState.Retry,
 
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new InvalidOperationException($"Unknown {nameof(Grpc.IndexState)}: {response.State}")
         };
     }
 }

@@ -57,6 +57,7 @@ public partial class MilvusClient
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNull(schema);
 
         Grpc.CollectionSchema grpcCollectionSchema = new()
         {
@@ -173,11 +174,11 @@ public partial class MilvusClient
                 switch (parameter.Key)
                 {
                     case Constants.VarcharMaxLength:
-                        milvusField.MaxLength = int.Parse(parameter.Value);
+                        milvusField.MaxLength = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
 
                     case Constants.VectorDim:
-                        milvusField.Dimension = long.Parse(parameter.Value);
+                        milvusField.Dimension = long.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
 
                     // TODO: Should we warn for unknown type params?

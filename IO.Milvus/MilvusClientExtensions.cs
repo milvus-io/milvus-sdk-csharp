@@ -45,7 +45,7 @@ public static class MilvusClientExtensions
                 return (progress == 100, progress);
             },
             $"Timeout when waiting for collection '{collectionName}' to load",
-            waitingInterval, timeout, progress, cancellationToken);
+            waitingInterval, timeout, progress, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public static class MilvusClientExtensions
                 return (progress.IsComplete, progress);
             },
             $"Timeout when waiting for index '{collectionName}' to build",
-            waitingInterval, timeout, progress, cancellationToken);
+            waitingInterval, timeout, progress, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public static class MilvusClientExtensions
     {
         waitingInterval ??= TimeSpan.FromMilliseconds(500);
 
-        var stopWatch = timeout is null ? null : Stopwatch.StartNew();
+        Stopwatch? stopWatch = timeout is null ? null : Stopwatch.StartNew();
 
         while (true)
         {
