@@ -9,9 +9,6 @@ public class AliasTests : IAsyncLifetime
     [Fact]
     public async Task Create()
     {
-        await Client.DropAliasAsync("a");
-        await Client.DropAliasAsync("b");
-
         await Client.CreateAliasAsync(CollectionName, "a");
         await Client.CreateAliasAsync(CollectionName, "b");
 
@@ -24,7 +21,6 @@ public class AliasTests : IAsyncLifetime
     [Fact]
     public async Task Alter()
     {
-        await Client.DropAliasAsync("a");
         await Client.CreateAliasAsync(CollectionName, "a");
 
         await Client.DropCollectionAsync("AnotherCollection");
@@ -44,7 +40,6 @@ public class AliasTests : IAsyncLifetime
     [Fact]
     public async Task Drop()
     {
-        await Client.DropAliasAsync("a");
         await Client.CreateAliasAsync(CollectionName, "a");
 
         await Client.DropAliasAsync("a");
@@ -53,10 +48,13 @@ public class AliasTests : IAsyncLifetime
         Assert.DoesNotContain(description.Aliases, alias => alias == "a");
     }
 
-    public string CollectionName => nameof(AliasTests);
+    public string CollectionName = nameof(AliasTests);
 
     public async Task InitializeAsync()
     {
+        await Client.DropAliasAsync("a");
+        await Client.DropAliasAsync("b");
+
         await Client.DropCollectionAsync(CollectionName);
         await Client.CreateCollectionAsync(
             CollectionName,

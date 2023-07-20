@@ -193,7 +193,7 @@ public partial class MilvusClient
                     index.FieldName,
                     index.IndexName,
                     index.IndexID,
-                    index.Params.ToDictionary()));
+                    index.Params.ToDictionary(static p => p.Key, static p => p.Value)));
             }
         }
 

@@ -284,7 +284,7 @@ public partial class MilvusClient
             request,
             static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        return response.Stats.ToDictionary();
+        return response.Stats.ToDictionary(static p => p.Key, static p => p.Value);
     }
 
     /// <summary>

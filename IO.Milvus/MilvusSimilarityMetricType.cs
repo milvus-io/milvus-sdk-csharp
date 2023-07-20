@@ -18,7 +18,12 @@ public enum MilvusSimilarityMetricType
     /// points.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// This metric type is valid for float vectors only.
+    /// </para>
+    /// <para>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Euclidean-distance-L2" />.
+    /// </para>
     /// </remarks>
     L2,
 
@@ -34,6 +39,9 @@ public enum MilvusSimilarityMetricType
     /// normalization, the inner product equals cosine similarity.
     /// </para>
     /// <para>
+    /// This metric type is valid for float vectors only.
+    /// </para>
+    /// <para>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Inner-product-IP" />.
     /// </para>
     /// </remarks>
@@ -44,9 +52,14 @@ public enum MilvusSimilarityMetricType
     /// of the intersection of the defined sets divided by the cardinality of the union of them. It can only be applied
     /// to finite sample sets.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This metric type is valid for binary vectors only.
+    /// </para>
     /// <para>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Jaccard-distance" />.
     /// </para>
+    /// </remarks>
     Jaccard,
 
     /// <summary>
@@ -56,6 +69,9 @@ public enum MilvusSimilarityMetricType
     /// <para>
     /// In Milvus, the Tanimoto coefficient is only applicable for a binary variable, and for binary variables, the
     /// Tanimoto coefficient ranges from 0 to +1 (where +1 is the highest similarity).
+    /// </para>
+    /// <para>
+    /// This metric type is valid for binary vectors only.
     /// </para>
     /// <para>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Tanimoto-distance" />.
@@ -76,6 +92,9 @@ public enum MilvusSimilarityMetricType
     /// <c>d (11011001, 10011101) = 2</c>.
     /// </para>
     /// <para>
+    /// This metric type is valid for binary vectors only.
+    /// </para>
+    /// <para>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Hamming-distance" />.
     /// </para>
     /// </remarks>
@@ -86,6 +105,9 @@ public enum MilvusSimilarityMetricType
     /// When the value equals 0, this means the chemical structure in the database is the superstructure of the target
     /// chemical structure.
     /// </summary>
+    /// <para>
+    /// This metric type is valid for binary vectors only.
+    /// </para>
     /// <remarks>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Superstructure" />.
     /// </remarks>
@@ -96,6 +118,9 @@ public enum MilvusSimilarityMetricType
     /// When the value equals 0, this means the chemical structure in the database is the substructure of the target
     /// chemical structure.
     /// </summary>
+    /// <para>
+    /// This metric type is valid for binary vectors only.
+    /// </para>
     /// <remarks>
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Substructure" />.
     /// </remarks>

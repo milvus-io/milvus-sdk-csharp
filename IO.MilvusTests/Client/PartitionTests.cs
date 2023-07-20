@@ -4,34 +4,28 @@ using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-public class PartitionTests
+public class PartitionTests : IAsyncLifetime
 {
     [Fact]
     public async Task Create()
     {
-        string collectionName = await CreateCollection();
-
-        await Client.CreatePartitionAsync(collectionName, "partition");
+        await Client.CreatePartitionAsync(CollectionName, "partition");
     }
 
     [Fact]
     public async Task Exists()
     {
-        string collectionName = await CreateCollection();
-
-        await Client.CreatePartitionAsync(collectionName, "partition");
-        Assert.True(await Client.HasPartitionAsync(collectionName, "partition"));
+        await Client.CreatePartitionAsync(CollectionName, "partition");
+        Assert.True(await Client.HasPartitionAsync(CollectionName, "partition"));
     }
 
     [Fact]
     public async Task List()
     {
-        string collectionName = await CreateCollection();
+        await Client.CreatePartitionAsync(CollectionName, "partition1");
+        await Client.CreatePartitionAsync(CollectionName, "partition2");
 
-        await Client.CreatePartitionAsync(collectionName, "partition1");
-        await Client.CreatePartitionAsync(collectionName, "partition2");
-
-        var partitions = await Client.ShowPartitionsAsync(collectionName);
+        var partitions = await Client.ShowPartitionsAsync(CollectionName);
 
         Assert.Contains(partitions, p => p.PartitionName == "partition1");
         Assert.Contains(partitions, p => p.PartitionName == "partition2");
@@ -40,46 +34,28 @@ public class PartitionTests
     [Fact]
     public async Task Load_and_Release()
     {
-        string collectionName = await CreateCollection();
-
-        await Client.CreatePartitionAsync(collectionName, "partition");
+        await Client.CreatePartitionAsync(CollectionName, "partition");
         await Client.CreateIndexAsync(
-            collectionName, "float_vector", MilvusIndexType.Flat,
+            CollectionName, "float_vector", MilvusIndexType.Flat,
             MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
-        await WaitForIndexBuild(collectionName, "float_vector");
+        await WaitForIndexBuild(CollectionName, "float_vector");
 
-        await Client.LoadPartitionsAsync(collectionName, new[] { "partition" });
-        await Client.ReleasePartitionAsync(collectionName, new[] { "partition" });
+        await Client.LoadPartitionsAsync(CollectionName, new[] { "partition" });
+        await Client.ReleasePartitionAsync(CollectionName, new[] { "partition" });
     }
 
     [Fact]
     public async Task Drop()
     {
-        string collectionName = await CreateCollection();
-
-        await Client.DropPartitionsAsync(collectionName, "partition");
-        Assert.False(await Client.HasPartitionAsync(collectionName, "partition"));
+        await Client.DropPartitionsAsync(CollectionName, "partition");
+        Assert.False(await Client.HasPartitionAsync(CollectionName, "partition"));
     }
 
-    private async Task<string> CreateCollection()
-    {
-        await Client.DropCollectionAsync(nameof(PartitionTests));
-        await Client.CreateCollectionAsync(
-            nameof(PartitionTests),
-            new[]
-            {
-                FieldSchema.Create<long>("id", isPrimaryKey: true),
-                FieldSchema.CreateFloatVector("float_vector", 1)
-            });
-
-        return nameof(PartitionTests);
-    }
-
-    private async Task WaitForIndexBuild(string collectionName, string fieldName)
+    private async Task WaitForIndexBuild(string CollectionName, string fieldName)
     {
         while (true)
         {
-            var indexState = await Client.GetIndexStateAsync(collectionName, fieldName);
+            var indexState = await Client.GetIndexStateAsync(CollectionName, fieldName);
             if (indexState == IndexState.Finished)
             {
                 return;
@@ -89,5 +65,22 @@ public class PartitionTests
         }
     }
 
+    public async Task InitializeAsync()
+    {
+        await Client.DropCollectionAsync(CollectionName);
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("varchar", 256),
+                FieldSchema.CreateFloatVector("float_vector", 4),
+            });
+    }
+
+    public Task DisposeAsync()
+        => Task.CompletedTask;
+
+    private const string CollectionName = nameof(PartitionTests);
     private MilvusClient Client => TestEnvironment.Client;
 }

@@ -5,18 +5,17 @@ namespace IO.Milvus.Client;
 public partial class MilvusClient
 {
     /// <summary>
-    /// Create a database in milvus.
+    /// Creates a new database.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// available in <c>Milvus 2.2.9</c>
-    /// </para>
-    /// </remarks>
-    /// <param name="dbName">Database name.</param>
+    /// <param name="dbName">The name of the new database to be created.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
+    /// <remarks>
+    /// <para>
+    /// Available starting Milvus 2.2.9.
+    /// </para>
+    /// </remarks>
     public async Task CreateDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(dbName);
@@ -28,14 +27,13 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// List databases.
+    /// List all available databases.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// available in <c>Milvus 2.2.9</c>
+    /// Available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <returns>Databases</returns>
     public async Task<IReadOnlyList<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
         ListDatabasesResponse response = await InvokeAsync(_grpcClient.ListDatabasesAsync, new ListDatabasesRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
@@ -46,17 +44,15 @@ public partial class MilvusClient
     /// <summary>
     /// Drops a database.
     /// </summary>
+    /// <param name="dbName">The name of the database to be dropped.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <remarks>
     /// <para>
-    /// available in <c>Milvus 2.2.9</c>
-    /// </para>
-    /// <para>
-    /// Note that this method drops all data in the database.
+    /// Available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <param name="dbName">Database name.</param>
-    /// <param name="cancellationToken">Cancellation name.</param>
-    /// <returns></returns>
     public async Task DropDatabaseAsync(string dbName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(dbName);

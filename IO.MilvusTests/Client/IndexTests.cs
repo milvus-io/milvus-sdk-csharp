@@ -180,7 +180,7 @@ public class IndexTests : IAsyncLifetime
     {
         await Client.DropCollectionAsync(CollectionName);
         await Client.CreateCollectionAsync(
-            nameof(IndexTests),
+            CollectionName,
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
