@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Grpc;
+﻿using IO.Milvus.Diagnostics;
+using IO.Milvus.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Runtime.CompilerServices;
@@ -113,12 +114,9 @@ public sealed partial class MilvusClient : IDisposable
     {
         CheckHealthResponse response = await InvokeAsync(_grpcClient.CheckHealthAsync, new CheckHealthRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        if (_log.IsEnabled(LogLevel.Warning))
+        if (!response.IsHealthy)
         {
-            if (!response.IsHealthy)
-            {
-                _log.LogWarning("Unhealthy: {Reasons}", string.Join(", ", response.Reasons));
-            }
+            _log.HealthCheckFailed(response.Reasons);
         }
 
         return new MilvusHealthState(response.IsHealthy, response.Status.Reason, response.Status.ErrorCode);
@@ -165,6 +163,7 @@ public sealed partial class MilvusClient : IDisposable
         TRequest request,
         CancellationToken cancellationToken,
         [CallerMemberName] string callerName = "")
+        where TRequest : class
         => InvokeAsync(func, request, r => r, cancellationToken, callerName);
 
     private async Task<TResponse> InvokeAsync<TRequest, TResponse>(
@@ -173,21 +172,16 @@ public sealed partial class MilvusClient : IDisposable
         Func<TResponse, Grpc.Status> getStatus,
         CancellationToken cancellationToken,
         [CallerMemberName] string callerName = "")
+        where TRequest : class
     {
-        if (_log.IsEnabled(LogLevel.Debug))
-        {
-            _log.LogDebug("{CallerName} invoked: {Request}", callerName, request);
-        }
+        _log.OperationInvoked(callerName, request);
 
         TResponse response = await func(request, _callOptions.WithCancellationToken(cancellationToken)).ConfigureAwait(false);
         Grpc.Status status = getStatus(response);
 
         if (status.ErrorCode != ErrorCode.Success)
         {
-            if (_log.IsEnabled(LogLevel.Error))
-            {
-                _log.LogError("{CallerName} failed: {ErrorCode}, {Reason}", callerName, status.ErrorCode, status.Reason);
-            }
+            _log.OperationFailed(callerName, status.ErrorCode, status.Reason);
 
             throw new MilvusException(status.ErrorCode, status.Reason);
         }

@@ -17,6 +17,7 @@
     <PackageVersion Include="System.Net.Http.WinHttpHandler" Version="8.0.0-preview.4.23259.5" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.3.2" />
   </ItemGroup>
 
