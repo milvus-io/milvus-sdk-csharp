@@ -57,7 +57,7 @@ public abstract class Field
     /// Convert to a grpc generated field.
     /// </summary>
     /// <returns></returns>
-    public abstract Grpc.FieldData ToGrpcFieldData();
+    internal abstract Grpc.FieldData ToGrpcFieldData();
 
     /// <summary>
     /// Convert to field from <see cref="Grpc.FieldData"/>.
@@ -347,7 +347,7 @@ public class Field<TData> : Field
     }
 
     /// <inheritdoc />
-    public override Grpc.FieldData ToGrpcFieldData()
+    internal override Grpc.FieldData ToGrpcFieldData()
     {
         Check();
 

@@ -19,7 +19,7 @@ public sealed class BinaryVectorField : Field<byte[]>
     }
 
     /// <inheritdoc />
-    public override Grpc.FieldData ToGrpcFieldData()
+    internal override Grpc.FieldData ToGrpcFieldData()
     {
         int dataCount = Data.Count;
         if (dataCount == 0)

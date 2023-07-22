@@ -30,7 +30,7 @@ public sealed class FloatVectorField : Field<ReadOnlyMemory<float>>
     /// </summary>
     /// <returns>Field data</returns>
     /// <exception cref="MilvusException"></exception>
-    public override Grpc.FieldData ToGrpcFieldData()
+    internal override Grpc.FieldData ToGrpcFieldData()
     {
         Grpc.FloatArray floatArray = new();
         RepeatedField<float> destination = floatArray.Data;

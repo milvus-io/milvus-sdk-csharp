@@ -14,40 +14,6 @@ public class FieldTests
     }
 
     [Fact()]
-    public void ToGrpcFieldDataTest()
-    {
-        var field = Field.Create("Id", new[] { 1, 2, 3 });
-        var grpcField = field.ToGrpcFieldData();
-        grpcField.Should().NotBeNull();
-        grpcField.FieldName.Should().Be("Id");
-        grpcField.Type.Should().Be(Grpc.DataType.Int32);
-        grpcField.Scalars.IntData.Data.Count.Should().Be(3);
-    }
-
-    [Fact()]
-    public void FromGrpcFieldDataTest()
-    {
-        var grpcField = new Grpc.FieldData
-        {
-            FieldName = "Id",
-            Type = Grpc.DataType.Int32,
-            Scalars = new Grpc.ScalarField
-            {
-                IntData = new Grpc.IntArray()
-            }
-        };
-
-        grpcField.Scalars.IntData.Data.Add(new[] { 1, 2, 3 });
-
-        var field = Field.FromGrpcFieldData(grpcField) as Field<int>;
-        field.Should().NotBeNull();
-        field?.FieldName.Should().Be("Id");
-        field?.DataType.Should().Be(MilvusDataType.Int32);
-        field?.RowCount.Should().Be(3);
-        field?.Data.Should().BeEquivalentTo(new[] { 1, 2, 3 });
-    }
-
-    [Fact()]
     public void CreateTest()
     {
         var field = Field.Create("Id", new[] { 1, 2, 3 });

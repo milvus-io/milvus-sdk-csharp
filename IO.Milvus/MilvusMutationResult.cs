@@ -38,7 +38,7 @@ public sealed class MilvusMutationResult
             mutationResult.SuccIndex.ToList(),
             mutationResult.ErrIndex.ToList(),
             TimestampUtils.GetTimeFromTimestamp((long)mutationResult.Timestamp),
-            MilvusIds.From(mutationResult.IDs),
+            MilvusIds.FromGrpc(mutationResult.IDs),
             mutationResult);
 
     /// <summary>
@@ -86,86 +86,4 @@ public sealed class MilvusMutationResult
     /// Ids
     /// </summary>
     public MilvusIds? Ids { get; set; } // TODO NULLABILITY: Confirm nullability
-}
-
-/// <summary>
-/// Ids
-/// </summary>
-public sealed class MilvusIds
-{
-    /// <summary>
-    /// Construct a new instance of <see cref="MilvusIds"/>
-    /// </summary>
-    /// <param name="idField"></param>
-    private MilvusIds(IdField idField)
-        => IdField = idField;
-
-    /// <summary>
-    /// Id field
-    /// </summary>
-    public IdField IdField { get; set; }
-
-    internal static MilvusIds From(Grpc.IDs ids)
-        => ids switch
-        {
-            { IntId.Data.Count: > 0 } => new MilvusIds(new IdField(ids.IntId.Data.ToList())),
-            { StrId.Data.Count: > 0 } => new MilvusIds(new IdField(ids.StrId.Data.ToList())),
-            _ => new MilvusIds(new IdField())
-        };
-}
-
-/// <summary>
-/// Id field
-/// </summary>
-public sealed class IdField
-{
-    /// <summary>
-    /// Construct a new instance of <see cref="IdField"/>
-    /// </summary>
-    public IdField()
-    {
-    }
-
-    /// <summary>
-    /// Construct a new instance of <see cref="IdField"/>
-    /// </summary>
-    /// <param name="stringIds"></param>
-    public IdField(IList<string> stringIds)
-        => StrId = new MilvusId<string>(stringIds);
-
-    /// <summary>
-    /// Construct a new instance of <see cref="IdField"/>
-    /// </summary>
-    /// <param name="longIds"></param>
-    public IdField(IList<long> longIds)
-        => IntId = new MilvusId<long>(longIds);
-
-    /// <summary>
-    /// Int id.
-    /// </summary>
-    public MilvusId<long>? IntId { get; set; }
-
-    /// <summary>
-    /// String id.
-    /// </summary>
-    public MilvusId<string>? StrId { get; set; }
-}
-
-/// <summary>
-/// Milvus id
-/// </summary>
-/// <typeparam name="TId"><see cref="int"/> or <see cref="string"/></typeparam>
-public sealed class MilvusId<TId>
-{
-    /// <summary>
-    /// Create a int or string Milvus id.
-    /// </summary>
-    /// <param name="ids"></param>
-    public MilvusId(IList<TId> ids)
-        => Data = ids;
-
-    /// <summary>
-    /// Value
-    /// </summary>
-    public IList<TId> Data { get; }
 }

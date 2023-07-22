@@ -141,17 +141,20 @@ public partial class MilvusClientTests
             TimeSpan.FromSeconds(20));
 
         //Search
-        List<string> search_output_fields = new() { "book_id" };
-        List<List<float>> search_vectors = new() { new() { 0.1f, 0.2f } };
         var searchResult = await Client.SearchAsync(
-            MilvusSearchParameters.Create(collectionName, "book_intro", search_output_fields)
-            .WithVectors(search_vectors)
-            .WithConsistencyLevel(MilvusConsistencyLevel.Strong)
-            .WithMetricType(MilvusSimilarityMetricType.L2)
-            .WithTopK(topK: 2)
-            .WithParameter("nprobe", "10")
-            .WithParameter("offset", "5"));
-        searchResult.Results.FieldsData.Should().ContainSingle();
+            collectionName,
+            vectorFieldName: "book_intro",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            MilvusSimilarityMetricType.L2,
+            limit: 2,
+            new()
+            {
+                OutputFields = { "book_id" },
+                ConsistencyLevel = MilvusConsistencyLevel.Strong,
+                Parameters = { { "nprobe", "10" }, { "offset", "5" } },
+            });
+
+        searchResult.FieldsData.Should().ContainSingle();
 
         //Query
         string expr = "book_id in [2,4,6,8]";

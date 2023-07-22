@@ -10,28 +10,30 @@ public sealed class MilvusFlushResult
     /// <summary>
     /// Coll segIDs.
     /// </summary>
-    public IDictionary<string, MilvusId<long>> CollSegIDs { get; }
+    public IReadOnlyDictionary<string, IReadOnlyList<long>> CollSegIDs { get; }
 
     /// <summary>
     /// FlushCollSegIds.
     /// </summary>
-    public IDictionary<string, MilvusId<long>> FlushCollSegIds { get; }
+    public IReadOnlyDictionary<string, IReadOnlyList<long>> FlushCollSegIds { get; }
 
     /// <summary>
     /// CollSealTimes.
     /// </summary>
-    public IDictionary<string, long> CollSealTimes { get; }
+    public IReadOnlyDictionary<string, long> CollSealTimes { get; }
 
     internal static MilvusFlushResult From(FlushResponse response)
         => new(
-            response.CollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>(p.Value.Data)),
-            response.FlushCollSegIDs.ToDictionary(static p => p.Key, static p => new MilvusId<long>(p.Value.Data)),
+            response.CollSegIDs.ToDictionary(static p => p.Key,
+                static p => (IReadOnlyList<long>)p.Value.Data.ToArray()),
+            response.FlushCollSegIDs.ToDictionary(static p => p.Key,
+                static p => (IReadOnlyList<long>)p.Value.Data.ToArray()),
             response.CollSealTimes);
 
     private MilvusFlushResult(
-        IDictionary<string, MilvusId<long>> collSegIDs,
-        IDictionary<string, MilvusId<long>> flushCollSegIDs,
-        IDictionary<string, long> collSealTimes)
+        IReadOnlyDictionary<string, IReadOnlyList<long>> collSegIDs,
+        IReadOnlyDictionary<string, IReadOnlyList<long>> flushCollSegIDs,
+        IReadOnlyDictionary<string, long> collSealTimes)
     {
         CollSegIDs = collSegIDs;
         FlushCollSegIds = flushCollSegIDs;

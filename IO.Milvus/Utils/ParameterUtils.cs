@@ -12,7 +12,11 @@ internal static class ParameterUtils
         int index = 0;
         foreach (KeyValuePair<string, string> parameter in parameters)
         {
-            stringBuilder.Append('"').Append(parameter.Key).Append('"').Append(':').Append(parameter.Value);
+            stringBuilder
+                .Append('"')
+                .Append(parameter.Key)
+                .Append("\":")
+                .Append(parameter.Value);
 
             if (index++ != parameters.Count - 1)
             {

@@ -38,7 +38,7 @@ public class PartitionTests : IAsyncLifetime
         await Client.CreateIndexAsync(
             CollectionName, "float_vector", MilvusIndexType.Flat,
             MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
-        await WaitForIndexBuild(CollectionName, "float_vector");
+        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
 
         await Client.LoadPartitionsAsync(CollectionName, new[] { "partition" });
         await Client.ReleasePartitionAsync(CollectionName, new[] { "partition" });
@@ -49,20 +49,6 @@ public class PartitionTests : IAsyncLifetime
     {
         await Client.DropPartitionsAsync(CollectionName, "partition");
         Assert.False(await Client.HasPartitionAsync(CollectionName, "partition"));
-    }
-
-    private async Task WaitForIndexBuild(string CollectionName, string fieldName)
-    {
-        while (true)
-        {
-            var indexState = await Client.GetIndexStateAsync(CollectionName, fieldName);
-            if (indexState == IndexState.Finished)
-            {
-                return;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
-        }
     }
 
     public async Task InitializeAsync()

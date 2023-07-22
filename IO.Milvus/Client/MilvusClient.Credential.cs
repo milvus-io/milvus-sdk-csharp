@@ -1,4 +1,5 @@
-﻿using IO.Milvus.Grpc;
+﻿using System.Text;
+using IO.Milvus.Grpc;
 using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
@@ -90,4 +91,7 @@ public partial class MilvusClient
 
         return response.Usernames;
     }
+
+    private static string Base64Encode(string input)
+        => Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
 }

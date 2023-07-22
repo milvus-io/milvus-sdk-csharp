@@ -4,22 +4,22 @@ using Xunit;
 
 namespace IO.MilvusTests.Client;
 
-public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
+public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFixture>
 {
-    private string QueryCollectionName { get; }
+    private string CollectionName { get; }
 
-    public QueryTests(QueryCollectionFixture queryCollectionFixture)
-        => QueryCollectionName = queryCollectionFixture.CollectionName;
+    public SearchQueryTests(QueryCollectionFixture queryCollectionFixture)
+        => CollectionName = queryCollectionFixture.CollectionName;
 
     [Fact]
     public async Task Query()
     {
         var queryResult = await Client.QueryAsync(
-            QueryCollectionName,
+            CollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" });
 
-        Assert.Equal(QueryCollectionName, queryResult.CollectionName);
+        Assert.Equal(CollectionName, queryResult.CollectionName);
         Assert.Equal(2, queryResult.FieldsData.Count);
 
         var idData = (Field<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
@@ -52,7 +52,7 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
     public async Task Query_with_offset()
     {
         var queryResult = await Client.QueryAsync(
-            QueryCollectionName,
+            CollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             offset: 1,
@@ -67,7 +67,7 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
     public async Task Query_with_limit()
     {
         var queryResult = await Client.QueryAsync(
-            QueryCollectionName,
+            CollectionName,
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             limit: 1);
@@ -75,6 +75,86 @@ public class QueryTests : IClassFixture<QueryTests.QueryCollectionFixture>
         var idData = (Field<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
         Assert.Collection(idData.Data, id => Assert.Equal(2, id));
+    }
+
+    [Fact]
+    public async Task Search_with_minimal_inputs()
+    {
+        var results = await Client.SearchAsync(
+            CollectionName,
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            MilvusSimilarityMetricType.L2,
+            limit: 2);
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Empty(results.FieldsData);
+        Assert.Collection(results.Ids.LongIds!,
+            id => Assert.Equal(1, id),
+            id => Assert.Equal(2, id));
+        Assert.Null(results.Ids.StringIds); // TODO: Need to test string IDs
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
+    [Fact]
+    public async Task Search_with_OutputFields()
+    {
+        var results = await Client.SearchAsync(
+            CollectionName,
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            MilvusSimilarityMetricType.L2,
+            limit: 2,
+            new() { OutputFields = { "id", "varchar" } });
+
+        Assert.Collection(results.FieldsData,
+            field =>
+            {
+                var f = Assert.IsType<Field<long>>(field);
+                Assert.Equal("id", f.FieldName);
+                Assert.Equal(MilvusDataType.Int64, f.DataType);
+                Assert.Equal(2, f.RowCount);
+                Assert.False(f.IsDynamic);
+                Assert.Collection(f.Data,
+                    id => Assert.Equal(1, id),
+                    id => Assert.Equal(2, id));
+            },
+            field =>
+            {
+                var f = Assert.IsType<Field<string>>(field);
+                Assert.Equal("varchar", f.FieldName);
+                Assert.Equal(MilvusDataType.VarChar, f.DataType);
+                Assert.Equal(2, f.RowCount);
+                Assert.False(f.IsDynamic);
+                Assert.Collection(f.Data,
+                    s => Assert.Equal("one", s),
+                    s => Assert.Equal("two", s));
+            });
+    }
+
+    [Fact]
+    public Task Search_with_wrong_metric_type_throws()
+        => Assert.ThrowsAsync<MilvusException>(() => Client.SearchAsync(
+            CollectionName,
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            MilvusSimilarityMetricType.Ip,
+            limit: 2));
+
+    [Fact]
+    public async Task Search_with_unsupported_vector_type_throws()
+    {
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => Client.SearchAsync(
+            CollectionName,
+            "float_vector",
+            new ReadOnlyMemory<string>[] { new[] { "foo", "bar" } },
+            MilvusSimilarityMetricType.Ip,
+            limit: 2));
+
+        Assert.Equal("vectors", exception.ParamName);
     }
 
     public class QueryCollectionFixture : IAsyncLifetime

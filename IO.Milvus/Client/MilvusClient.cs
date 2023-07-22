@@ -188,7 +188,4 @@ public sealed partial class MilvusClient : IDisposable
 
         return response;
     }
-
-    private static string Base64Encode(string input) =>
-        Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
 }

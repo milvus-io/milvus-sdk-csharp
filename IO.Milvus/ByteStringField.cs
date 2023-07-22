@@ -28,7 +28,7 @@ public sealed class ByteStringField : Field
     public override long RowCount { get; protected set; }
 
     /// <inheritdoc />
-    public override Grpc.FieldData ToGrpcFieldData()
+    internal override Grpc.FieldData ToGrpcFieldData()
     {
         return new Grpc.FieldData
         {
