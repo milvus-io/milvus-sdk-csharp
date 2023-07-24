@@ -32,7 +32,7 @@ public partial class MilvusClientTests
         //Check if it exists.
         if (databases.Contains(databaseName))
         {
-            await Client.DropDatabaseAsync(databaseName);
+            await Client.GetDatabase(databaseName).DropAsync();
         }
 
         //Create database
@@ -42,7 +42,7 @@ public partial class MilvusClientTests
         databases.Should().Contain(databaseName);
 
         //Drop database
-        await Client.DropDatabaseAsync(databaseName);
+        await Client.GetDatabase(databaseName).DropAsync();
         databases = await Client.ListDatabasesAsync();
         databases.Should().NotBeNullOrEmpty();
         databases.Should().NotContain(databaseName);

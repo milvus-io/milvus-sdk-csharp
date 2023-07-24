@@ -9,7 +9,7 @@ public class DataTests : IAsyncLifetime
     [Fact]
     public async Task Insert_Drop()
     {
-        await Client.CreateCollectionAsync(
+        MilvusCollection collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -17,8 +17,7 @@ public class DataTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        MilvusMutationResult mutationResult = await Client.InsertAsync(
-            CollectionName,
+        MilvusMutationResult mutationResult = await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new long[] { 1, 2 }),
@@ -36,26 +35,25 @@ public class DataTests : IAsyncLifetime
         Assert.Equal(2, mutationResult.InsertCount);
         Assert.Equal(0, mutationResult.UpsertCount);
 
-        await Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
-        await Client.WaitForIndexBuildAsync(CollectionName, "id");
-        await Client.LoadCollectionAsync(CollectionName);
-        await Client.WaitForCollectionLoadAsync(CollectionName);
+        await collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+        await collection.WaitForIndexBuildAsync("id");
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync();
 
-        var queryResult = await Client.QueryAsync(CollectionName, "id in [2]");
+        var queryResult = await collection.QueryAsync("id in [2]");
 
         var result = Assert.IsType<FieldData<long>>(Assert.Single(queryResult.FieldsData));
         Assert.Equal(2, Assert.Single(result.Data));
 
-        mutationResult = await Client.DeleteAsync(CollectionName, "id in [2]");
+        mutationResult = await collection.DeleteAsync("id in [2]");
         Assert.Collection(mutationResult.Ids.LongIds!, i => Assert.Equal(2, i));
         Assert.Equal(1, mutationResult.DeleteCount);
         Assert.Equal(0, mutationResult.InsertCount);
         Assert.Equal(0, mutationResult.UpsertCount);
         ulong timestamp = mutationResult.Timestamp;
 
-        queryResult = await Client.QueryAsync(
-            CollectionName, "id in [2]", consistencyLevel: ConsistencyLevel.Customized, guaranteeTimestamp: timestamp);
+        queryResult = await collection.QueryAsync(
+            "id in [2]", consistencyLevel: ConsistencyLevel.Customized, guaranteeTimestamp: timestamp);
         result = Assert.IsType<FieldData<long>>(Assert.Single(queryResult.FieldsData));
         Assert.Empty(result.Data);
     }
@@ -65,7 +63,7 @@ public class DataTests : IAsyncLifetime
     {
         DateTime before = DateTime.UtcNow;
 
-        await Client.CreateCollectionAsync(
+        MilvusCollection collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -73,8 +71,7 @@ public class DataTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        MilvusMutationResult mutationResult = await Client.InsertAsync(
-            CollectionName,
+        MilvusMutationResult mutationResult = await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new long[] { 1, 2 }),
@@ -97,7 +94,7 @@ public class DataTests : IAsyncLifetime
     }
 
     public async Task InitializeAsync()
-        => await Client.DropCollectionAsync(CollectionName);
+        => await Client.GetCollection(CollectionName).DropAsync();
 
     public Task DisposeAsync()
         => Task.CompletedTask;

@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Xunit;
+﻿using Xunit;
 using IO.Milvus;
 using System.Text.Json.Serialization;
 using System.Text.Json;
@@ -25,13 +24,13 @@ public partial class MilvusClientTests
             return;
         }
 
-        string collectionName = Client.GetType().Name + "Json";
+        MilvusCollection collection = Client.GetCollection(Client.GetType().Name + "Json");
 
         //Check if collection exists.
-        bool collectionExist = await Client.HasCollectionAsync(collectionName);
+        bool collectionExist = await Client.HasCollectionAsync(collection.Name);
         if (collectionExist)
         {
-            await Client.DropCollectionAsync(collectionName);
+            await collection.DropAsync();
         }
 
         //Define fields.
@@ -44,19 +43,17 @@ public partial class MilvusClientTests
             };
 
         //Create collection.
-        await Client.CreateCollectionAsync(collectionName, fields);
+        collection = await Client.CreateCollectionAsync(collection.Name, fields);
 
         //Create index.
-        await Client.CreateIndexAsync(
-            collectionName,
+        await collection.CreateIndexAsync(
             "title_vector",
             MilvusIndexType.AutoIndex,
             MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "idx");
 
-        await Client.LoadCollectionAsync(collectionName);
+        await collection.LoadAsync();
 
-        await Client.WaitForCollectionLoadAsync(
-            collectionName,
+        await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromSeconds(1),
             timeout: TimeSpan.FromSeconds(10));
 
@@ -87,8 +84,7 @@ public partial class MilvusClientTests
             .Select(p => JsonSerializer.Serialize(p))
             .ToList();
 
-        await Client.InsertAsync(
-            collectionName,
+        await collection.InsertAsync(
             new[]
             {
                 FieldData.Create("title", titles),
@@ -96,8 +92,7 @@ public partial class MilvusClientTests
                 FieldData.CreateJson("article_meta", metaList)
             });
 
-        MilvusSearchResults searchResults = await Client.SearchAsync(
-            collectionName,
+        MilvusSearchResults searchResults = await collection.SearchAsync(
             vectorFieldName: "title_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.5f, 0.5f } },
             MilvusSimilarityMetricType.L2,

@@ -20,7 +20,7 @@ public partial class MilvusClient
     {
         Verify.GreaterThan(collectionId, 0);
 
-        ManualCompactionResponse response = await InvokeAsync(_grpcClient.ManualCompactionAsync, new ManualCompactionRequest
+        ManualCompactionResponse response = await InvokeAsync(GrpcClient.ManualCompactionAsync, new ManualCompactionRequest
         {
             CollectionID = collectionId,
             Timetravel = timeTravelTimestamp
@@ -41,7 +41,7 @@ public partial class MilvusClient
     {
         Verify.GreaterThan(compactionId, 0);
 
-        GetCompactionStateResponse response = await InvokeAsync(_grpcClient.GetCompactionStateAsync, new GetCompactionStateRequest
+        GetCompactionStateResponse response = await InvokeAsync(GrpcClient.GetCompactionStateAsync, new GetCompactionStateRequest
         {
             CompactionID = compactionId
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
@@ -61,7 +61,7 @@ public partial class MilvusClient
     {
         Verify.GreaterThan(compactionId, 0);
 
-        GetCompactionPlansResponse response = await InvokeAsync(_grpcClient.GetCompactionStateWithPlansAsync, new GetCompactionPlansRequest
+        GetCompactionPlansResponse response = await InvokeAsync(GrpcClient.GetCompactionStateWithPlansAsync, new GetCompactionPlansRequest
         {
             CompactionID = compactionId
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);

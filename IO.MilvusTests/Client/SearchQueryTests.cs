@@ -6,16 +6,10 @@ namespace IO.MilvusTests.Client;
 
 public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFixture>
 {
-    private string CollectionName { get; }
-
-    public SearchQueryTests(QueryCollectionFixture queryCollectionFixture)
-        => CollectionName = queryCollectionFixture.CollectionName;
-
     [Fact]
     public async Task Query()
     {
-        var queryResult = await Client.QueryAsync(
-            CollectionName,
+        var queryResult = await Collection.QueryAsync(
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             consistencyLevel: ConsistencyLevel.Strong);
@@ -52,8 +46,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Query_with_offset()
     {
-        var queryResult = await Client.QueryAsync(
-            CollectionName,
+        var queryResult = await Collection.QueryAsync(
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             limit: 2, offset: 1,
@@ -67,8 +60,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Query_with_limit()
     {
-        var queryResult = await Client.QueryAsync(
-            CollectionName,
+        var queryResult = await Collection.QueryAsync(
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             limit: 1,
@@ -82,8 +74,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Search_with_minimal_inputs()
     {
-        var results = await Client.SearchAsync(
-            CollectionName,
+        var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             MilvusSimilarityMetricType.L2,
@@ -104,8 +95,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Search_with_OutputFields()
     {
-        var results = await Client.SearchAsync(
-            CollectionName,
+        var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             MilvusSimilarityMetricType.L2,
@@ -144,8 +134,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Search_with_offset()
     {
-        var results = await Client.SearchAsync(
-            CollectionName,
+        var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             MilvusSimilarityMetricType.L2,
@@ -167,8 +156,10 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact(Skip = "This times out - just like pymilvus binary_example.py")]
     public async Task Search_binary_vector()
     {
-        string collectionName = nameof(Search_binary_vector);
-        await Client.DropCollectionAsync(collectionName);
+        MilvusCollection collection = Client.GetCollection(nameof(Search_binary_vector));
+        var collectionName = collection.Name;
+
+        await collection.DropAsync();
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
@@ -178,9 +169,9 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 FieldSchema.CreateBinaryVector("binary_vector", 128)
             });
 
-        await Client.CreateIndexAsync(
-            collectionName, "binary_vector", MilvusIndexType.BinFlat,
-            MilvusSimilarityMetricType.Jaccard, new Dictionary<string, string>(), "float_vector_idx");
+        await Collection.CreateIndexAsync(
+            "binary_vector", MilvusIndexType.BinFlat, MilvusSimilarityMetricType.Jaccard,
+            new Dictionary<string, string>(), "float_vector_idx");
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
@@ -191,8 +182,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             Enumerable.Range(3, 16).Select(i => (byte)i).ToArray(),
         };
 
-        await Client.InsertAsync(
-            collectionName,
+        await Collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", ids),
@@ -200,12 +190,11 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 FieldData.CreateBinaryVectors("binary_vector", binaryVectors)
             });
 
-        await Client.LoadCollectionAsync(collectionName);
-        await Client.WaitForCollectionLoadAsync(collectionName,
+        await Collection.LoadAsync();
+        await Collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
-        var results = await Client.SearchAsync(
-            collectionName,
+        var results = await Collection.SearchAsync(
             "binary_vector",
             new ReadOnlyMemory<byte>[] { new byte[] { 2, 3 } },
             MilvusSimilarityMetricType.Jaccard,
@@ -231,9 +220,11 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         // This tests inserts row, takes a timestamp, inserts another row, and then queries using the timestamp for
         // time travel. Only the first row should be returned.
 
-        string collectionName = nameof(Query_with_time_travel);
-        await Client.DropCollectionAsync(collectionName);
-        await Client.CreateCollectionAsync(
+        MilvusCollection collection = Client.GetCollection(nameof(Query_with_time_travel));
+        string collectionName = collection.Name;
+
+        await collection.DropAsync();
+        collection = await Client.CreateCollectionAsync(
             collectionName,
             new[]
             {
@@ -241,11 +232,9 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        await Client.CreateIndexAsync(
-            collectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
 
-        await Client.InsertAsync(
-            collectionName,
+        await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new long[] { 1 }),
@@ -254,36 +243,34 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
         var timestamp = DateTime.UtcNow;
 
-        // Thread.Sleep(3000);
-        await Client.InsertAsync(
-            collectionName,
+        await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new long[] { 2 }),
                 FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 3f, 4f } })
             });
 
-        await Client.LoadCollectionAsync(collectionName);
-        await Client.WaitForCollectionLoadAsync(collectionName,
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
         // Query without time travel
-        var results = await Client.QueryAsync(collectionName, "id > 0");
+        var results = await collection.QueryAsync("id > 0");
         var idData = (FieldData<long>)Assert.Single(results.FieldsData, d => d.FieldName == "id");
         Assert.Collection(idData.Data,
             id => Assert.Equal(1, id),
             id => Assert.Equal(2, id));
 
         // Query with time travel
-        results = await Client.QueryAsync(collectionName, "id > 0", timeTravelTimestamp: MilvusTimestampUtils.FromDateTime(timestamp));
+        results = await collection.QueryAsync("id > 0",
+            timeTravelTimestamp: MilvusTimestampUtils.FromDateTime(timestamp));
         idData = (FieldData<long>)Assert.Single(results.FieldsData, d => d.FieldName == "id");
         Assert.Collection(idData.Data, id => Assert.Equal(1, id));
     }
 
     [Fact]
     public Task Search_with_wrong_metric_type_throws()
-        => Assert.ThrowsAsync<MilvusException>(() => Client.SearchAsync(
-            CollectionName,
+        => Assert.ThrowsAsync<MilvusException>(() => Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             MilvusSimilarityMetricType.Ip,
@@ -292,8 +279,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Search_with_unsupported_vector_type_throws()
     {
-        var exception = await Assert.ThrowsAsync<ArgumentException>(() => Client.SearchAsync(
-            CollectionName,
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<string>[] { new[] { "foo", "bar" } },
             MilvusSimilarityMetricType.Ip,
@@ -304,13 +290,16 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
     public class QueryCollectionFixture : IAsyncLifetime
     {
-        public string CollectionName => "QueryCollection";
+        public MilvusCollection Collection { get; }
+
+        public QueryCollectionFixture()
+            => Collection = TestEnvironment.Client.GetCollection("CollectionName");
 
         public async Task InitializeAsync()
         {
-            await TestEnvironment.Client.DropCollectionAsync(CollectionName);
+            await Collection.DropAsync();
             await TestEnvironment.Client.CreateCollectionAsync(
-                CollectionName,
+                Collection.Name,
                 new[]
                 {
                     FieldSchema.Create<long>("id", isPrimaryKey: true),
@@ -318,9 +307,9 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                     FieldSchema.CreateFloatVector("float_vector", 2)
                 });
 
-            await TestEnvironment.Client.CreateIndexAsync(
-                CollectionName, "float_vector", MilvusIndexType.Flat,
-                MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
+            await Collection.CreateIndexAsync(
+                "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+                new Dictionary<string, string>(), "float_vector_idx");
 
             long[] ids = { 1, 2, 3, 4, 5 };
             string[] strings = { "one", "two", "three", "four", "five" };
@@ -333,8 +322,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 new[] { 9f, 10f }
             };
 
-            await TestEnvironment.Client.InsertAsync(
-                CollectionName,
+            await Collection.InsertAsync(
                 new FieldData[]
                 {
                     FieldData.Create("id", ids),
@@ -342,8 +330,8 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                     FieldData.CreateFloatVector("float_vector", floatVectors)
                 });
 
-            await TestEnvironment.Client.LoadCollectionAsync(CollectionName);
-            await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName,
+            await Collection.LoadAsync();
+            await Collection.WaitForCollectionLoadAsync(
                 waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
         }
 
@@ -352,4 +340,11 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     }
 
     private MilvusClient Client => TestEnvironment.Client;
+
+    private readonly QueryCollectionFixture _queryCollectionFixture;
+    private MilvusCollection Collection => _queryCollectionFixture.Collection;
+    private string CollectionName => Collection.Name; // TODO: Vemo
+
+    public SearchQueryTests(QueryCollectionFixture queryCollectionFixture)
+        => _queryCollectionFixture = queryCollectionFixture;
 }

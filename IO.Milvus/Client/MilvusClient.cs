@@ -12,6 +12,8 @@ namespace IO.Milvus.Client;
 /// </summary>
 public sealed partial class MilvusClient : IDisposable
 {
+    private readonly MilvusDatabase _defaultDatabase;
+
     /// <summary>
     /// Creates a new <see cref="MilvusClient" />.
     /// </summary>
@@ -89,7 +91,7 @@ public sealed partial class MilvusClient : IDisposable
         Verify.NotNull(grpcChannel);
 
         _grpcChannel = grpcChannel;
-        _grpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
+        GrpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
         _ownsGrpcChannel = ownsGrpcChannel;
 
         _callOptions = callOptions.WithHeaders(new Metadata
@@ -98,6 +100,8 @@ public sealed partial class MilvusClient : IDisposable
         });
 
         _log = log ?? NullLogger<MilvusClient>.Instance;
+
+        _defaultDatabase = new MilvusDatabase(this, databaseName: null);
     }
 
     /// <summary>
@@ -112,7 +116,7 @@ public sealed partial class MilvusClient : IDisposable
     /// <returns></returns>
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
-        CheckHealthResponse response = await InvokeAsync(_grpcClient.CheckHealthAsync, new CheckHealthRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        CheckHealthResponse response = await InvokeAsync(GrpcClient.CheckHealthAsync, new CheckHealthRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         if (!response.IsHealthy)
         {
@@ -133,7 +137,7 @@ public sealed partial class MilvusClient : IDisposable
     /// <returns>Milvus version</returns>
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
-        GetVersionResponse response = await InvokeAsync(_grpcClient.GetVersionAsync, new GetVersionRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        GetVersionResponse response = await InvokeAsync(GrpcClient.GetVersionAsync, new GetVersionRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Version;
     }
@@ -155,10 +159,11 @@ public sealed partial class MilvusClient : IDisposable
     private readonly ILogger _log;
     private readonly GrpcChannel _grpcChannel;
     private readonly CallOptions _callOptions;
-    private readonly MilvusService.MilvusServiceClient _grpcClient;
     private readonly bool _ownsGrpcChannel;
 
-    private Task<Grpc.Status> InvokeAsync<TRequest>(
+    internal MilvusService.MilvusServiceClient GrpcClient { get; }
+
+    internal Task<Grpc.Status> InvokeAsync<TRequest>(
         Func<TRequest, CallOptions, AsyncUnaryCall<Grpc.Status>> func,
         TRequest request,
         CancellationToken cancellationToken,
@@ -166,7 +171,7 @@ public sealed partial class MilvusClient : IDisposable
         where TRequest : class
         => InvokeAsync(func, request, r => r, cancellationToken, callerName);
 
-    private async Task<TResponse> InvokeAsync<TRequest, TResponse>(
+    internal async Task<TResponse> InvokeAsync<TRequest, TResponse>(
         Func<TRequest, CallOptions, AsyncUnaryCall<TResponse>> func,
         TRequest request,
         Func<TResponse, Grpc.Status> getStatus,

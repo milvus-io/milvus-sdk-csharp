@@ -18,7 +18,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(request);
 
-        GetMetricsResponse response = await InvokeAsync(_grpcClient.GetMetricsAsync, new GetMetricsRequest
+        GetMetricsResponse response = await InvokeAsync(GrpcClient.GetMetricsAsync, new GetMetricsRequest
         {
             Request = request
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);

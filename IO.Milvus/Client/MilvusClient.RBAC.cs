@@ -22,7 +22,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(roleName);
 
-        await InvokeAsync(_grpcClient.CreateRoleAsync, new CreateRoleRequest
+        await InvokeAsync(GrpcClient.CreateRoleAsync, new CreateRoleRequest
         {
             Entity = new RoleEntity { Name = roleName }
         }, cancellationToken).ConfigureAwait(false);
@@ -47,7 +47,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(roleName);
 
-        await InvokeAsync(_grpcClient.DropRoleAsync, new DropRoleRequest
+        await InvokeAsync(GrpcClient.DropRoleAsync, new DropRoleRequest
         {
             RoleName = roleName
         }, cancellationToken).ConfigureAwait(false);
@@ -78,7 +78,7 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(roleName);
 
-        await InvokeAsync(_grpcClient.OperateUserRoleAsync, new OperateUserRoleRequest
+        await InvokeAsync(GrpcClient.OperateUserRoleAsync, new OperateUserRoleRequest
         {
             RoleName = roleName,
             Username = username,
@@ -111,7 +111,7 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(roleName);
 
-        await InvokeAsync(_grpcClient.OperateUserRoleAsync, new OperateUserRoleRequest
+        await InvokeAsync(GrpcClient.OperateUserRoleAsync, new OperateUserRoleRequest
         {
             RoleName = roleName,
             Username = username,
@@ -138,7 +138,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(roleName);
 
-        SelectRoleResponse response = await InvokeAsync(_grpcClient.SelectRoleAsync, new SelectRoleRequest
+        SelectRoleResponse response = await InvokeAsync(GrpcClient.SelectRoleAsync, new SelectRoleRequest
         {
             Role = new RoleEntity { Name = roleName },
             IncludeUserInfo = includeUserInfo
@@ -168,7 +168,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(username);
 
-        SelectUserResponse response = await InvokeAsync(_grpcClient.SelectUserAsync, new SelectUserRequest
+        SelectUserResponse response = await InvokeAsync(GrpcClient.SelectUserAsync, new SelectUserRequest
         {
             User = new UserEntity { Name = username },
             IncludeRoleInfo = includeRoleInfo
@@ -223,7 +223,7 @@ public partial class MilvusClient
             request.Entity.DbName = dbName;
         }
 
-        await InvokeAsync(_grpcClient.OperatePrivilegeAsync, request, cancellationToken).ConfigureAwait(false);
+        await InvokeAsync(GrpcClient.OperatePrivilegeAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -253,7 +253,7 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(objectName);
         Verify.NotNullOrWhiteSpace(privilege);
 
-        await InvokeAsync(_grpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
+        await InvokeAsync(GrpcClient.OperatePrivilegeAsync, new OperatePrivilegeRequest
         {
             Type = OperatePrivilegeType.Revoke,
             Entity = new GrantEntity
@@ -283,7 +283,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(roleName);
 
-        SelectGrantResponse response = await InvokeAsync(_grpcClient.SelectGrantAsync, new SelectGrantRequest
+        SelectGrantResponse response = await InvokeAsync(GrpcClient.SelectGrantAsync, new SelectGrantRequest
         {
             Entity = new() { Role = new() { Name = roleName } }
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
@@ -314,7 +314,7 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(@object);
         Verify.NotNullOrWhiteSpace(objectName);
 
-        SelectGrantResponse response = await InvokeAsync(_grpcClient.SelectGrantAsync, new SelectGrantRequest
+        SelectGrantResponse response = await InvokeAsync(GrpcClient.SelectGrantAsync, new SelectGrantRequest
         {
             Entity = new()
             {

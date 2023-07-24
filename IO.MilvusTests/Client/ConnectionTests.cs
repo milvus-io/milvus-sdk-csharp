@@ -15,7 +15,7 @@ public class ConnectionTests
 
         try
         {
-            await client.DropCollectionAsync("foo");
+            await client.GetCollection("foo").DropAsync();
 
             if (Environment.GetEnvironmentVariable("CI") != null)
             {

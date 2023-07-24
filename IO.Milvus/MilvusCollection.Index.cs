@@ -1,13 +1,12 @@
-﻿using IO.Milvus.Grpc;
+using IO.Milvus.Grpc;
 
-namespace IO.Milvus.Client;
+namespace IO.Milvus;
 
-public partial class MilvusClient
+public partial class MilvusCollection
 {
     /// <summary>
     /// Creates an index.
     /// </summary>
-    /// <param name="collectionName">The name of the collection for which the index will be created.</param>
     /// <param name="fieldName">The name of the field in the collection for which the index will be created.</param>
     /// <param name="milvusIndexType">The type of the index to be created.</param>
     /// <param name="milvusMetricType"></param>
@@ -15,31 +14,28 @@ public partial class MilvusClient
     /// Extra parameters specific to each index type; consult the documentation for your index type for more details.
     /// </param>
     /// <param name="indexName">An optional name for the index to be created.</param>
-    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task CreateIndexAsync(string collectionName,
+    public async Task CreateIndexAsync(
         string fieldName,
         MilvusIndexType? milvusIndexType = null,
         MilvusSimilarityMetricType? milvusMetricType = null,
         IDictionary<string, string>? extraParams = null,
         string? indexName = null,
-        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
 
         var request = new CreateIndexRequest
         {
-            CollectionName = collectionName,
+            CollectionName = Name,
             FieldName = fieldName
         };
 
-        if (dbName is not null)
+        if (DatabaseName is not null)
         {
-            request.DbName = dbName;
+            request.DbName = DatabaseName;
         }
 
         if (indexName is not null)
@@ -74,7 +70,8 @@ public partial class MilvusClient
             });
         }
 
-        await InvokeAsync(_grpcClient.CreateIndexAsync, request, cancellationToken).ConfigureAwait(false);
+        await _client.InvokeAsync(_client.GrpcClient.CreateIndexAsync, request, cancellationToken)
+            .ConfigureAwait(false);
 
         static string GetGrpcIndexType(MilvusIndexType indexType)
             => indexType switch
@@ -115,72 +112,60 @@ public partial class MilvusClient
     /// <summary>
     /// Drops an index.
     /// </summary>
-    /// <param name="collectionName">The name of the collection containing the index to be dropped.</param>
     /// <param name="fieldName">The name of the field which has the index to be dropped.</param>
     /// <param name="indexName">An optional name of the index to be dropped.</param>
-    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task DropIndexAsync(
-        string collectionName,
-        string fieldName,
-        string? indexName,
-        string? dbName = null,
-        CancellationToken cancellationToken = default)
+    public async Task DropIndexAsync(string fieldName, string? indexName, CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
         Verify.NotNullOrWhiteSpace(indexName);
 
         var request = new DropIndexRequest
         {
-            CollectionName = collectionName,
+            CollectionName = Name,
             FieldName = fieldName,
             IndexName = indexName
         };
 
-        if (dbName is not null)
+        if (DatabaseName is not null)
         {
-            request.DbName = dbName;
+            request.DbName = DatabaseName;
         }
 
-        await InvokeAsync(_grpcClient.DropIndexAsync, request, cancellationToken).ConfigureAwait(false);
+        await _client.InvokeAsync(_client.GrpcClient.DropIndexAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Describes an index, returning information about it's configuration.
     /// </summary>
-    /// <param name="collectionName">The name of the collection containing the index to be described.</param>
     /// <param name="fieldName">The name of the field which has the index to be described.</param>
     /// <param name="indexName">An optional name of the index to be described.</param>
-    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns></returns>
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
-        string collectionName,
         string fieldName,
         string? indexName = null,
-        string? dbName = null,
         CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
 
-        var request = new DescribeIndexRequest { CollectionName = collectionName, FieldName = fieldName };
+        var request = new DescribeIndexRequest { CollectionName = Name, FieldName = fieldName };
 
         if (indexName is not null)
         {
             request.IndexName = indexName;
         }
 
-        if (dbName is not null)
+        if (DatabaseName is not null)
         {
-            request.DbName = dbName;
+            request.DbName = DatabaseName;
         }
 
         DescribeIndexResponse response =
-            await InvokeAsync(_grpcClient.DescribeIndexAsync, request, static r => r.Status, cancellationToken)
+            await _client.InvokeAsync(_client.GrpcClient.DescribeIndexAsync, request, static r => r.Status,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
         List<MilvusIndex> indexes = new();
@@ -200,73 +185,27 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Gets the build progress of an index.
-    /// </summary>
-    /// <param name="collectionName">The name of the collection containing the index.</param>
-    /// <param name="fieldName">The name of the field which has the index.</param>
-    /// <param name="indexName">An optional name of the index.</param>
-    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
-    /// <param name="cancellationToken">
-    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
-    /// </param>
-    /// <returns>Index build progress.</returns>
-    public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
-        string collectionName,
-        string fieldName,
-        string? indexName = null,
-        string? dbName = null,
-        CancellationToken cancellationToken = default)
-    {
-        Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(fieldName);
-
-        var request = new GetIndexBuildProgressRequest { CollectionName = collectionName, FieldName = fieldName };
-
-        if (indexName is not null)
-        {
-            request.IndexName = indexName;
-        }
-
-        if (dbName is not null)
-        {
-            request.DbName = dbName;
-        }
-
-        GetIndexBuildProgressResponse response =
-            await InvokeAsync(_grpcClient.GetIndexBuildProgressAsync, request, static r => r.Status, cancellationToken)
-                .ConfigureAwait(false);
-
-        return new IndexBuildProgress(response.IndexedRows, response.TotalRows);
-    }
-
-    /// <summary>
     /// Gets the state of an index.
     /// </summary>
-    /// <param name="collectionName">The particular collection name in Milvus</param>
     /// <param name="fieldName">The vector field name in this particular collection</param>
-    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns>Index state.</returns>
-    public async Task<IndexState> GetIndexStateAsync(
-        string collectionName,
-        string fieldName,
-        string? dbName = null,
-        CancellationToken cancellationToken = default)
+    public async Task<IndexState> GetIndexStateAsync(string fieldName, CancellationToken cancellationToken = default)
     {
-        Verify.NotNullOrWhiteSpace(collectionName);
         Verify.NotNullOrWhiteSpace(fieldName);
 
-        var request = new GetIndexStateRequest { CollectionName = collectionName, FieldName = fieldName };
+        var request = new GetIndexStateRequest { CollectionName = Name, FieldName = fieldName };
 
-        if (dbName is not null)
+        if (DatabaseName is not null)
         {
-            request.DbName = dbName;
+            request.DbName = DatabaseName;
         }
 
         GetIndexStateResponse response =
-            await InvokeAsync(_grpcClient.GetIndexStateAsync, request, static r => r.Status, cancellationToken)
+            await _client.InvokeAsync(_client.GrpcClient.GetIndexStateAsync, request, static r => r.Status,
+                    cancellationToken)
                 .ConfigureAwait(false);
 
         return response.State switch
@@ -280,5 +219,75 @@ public partial class MilvusClient
 
             _ => throw new InvalidOperationException($"Unknown {nameof(Grpc.IndexState)}: {response.State}")
         };
+    }
+
+    /// <summary>
+    /// Gets the build progress of an index.
+    /// </summary>
+    /// <param name="fieldName">The name of the field which has the index.</param>
+    /// <param name="indexName">An optional name of the index.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>Index build progress.</returns>
+    public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
+        string fieldName,
+        string? indexName = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+
+        var request = new GetIndexBuildProgressRequest { CollectionName = Name, FieldName = fieldName };
+
+        if (indexName is not null)
+        {
+            request.IndexName = indexName;
+        }
+
+        if (DatabaseName is not null)
+        {
+            request.DbName = DatabaseName;
+        }
+
+        GetIndexBuildProgressResponse response =
+            await _client.InvokeAsync(_client.GrpcClient.GetIndexBuildProgressAsync, request, static r => r.Status,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        return new IndexBuildProgress(response.IndexedRows, response.TotalRows);
+    }
+
+    /// <summary>
+    /// Polls Milvus for building progress of an index until it is fully built.
+    /// To perform a single progress check, use <see cref="GetIndexBuildProgressAsync" />.
+    /// </summary>
+    /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="indexName">An optional name for the index to be created.</param>
+    /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
+    /// <param name="timeout">Timeout.</param>
+    /// <param name="progress">Provides information about the progress of the loading operation.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="TimeoutException">Time out.</exception>
+    public async Task WaitForIndexBuildAsync(
+        string fieldName,
+        string? indexName = null,
+        TimeSpan? waitingInterval = null,
+        TimeSpan? timeout = null,
+        IProgress<IndexBuildProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        await Poll(
+            async () =>
+            {
+                IndexBuildProgress progress = await GetIndexBuildProgressAsync(fieldName, indexName, cancellationToken)
+                    .ConfigureAwait(false);
+                return (progress.IsComplete, progress);
+            },
+            indexName is null
+                ? $"Timeout when waiting for index on collection '{Name}' to build"
+                : $"Timeout when waiting for index '{indexName}' on collection '{Name}' to build",
+            waitingInterval, timeout, progress, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -25,7 +25,7 @@ public sealed class MilvusMutationResult
 
     /// <summary>
     /// An opaque identifier for the point in time in which the mutation operation occurred. Can be passed to
-    /// <see cref="MilvusClient.SearchAsync{T}" /> or <see cref="MilvusClient.QueryAsync" /> as a <i>guarantee
+    /// <see cref="MilvusCollection.SearchAsync{T}" /> or <see cref="MilvusCollection.QueryAsync" /> as a <i>guarantee
     /// timestamp</i> or as a <i>time travel timestamp</i>.
     /// </summary>
     /// <remarks>

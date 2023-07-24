@@ -23,7 +23,7 @@ public partial class MilvusClient
 
         // TODO: Is this correct?
         ulong timestamp = MilvusTimestampUtils.FromDateTime(DateTime.UtcNow);
-        await InvokeAsync(_grpcClient.CreateCredentialAsync, new CreateCredentialRequest
+        await InvokeAsync(GrpcClient.CreateCredentialAsync, new CreateCredentialRequest
         {
             Username = username,
             Password = Base64Encode(password),
@@ -45,7 +45,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(username);
 
-        await InvokeAsync(_grpcClient.DeleteCredentialAsync, new DeleteCredentialRequest
+        await InvokeAsync(GrpcClient.DeleteCredentialAsync, new DeleteCredentialRequest
         {
             Username = username
         }, cancellationToken).ConfigureAwait(false);
@@ -70,7 +70,7 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(oldPassword);
         Verify.NotNullOrWhiteSpace(newPassword);
 
-        await InvokeAsync(_grpcClient.UpdateCredentialAsync, new UpdateCredentialRequest
+        await InvokeAsync(GrpcClient.UpdateCredentialAsync, new UpdateCredentialRequest
         {
             NewPassword = Base64Encode(newPassword),
             OldPassword = Base64Encode(oldPassword),
@@ -87,7 +87,7 @@ public partial class MilvusClient
     public async Task<IList<string>> ListCredUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        ListCredUsersResponse response = await InvokeAsync(_grpcClient.ListCredUsersAsync, new ListCredUsersRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        ListCredUsersResponse response = await InvokeAsync(GrpcClient.ListCredUsersAsync, new ListCredUsersRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Usernames;
     }

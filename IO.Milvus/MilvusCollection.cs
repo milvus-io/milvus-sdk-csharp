@@ -1,49 +1,87 @@
-﻿using IO.Milvus.Client;
+using System.Diagnostics;
+using System.Text;
+using IO.Milvus.Client;
 
 namespace IO.Milvus;
 
 /// <summary>
-/// Milvus collection information
+/// Represents a Milvus collection, and is the starting point for all operations involving one.
 /// </summary>
-public sealed class MilvusCollection
+public partial class MilvusCollection
 {
-    internal MilvusCollection(
-        long id,
-        string name,
-        ulong creationTimestamp,
-        long inMemoryPercentage)
+    private readonly MilvusClient _client;
+
+    /// <summary>
+    /// The name of the database in which this collection is located.
+    /// <c>null</c> if the collection is in the default database,
+    /// </summary>
+    public string? DatabaseName { get; }
+
+    /// <summary>
+    /// The name of the collection.
+    /// </summary>
+    public string Name { get; private set; }
+
+    internal MilvusCollection(MilvusClient client, string collectionName, string? databaseName)
+        => (_client, Name, DatabaseName) = (client, collectionName, databaseName);
+
+    #region Utilities
+
+    private static async Task Poll<TProgress>(
+        Func<Task<(bool, TProgress)>> pollingAction,
+        string timeoutExceptionMessage,
+        TimeSpan? waitingInterval = null,
+        TimeSpan? timeout = null,
+        IProgress<TProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
-        CollectionId = id;
-        CollectionName = name;
-        CreationTimestamp = creationTimestamp;
-        InMemoryPercentage = inMemoryPercentage;
+        waitingInterval ??= TimeSpan.FromMilliseconds(500);
+
+        Stopwatch? stopWatch = timeout is null ? null : Stopwatch.StartNew();
+
+        while (true)
+        {
+            (bool isComplete, TProgress currentProgress) = await pollingAction().ConfigureAwait(false);
+
+            progress?.Report(currentProgress);
+
+            if (isComplete)
+            {
+                return;
+            }
+
+            if (stopWatch is not null && stopWatch.Elapsed + waitingInterval.Value >= timeout)
+            {
+                throw new TimeoutException(timeoutExceptionMessage);
+            }
+
+            await Task.Delay(waitingInterval.Value, cancellationToken).ConfigureAwait(false);
+        }
     }
 
-    /// <summary>
-    /// Collection Id list.
-    /// </summary>
-    public long CollectionId { get; }
+    private static string Combine(IDictionary<string, string> parameters)
+    {
+        StringBuilder stringBuilder = new();
+        stringBuilder.Append('{');
 
-    /// <summary>
-    /// Collection name list.
-    /// </summary>
-    public string CollectionName { get; }
+        int index = 0;
+        foreach (KeyValuePair<string, string> parameter in parameters)
+        {
+            stringBuilder
+                .Append('"')
+                .Append(parameter.Key)
+                .Append("\":")
+                .Append(parameter.Value);
 
-    /// <summary>
-    /// An opaque identifier for the point in time in which the the collection was created. Can be passed to
-    /// <see cref="MilvusClient.SearchAsync{T}" /> or <see cref="MilvusClient.QueryAsync" /> as a <i>guarantee
-    /// timestamp</i> or as a <i>time travel timestamp</i>.
-    /// </summary>
-    public ulong CreationTimestamp { get; }
+            if (index++ != parameters.Count - 1)
+            {
+                stringBuilder.Append(", ");
+            }
+        }
 
-    /// <summary>
-    /// Load percentage on query node when type is InMemory.
-    /// </summary>
-    public long InMemoryPercentage { get; }
+        stringBuilder.Append('}');
+        return stringBuilder.ToString();
+    }
 
-    /// <summary>
-    /// Return string value of <see cref="MilvusCollection"/>.
-    /// </summary>
-    public override string ToString()
-        => $"MilvusCollection: {{{nameof(CollectionName)}: {CollectionName}, {nameof(CollectionId)}: {CollectionId}, {nameof(CreationTimestamp)}:{CreationTimestamp}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
+    #endregion Utilities
 }

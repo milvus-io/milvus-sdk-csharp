@@ -9,21 +9,21 @@ public class CollectionTests : IAsyncLifetime
     [Fact]
     public async Task Create_Exists_and_Drop()
     {
-        await Client.CreateCollectionAsync(
+        MilvusCollection collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
         Assert.True(await Client.HasCollectionAsync(CollectionName));
 
-        await Client.DropCollectionAsync(CollectionName);
+        await collection.DropAsync();
         Assert.False(await Client.HasCollectionAsync(CollectionName));
     }
 
     [Fact]
     public async Task Describe()
     {
-        await Assert.ThrowsAsync<MilvusException>(() => Client.DescribeCollectionAsync(CollectionName));
+        await Assert.ThrowsAsync<MilvusException>(() => Client.GetCollection(CollectionName).DescribeAsync());
 
-        await Client.CreateCollectionAsync(
+        var collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -42,7 +42,7 @@ public class CollectionTests : IAsyncLifetime
             shardsNum: 2,
             consistencyLevel: ConsistencyLevel.Eventually);
 
-        var collectionDescription = await Client.DescribeCollectionAsync(CollectionName);
+        var collectionDescription = await collection.DescribeAsync();
 
         Assert.Equal(CollectionName, collectionDescription.CollectionName);
         Assert.Equal(2, collectionDescription.ShardsNum);
@@ -179,23 +179,24 @@ public class CollectionTests : IAsyncLifetime
     {
         string renamedCollectionName = "RenamedCollection";
 
-        await Client.DropCollectionAsync(renamedCollectionName);
-        await Client.CreateCollectionAsync(
+        await Client.GetCollection(renamedCollectionName).DropAsync();
+
+        var collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
 
-        await Client.RenameCollectionAsync(CollectionName, renamedCollectionName);
+        await collection.RenameAsync(renamedCollectionName);
 
         Assert.False(await Client.HasCollectionAsync(CollectionName));
         Assert.True(await Client.HasCollectionAsync(renamedCollectionName));
 
-        Assert.Equal(renamedCollectionName, (await Client.DescribeCollectionAsync(renamedCollectionName)).CollectionName);
+        Assert.Equal(renamedCollectionName, (await collection.DescribeAsync()).CollectionName);
     }
 
     [Fact]
     public async Task Load_Release()
     {
-        await Client.CreateCollectionAsync(
+        var collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -203,26 +204,26 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        await TestEnvironment.Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat,
-            MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
+        await collection.CreateIndexAsync(
+            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            new Dictionary<string, string>(), "float_vector_idx");
 
-        await Client.LoadCollectionAsync(CollectionName);
-        await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName,
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
-        _ = await Client.QueryAsync(CollectionName, "id in [2, 3]", outputFields: new[] { "float_vector" });
+        _ = await collection.QueryAsync("id in [2, 3]", outputFields: new[] { "float_vector" });
 
-        await Client.ReleaseCollectionAsync(CollectionName);
+        await collection.ReleaseAsync();
 
         await Assert.ThrowsAsync<MilvusException>(() =>
-            Client.QueryAsync(CollectionName, "id in [2, 3]", outputFields: new[] { "float_vector" }));
+            collection.QueryAsync("id in [2, 3]", outputFields: new[] { "float_vector" }));
     }
 
     [Fact]
     public async Task List()
     {
-        await Client.CreateCollectionAsync(
+        var collection = await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -230,41 +231,43 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        await TestEnvironment.Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat,
-            MilvusSimilarityMetricType.L2, new Dictionary<string, string>(), "float_vector_idx");
+        await collection.CreateIndexAsync(
+            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            new Dictionary<string, string>(), "float_vector_idx");
 
-        Assert.Single(await Client.ShowCollectionsAsync(), c => c.CollectionName == CollectionName);
+        Assert.Single(await Client.ShowCollectionsAsync(), c => c.Name == CollectionName);
         Assert.DoesNotContain(await Client.ShowCollectionsAsync(showType: ShowType.InMemory),
-            c => c.CollectionName == CollectionName);
+            c => c.Name == CollectionName);
 
-        await Client.LoadCollectionAsync(CollectionName);
-        await TestEnvironment.Client.WaitForCollectionLoadAsync(CollectionName,
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
-        Assert.Single(await Client.ShowCollectionsAsync(), c => c.CollectionName == CollectionName);
+        Assert.Single(await Client.ShowCollectionsAsync(), c => c.Name == CollectionName);
         Assert.Single(await Client.ShowCollectionsAsync(showType: ShowType.InMemory),
-            c => c.CollectionName == CollectionName);
+            c => c.Name == CollectionName);
     }
 
     [Fact]
     public async Task Create_in_non_existing_database_fails()
     {
-        var exception = await Assert.ThrowsAsync<MilvusException>(() => Client.CreateCollectionAsync(
+        MilvusDatabase nonExistingDb = Client.GetDatabase("non_existing_db");
+
+        var exception = await Assert.ThrowsAsync<MilvusException>(() => nonExistingDb.CreateCollectionAsync(
             "foo",
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) },
-            dbName: "non_existing_db"));
+            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
 
         Assert.Equal("UnexpectedError", exception.ErrorCode);
         Assert.Equal("ErrorCode: UnexpectedError Reason: database:non_existing_db not found", exception.Message);
     }
 
     public Task InitializeAsync()
-        => Client.DropCollectionAsync(CollectionName);
+        => Client.GetCollection(CollectionName).DropAsync();
 
     public Task DisposeAsync()
         => Task.CompletedTask;
 
     private const string CollectionName = nameof(CollectionTests);
+
     private MilvusClient Client => TestEnvironment.Client;
 }

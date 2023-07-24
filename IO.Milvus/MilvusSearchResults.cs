@@ -3,7 +3,7 @@
 namespace IO.Milvus;
 
 /// <summary>
-/// The results from a vector similarity search executed via <see cref="MilvusClient.SearchAsync{T}" />.
+/// The results from a vector similarity search executed via <see cref="MilvusCollection.SearchAsync{T}" />.
 /// </summary>
 public sealed class MilvusSearchResults
 {

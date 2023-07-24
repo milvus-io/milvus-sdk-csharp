@@ -4,7 +4,7 @@ namespace IO.Milvus;
 
 /// <summary>
 /// Represents a set of parameters required to perform a vector similarity search via
-/// <see cref="MilvusClient.SearchAsync{T}" />.
+/// <see cref="MilvusCollection.SearchAsync{T}" />.
 /// </summary>
 public class SearchParameters
 {

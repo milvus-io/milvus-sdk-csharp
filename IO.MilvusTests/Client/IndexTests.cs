@@ -10,37 +10,36 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Create_vector_index()
     {
-        await Client.CreateIndexAsync(CollectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+        await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
     [Fact]
     public async Task Create_vector_index_with_name()
     {
-        await Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2, indexName: "float_vector_idx");
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.CreateIndexAsync(
+            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2, indexName: "float_vector_idx");
+        await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
     [Fact]
     public async Task Create_vector_index_with_param()
     {
-        await Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat,
-            MilvusSimilarityMetricType.L2,
+        await Collection.CreateIndexAsync(
+            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
             extraParams: new Dictionary<string, string>
             {
                 ["nlist"] = "1024"
             });
 
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
     [Fact]
     public async Task Create_scalar_index()
     {
-        await Client.CreateIndexAsync(CollectionName, "varchar");
-        await Client.WaitForIndexBuildAsync(CollectionName, "varchar");
+        await Collection.CreateIndexAsync("varchar");
+        await Collection.WaitForIndexBuildAsync("varchar");
     }
 
     [Theory]
@@ -56,9 +55,9 @@ public class IndexTests : IAsyncLifetime
     [InlineData(MilvusIndexType.AutoIndex, """{ }""")]
     public async Task Index_types_float(MilvusIndexType indexType, string extraParamsString)
     {
-        await Client.CreateIndexAsync(CollectionName, "float_vector", indexType, MilvusSimilarityMetricType.L2,
+        await Collection.CreateIndexAsync("float_vector", indexType, MilvusSimilarityMetricType.L2,
             JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
     [Theory]
@@ -66,7 +65,7 @@ public class IndexTests : IAsyncLifetime
     [InlineData(MilvusIndexType.BinIvfFlat, """{ "n_trees": "8", "nlist": "8" }""")]
     public async Task Index_types_binary(MilvusIndexType indexType, string extraParamsString)
     {
-        await Client.DropCollectionAsync(CollectionName);
+        await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             nameof(IndexTests),
             new[]
@@ -76,9 +75,9 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
             });
 
-        await Client.CreateIndexAsync(CollectionName, "binary_vector", indexType, MilvusSimilarityMetricType.Jaccard,
+        await Collection.CreateIndexAsync("binary_vector", indexType, MilvusSimilarityMetricType.Jaccard,
             JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
-        await Client.WaitForIndexBuildAsync(CollectionName, "binary_vector");
+        await Collection.WaitForIndexBuildAsync("binary_vector");
     }
 
     [Theory]
@@ -86,8 +85,8 @@ public class IndexTests : IAsyncLifetime
     [InlineData(MilvusSimilarityMetricType.Ip)]
     public async Task Similarity_metric_types(MilvusSimilarityMetricType similarityMetricType)
     {
-        await Client.CreateIndexAsync(CollectionName, "float_vector", MilvusIndexType.Flat, similarityMetricType);
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, similarityMetricType);
+        await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
     [Theory]
@@ -98,7 +97,7 @@ public class IndexTests : IAsyncLifetime
     [InlineData(MilvusSimilarityMetricType.Substructure)]
     public async Task Similarity_metric_types_binary(MilvusSimilarityMetricType similarityMetricType)
     {
-        await Client.DropCollectionAsync(CollectionName);
+        await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             nameof(IndexTests),
             new[]
@@ -108,49 +107,49 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
             });
 
-        await Client.CreateIndexAsync(CollectionName, "binary_vector", MilvusIndexType.BinFlat, similarityMetricType);
-        await Client.WaitForIndexBuildAsync(CollectionName, "binary_vector");
+        await Collection.CreateIndexAsync("binary_vector", MilvusIndexType.BinFlat, similarityMetricType);
+        await Collection.WaitForIndexBuildAsync("binary_vector");
     }
 
     [Fact]
     public async Task GetState()
     {
-        Assert.Equal(IndexState.None, await Client.GetIndexStateAsync(CollectionName, "float_vector"));
+        Assert.Equal(IndexState.None, await Collection.GetIndexStateAsync("float_vector"));
 
-        await Client.CreateIndexAsync(CollectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+        await Collection.WaitForIndexBuildAsync("float_vector");
 
-        Assert.Equal(IndexState.Finished, await Client.GetIndexStateAsync(CollectionName, "float_vector"));
+        Assert.Equal(IndexState.Finished, await Collection.GetIndexStateAsync("float_vector"));
     }
 
     [Fact]
     public async Task GetBuildProgress()
     {
         await Assert.ThrowsAsync<MilvusException>(() =>
-            Client.GetIndexBuildProgressAsync(CollectionName, "float_vector"));
+            Collection.GetIndexBuildProgressAsync("float_vector"));
 
-        await Client.CreateIndexAsync(CollectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+        await Collection.WaitForIndexBuildAsync("float_vector");
 
-        var progress = await Client.GetIndexBuildProgressAsync(CollectionName, "float_vector");
+        var progress = await Collection.GetIndexBuildProgressAsync("float_vector");
         Assert.Equal(progress.TotalRows, progress.IndexedRows);
     }
 
     [Fact]
     public async Task Describe()
     {
-        await Assert.ThrowsAsync<MilvusException>(() => Client.DescribeIndexAsync(CollectionName, "float_vector"));
+        await Assert.ThrowsAsync<MilvusException>(() => Collection.DescribeIndexAsync("float_vector"));
 
-        await Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat,
-            MilvusSimilarityMetricType.L2, extraParams: new Dictionary<string, string>
+        await Collection.CreateIndexAsync(
+            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            extraParams: new Dictionary<string, string>
             {
                 ["nlist"] = "1024"
             },
             indexName: "float_vector_idx");
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.WaitForIndexBuildAsync("float_vector");
 
-        var indexes = await Client.DescribeIndexAsync(CollectionName, "float_vector");
+        var indexes = await Collection.DescribeIndexAsync("float_vector");
         var index = Assert.Single(indexes);
 
         Assert.Equal("float_vector_idx", index.IndexName);
@@ -167,18 +166,18 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Drop()
     {
-        await Client.CreateIndexAsync(
-            CollectionName, "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2, indexName: "float_vector_idx");
-        await Client.WaitForIndexBuildAsync(CollectionName, "float_vector");
+        await Collection.CreateIndexAsync(
+            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2, indexName: "float_vector_idx");
+        await Collection.WaitForIndexBuildAsync("float_vector");
 
-        await Client.DropIndexAsync(CollectionName, "float_vector", "float_vector_idx");
+        await Collection.DropIndexAsync("float_vector", "float_vector_idx");
 
-        Assert.Equal(IndexState.None, await Client.GetIndexStateAsync(CollectionName, "float_vector"));
+        Assert.Equal(IndexState.None, await Collection.GetIndexStateAsync("float_vector"));
     }
 
     public async Task InitializeAsync()
     {
-        await Client.DropCollectionAsync(CollectionName);
+        await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             CollectionName,
             new[]
@@ -195,4 +194,9 @@ public class IndexTests : IAsyncLifetime
     private const string CollectionName = nameof(IndexTests);
 
     private MilvusClient Client => TestEnvironment.Client;
+
+    private MilvusCollection Collection { get; }
+
+    public IndexTests()
+        => Collection = Client.GetCollection(CollectionName);
 }
