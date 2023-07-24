@@ -1,32 +1,39 @@
 ﻿using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using IO.Milvus.Grpc;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
 
 public partial class MilvusClient
 {
     /// <summary>
-    /// Insert rows of data entities into a collection.
+    /// Maps collection names to their last known mutation timestamp.
+    /// Used to implement <see cref="ConsistencyLevel.Session" />.
     /// </summary>
-    /// <param name="collectionName">Collection name.</param>
-    /// <param name="fields">Fields</param>
-    /// <param name="partitionName">Partition name.</param>
+    private readonly ConcurrentDictionary<string, ulong> _collectionLastMutationTimestamps = new();
+
+    /// <summary>
+    /// Inserts rows of data into a collection.
+    /// </summary>
+    /// <param name="collectionName">The name of the collection into which data is to be inserted.</param>
+    /// <param name="data">The field data to insert; each field contains a list of row values.</param>
+    /// <param name="partitionName">An optional name of a partition to insert into.</param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns></returns>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<MilvusMutationResult> InsertAsync(
         string collectionName,
-        IList<Field> fields,
-        string partitionName = "",
+        IList<FieldData> data,
+        string? partitionName = null,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrEmpty(fields);
+        Verify.NotNullOrEmpty(data);
 
         InsertRequest request = new() { CollectionName = collectionName };
 
@@ -35,53 +42,57 @@ public partial class MilvusClient
             request.DbName = dbName;
         }
 
-        if (!string.IsNullOrEmpty(partitionName))
+        if (partitionName is not null)
         {
             request.PartitionName = partitionName;
         }
 
-        long count = fields[0].RowCount;
-        for (int i = 1; i < fields.Count; i++)
+        long count = data[0].RowCount;
+        foreach (FieldData field in data)
         {
-            if (fields[i].RowCount != count)
+            if (field.RowCount != count)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(fields)}[{i}])", "Fields length is not same");
+                throw new MilvusException("All fields must have the same number of rows.");
             }
+
+            request.FieldsData.Add(field.ToGrpcFieldData());
         }
 
-        request.FieldsData.AddRange(fields.Select(static p => p.ToGrpcFieldData()));
         request.NumRows = (uint)count;
 
-        MutationResult response = await InvokeAsync(_grpcClient.InsertAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        MutationResult response =
+            await InvokeAsync(_grpcClient.InsertAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
-        return MilvusMutationResult.From(response);
+        _collectionLastMutationTimestamps[collectionName] = response.Timestamp;
+
+        return new MilvusMutationResult(response);
     }
 
     /// <summary>
-    /// Delete rows of data entities from a collection by given expression.
+    /// Deletes rows from a collection by given expression.
     /// </summary>
-    /// <param name="collectionName">Collection name.</param>
-    /// <param name="expr">A predicate expression outputs a boolean value. <see href="https://milvus.io/docs/boolean.md"/></param>
-    /// <param name="partitionName">Partition name.</param>
+    /// <param name="collectionName">The name of the collection from which rows are to be deleted..</param>
+    /// <param name="expression">A boolean expression determining which rows are to be deleted.</param>
+    /// <param name="partitionName">An optional name of a partition from which rows are to be deleted..</param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
     public async Task<MilvusMutationResult> DeleteAsync(
         string collectionName,
-        string expr,
+        string expression,
         string? partitionName = null,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrWhiteSpace(expr);
+        Verify.NotNullOrWhiteSpace(expression);
 
         var request = new DeleteRequest
         {
             CollectionName = collectionName,
-            Expr = expr,
+            Expr = expression,
             PartitionName = !string.IsNullOrEmpty(partitionName) ? partitionName : string.Empty
         };
 
@@ -94,11 +105,13 @@ public partial class MilvusClient
             await InvokeAsync(_grpcClient.DeleteAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return MilvusMutationResult.From(response);
+        _collectionLastMutationTimestamps[collectionName] = response.Timestamp;
+
+        return new MilvusMutationResult(response);
     }
 
     /// <summary>
-    /// Do a k nearest neighbors search with bool expression.
+    /// Perform a vector similarity search.
     /// </summary>
     /// <param name="collectionName">The name of the collection to be searched.</param>
     /// <param name="vectorFieldName">The name of the vector field to search in.</param>
@@ -130,11 +143,6 @@ public partial class MilvusClient
 
         Grpc.SearchRequest request = new() { CollectionName = collectionName };
 
-        if (searchParameters.ConsistencyLevel is not null)
-        {
-            request.ConsistencyLevel = (Grpc.ConsistencyLevel)(int)searchParameters.ConsistencyLevel.Value;
-        }
-
         if (searchParameters.PartitionNames.Count > 0)
         {
             request.PartitionNames.AddRange(searchParameters.PartitionNames);
@@ -147,13 +155,29 @@ public partial class MilvusClient
 
         if (searchParameters.TravelTimestamp is not null)
         {
-            request.TravelTimestamp = (ulong)searchParameters.TravelTimestamp.Value;
+            request.TravelTimestamp = searchParameters.TravelTimestamp.Value;
         }
 
-        if (searchParameters.GuaranteeTimestamp is not null)
+        // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
+        // from the former and should be sufficient. TODO: Confirm this.
+        if (searchParameters.ConsistencyLevel is null)
         {
-            request.GuaranteeTimestamp = (ulong)GetGuaranteeTimestamp(
-                searchParameters.ConsistencyLevel, searchParameters.GuaranteeTimestamp.Value, 0);
+            if (searchParameters.GuaranteeTimestamp is null)
+            {
+                request.UseDefaultConsistency = true;
+            }
+            else
+            {
+                request.ConsistencyLevel = Grpc.ConsistencyLevel.Customized;
+                request.GuaranteeTimestamp = searchParameters.GuaranteeTimestamp.Value;
+            }
+        }
+        else
+        {
+            request.ConsistencyLevel = (Grpc.ConsistencyLevel)searchParameters.ConsistencyLevel.Value;
+            request.GuaranteeTimestamp =
+                CalculateGuaranteeTimestamp(
+                    collectionName, searchParameters.ConsistencyLevel.Value, searchParameters.GuaranteeTimestamp);
         }
 
         Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
@@ -177,10 +201,18 @@ public partial class MilvusClient
             {
                 new Grpc.KeyValuePair { Key = Constants.VectorField, Value = vectorFieldName },
                 new Grpc.KeyValuePair { Key = Constants.TopK, Value = limit.ToString(CultureInfo.InvariantCulture) },
-                // TODO: Offset
                 new Grpc.KeyValuePair { Key = Constants.MetricType, Value = metricType.ToString().ToUpperInvariant() },
-                new Grpc.KeyValuePair { Key = Constants.Params, Value = searchParameters.Parameters.Combine() },
+                new Grpc.KeyValuePair { Key = Constants.Params, Value = Combine(searchParameters.Parameters) },
             });
+
+        if (searchParameters.Offset is not null)
+        {
+            request.SearchParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.Offset,
+                Value = searchParameters.Offset.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
 
         if (searchParameters.RoundDecimal is not null)
         {
@@ -201,9 +233,9 @@ public partial class MilvusClient
 
         request.DslType = Grpc.DslType.BoolExprV1;
 
-        if (searchParameters.Expr is not null)
+        if (searchParameters.Expression is not null)
         {
-            request.Dsl = searchParameters.Expr;
+            request.Dsl = searchParameters.Expression;
         }
 
         if (dbName is not null)
@@ -218,32 +250,13 @@ public partial class MilvusClient
         return new MilvusSearchResults
         {
             CollectionName = response.CollectionName,
-            FieldsData = response.Results.FieldsData.Select(Field.FromGrpcFieldData).ToList(),
+            FieldsData = response.Results.FieldsData.Select(FieldData.FromGrpcFieldData).ToList(),
             Ids = MilvusIds.FromGrpc(response.Results.Ids),
             NumQueries = response.Results.NumQueries,
             Scores = response.Results.Scores,
             Limit = response.Results.TopK,
             Limits = response.Results.Topks,
         };
-
-        static long GetGuaranteeTimestamp(
-            MilvusConsistencyLevel? consistencyLevel,
-            long guaranteeTimestamp,
-            long gracefulTime)
-        {
-            if (consistencyLevel == null)
-            {
-                return guaranteeTimestamp;
-            }
-
-            return consistencyLevel switch
-            {
-                MilvusConsistencyLevel.Strong => 0L,
-                MilvusConsistencyLevel.BoundedStaleness => DateTime.UtcNow.ToUtcTimestamp() - gracefulTime,
-                MilvusConsistencyLevel.Eventually => 1L,
-                _ => guaranteeTimestamp
-            };
-        }
 
         static void PopulateFloatVectorData(
             IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
@@ -302,16 +315,33 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Flush a collection's data to disk. Milvus data will be auto flushed.
-    /// Flush is only required when you want to get up to date entities numbers in statistics due to some internal mechanism.
-    /// It will be removed in the future.
+    /// Flushes collection data to disk, required only in order to get up-to-date statistics.
     /// </summary>
-    /// <param name="collectionNames">Collection names.</param>
+    /// <remarks>
+    /// This method will be removed in a future version.
+    /// </remarks>
+    /// <param name="collectionName">The name of the collection to be flushed.</param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
+    public Task<MilvusFlushResult> FlushAsync(
+        string collectionName,
+        string? dbName = null,
+        CancellationToken cancellationToken = default)
+        => FlushAsync(new[] { collectionName }, dbName, cancellationToken);
+
+    /// <summary>
+    /// Flushes collection data to disk, required only in order to get up-to-date statistics.
+    /// </summary>
+    /// <remarks>
+    /// This method will be removed in a future version.
+    /// </remarks>
+    /// <param name="collectionNames">The names of the collections to be flushed.</param>
+    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<MilvusFlushResult> FlushAsync(
         IList<string> collectionNames,
         string? dbName = null,
@@ -328,7 +358,9 @@ public partial class MilvusClient
 
         request.CollectionNames.AddRange(collectionNames);
 
-        FlushResponse response = await InvokeAsync(_grpcClient.FlushAsync, request, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        FlushResponse response =
+            await InvokeAsync(_grpcClient.FlushAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
 
         return MilvusFlushResult.From(response);
     }
@@ -385,62 +417,56 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Do a explicit record query by given expression.
-    /// For example when you want to query by primary key.
+    /// Retrieves rows from a collection via scalar filtering based on a boolean expression
     /// </summary>
-    /// <param name="collectionName"></param>
-    /// <param name="expr"></param>
-    /// <param name="outputFields"></param>
-    /// <param name="consistencyLevel"></param>
-    /// <param name="partitionNames">Partitions names.(Optional)</param>
-    /// <param name="guaranteeTimestamp">
-    /// guarantee_timestamp.
-    /// (Optional)Instructs server to see insert/delete operations performed before a provided timestamp.
-    /// If no such timestamp is specified, the server will wait for the latest operation to finish and query.
+    /// <param name="collectionName">The name of the collection to be queried.</param>
+    /// <param name="expression">A boolean expression determining which rows are to be returned.</param>
+    /// <param name="outputFields">
+    /// The names of fields to be returned from the search. Vector fields currently cannot be returned.
     /// </param>
-    /// <param name="offset">
-    /// offset a value to define the position.
-    /// Specify a position to return results. Only take effect when the 'limit' value is specified.
-    /// Default value is 0, start from begin.
+    /// <param name="partitionNames">An optional list of partitions names which are to be queried.</param>
+    /// <param name="consistencyLevel">The consistency level to be used in the query.</param>
+    /// <param name="guaranteeTimestamp">
+    /// If set, guarantee that the search operation will be performed after any updates up to the provided timestamp.
+    /// If a query node isn't yet up to date for the timestamp, it waits until the missing data is received.
+    /// If unset, the server executes the search immediately.
+    /// </param>
+    /// <param name="timeTravelTimestamp">
+    /// Specifies an optional travel timestamp; the search will get results based on the data at that point in time.
     /// </param>
     /// <param name="limit">
-    /// limit a value to define the limit of returned entities
-    /// Specify a value to control the returned number of entities. Must be a positive value.
-    /// Default value is 0, will return without limit.
+    /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
     /// </param>
-    /// <param name="travelTimestamp">Travel time.</param>
+    /// <param name="offset">
+    /// Number of entities to skip during the search. The sum of this parameter and <paramref name="limit" /> should
+    /// be less than 16384.
+    /// </param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
-    public async Task<MilvusQueryResult> QueryAsync(
-        string collectionName,
-        string expr,
-        IList<string> outputFields,
-        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.BoundedStaleness,
+    public async Task<MilvusQueryResult> QueryAsync(string collectionName,
+        string expression,
+        IList<string>? outputFields = null,
         IList<string>? partitionNames = null,
-        long travelTimestamp = 0,
-        long guaranteeTimestamp = Constants.GuaranteeEventuallyTs,
-        long offset = 0,
+        ConsistencyLevel? consistencyLevel = null,
+        ulong? guaranteeTimestamp = null,
+        ulong timeTravelTimestamp = 0,
         long limit = 0,
+        long offset = 0,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(collectionName);
-        Verify.NotNullOrEmpty(outputFields);
-        Verify.NotNullOrWhiteSpace(expr);
-        Verify.GreaterThanOrEqualTo(guaranteeTimestamp, 0);
-        Verify.GreaterThanOrEqualTo(travelTimestamp, 0);
+        Verify.NotNullOrWhiteSpace(expression);
         Verify.GreaterThanOrEqualTo(offset, 0);
         Verify.GreaterThanOrEqualTo(limit, 0);
 
         QueryRequest request = new()
         {
             CollectionName = collectionName,
-            Expr = expr,
-            GuaranteeTimestamp = (ulong)guaranteeTimestamp,
-            TravelTimestamp = (ulong)travelTimestamp,
+            Expr = expression,
+            TravelTimestamp = timeTravelTimestamp,
         };
 
         if (dbName is not null)
@@ -448,7 +474,10 @@ public partial class MilvusClient
             request.DbName = dbName;
         }
 
-        request.OutputFields.AddRange(outputFields);
+        if (outputFields is not null)
+        {
+            request.OutputFields.AddRange(outputFields);
+        }
 
         if (partitionNames?.Count > 0)
         {
@@ -472,6 +501,28 @@ public partial class MilvusClient
             });
         }
 
+        // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
+        // from the former and should be sufficient. TODO: Confirm this.
+        if (consistencyLevel is null)
+        {
+            if (guaranteeTimestamp is null)
+            {
+                request.UseDefaultConsistency = true;
+            }
+            else
+            {
+                request.ConsistencyLevel = Grpc.ConsistencyLevel.Customized;
+                request.GuaranteeTimestamp = guaranteeTimestamp.Value;
+            }
+        }
+        else
+        {
+            request.ConsistencyLevel = (Grpc.ConsistencyLevel)consistencyLevel.Value;
+            request.GuaranteeTimestamp =
+                CalculateGuaranteeTimestamp(
+                    collectionName, consistencyLevel.Value, guaranteeTimestamp);
+        }
+
         QueryResults response =
             await InvokeAsync(_grpcClient.QueryAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
@@ -479,7 +530,7 @@ public partial class MilvusClient
         return new MilvusQueryResult
         {
             CollectionName = response.CollectionName,
-            FieldsData = response.FieldsData.Select(Field.FromGrpcFieldData).ToList()
+            FieldsData = response.FieldsData.Select(FieldData.FromGrpcFieldData).ToList()
         };
     }
 
@@ -511,5 +562,39 @@ public partial class MilvusClient
                 .ConfigureAwait(false);
 
         return MilvusQuerySegmentInfoResult.From(response).ToList();
+    }
+
+    ulong CalculateGuaranteeTimestamp(
+        string collectionName, ConsistencyLevel consistencyLevel, ulong? userProvidedGuaranteeTimestamp)
+    {
+        if (userProvidedGuaranteeTimestamp is not null && consistencyLevel != ConsistencyLevel.Customized)
+        {
+            throw new ArgumentException(
+                $"A guarantee timestamp can only be specified with consistency level {ConsistencyLevel.Customized}");
+        }
+
+        ulong guaranteeTimestamp = consistencyLevel switch
+        {
+            ConsistencyLevel.Strong => 0,
+
+            ConsistencyLevel.Session
+                => _collectionLastMutationTimestamps.TryGetValue(collectionName, out ulong lastMutationTimestamp)
+                    ? lastMutationTimestamp
+                    : 1,
+
+            // TODO: This follows pymilvus, but confirm.
+            // TODO: The Java SDK subtracts a graceful period from the current timestamp instead.
+            ConsistencyLevel.BoundedStaleness => 2,
+
+            ConsistencyLevel.Eventually => 1,
+
+            ConsistencyLevel.Customized => userProvidedGuaranteeTimestamp
+                ?? throw new ArgumentException(
+                    $"A guarantee timestamp is required with consistency level {ConsistencyLevel.Customized}"),
+
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
+        return guaranteeTimestamp;
     }
 }

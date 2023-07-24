@@ -91,9 +91,9 @@ public partial class MilvusClientTests
             collectionName,
             new[]
             {
-                Field.Create("title", titles),
-                Field.CreateFloatVector("title_vector", vectors),
-                Field.CreateJson("article_meta", metaList)
+                FieldData.Create("title", titles),
+                FieldData.CreateFloatVector("title_vector", vectors),
+                FieldData.CreateJson("article_meta", metaList)
             });
 
         MilvusSearchResults searchResults = await Client.SearchAsync(
@@ -105,12 +105,12 @@ public partial class MilvusClientTests
             new()
             {
                 OutputFields = { "title", " article_meta" },
-                Expr = """article_meta["claps"] > 30 and article_meta["reading_time"] < 10""",
-                ConsistencyLevel = MilvusConsistencyLevel.Strong,
+                Expression = """article_meta["claps"] > 30 and article_meta["reading_time"] < 10""",
+                ConsistencyLevel = ConsistencyLevel.Strong,
                 Parameters = { { "nprobe", "10" } }
             });
 
-        var metaField = Assert.IsType<Field<string>>(
+        var metaField = Assert.IsType<FieldData<string>>(
             searchResults.FieldsData.First(p => p.FieldName == "article_meta"));
         metaField.DataType.Should().Be(MilvusDataType.Json);
         ArticleMeta? sampleArticleMeta = JsonSerializer.Deserialize<ArticleMeta>(metaField.Data.First());

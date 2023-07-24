@@ -1,5 +1,4 @@
 ﻿using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
 
@@ -99,7 +98,7 @@ public partial class MilvusClient
                 partitions.Add(new MilvusPartition(
                     response.PartitionIDs[i],
                     response.PartitionNames[i],
-                    TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamps[i]),
+                    response.CreatedUtcTimestamps[i],
                     response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
             }
         }

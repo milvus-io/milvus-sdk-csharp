@@ -15,10 +15,10 @@ public sealed class MilvusSearchResults
     /// <summary>
     /// The fields returned from the search, as specified by <see cref="SearchParameters.OutputFields" />.
     /// </summary>
-    public required IReadOnlyList<Field> FieldsData { get; init; }
+    public required IReadOnlyList<FieldData> FieldsData { get; init; }
 
     /// <summary>
-    /// Ids
+    /// The IDs of the rows returned from the search.
     /// </summary>
     public required MilvusIds Ids { get; init; }
 

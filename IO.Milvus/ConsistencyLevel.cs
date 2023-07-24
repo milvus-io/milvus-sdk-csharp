@@ -6,7 +6,7 @@
 /// <remarks>
 /// For more details, see <see href="https://milvus.io/docs/consistency.md" />.
 /// </remarks>
-public enum MilvusConsistencyLevel
+public enum ConsistencyLevel
 {
     /// <summary>
     /// The highest and the most strict level of consistency. This level ensures that users can read the latest
@@ -34,7 +34,7 @@ public enum MilvusConsistencyLevel
     Eventually = 3,
 
     /// <summary>
-    /// In this consistency level, users pass their own <c>guarantee_timestamp</c>.
+    /// In this consistency level, users pass their own guarantee timestamp..
     /// </summary>
     Customized = 4
 }

@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
 
@@ -22,7 +21,8 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(password);
 
-        ulong timestamp = (ulong)TimestampUtils.GetNowUtcTimestamp();
+        // TODO: Is this correct?
+        ulong timestamp = MilvusTimestampUtils.FromDateTime(DateTime.UtcNow);
         await InvokeAsync(_grpcClient.CreateCredentialAsync, new CreateCredentialRequest
         {
             Username = username,

@@ -5,18 +5,18 @@ namespace IO.Milvus.Tests;
 
 public class FieldTests
 {
-    [Fact()]
+    [Fact]
     public void ToStringTest()
     {
-        var field = Field.Create("Id", new[] { 1, 2, 3 });
+        var field = FieldData.Create("Id", new[] { 1, 2, 3 });
         field.RowCount.Should().Be(3);
         field.ToString().Should().Be("Field: {FieldName: Id, DataType: Int32, Data: 3, RowCount: 3}");
     }
 
-    [Fact()]
+    [Fact]
     public void CreateTest()
     {
-        var field = Field.Create("Id", new[] { 1, 2, 3 });
+        var field = FieldData.Create("Id", new[] { 1, 2, 3 });
         field.Should().NotBeNull();
         field.FieldName.Should().Be("Id");
         field.DataType.Should().Be(MilvusDataType.Int32);
@@ -24,20 +24,20 @@ public class FieldTests
         field.Data.Should().BeEquivalentTo(new[] { 1, 2, 3 });
     }
 
-    [Fact()]
+    [Fact]
     public void CreateVarCharTest()
     {
-        var field = Field.CreateVarChar("id", new[] { "fsj", "fsd" });
+        var field = FieldData.CreateVarChar("id", new[] { "fsj", "fsd" });
 
         field.Should().NotBeNull();
         field.FieldName.Should().Be("id");
         field.DataType.Should().Be(MilvusDataType.VarChar);
     }
 
-    [Fact()]
+    [Fact]
     public void CreateFromBytesTest()
     {
-        var field = Field.CreateFromBytes("byte", new byte[] { 1, 2, 3, 4, 5, 6 }, 2);
+        var field = FieldData.CreateFromBytes("byte", new byte[] { 1, 2, 3, 4, 5, 6 }, 2);
 
         field.Should().NotBeNull();
         field.RowCount.Should().Be(3);
@@ -45,15 +45,15 @@ public class FieldTests
         field.DataType.Should().Be(MilvusDataType.BinaryVector);
     }
 
-    [Fact()]
+    [Fact]
     public void CreateBinaryVectorsTest()
     {
-        var field = Field.CreateBinaryVectors(
-            "byte"
-            , new List<byte[]>
+        var field = FieldData.CreateBinaryVectors(
+            "byte",
+            new ReadOnlyMemory<byte>[]
             {
-                new byte[] { 1,2},
-                new byte[] { 3,4}
+                new byte[] { 1, 2 },
+                new byte[] { 3, 4 }
             });
 
         field.Should().NotBeNull();
@@ -62,10 +62,10 @@ public class FieldTests
         field.DataType.Should().Be(MilvusDataType.BinaryVector);
     }
 
-    [Fact()]
+    [Fact]
     public void CreateFloatVectorTest()
     {
-        var field = Field.CreateFloatVector(
+        var field = FieldData.CreateFloatVector(
             "vector",
             new ReadOnlyMemory<float>[]
             {

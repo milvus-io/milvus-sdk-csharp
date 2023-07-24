@@ -40,13 +40,13 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateJson("some_json")
             },
             shardsNum: 2,
-            consistencyLevel: MilvusConsistencyLevel.Eventually);
+            consistencyLevel: ConsistencyLevel.Eventually);
 
         var collectionDescription = await Client.DescribeCollectionAsync(CollectionName);
 
         Assert.Equal(CollectionName, collectionDescription.CollectionName);
         Assert.Equal(2, collectionDescription.ShardsNum);
-        Assert.Equal(MilvusConsistencyLevel.Eventually, collectionDescription.ConsistencyLevel);
+        Assert.Equal(ConsistencyLevel.Eventually, collectionDescription.ConsistencyLevel);
 
         Assert.All(collectionDescription.Schema.Fields, f => Assert.Equal(MilvusFieldState.FieldCreated, f.State));
 

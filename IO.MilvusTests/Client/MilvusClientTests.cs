@@ -105,18 +105,18 @@ public partial class MilvusClientTests
             bookIntros.Add(vector);
         }
         await Client.InsertAsync(collectionName,
-            new Field[]
+            new FieldData[]
             {
-                Field.Create("book_id",bookIds),
-                Field.Create("is_cartoon",isCartoon),
-                Field.Create("chapter_count",chapterCount),
-                Field.Create("short_page_count",shortPageCount),
-                Field.Create("int32_page_count",int32PageCount),
-                Field.Create("word_count",wordCounts),
-                Field.Create("float_weight",floatWeight),
-                Field.Create("double_weight",doubleWeight),
-                Field.Create("book_name",bookNames),
-                Field.CreateFloatVector("book_intro",bookIntros),},
+                FieldData.Create("book_id",bookIds),
+                FieldData.Create("is_cartoon",isCartoon),
+                FieldData.Create("chapter_count",chapterCount),
+                FieldData.Create("short_page_count",shortPageCount),
+                FieldData.Create("int32_page_count",int32PageCount),
+                FieldData.Create("word_count",wordCounts),
+                FieldData.Create("float_weight",floatWeight),
+                FieldData.Create("double_weight",doubleWeight),
+                FieldData.Create("book_name",bookNames),
+                FieldData.CreateFloatVector("book_intro",bookIntros),},
             partitionName!);
 
         //Create index
@@ -150,7 +150,7 @@ public partial class MilvusClientTests
             new()
             {
                 OutputFields = { "book_id" },
-                ConsistencyLevel = MilvusConsistencyLevel.Strong,
+                ConsistencyLevel = ConsistencyLevel.Strong,
                 Parameters = { { "nprobe", "10" }, { "offset", "5" } },
             });
 

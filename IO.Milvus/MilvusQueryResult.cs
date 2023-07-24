@@ -13,5 +13,5 @@ public sealed class MilvusQueryResult
     /// <summary>
     /// Field data.
     /// </summary>
-    public required IList<Field> FieldsData { get; init; }
+    public required IList<FieldData> FieldsData { get; init; }
 }

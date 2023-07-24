@@ -3,12 +3,12 @@
 /// <summary>
 /// ByteString Field
 /// </summary>
-public sealed class ByteStringField : Field
+public sealed class ByteStringFieldData : FieldData
 {
     /// <summary>
     /// Construct a ByteString field
     /// </summary>
-    public ByteStringField(
+    public ByteStringFieldData(
         string fieldName,
         ByteString byteString,
         long dimension) :

@@ -1,4 +1,6 @@
-﻿namespace IO.Milvus;
+﻿using IO.Milvus.Client;
+
+namespace IO.Milvus;
 
 /// <summary>
 /// Describe a milvus collection
@@ -9,8 +11,8 @@ public sealed class MilvusCollectionDescription
         IReadOnlyList<string> aliases,
         string collectionName,
         long collectionId,
-        MilvusConsistencyLevel consistencyLevel,
-        DateTime createdUtcTime,
+        ConsistencyLevel consistencyLevel,
+        ulong creationTimestamp,
         CollectionSchema schema,
         int shardsNum,
         Dictionary<string, IList<int>> startPositions)
@@ -19,7 +21,7 @@ public sealed class MilvusCollectionDescription
         CollectionName = collectionName;
         CollectionId = collectionId;
         ConsistencyLevel = consistencyLevel;
-        CreatedUtcTime = createdUtcTime;
+        CreationTimestamp = creationTimestamp;
         Schema = schema;
         ShardsNum = shardsNum;
         StartPositions = startPositions;
@@ -46,12 +48,14 @@ public sealed class MilvusCollectionDescription
     /// <remarks>
     /// The consistency level that the collection used, modification is not supported now.
     /// </remarks>
-    public MilvusConsistencyLevel ConsistencyLevel { get; }
+    public ConsistencyLevel ConsistencyLevel { get; }
 
     /// <summary>
-    /// The utc timestamp calculated by created_timestamp.
+    /// An opaque identifier for the point in time in which the the collection was created. Can be passed to
+    /// <see cref="MilvusClient.SearchAsync{T}" /> or <see cref="MilvusClient.QueryAsync" /> as a <i>guarantee
+    /// timestamp</i> or as a <i>time travel timestamp</i>.
     /// </summary>
-    public DateTime CreatedUtcTime { get; }
+    public ulong CreationTimestamp { get; }
 
     /// <summary>
     /// Collection Schema.

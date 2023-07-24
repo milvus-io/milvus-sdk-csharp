@@ -6,16 +6,16 @@ namespace IO.Milvus;
 /// <summary>
 /// Float vector field
 /// </summary>
-public sealed class FloatVectorField : Field<ReadOnlyMemory<float>>
+public sealed class FloatVectorFieldData : FieldData<ReadOnlyMemory<float>>
 {
     /// <summary>
     /// Create a float vector field.
     /// </summary>
     /// <param name="fieldName">Field name</param>
     /// <param name="data">data</param>
-    public FloatVectorField(
+    public FloatVectorFieldData(
         string fieldName,
-        IList<ReadOnlyMemory<float>> data)
+        IReadOnlyList<ReadOnlyMemory<float>> data)
         : base(fieldName, data, MilvusDataType.FloatVector, false)
     {
     }

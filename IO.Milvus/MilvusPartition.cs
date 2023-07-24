@@ -1,30 +1,25 @@
-﻿namespace IO.Milvus;
+﻿using IO.Milvus.Client;
+
+namespace IO.Milvus;
 
 /// <summary>
 /// Milvus partition
 /// </summary>
 /// <remarks>
-/// Milvus allows you to divide the bulk of vector data into a small number of partitions. 
+/// Milvus allows you to divide the bulk of vector data into a small number of partitions.
 /// Search and other operations can then be limited to one partition to improve the performance.
 /// </remarks>
 public sealed class MilvusPartition
 {
-    /// <summary>
-    /// Construct a milvus partition.
-    /// </summary>
-    /// <param name="partitionId">Partition id.</param>
-    /// <param name="partitionName">Partition name.</param>
-    /// <param name="createdUtcTimestamp">Created datetime.</param>
-    /// <param name="inMemoryPercentage">Load percentage on query node.</param>
-    public MilvusPartition(
+    internal MilvusPartition(
         long partitionId,
         string partitionName,
-        DateTime createdUtcTimestamp,
+        ulong creationTimestamp,
         long inMemoryPercentage)
     {
         PartitionId = partitionId;
         PartitionName = partitionName;
-        CreatedUtcTime = createdUtcTimestamp;
+        CreationTimestamp = creationTimestamp;
         InMemoryPercentage = inMemoryPercentage;
     }
 
@@ -44,16 +39,18 @@ public sealed class MilvusPartition
     public long InMemoryPercentage { get; }
 
     /// <summary>
-    /// Create utc time.
+    /// An opaque identifier for the point in time in which the partition was created. Can be passed to
+    /// <see cref="MilvusClient.SearchAsync{T}" /> or <see cref="MilvusClient.QueryAsync" /> as a <i>guarantee
+    /// timestamp</i> or as a <i>time travel timestamp</i>.
     /// </summary>
     /// <remarks>
-    /// If you want to get a local time, you can use <see cref="DateTime.ToLocalTime"/>.
+    /// For more details, see <see href="https://milvus.io/docs/timestamp.md" />.
     /// </remarks>
-    public DateTime CreatedUtcTime { get; }
+    public ulong CreationTimestamp { get; }
 
     /// <summary>
     /// Return string value of <see cref="MilvusPartition"/>.
     /// </summary>
     public override string ToString()
-        => $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreatedUtcTime)}:{CreatedUtcTime}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
+        => $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreationTimestamp)}:{CreationTimestamp}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
 }

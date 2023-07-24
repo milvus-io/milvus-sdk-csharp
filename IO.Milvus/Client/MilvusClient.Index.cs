@@ -1,5 +1,4 @@
 ﻿using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
 
@@ -71,7 +70,7 @@ public partial class MilvusClient
             request.ExtraParams.Add(new Grpc.KeyValuePair
             {
                 Key = "params",
-                Value = extraParams.Combine()
+                Value = Combine(extraParams)
             });
         }
 

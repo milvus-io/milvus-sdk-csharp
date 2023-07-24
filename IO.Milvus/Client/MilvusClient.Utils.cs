@@ -1,10 +1,10 @@
-﻿using System.Text;
+using System.Text;
 
-namespace IO.Milvus.Utils;
+namespace IO.Milvus.Client;
 
-internal static class ParameterUtils
+public partial class MilvusClient
 {
-    internal static string Combine(this IDictionary<string, string> parameters)
+    internal static string Combine(IDictionary<string, string> parameters)
     {
         StringBuilder stringBuilder = new();
         stringBuilder.Append('{');
@@ -27,4 +27,5 @@ internal static class ParameterUtils
         stringBuilder.Append('}');
         return stringBuilder.ToString();
     }
+
 }

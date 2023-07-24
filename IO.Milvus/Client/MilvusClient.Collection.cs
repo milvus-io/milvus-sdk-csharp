@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
 
@@ -15,7 +14,7 @@ public partial class MilvusClient
     /// <see href="https://milvus.io/docs/schema.md" /> for more information.
     /// </param>
     /// <param name="consistencyLevel">
-    /// The consistency level to be used by the collection. Defaults to <see cref="MilvusConsistencyLevel.Session" />.
+    /// The consistency level to be used by the collection. Defaults to <see cref="ConsistencyLevel.Session" />.
     /// </param>
     /// <param name="shardsNum">Number of the shards for the collection to create.</param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
@@ -25,7 +24,7 @@ public partial class MilvusClient
     public Task CreateCollectionAsync(
         string collectionName,
         IList<FieldSchema> fields,
-        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
+        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
         int shardsNum = 1,
         string? dbName = null,
         CancellationToken cancellationToken = default)
@@ -41,7 +40,7 @@ public partial class MilvusClient
     /// <param name="collectionName">The name of the collection to create.</param>
     /// <param name="schema">The schema definition for the collection.</param>
     /// <param name="consistencyLevel">
-    /// The consistency level to be used by the collection. Defaults to <see cref="MilvusConsistencyLevel.Session" />.
+    /// The consistency level to be used by the collection. Defaults to <see cref="ConsistencyLevel.Session" />.
     /// </param>
     /// <param name="shardsNum">Number of the shards for the collection to create.</param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
@@ -51,7 +50,7 @@ public partial class MilvusClient
     public async Task CreateCollectionAsync(
         string collectionName,
         CollectionSchema schema,
-        MilvusConsistencyLevel consistencyLevel = MilvusConsistencyLevel.Session,
+        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
         int shardsNum = 1,
         string? dbName = null,
         CancellationToken cancellationToken = default)
@@ -114,7 +113,7 @@ public partial class MilvusClient
         var request = new CreateCollectionRequest
         {
             CollectionName = collectionName,
-            ConsistencyLevel = (ConsistencyLevel)(int)consistencyLevel,
+            ConsistencyLevel = (Grpc.ConsistencyLevel)(int)consistencyLevel,
             ShardsNum = shardsNum,
             Schema = grpcCollectionSchema.ToByteString()
         };
@@ -198,8 +197,8 @@ public partial class MilvusClient
             response.Aliases,
             response.CollectionName,
             response.CollectionID,
-            (MilvusConsistencyLevel)response.ConsistencyLevel,
-            TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamp),
+            (ConsistencyLevel)response.ConsistencyLevel,
+            response.CreatedUtcTimestamp,
             milvusCollectionSchema,
             response.ShardsNum,
             startPositions);
@@ -292,8 +291,8 @@ public partial class MilvusClient
     /// Checks whether a collection exists.
     /// </summary>
     /// <param name="collectionName">The name of the collection.</param>
-    /// <param name="dateTime">
-    /// If non-null, returns <c>true</c> only if the collection was created before the given timestamp.
+    /// <param name="timestamp">
+    /// If non-zero, returns <c>true</c> only if the collection was created before the given timestamp.
     /// </param>
     /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
     /// <param name="cancellationToken">
@@ -301,7 +300,7 @@ public partial class MilvusClient
     /// </param>
     public async Task<bool> HasCollectionAsync(
         string collectionName,
-        DateTime? dateTime = null,
+        ulong timestamp = 0,
         string? dbName = null,
         CancellationToken cancellationToken = default)
     {
@@ -310,7 +309,7 @@ public partial class MilvusClient
         var request = new HasCollectionRequest
         {
             CollectionName = collectionName,
-            TimeStamp = (ulong)(dateTime?.ToUtcTimestamp() ?? 0),
+            TimeStamp = timestamp,
         };
 
         if (dbName is not null)
@@ -423,7 +422,7 @@ public partial class MilvusClient
                 collections.Add(new MilvusCollection(
                     response.CollectionIds[i],
                     response.CollectionNames[i],
-                    TimestampUtils.GetTimeFromTimestamp((long)response.CreatedUtcTimestamps[i]),
+                    response.CreatedUtcTimestamps[i],
                     response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
             }
         }

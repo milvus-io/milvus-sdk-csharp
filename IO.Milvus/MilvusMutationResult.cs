@@ -1,74 +1,50 @@
-﻿using IO.Milvus.Utils;
+﻿using IO.Milvus.Client;
 
 namespace IO.Milvus;
 
 /// <summary>
-/// Mutation result wrapper
+/// Contains results information about an operation which modified rows in a collection.
 /// </summary>
 public sealed class MilvusMutationResult
 {
-    private MilvusMutationResult(
-        long insertCount,
-        long deletedCount,
-        long upsertCount,
-        bool acknowledged,
-        IList<uint> successIndex,
-        IList<uint> errorIndex,
-        DateTime dateTime,
-        MilvusIds? ids,
-        Grpc.MutationResult? mutationResult = null)
+    internal MilvusMutationResult(Grpc.MutationResult mutationResult)
     {
-        InsertCount = insertCount;
-        DeleteCount = deletedCount;
-        UpsertCount = upsertCount;
-        Acknowledged = acknowledged;
-        SuccessIndex = successIndex;
-        ErrorIndex = errorIndex;
-        Timestamp = dateTime;
-        Ids = ids;
-        MutationResult = mutationResult;
+        InsertCount = mutationResult.InsertCnt;
+        DeleteCount = mutationResult.DeleteCnt;
+        UpsertCount = mutationResult.UpsertCnt;
+        Acknowledged = mutationResult.Acknowledged;
+        SuccessIndex = mutationResult.SuccIndex.ToList();
+        ErrorIndex = mutationResult.ErrIndex.ToList();
+        Timestamp = mutationResult.Timestamp;
+        Ids = MilvusIds.FromGrpc(mutationResult.IDs);
     }
 
-    internal static MilvusMutationResult From(Grpc.MutationResult mutationResult)
-        => new(
-            mutationResult.InsertCnt,
-            mutationResult.DeleteCnt,
-            mutationResult.UpsertCnt,
-            mutationResult.Acknowledged,
-            mutationResult.SuccIndex.ToList(),
-            mutationResult.ErrIndex.ToList(),
-            TimestampUtils.GetTimeFromTimestamp((long)mutationResult.Timestamp),
-            MilvusIds.FromGrpc(mutationResult.IDs),
-            mutationResult);
-
-    /// <summary>
-    /// Source mutation result from grpc response.
-    /// </summary>
-    public Grpc.MutationResult? MutationResult { get; }
-
-    /// <summary>
-    /// Acknowledged.
-    /// </summary>
-
+#pragma warning disable CS1591 // Missing documentation
     public bool Acknowledged { get; }
+#pragma warning restore CS1591
 
     /// <summary>
-    /// Timestamp.
+    /// An opaque identifier for the point in time in which the mutation operation occurred. Can be passed to
+    /// <see cref="MilvusClient.SearchAsync{T}" /> or <see cref="MilvusClient.QueryAsync" /> as a <i>guarantee
+    /// timestamp</i> or as a <i>time travel timestamp</i>.
     /// </summary>
-    public DateTime Timestamp { get; }
+    /// <remarks>
+    /// For more details, see <see href="https://milvus.io/docs/timestamp.md" />.
+    /// </remarks>
+    public ulong Timestamp { get; }
 
     /// <summary>
-    /// Insert count.
+    /// The number of inserted rows.
     /// </summary>
     public long InsertCount { get; }
 
     /// <summary>
-    /// Error count.
+    /// The number of deleted rows.
     /// </summary>
     public long DeleteCount { get; }
 
     /// <summary>
-    /// Upsert count.
+    /// The number of upserted rows.
     /// </summary>
     public long UpsertCount { get; }
 
@@ -83,7 +59,7 @@ public sealed class MilvusMutationResult
     public IList<uint> ErrorIndex { get; }
 
     /// <summary>
-    /// Ids
+    /// The IDs of the rows returned from the search.
     /// </summary>
-    public MilvusIds? Ids { get; set; } // TODO NULLABILITY: Confirm nullability
+    public MilvusIds Ids { get; set; }
 }

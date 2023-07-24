@@ -6,14 +6,14 @@ namespace IO.Milvus;
 /// <summary>
 /// Binary Field
 /// </summary>
-public sealed class BinaryVectorField : Field<byte[]>
+public sealed class BinaryVectorFieldData : FieldData<ReadOnlyMemory<byte>>
 {
     /// <summary>
     /// Construct a binary vector field
     /// </summary>
     /// <param name="fieldName"></param>
     /// <param name="bytes"></param>
-    public BinaryVectorField(string fieldName, IList<byte[]> bytes)
+    public BinaryVectorFieldData(string fieldName, IReadOnlyList<ReadOnlyMemory<byte>> bytes)
         : base(fieldName, bytes, MilvusDataType.BinaryVector, false)
     {
     }
@@ -27,28 +27,28 @@ public sealed class BinaryVectorField : Field<byte[]>
             throw new MilvusException("The number of vectors must be positive.");
         }
 
-        int dim = Data[0].Length;
-        int lengthSum = 0;
+        int vectorByteLength = Data[0].Length;
+        int totalByteLength = vectorByteLength;
         for (int i = 1; i < dataCount; i++)
         {
             int rowLength = Data[i].Length;
-            if (rowLength != dim)
+            if (rowLength != vectorByteLength)
             {
                 throw new MilvusException("All vectors must have the same dimensionality.");
             }
 
-            checked { lengthSum += rowLength; }
+            checked { totalByteLength += rowLength; }
         }
 
-        byte[] bytes = ArrayPool<byte>.Shared.Rent(lengthSum);
+        byte[] bytes = ArrayPool<byte>.Shared.Rent(totalByteLength);
         int pos = 0;
         for (int i = 0; i < dataCount; i++)
         {
-            byte[] row = Data[i];
-            Array.Copy(row, 0, bytes, pos, row.Length);
+            ReadOnlyMemory<byte> row = Data[i];
+            row.Span.CopyTo(bytes.AsSpan(pos, row.Length));
             pos += row.Length;
         }
-        Debug.Assert(pos == lengthSum);
+        Debug.Assert(pos == totalByteLength);
 
         var result = new Grpc.FieldData
         {
@@ -56,8 +56,8 @@ public sealed class BinaryVectorField : Field<byte[]>
             Type = (Grpc.DataType)DataType,
             Vectors = new Grpc.VectorField
             {
-                BinaryVector = ByteString.CopyFrom(bytes.AsSpan(0, lengthSum)),
-                Dim = dim,
+                BinaryVector = ByteString.CopyFrom(bytes.AsSpan(0, totalByteLength)),
+                Dim = vectorByteLength * 8,
             }
         };
 

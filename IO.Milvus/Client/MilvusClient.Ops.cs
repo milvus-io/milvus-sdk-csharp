@@ -1,5 +1,4 @@
 ﻿using IO.Milvus.Grpc;
-using IO.Milvus.Utils;
 
 namespace IO.Milvus.Client;
 
@@ -9,14 +8,14 @@ public partial class MilvusClient
     /// Do a manual compaction.
     /// </summary>
     /// <param name="collectionId">Collection Id.</param>
-    /// <param name="timeTravel">Time travel.</param>
+    /// <param name="timeTravelTimestamp">Time travel.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns>CompactionId</returns>
     public async Task<long> ManualCompactionAsync(
         long collectionId,
-        DateTime? timeTravel = null,
+        ulong timeTravelTimestamp = 0,
         CancellationToken cancellationToken = default)
     {
         Verify.GreaterThan(collectionId, 0);
@@ -24,7 +23,7 @@ public partial class MilvusClient
         ManualCompactionResponse response = await InvokeAsync(_grpcClient.ManualCompactionAsync, new ManualCompactionRequest
         {
             CollectionID = collectionId,
-            Timetravel = timeTravel is not null ? (ulong)timeTravel.Value.ToUtcTimestamp() : 0
+            Timetravel = timeTravelTimestamp
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.CompactionID;

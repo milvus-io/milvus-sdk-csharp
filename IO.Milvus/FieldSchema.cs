@@ -45,7 +45,7 @@ public sealed class FieldSchema
         bool autoId = false,
         bool isPartitionKey = false,
         string description = "")
-        => new(name, Field.EnsureDataType<TData>(), isPrimaryKey, autoId, isPartitionKey, description);
+        => new(name, FieldData.EnsureDataType<TData>(), isPrimaryKey, autoId, isPartitionKey, description);
 
     /// <summary>
     /// Create a field schema for a <c>varchar</c> field.

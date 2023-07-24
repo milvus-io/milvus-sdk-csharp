@@ -6,7 +6,7 @@ namespace IO.Milvus;
 /// <summary>
 /// Represents a milvus field/
 /// </summary>
-public abstract class Field
+public abstract class FieldData
 {
     /// <summary>
     /// Construct a field.
@@ -14,7 +14,7 @@ public abstract class Field
     /// <param name="fieldName">Field name.</param>
     /// <param name="dataType">Field data type.</param>
     /// <param name="isDynamic"></param>
-    protected Field(string fieldName, MilvusDataType dataType, bool isDynamic = false)
+    protected FieldData(string fieldName, MilvusDataType dataType, bool isDynamic = false)
     {
         FieldName = fieldName;
         DataType = dataType;
@@ -44,7 +44,7 @@ public abstract class Field
     /// <summary>
     /// Is dynamic.
     /// </summary>
-    public bool IsDynamic { get; set; }
+    public bool IsDynamic { get; private set; }
 
     /// <summary>
     /// Get string data.
@@ -65,14 +65,13 @@ public abstract class Field
     /// <param name="fieldData">Field data.</param>
     /// <returns></returns>
     /// <exception cref="NotSupportedException"></exception>
-    public static Field FromGrpcFieldData(Grpc.FieldData fieldData)
+    public static FieldData FromGrpcFieldData(Grpc.FieldData fieldData)
     {
         Verify.NotNull(fieldData);
 
         switch (fieldData.FieldCase)
         {
             case Grpc.FieldData.FieldOneofCase.Vectors:
-            {
                 int dim = (int)fieldData.Vectors.Dim;
 
                 switch (fieldData.Vectors.DataCase)
@@ -108,10 +107,9 @@ public abstract class Field
                     default:
                         throw new NotSupportedException("VectorField.DataOneofCase.None not support");
                 }
-            }
+
             case Grpc.FieldData.FieldOneofCase.Scalars:
-            {
-                Field field = fieldData.Scalars.DataCase switch
+                return fieldData.Scalars.DataCase switch
                 {
                     Grpc.ScalarField.DataOneofCase.BoolData
                         => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data),
@@ -129,8 +127,7 @@ public abstract class Field
 
                     _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
                 };
-                return field;
-            }
+
             default:
                 throw new NotSupportedException("Cannot convert None FieldData to Field");
         }
@@ -210,7 +207,7 @@ public abstract class Field
     /// <param name="fieldName">Field name</param>
     /// <param name="data">Data in this field</param>
     /// <returns></returns>
-    public static Field<TData> Create<TData>(string fieldName, IList<TData> data)
+    public static FieldData<TData> Create<TData>(string fieldName, IReadOnlyList<TData> data)
         => new(fieldName, data);
 
     /// <summary>
@@ -220,9 +217,9 @@ public abstract class Field
     /// <param name="data">Data.</param>
     /// <param name="isDynamic"></param>
     /// <returns></returns>
-    public static Field<string> CreateVarChar(
+    public static FieldData<string> CreateVarChar(
         string fieldName,
-        IList<string> data,
+        IReadOnlyList<string> data,
         bool isDynamic = false)
         => new(fieldName, data, MilvusDataType.VarChar, isDynamic);
 
@@ -233,12 +230,12 @@ public abstract class Field
     /// <param name="bytes">Byte array data.</param>
     /// <param name="dimension">Dimension of data.</param>
     /// <returns></returns>
-    public static BinaryVectorField CreateFromBytes(string fieldName, ReadOnlySpan<byte> bytes, long dimension)
+    public static BinaryVectorFieldData CreateFromBytes(string fieldName, ReadOnlySpan<byte> bytes, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
         Verify.GreaterThan(dimension, 0);
 
-        List<byte[]> byteArray = new((int)Math.Ceiling((double)bytes.Length / dimension));
+        List<ReadOnlyMemory<byte>> byteArray = new((int)Math.Ceiling((double)bytes.Length / dimension));
 
         while (bytes.Length > dimension)
         {
@@ -251,7 +248,7 @@ public abstract class Field
             byteArray.Add(bytes.ToArray());
         }
 
-        return new BinaryVectorField(fieldName, byteArray);
+        return new BinaryVectorFieldData(fieldName, byteArray);
     }
 
     /// <summary>
@@ -260,11 +257,11 @@ public abstract class Field
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    public static BinaryVectorField CreateBinaryVectors(string fieldName, IList<byte[]> data)
+    public static BinaryVectorFieldData CreateBinaryVectors(string fieldName, IReadOnlyList<ReadOnlyMemory<byte>> data)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        BinaryVectorField field = new(fieldName, data);
-        return field;
+        BinaryVectorFieldData fieldData = new(fieldName, data);
+        return fieldData;
     }
 
     /// <summary>
@@ -273,7 +270,7 @@ public abstract class Field
     /// <param name="fieldName">Field name.</param>
     /// <param name="data">Data</param>
     /// <returns></returns>
-    public static FloatVectorField CreateFloatVector(string fieldName, IList<ReadOnlyMemory<float>> data)
+    public static FloatVectorFieldData CreateFloatVector(string fieldName, IReadOnlyList<ReadOnlyMemory<float>> data)
         => new(fieldName, data);
 
     /// <summary>
@@ -283,12 +280,12 @@ public abstract class Field
     /// <param name="stream"></param>
     /// <param name="dimension">Dimension of data</param>
     /// <returns>New created field</returns>
-    public static Field CreateFromStream(string fieldName, Stream stream, long dimension)
+    public static FieldData CreateFromStream(string fieldName, Stream stream, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        ByteStringField field = new(fieldName, ByteString.FromStream(stream), dimension);
+        ByteStringFieldData fieldData = new(fieldName, ByteString.FromStream(stream), dimension);
 
-        return field;
+        return fieldData;
     }
 
     /// <summary>
@@ -298,10 +295,10 @@ public abstract class Field
     /// <param name="json">json field.</param>
     /// <param name="isDynamic"></param>
     /// <returns></returns>
-    public static Field CreateJson(string fieldName, IList<string> json, bool isDynamic = false)
+    public static FieldData CreateJson(string fieldName, IReadOnlyList<string> json, bool isDynamic = false)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        return new Field<string>(fieldName, json, MilvusDataType.Json, isDynamic);
+        return new FieldData<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
 }
 
@@ -309,7 +306,7 @@ public abstract class Field
 /// Milvus Field
 /// </summary>
 /// <typeparam name="TData"></typeparam>
-public class Field<TData> : Field
+public class FieldData<TData> : FieldData
 {
     /// <summary>
     /// Construct a field
@@ -317,7 +314,7 @@ public class Field<TData> : Field
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <param name="isDynamic"></param>
-    public Field(string fieldName, IList<TData> data, bool isDynamic = false)
+    public FieldData(string fieldName, IReadOnlyList<TData> data, bool isDynamic = false)
         : base(fieldName, EnsureDataType<TData>(), isDynamic)
         => Data = data;
 
@@ -328,14 +325,14 @@ public class Field<TData> : Field
     /// <param name="data"></param>
     /// <param name="milvusDataType">Milvus data type.</param>
     /// <param name="isDynamic"></param>
-    public Field(string fieldName, IList<TData> data, MilvusDataType milvusDataType, bool isDynamic)
+    public FieldData(string fieldName, IReadOnlyList<TData> data, MilvusDataType milvusDataType, bool isDynamic)
         : base(fieldName, milvusDataType, isDynamic)
         => Data = data;
 
     /// <summary>
     /// Vector data
     /// </summary>
-    public IList<TData> Data { get; set; }
+    public IReadOnlyList<TData> Data { get; set; }
 
     /// <summary>
     /// Row count
@@ -360,120 +357,77 @@ public class Field<TData> : Field
 
         switch (DataType)
         {
+            case MilvusDataType.Bool:
+                Grpc.BoolArray boolData = new();
+                boolData.Data.AddRange(Data as IEnumerable<bool>);
+                fieldData.Scalars = new Grpc.ScalarField { BoolData = boolData };
+                break;
+
+            case MilvusDataType.Int8:
+                Grpc.IntArray int8Data = new();
+                foreach (sbyte i in (IEnumerable<sbyte>)Data)
+                {
+                    int8Data.Data.Add(i);
+                }
+                fieldData.Scalars = new Grpc.ScalarField { IntData = int8Data };
+                break;
+
+            case MilvusDataType.Int16:
+                Grpc.IntArray int16Data = new();
+                foreach (short i in (IEnumerable<short>)Data)
+                {
+                    int16Data.Data.Add(i);
+                }
+                fieldData.Scalars = new Grpc.ScalarField { IntData = int16Data };
+                break;
+
+            case MilvusDataType.Int32:
+                Grpc.IntArray int32Data = new();
+                int32Data.Data.AddRange((IEnumerable<int>)Data);
+                fieldData.Scalars = new Grpc.ScalarField { IntData = int32Data };
+                break;
+
+            case MilvusDataType.Int64:
+                Grpc.LongArray int64Data = new();
+                int64Data.Data.AddRange((IEnumerable<long>)Data);
+                fieldData.Scalars = new Grpc.ScalarField { LongData = int64Data };
+                break;
+
+            case MilvusDataType.Float:
+                Grpc.FloatArray floatData = new();
+                floatData.Data.AddRange((IEnumerable<float>)Data);
+                fieldData.Scalars = new Grpc.ScalarField { FloatData = floatData };
+                break;
+
+            case MilvusDataType.Double:
+                Grpc.DoubleArray doubleData = new();
+                doubleData.Data.AddRange((IEnumerable<double>)Data);
+                fieldData.Scalars = new Grpc.ScalarField { DoubleData = doubleData };
+                break;
+
+            case MilvusDataType.String:
+                Grpc.StringArray stringData = new();
+                stringData.Data.AddRange((IEnumerable<string>)Data);
+                fieldData.Scalars = new Grpc.ScalarField { StringData = stringData };
+                break;
+
+            case MilvusDataType.VarChar:
+                Grpc.StringArray varcharData = new();
+                varcharData.Data.AddRange((IEnumerable<string>)Data);
+                fieldData.Scalars = new Grpc.ScalarField { StringData = varcharData };
+                break;
+
+            case MilvusDataType.Json:
+                Grpc.JSONArray jsonData = new();
+                foreach (string jsonString in (IList<string>)Data)
+                {
+                    jsonData.Data.Add(ByteString.CopyFromUtf8(jsonString));
+                }
+                fieldData.Scalars = new Grpc.ScalarField { JsonData = jsonData, };
+                break;
+
             case MilvusDataType.None:
                 throw new MilvusException($"DataType Error:{DataType}");
-            case MilvusDataType.Bool:
-                {
-                    Grpc.BoolArray boolData = new();
-                    boolData.Data.AddRange(Data as IEnumerable<bool>);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        BoolData = boolData
-                    };
-                }
-                break;
-            case MilvusDataType.Int8:
-                {
-                    Grpc.IntArray intData = new();
-                    intData.Data.AddRange(((IEnumerable<sbyte>)Data).Select(static p => (int)p));
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        IntData = intData
-                    };
-                }
-                break;
-            case MilvusDataType.Int16:
-                {
-                    Grpc.IntArray intData = new();
-                    intData.Data.AddRange(((IEnumerable<short>)Data).Select(static p => (int)p));
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        IntData = intData
-                    };
-                }
-                break;
-            case MilvusDataType.Int32:
-                {
-                    Grpc.IntArray intData = new();
-                    intData.Data.AddRange((IEnumerable<int>)Data);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        IntData = intData
-                    };
-                }
-                break;
-            case MilvusDataType.Int64:
-                {
-                    Grpc.LongArray longData = new();
-                    longData.Data.AddRange((IEnumerable<long>)Data);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        LongData = longData
-                    };
-                }
-                break;
-            case MilvusDataType.Float:
-                {
-                    Grpc.FloatArray floatData = new();
-                    floatData.Data.AddRange((IEnumerable<float>)Data);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        FloatData = floatData
-                    };
-                }
-                break;
-            case MilvusDataType.Double:
-                {
-                    Grpc.DoubleArray doubleData = new();
-                    doubleData.Data.AddRange((IEnumerable<double>)Data);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        DoubleData = doubleData
-                    };
-                }
-                break;
-            case MilvusDataType.String:
-                {
-                    Grpc.StringArray stringData = new();
-                    stringData.Data.AddRange((IEnumerable<string>)Data);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        StringData = stringData
-                    };
-                }
-                break;
-            case MilvusDataType.VarChar:
-                {
-                    Grpc.StringArray stringData = new();
-                    stringData.Data.AddRange((IEnumerable<string>)Data);
-
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        StringData = stringData
-                    };
-                }
-                break;
-            case MilvusDataType.Json:
-                {
-                    Grpc.JSONArray jsonData = new();
-                    foreach (string jsonString in (IList<string>)Data)
-                    {
-                        jsonData.Data.Add(ByteString.CopyFromUtf8(jsonString));
-                    }
-                    fieldData.Scalars = new Grpc.ScalarField
-                    {
-                        JsonData = jsonData,
-                    };
-                }
-                break;
             default:
                 throw new MilvusException($"DataType Error:{DataType}, not supported");
         }
@@ -482,7 +436,7 @@ public class Field<TData> : Field
     }
 
     /// <summary>
-    /// Return string value of <see cref="Field{TData}"/>
+    /// Return string value of <see cref="FieldData{TData}"/>
     /// </summary>
     /// <returns></returns>
     public override string ToString()
@@ -494,7 +448,7 @@ public class Field<TData> : Field
 
         if (Data.Any() != true)
         {
-            throw new MilvusException($"{nameof(Field)}.{nameof(Data)} is empty");
+            throw new MilvusException($"{nameof(FieldData)}.{nameof(Data)} is empty");
         }
     }
 }
