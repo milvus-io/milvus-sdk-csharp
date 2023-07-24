@@ -1,6 +1,4 @@
-﻿using IO.Milvus.Grpc;
-
-namespace IO.Milvus;
+﻿namespace IO.Milvus;
 
 /// <summary>
 /// Check if Milvus is healthy.

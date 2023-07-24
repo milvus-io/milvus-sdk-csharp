@@ -65,7 +65,7 @@ public abstract class FieldData
     /// <param name="fieldData">Field data.</param>
     /// <returns></returns>
     /// <exception cref="NotSupportedException"></exception>
-    public static FieldData FromGrpcFieldData(Grpc.FieldData fieldData)
+    internal static FieldData FromGrpcFieldData(Grpc.FieldData fieldData)
     {
         Verify.NotNull(fieldData);
 
