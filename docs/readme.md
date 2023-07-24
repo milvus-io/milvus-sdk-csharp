@@ -15,18 +15,18 @@ And restful api support is ready now.
 > Grpc
 
 ```csharp
-using IO.Milvus.Client.gRPC;
+using Milvus.Client;
 
-IMilvusClient client = new MilvusGrpcClient("{Endpoint}", "{Port}","{Username}","Password");
+MilvusClient client = new MilvusClient("{Endpoint}", "{Port}","{Username}","Password");
 MilvusHealthState result = await milvusClient.HealthAsync();
 ```
 
 > Restful
 
 ```csharp
-using IO.Milvus.Client.gRPC;
+using Milvus.Client;
 
-IMilvusClient client = new MilvusRestClient("{Endpoint}", "{Port}","{Username}","Password");
+MilvusClient client = new MilvusClient("{Endpoint}", "{Port}","{Username}","Password");
 MilvusHealthState result = await milvusClient.HealthAsync();
 ```
 

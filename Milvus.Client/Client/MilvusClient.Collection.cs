@@ -1,0 +1,90 @@
+﻿// ReSharper disable once CheckNamespace
+namespace Milvus.Client;
+
+public partial class MilvusClient
+{
+    /// <summary>
+    /// Returns a <see cref="MilvusCollection" /> representing a Milvus collection in the default database. This is the
+    /// starting point for all on which all collection operations.
+    /// </summary>
+    /// <param name="collectionName">The name of the collection.</param>
+    public MilvusCollection GetCollection(string collectionName)
+        => new MilvusCollection(this, collectionName, databaseName: null);
+
+    /// <summary>
+    /// Creates a new collection.
+    /// </summary>
+    /// <param name="collectionName">The name of the collection to create.</param>
+    /// <param name="fields">
+    /// Schema of the fields within the collection to create. Refer to
+    /// <see href="https://milvus.io/docs/schema.md" /> for more information.
+    /// </param>
+    /// <param name="consistencyLevel">
+    /// The consistency level to be used by the collection. Defaults to <see cref="ConsistencyLevel.Session" />.
+    /// </param>
+    /// <param name="shardsNum">Number of the shards for the collection to create.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public Task<MilvusCollection> CreateCollectionAsync(
+        string collectionName,
+        IList<FieldSchema> fields,
+        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
+        int shardsNum = 1,
+        CancellationToken cancellationToken = default)
+        => _defaultDatabase.CreateCollectionAsync(
+            collectionName, fields, consistencyLevel, shardsNum, cancellationToken);
+
+    /// <summary>
+    /// Creates a new collection.
+    /// </summary>
+    /// <param name="collectionName">The name of the collection to create.</param>
+    /// <param name="schema">The schema definition for the collection.</param>
+    /// <param name="consistencyLevel">
+    /// The consistency level to be used by the collection. Defaults to <see cref="ConsistencyLevel.Session" />.
+    /// </param>
+    /// <param name="shardsNum">Number of the shards for the collection to create.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public Task<MilvusCollection> CreateCollectionAsync(
+        string collectionName,
+        CollectionSchema schema,
+        ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
+        int shardsNum = 1,
+        CancellationToken cancellationToken = default)
+        => _defaultDatabase.CreateCollectionAsync(
+            collectionName, schema, consistencyLevel, shardsNum, cancellationToken);
+
+    /// <summary>
+    /// Checks whether a collection exists.
+    /// </summary>
+    /// <param name="collectionName">The name of the collection.</param>
+    /// <param name="timestamp">
+    /// If non-zero, returns <c>true</c> only if the collection was created before the given timestamp.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public Task<bool> HasCollectionAsync(
+        string collectionName,
+        ulong timestamp = 0,
+        CancellationToken cancellationToken = default)
+        => _defaultDatabase.HasCollectionAsync(collectionName, timestamp, cancellationToken);
+
+    /// <summary>
+    /// Lists the collections available in the database.
+    /// </summary>
+    /// <param name="collectionNames">An optional list of collection names by which to filter.</param>
+    /// <param name="showType">
+    /// Determines whether all collections are returned, or only ones which have been loaded to memory.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public Task<IList<MilvusCollectionInfo>> ShowCollectionsAsync(
+        IEnumerable<string>? collectionNames = null,
+        ShowType showType = ShowType.All,
+        CancellationToken cancellationToken = default)
+        => _defaultDatabase.ShowCollectionsAsync(collectionNames, showType, cancellationToken);
+}

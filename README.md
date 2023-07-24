@@ -16,11 +16,9 @@ C# SDK for [Milvus](https://github.com/milvus-io/milvus).
 * .NET Core 2.1+
 * .NET Framework 4.6.1+
 
-**[NuGet](https://www.nuget.org/packages/IO.Milvus/)**
+**[NuGet](https://www.nuget.org/packages/Milvus.Client/)**
 
-IO.Milvus is delivered via NuGet package manager.
-
-*There are currently two implementations, one based on grpc on branch 2.2, and the other based on restfulapi and grpc.*
+Milvus.Client is delivered via NuGet package manager.
 
 | Nuget version | Branch | Description | Milvus version
 | --- | --- | --- | --- |

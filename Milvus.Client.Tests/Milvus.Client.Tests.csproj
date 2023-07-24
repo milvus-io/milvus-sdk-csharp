@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.runner.visualstudio">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+        <PackageReference Include="GitHubActionsTestLogger" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Milvus.Client\Milvus.Client.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="config.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+</Project>
