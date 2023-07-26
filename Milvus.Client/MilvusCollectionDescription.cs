@@ -13,7 +13,7 @@ public sealed class MilvusCollectionDescription
         ulong creationTimestamp,
         CollectionSchema schema,
         int shardsNum,
-        Dictionary<string, IList<int>> startPositions)
+        IReadOnlyDictionary<string, IList<int>> startPositions)
     {
         Aliases = aliases;
         CollectionName = collectionName;
@@ -68,5 +68,5 @@ public sealed class MilvusCollectionDescription
     /// <summary>
     /// The message ID/position when collection is created.
     /// </summary>
-    public IDictionary<string, IList<int>> StartPositions { get; }
+    public IReadOnlyDictionary<string, IList<int>> StartPositions { get; }
 }

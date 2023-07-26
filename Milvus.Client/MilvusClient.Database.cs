@@ -1,7 +1,4 @@
-﻿
-
-// ReSharper disable once CheckNamespace
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 public partial class MilvusClient
 {
@@ -50,7 +47,8 @@ public partial class MilvusClient
     /// </remarks>
     public async Task<IReadOnlyList<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
-        ListDatabasesResponse response = await InvokeAsync(GrpcClient.ListDatabasesAsync, new ListDatabasesRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        ListDatabasesResponse response = await InvokeAsync(GrpcClient.ListDatabasesAsync, new ListDatabasesRequest(),
+            static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.DbNames;
     }

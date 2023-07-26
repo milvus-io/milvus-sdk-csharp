@@ -69,6 +69,8 @@ public class DataTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
+        await Task.Delay(100);
+
         MilvusMutationResult mutationResult = await collection.InsertAsync(
             new FieldData[]
             {
@@ -80,12 +82,14 @@ public class DataTests : IAsyncLifetime
                 })
             });
 
-        DateTime after = DateTime.UtcNow;
-
         DateTime insertion = MilvusTimestampUtils.ToDateTime(mutationResult.Timestamp);
 
-        Assert.True(insertion >= before, $"Insertion timestamp {insertion} was not after before timestamp {before}");
-        Assert.True(insertion <= after, $"Insertion timestamp {insertion} was not before before timestamp {after}");
+        await Task.Delay(100);
+
+        DateTime after = DateTime.UtcNow;
+
+        Assert.True(insertion >= before, $"Insertion timestamp {insertion} was not after timestamp {before}");
+        Assert.True(insertion <= after, $"Insertion timestamp {insertion} was not before timestamp {after}");
 
         // Note that Milvus timestamps have a logical component that gets stripped away when we convert to DateTime,
         // so converting back doesn't yield the same result. Search_with_time_travel exercises the other direction.

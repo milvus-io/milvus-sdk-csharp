@@ -111,7 +111,7 @@ public partial class MilvusCollection
     /// </param>
     /// <returns></returns>
     public async Task LoadPartitionsAsync(
-        IList<string> partitionNames,
+        IReadOnlyList<string> partitionNames,
         int replicaNumber = 1,
         CancellationToken cancellationToken = default)
     {
@@ -154,7 +154,7 @@ public partial class MilvusCollection
     /// </param>
     /// <returns></returns>
     public async Task ReleasePartitionAsync(
-        IList<string> partitionNames,
+        IReadOnlyList<string> partitionNames,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(partitionNames);

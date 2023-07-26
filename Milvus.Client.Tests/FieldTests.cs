@@ -1,48 +1,39 @@
-﻿using FluentAssertions;
-using Xunit;
+﻿using Xunit;
 
 namespace Milvus.Client.Tests;
 
 public class FieldTests
 {
     [Fact]
-    public void ToStringTest()
+    public void Create_int_field()
     {
         var field = FieldData.Create("Id", new[] { 1, 2, 3 });
-        field.RowCount.Should().Be(3);
-        field.ToString().Should().Be("Field: {FieldName: Id, DataType: Int32, Data: 3, RowCount: 3}");
+
+        Assert.Equal("Id", field.FieldName);
+        Assert.Equal(MilvusDataType.Int32, field.DataType);
+        Assert.Equal(3, field.RowCount);
+        Assert.Equivalent(new[] { 1, 2, 3 }, field.Data);
     }
 
     [Fact]
-    public void CreateTest()
-    {
-        var field = FieldData.Create("Id", new[] { 1, 2, 3 });
-        field.Should().NotBeNull();
-        field.FieldName.Should().Be("Id");
-        field.DataType.Should().Be(MilvusDataType.Int32);
-        field.RowCount.Should().Be(3);
-        field.Data.Should().BeEquivalentTo(new[] { 1, 2, 3 });
-    }
-
-    [Fact]
-    public void CreateVarCharTest()
+    public void Create_varchar_field()
     {
         var field = FieldData.CreateVarChar("id", new[] { "fsj", "fsd" });
 
-        field.Should().NotBeNull();
-        field.FieldName.Should().Be("id");
-        field.DataType.Should().Be(MilvusDataType.VarChar);
+        Assert.Equal("id", field.FieldName);
+        Assert.Equal(MilvusDataType.VarChar, field.DataType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equivalent(new[] { "fsj", "fsd" }, field.Data);
     }
 
     [Fact]
-    public void CreateFromBytesTest()
+    public void Create_binary_vector_field()
     {
         var field = FieldData.CreateFromBytes("byte", new byte[] { 1, 2, 3, 4, 5, 6 }, 2);
 
-        field.Should().NotBeNull();
-        field.RowCount.Should().Be(3);
-        field.Data.Count.Should().Be(3);
-        field.DataType.Should().Be(MilvusDataType.BinaryVector);
+        Assert.Equal(MilvusDataType.BinaryVector, field.DataType);
+        Assert.Equal(3, field.RowCount);
+        Assert.Equal(3, field.Data.Count);
     }
 
     [Fact]
@@ -56,10 +47,9 @@ public class FieldTests
                 new byte[] { 3, 4 }
             });
 
-        field.Should().NotBeNull();
-        field.RowCount.Should().Be(2);
-        field.Data.Count.Should().Be(2);
-        field.DataType.Should().Be(MilvusDataType.BinaryVector);
+        Assert.Equal(MilvusDataType.BinaryVector, field.DataType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
     }
 
     [Fact]
@@ -73,9 +63,8 @@ public class FieldTests
                 new[] { 3f, 4f }
             });
 
-        field.Should().NotBeNull();
-        field.RowCount.Should().Be(2);
-        field.Data.Count.Should().Be(2);
-        field.DataType.Should().Be(MilvusDataType.FloatVector);
+        Assert.Equal(MilvusDataType.FloatVector, field.DataType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
     }
 }

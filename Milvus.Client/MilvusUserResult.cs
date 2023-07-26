@@ -1,36 +1,30 @@
-﻿namespace Milvus.Client;
+﻿using Google.Protobuf.Collections;
+
+namespace Milvus.Client;
 
 /// <summary>
-/// milvus user result.
+/// Information about a user, returned from <see cref="MilvusClient.SelectUserAsync" /> and
+/// <see cref="MilvusClient.SelectAllUsersAsync" />.
 /// </summary>
+/// <remarks>
+/// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
+/// </remarks>
 public sealed class MilvusUserResult
 {
-    private MilvusUserResult(string username, IEnumerable<string> roles)
+    internal MilvusUserResult(string user, RepeatedField<RoleEntity> roles)
     {
-        Username = username;
-        Roles = roles;
+        User = user;
+        Roles = roles.Select(static r => r.Name).ToList();
     }
 
     /// <summary>
-    /// Username
+    /// The name of the user.
     /// </summary>
-    public string Username { get; }
+    public string User { get; }
 
     /// <summary>
-    /// Roles that user has.
+    /// The roles this user has. Always empty if <c>includeRoleInfo</c> was <c>false</c> in the call to
+    /// <see cref="MilvusClient.SelectUserAsync" /> or <see cref="MilvusClient.SelectAllUsersAsync" />.
     /// </summary>
-    public IEnumerable<string> Roles { get; }
-
-    internal static IEnumerable<MilvusUserResult> Parse(IEnumerable<UserResult> results)
-    {
-        if (results == null)
-            yield break;
-
-        foreach (UserResult result in results)
-        {
-            yield return new MilvusUserResult(
-                result.User.Name,
-                result.Roles?.Select(static r => r.Name) ?? Enumerable.Empty<string>());
-        }
-    }
+    public IReadOnlyList<string> Roles { get; }
 }

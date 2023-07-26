@@ -247,6 +247,59 @@ public class CollectionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetEntityCount()
+    {
+        var collection = await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        Assert.Equal(0, await collection.GetEntityCount());
+
+        await collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new long[] { 1, 2 }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f }
+                })
+            });
+
+        await collection.FlushAsync();
+
+        // There's some delay in updating the statistics so we only assert the existence of row_count for now
+        _ = await collection.GetEntityCount();
+    }
+
+    [Fact]
+    public async Task Compact()
+    {
+        var collection = await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        long compactionId = await collection.CompactAsync();
+        Assert.NotEqual(0, compactionId);
+
+        await Client.WaitForCompactionAsync(compactionId);
+
+        MilvusCompactionState state = await Client.GetCompactionStateAsync(compactionId);
+        Assert.Equal(MilvusCompactionState.Completed, state);
+
+        MilvusCompactionPlans compactionPlans = await Client.GetCompactionPlansAsync(compactionId);
+        Assert.Equal(MilvusCompactionState.Completed, compactionPlans.State);
+    }
+
+    [Fact]
     public async Task Create_in_non_existing_database_fails()
     {
         MilvusDatabase nonExistingDb = Client.GetDatabase("non_existing_db");

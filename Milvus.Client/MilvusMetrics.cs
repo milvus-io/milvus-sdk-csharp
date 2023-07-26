@@ -1,28 +1,23 @@
 ﻿namespace Milvus.Client;
 
 /// <summary>
-/// Milvus metrics
+/// Contains the response to a request for metrics via <see cref="MilvusClient.GetMetricsAsync" />.
 /// </summary>
 public sealed class MilvusMetrics
 {
-    /// <summary>
-    /// Constructor a milvus metrics.
-    /// </summary>
-    /// <param name="response">A response in JSON format.</param>
-    /// <param name="componentName">metrics from which component.</param>
-    public MilvusMetrics(string response, string componentName)
+    internal MilvusMetrics(string response, string componentName)
     {
         Response = response;
         ComponentName = componentName;
     }
 
     /// <summary>
-    /// response is of jsonic format.
+    /// A response in JSON format.
     /// </summary>
     public string Response { get; }
 
     /// <summary>
-    /// metrics from which component.
+    /// The name of the component from which the metrics were returned.
     /// </summary>
     public string ComponentName { get; }
 }

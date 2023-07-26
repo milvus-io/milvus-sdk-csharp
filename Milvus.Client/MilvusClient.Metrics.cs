@@ -1,18 +1,14 @@
-﻿
-
-// ReSharper disable once CheckNamespace
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 public partial class MilvusClient
 {
     /// <summary>
-    /// Get metrics.
+    /// Gets metrics.
     /// </summary>
     /// <param name="request">Request in JSON format.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns>metrics from which component.</returns>
     public async Task<MilvusMetrics> GetMetricsAsync(
         string request,
         CancellationToken cancellationToken = default)

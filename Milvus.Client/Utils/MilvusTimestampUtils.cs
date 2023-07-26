@@ -50,5 +50,5 @@ public static class MilvusTimestampUtils
     private const int LogicalBits = 18;
     private const ulong LogicalBitmask = ~(((ulong)1 << LogicalBits) - 1);
 
-    private static readonly ulong UnixEpochTicks = 621355968000000000;
+    private const ulong UnixEpochTicks = 621355968000000000;
 }

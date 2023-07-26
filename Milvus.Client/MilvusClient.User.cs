@@ -1,6 +1,5 @@
 ﻿using System.Text;
 
-// ReSharper disable once CheckNamespace
 namespace Milvus.Client;
 
 public partial class MilvusClient
@@ -13,7 +12,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task CreateCredentialAsync(
+    public async Task CreateUserAsync(
         string username,
         string password,
         CancellationToken cancellationToken = default)
@@ -21,14 +20,10 @@ public partial class MilvusClient
         Verify.NotNullOrWhiteSpace(username);
         Verify.NotNullOrWhiteSpace(password);
 
-        // TODO: Is this correct?
-        ulong timestamp = MilvusTimestampUtils.FromDateTime(DateTime.UtcNow);
         await InvokeAsync(GrpcClient.CreateCredentialAsync, new CreateCredentialRequest
         {
             Username = username,
             Password = Base64Encode(password),
-            ModifiedUtcTimestamps = timestamp,
-            CreatedUtcTimestamps = timestamp
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -39,7 +34,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task DeleteCredentialAsync(
+    public async Task DeleteUserAsync(
         string username,
         CancellationToken cancellationToken = default)
     {
@@ -60,7 +55,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task UpdateCredentialAsync(
+    public async Task UpdatePassword(
         string username,
         string oldPassword,
         string newPassword,
@@ -84,10 +79,11 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<IList<string>> ListCredUsersAsync(
+    public async Task<IReadOnlyList<string>> ListUsernames(
         CancellationToken cancellationToken = default)
     {
-        ListCredUsersResponse response = await InvokeAsync(GrpcClient.ListCredUsersAsync, new ListCredUsersRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        ListCredUsersResponse response = await InvokeAsync(GrpcClient.ListCredUsersAsync, new ListCredUsersRequest(),
+            static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Usernames;
     }

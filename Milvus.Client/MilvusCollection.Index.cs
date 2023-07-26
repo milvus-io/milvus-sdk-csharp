@@ -262,12 +262,11 @@ public partial class MilvusCollection
     /// <param name="fieldName">The vector field name in this particular collection</param>
     /// <param name="indexName">An optional name for the index to be created.</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
-    /// <param name="timeout">Timeout.</param>
+    /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <exception cref="TimeoutException">Time out.</exception>
     public async Task WaitForIndexBuildAsync(
         string fieldName,
         string? indexName = null,
@@ -276,7 +275,7 @@ public partial class MilvusCollection
         IProgress<IndexBuildProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        await Poll(
+        await Utils.Poll(
             async () =>
             {
                 IndexBuildProgress progress = await GetIndexBuildProgressAsync(fieldName, indexName, cancellationToken)

@@ -133,10 +133,6 @@ public abstract class FieldData
         }
     }
 
-    /// <summary>
-    /// Check data type
-    /// </summary>
-    /// <exception cref="NotSupportedException"></exception>
     internal static MilvusDataType EnsureDataType<TDataType>()
     {
         Type type = typeof(TDataType);
@@ -173,12 +169,14 @@ public abstract class FieldData
         else if (type == typeof(string))
         {
             dataType = MilvusDataType.VarChar;
-            //dataType = MilvusDataType.String;Not support now.
         }
-        // TODO: Support arbitrary IList<float> since that's what Field supports
-        else if (type == typeof(List<float>) || type == typeof(Grpc.FloatArray))
+        else if (type == typeof(ReadOnlyMemory<float>) || type == typeof(float[]))
         {
             dataType = MilvusDataType.FloatVector;
+        }
+        else if (type == typeof(ReadOnlyMemory<byte>) || type == typeof(byte[]))
+        {
+            dataType = MilvusDataType.BinaryVector;
         }
         else
         {

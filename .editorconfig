@@ -171,3 +171,6 @@ dotnet_diagnostic.CA2015.severity = warning
 
 # CA2016: Forward the 'CancellationToken' parameter to methods that take one
 dotnet_diagnostic.CA2016.severity = warning
+
+# CA1720: Identifiers should not contain type names
+dotnet_diagnostic.CA1720.severity = silent

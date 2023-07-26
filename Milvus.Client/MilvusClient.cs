@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Milvus.Client.Diagnostics;
 
-// ReSharper disable once CheckNamespace
 namespace Milvus.Client;
 
 /// <summary>

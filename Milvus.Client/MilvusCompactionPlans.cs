@@ -5,30 +5,21 @@
 /// </summary>
 public sealed class MilvusCompactionPlans
 {
+    internal MilvusCompactionPlans(IReadOnlyList<MilvusCompactionPlan> plans, MilvusCompactionState state)
+    {
+        Plans = plans;
+        State = state;
+    }
+
     /// <summary>
     /// Merge infos.
     /// </summary>
-    public IList<MilvusCompactionPlan> MergeInfos { get; }
+    public IReadOnlyList<MilvusCompactionPlan> Plans { get; }
 
     /// <summary>
     /// State.
     /// </summary>
     public MilvusCompactionState State { get; }
-
-    internal static MilvusCompactionPlans From(Grpc.GetCompactionPlansResponse response)
-        => new(response.MergeInfos.Select(static x => new MilvusCompactionPlan
-        {
-            Sources = x.Sources,
-            Target = x.Target
-        }), (MilvusCompactionState)response.State);
-
-    private MilvusCompactionPlans(
-        IEnumerable<MilvusCompactionPlan> collection,
-        MilvusCompactionState state)
-    {
-        MergeInfos = collection.ToList();
-        State = state;
-    }
 }
 
 /// <summary>
@@ -39,7 +30,7 @@ public sealed class MilvusCompactionPlan
     /// <summary>
     /// Sources
     /// </summary>
-    public required IList<long> Sources { get; set; }
+    public required IReadOnlyList<long> Sources { get; set; }
 
     /// <summary>
     /// Target

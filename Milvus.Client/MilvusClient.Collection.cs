@@ -1,5 +1,4 @@
-﻿// ReSharper disable once CheckNamespace
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 public partial class MilvusClient
 {
@@ -28,7 +27,7 @@ public partial class MilvusClient
     /// </param>
     public Task<MilvusCollection> CreateCollectionAsync(
         string collectionName,
-        IList<FieldSchema> fields,
+        IReadOnlyList<FieldSchema> fields,
         ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
         int shardsNum = 1,
         CancellationToken cancellationToken = default)
@@ -82,9 +81,47 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<IList<MilvusCollectionInfo>> ShowCollectionsAsync(
-        IEnumerable<string>? collectionNames = null,
+    public Task<IReadOnlyList<MilvusCollectionInfo>> ShowCollectionsAsync(
+        IReadOnlyList<string>? collectionNames = null,
         ShowType showType = ShowType.All,
         CancellationToken cancellationToken = default)
         => _defaultDatabase.ShowCollectionsAsync(collectionNames, showType, cancellationToken);
+
+    /// <summary>
+    /// Flushes collection data to disk, required only in order to get up-to-date statistics.
+    /// </summary>
+    /// <remarks>
+    /// This method will be removed in a future version.
+    /// </remarks>
+    /// <param name="collectionNames">The names of the collections to be flushed.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public Task<MilvusFlushResult> FlushAsync(
+        IReadOnlyList<string> collectionNames,
+        CancellationToken cancellationToken = default)
+        => FlushAsync(collectionNames, databaseName: null, cancellationToken);
+
+    internal async Task<MilvusFlushResult> FlushAsync(
+        IReadOnlyList<string> collectionNames,
+        string? databaseName,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrEmpty(collectionNames);
+
+        FlushRequest request = new();
+
+        if (databaseName is not null)
+        {
+            request.DbName = databaseName;
+        }
+
+        request.CollectionNames.AddRange(collectionNames);
+
+        FlushResponse response =
+            await InvokeAsync(GrpcClient.FlushAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        return MilvusFlushResult.From(response);
+    }
 }

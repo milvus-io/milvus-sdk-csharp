@@ -4,12 +4,12 @@
 /// Milvus grant entity.
 /// </summary>
 /// <remarks>
-/// <see cref="Client.MilvusClient.SelectGrantForRoleAsync(string, System.Threading.CancellationToken)"/> and
+/// <see cref="MilvusClient.ListGrantsForRoleAsync"/> and
 /// <see cref="Client.MilvusClient.SelectGrantForRoleAndObjectAsync(string, string, string, System.Threading.CancellationToken)"/>
 /// </remarks>
 public sealed class MilvusGrantEntity
 {
-    private MilvusGrantEntity(
+    internal MilvusGrantEntity(
         MilvusGrantorEntity grantor,
         string dbName,
         string @object,
@@ -47,22 +47,6 @@ public sealed class MilvusGrantEntity
     /// Object name.
     /// </summary>
     public string ObjectName { get; }
-
-    internal static IEnumerable<MilvusGrantEntity> Parse(IEnumerable<GrantEntity> entities)
-    {
-        if (entities == null)
-            yield break;
-
-        foreach (GrantEntity entity in entities)
-        {
-            yield return new MilvusGrantEntity(
-                MilvusGrantorEntity.Parse(entity.Grantor),
-                entity.DbName,
-                entity.Object.Name,
-                entity.Role.Name,
-                entity.ObjectName);
-        }
-    }
 }
 
 /// <summary>

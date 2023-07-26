@@ -2,7 +2,9 @@ using System.Globalization;
 
 namespace Milvus.Client;
 
+#pragma warning disable CA1711 // Rename type name MilvusCollection so that it does not end in 'Collection'
 public partial class MilvusCollection
+#pragma warning restore CA1711
 {
     /// <summary>
     /// Describes a collection, returning information about its configuration and schema.
@@ -51,12 +53,8 @@ public partial class MilvusCollection
                     case Constants.VectorDim:
                         milvusField.Dimension = long.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
-
-                    // TODO: Should we warn for unknown type params?
                 }
             }
-
-            // TODO: IndexParams
 
             milvusCollectionSchema.Fields.Add(milvusField);
         }
@@ -118,13 +116,14 @@ public partial class MilvusCollection
     }
 
     /// <summary>
-    /// Retrieves statistics for a collection.
+    /// Retrieves the current number of entities in the collection. Call
+    /// <see cref="FlushAsync(System.Threading.CancellationToken)" /> before invoking this method to ensure up-to-date
+    /// results.
     /// </summary>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<IDictionary<string, string>> GetStatisticsAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<int> GetEntityCount(CancellationToken cancellationToken = default)
     {
         var request = new GetCollectionStatisticsRequest { CollectionName = Name };
 
@@ -138,7 +137,11 @@ public partial class MilvusCollection
             request,
             static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        return response.Stats.ToDictionary(static p => p.Key, static p => p.Value);
+
+        return response.Stats.FirstOrDefault(kvp => kvp.Key == "row_count") is Grpc.KeyValuePair kvp &&
+               int.TryParse(kvp.Value, out int numRows)
+            ? numRows
+            : throw new InvalidOperationException("Invalid or missing 'row_count'");
     }
 
     /// <summary>
@@ -195,7 +198,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     public async Task<long> GetLoadingProgressAsync(
-        IEnumerable<string>? partitionNames = null,
+        IReadOnlyList<string>? partitionNames = null,
         CancellationToken cancellationToken = default)
     {
         GetLoadingProgressRequest request = new() { CollectionName = Name };
@@ -224,14 +227,13 @@ public partial class MilvusCollection
     /// </summary>
     /// <param name="partitionNames">Partition names.</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
-    /// <param name="timeout">Timeout.</param>
+    /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <exception cref="TimeoutException">Time out.</exception>
     public async Task WaitForCollectionLoadAsync(
-        IList<string>? partitionNames = null,
+        IReadOnlyList<string>? partitionNames = null,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
         IProgress<long>? progress = null,
@@ -239,7 +241,7 @@ public partial class MilvusCollection
     {
         partitionNames ??= Array.Empty<string>();
 
-        await Poll(
+        await Utils.Poll(
             async () =>
             {
                 long progress = await GetLoadingProgressAsync(partitionNames, cancellationToken: cancellationToken)
@@ -248,5 +250,22 @@ public partial class MilvusCollection
             },
             $"Timeout when waiting for collection '{Name}' to load",
             waitingInterval, timeout, progress, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Returns the loading progress for a collection, and optionally one or more of its partitions.
+    /// </summary>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public async Task<long> CompactAsync(CancellationToken cancellationToken = default)
+    {
+        MilvusCollectionDescription description = await DescribeAsync(cancellationToken).ConfigureAwait(false);
+
+        ManualCompactionResponse response = await _client.InvokeAsync(_client.GrpcClient.ManualCompactionAsync,
+            new ManualCompactionRequest { CollectionID = description.CollectionId, Timetravel = 0 },
+            static r => r.Status, cancellationToken).ConfigureAwait(false);
+
+        return response.CompactionID;
     }
 }

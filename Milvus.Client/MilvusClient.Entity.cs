@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 
-// ReSharper disable once CheckNamespace
 namespace Milvus.Client;
 
 public partial class MilvusClient
@@ -20,7 +19,7 @@ public partial class MilvusClient
     /// </param>
     /// <returns>If segments flushed.</returns>
     public async Task<bool> GetFlushStateAsync(
-        IList<long> segmentIds,
+        IReadOnlyList<long> segmentIds,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(segmentIds);

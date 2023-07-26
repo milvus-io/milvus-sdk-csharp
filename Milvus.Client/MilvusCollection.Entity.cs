@@ -16,10 +16,12 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     public async Task<MilvusMutationResult> InsertAsync(
-        IList<FieldData> data,
+        IReadOnlyList<FieldData> data,
         string? partitionName = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(data);
+
         InsertRequest request = new() { CollectionName = Name };
 
         if (DatabaseName is not null)
@@ -300,41 +302,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     public Task<MilvusFlushResult> FlushAsync(CancellationToken cancellationToken = default)
-        => FlushAsync(new[] { Name }, DatabaseName, cancellationToken);
-
-    /// <summary>
-    /// Flushes collection data to disk, required only in order to get up-to-date statistics.
-    /// </summary>
-    /// <remarks>
-    /// This method will be removed in a future version.
-    /// </remarks>
-    /// <param name="collectionNames">The names of the collections to be flushed.</param>
-    /// <param name="dbName">The database name. Available starting Milvus 2.2.9.</param>
-    /// <param name="cancellationToken">
-    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
-    /// </param>
-    public async Task<MilvusFlushResult> FlushAsync(
-        IList<string> collectionNames,
-        string? dbName = null,
-        CancellationToken cancellationToken = default)
-    {
-        Verify.NotNullOrEmpty(collectionNames);
-
-        FlushRequest request = new();
-
-        if (dbName is not null)
-        {
-            request.DbName = dbName;
-        }
-
-        request.CollectionNames.AddRange(collectionNames);
-
-        FlushResponse response =
-            await _client.InvokeAsync(_client.GrpcClient.FlushAsync, request, static r => r.Status, cancellationToken)
-                .ConfigureAwait(false);
-
-        return MilvusFlushResult.From(response);
-    }
+        => _client.FlushAsync(new[] { Name }, DatabaseName, cancellationToken);
 
     /// <summary>
     /// Returns sealed segments information of a collection.
@@ -386,9 +354,9 @@ public partial class MilvusCollection
     /// </param>
     public async Task<MilvusQueryResult> QueryAsync(
         string expression,
-        IList<string>? outputFields = null,
+        IReadOnlyList<string>? outputFields = null,
         ConsistencyLevel? consistencyLevel = null,
-        IList<string>? partitionNames = null,
+        IReadOnlyList<string>? partitionNames = null,
         ulong timeTravelTimestamp = 0,
         ulong? guaranteeTimestamp = null,
         long limit = 0,
@@ -477,7 +445,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns><see cref="MilvusQuerySegmentInfoResult"/></returns>
-    public async Task<IList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
+    public async Task<IReadOnlyList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
         CancellationToken cancellationToken = default)
     {
         var request = new GetQuerySegmentInfoRequest { CollectionName = Name };
@@ -520,10 +488,11 @@ public partial class MilvusCollection
             ConsistencyLevel.Eventually => 1,
 
             ConsistencyLevel.Customized => userProvidedGuaranteeTimestamp
-                                           ?? throw new ArgumentException(
-                                               $"A guarantee timestamp is required with consistency level {ConsistencyLevel.Customized}"),
+                ?? throw new ArgumentException(
+                    $"A guarantee timestamp is required with consistency level {ConsistencyLevel.Customized}"),
 
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(consistencyLevel), consistencyLevel, "Invalid consistency level: " + consistencyLevel)
         };
 
         return guaranteeTimestamp;

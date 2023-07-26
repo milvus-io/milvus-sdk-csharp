@@ -1,5 +1,4 @@
-﻿// ReSharper disable once CheckNamespace
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 public partial class MilvusClient
 {

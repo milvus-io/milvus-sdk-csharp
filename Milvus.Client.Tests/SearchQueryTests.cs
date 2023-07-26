@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Xunit;
 
 namespace Milvus.Client.Tests;
@@ -141,10 +142,32 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.Empty(results.FieldsData);
-        Assert.Collection(results.Ids.LongIds!,
+        Assert.Collection(results.Ids.LongIds!.Order(),
             id => Assert.Equal(2, id),
             id => Assert.Equal(3, id));
         Assert.Null(results.Ids.StringIds); // TODO: Need to test string IDs
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
+    [Fact]
+    public async Task Search_with_json_filter()
+    {
+        var results = await Collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            MilvusSimilarityMetricType.L2,
+            limit: 2,
+            new() { Expression = """json_thing["Number"] > 2""" });
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Empty(results.FieldsData);
+        Assert.Collection(results.Ids.LongIds!.Order(),
+            id => Assert.Equal(3, id),
+            id => Assert.Equal(4, id));
+        Assert.Null(results.Ids.StringIds);
         Assert.Equal(1, results.NumQueries);
         Assert.Equal(2, results.Scores.Count);
         Assert.Equal(2, results.Limit);
@@ -302,6 +325,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 {
                     FieldSchema.Create<long>("id", isPrimaryKey: true),
                     FieldSchema.CreateVarchar("varchar", 256),
+                    FieldSchema.CreateJson("json_thing"),
                     FieldSchema.CreateFloatVector("float_vector", 2)
                 });
 
@@ -320,11 +344,16 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 new[] { 9f, 10f }
             };
 
+            List<string> jsons = Enumerable.Range(1, 5)
+                .Select(i => JsonSerializer.Serialize(new JsonThing { Title = "Title" + i, Number = i }))
+                .ToList();
+
             await Collection.InsertAsync(
-                new FieldData[]
+                new[]
                 {
                     FieldData.Create("id", ids),
                     FieldData.Create("varchar", strings),
+                    FieldData.CreateJson("json_thing", jsons),
                     FieldData.CreateFloatVector("float_vector", floatVectors)
                 });
 
@@ -345,4 +374,10 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
     public SearchQueryTests(QueryCollectionFixture queryCollectionFixture)
         => _queryCollectionFixture = queryCollectionFixture;
+
+    internal class JsonThing
+    {
+        public string? Title { get; set; }
+        public int Number { get; set; }
+    }
 }

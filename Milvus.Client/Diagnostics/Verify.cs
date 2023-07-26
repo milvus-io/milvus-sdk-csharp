@@ -31,7 +31,7 @@ internal static class Verify
             => throw new ArgumentException("The value cannot be an empty string or composed entirely of whitespace.", paramName);
     }
 
-    internal static void NotNullOrEmpty<T>([NotNull] IList<T>? argument, [CallerArgumentExpression(nameof(argument))] string paramName = "")
+    internal static void NotNullOrEmpty<T>([NotNull] IReadOnlyList<T>? argument, [CallerArgumentExpression(nameof(argument))] string paramName = "")
     {
         NotNull(argument);
 

@@ -9,6 +9,18 @@ using System.Collections.Generic;
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class CollectionSchema
 {
+    private readonly List<FieldSchema> _fields = new();
+
+    /// <summary>
+    /// Instantiates a new <see cref="CollectionSchema" />.
+    /// </summary>
+    public CollectionSchema()
+    {
+    }
+
+    internal CollectionSchema(IReadOnlyList<FieldSchema> fields)
+        => _fields.AddRange(fields);
+
     /// <summary>
     /// The name of the collection.
     /// </summary>
@@ -22,7 +34,7 @@ public sealed class CollectionSchema
     /// <summary>
     /// The fields which make up the schema of the collection.
     /// </summary>
-    public List<FieldSchema> Fields { get; } = new();
+    public IList<FieldSchema> Fields => _fields;
 
     /// <summary>
     /// Whether to enable dynamic fields for this schema. Defaults to <c>false</c>.
