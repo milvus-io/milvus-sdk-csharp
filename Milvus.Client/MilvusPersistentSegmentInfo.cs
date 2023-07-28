@@ -5,10 +5,15 @@
 /// </summary>
 public sealed class MilvusPersistentSegmentInfo
 {
-    /// <summary>
-    /// MilvusPersistentSegmentInfo
-    /// </summary>
-    public MilvusPersistentSegmentInfo() { }
+    internal MilvusPersistentSegmentInfo(
+        long collectionId, long partitionId, long segmentId, long numRows, SegmentState state)
+    {
+        CollectionId = collectionId;
+        PartitionId = partitionId;
+        SegmentId = segmentId;
+        NumRows = numRows;
+        State = (MilvusSegmentState)state;
+    }
 
     /// <summary>
     /// Collection id.
@@ -40,28 +45,4 @@ public sealed class MilvusPersistentSegmentInfo
     /// </summary>
     public override string ToString()
         => $"MilvusPersistentSegmentInfo {{{nameof(State)}: {State}, {nameof(SegmentId)}: {SegmentId}, {nameof(CollectionId)}: {CollectionId}, {nameof(PartitionId)}: {PartitionId}, {nameof(NumRows)}: {NumRows}}}";
-
-    internal static IEnumerable<MilvusPersistentSegmentInfo> From(
-        IEnumerable<PersistentSegmentInfo> infos)
-    {
-        foreach (PersistentSegmentInfo info in infos)
-        {
-            yield return new MilvusPersistentSegmentInfo(
-                info.CollectionID,
-                info.PartitionID,
-                info.SegmentID,
-                info.NumRows,
-                info.State);
-        }
-    }
-
-    private MilvusPersistentSegmentInfo(
-        long collectionId, long partitionId, long segmentId, long numRows, SegmentState state)
-    {
-        CollectionId = collectionId;
-        PartitionId = partitionId;
-        SegmentId = segmentId;
-        NumRows = numRows;
-        State = (MilvusSegmentState)state;
-    }
 }

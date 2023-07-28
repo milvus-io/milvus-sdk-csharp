@@ -39,7 +39,7 @@ public class UserTests : IAsyncLifetime
 
         var exception = await Assert.ThrowsAsync<MilvusException>(
             () => Client.UpdatePassword(Username, "wrong_password", "some_new_password"));
-        Assert.Equal("UpdateCredentialFailure", exception.ErrorCode);
+        Assert.Equal(MilvusErrorCode.UpdateCredentialFailure, exception.ErrorCode);
     }
 
     [Fact]

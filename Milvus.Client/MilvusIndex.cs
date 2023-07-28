@@ -1,22 +1,15 @@
 ﻿namespace Milvus.Client;
 
 /// <summary>
-/// Milvus index.
+/// Contains information about an index in Milvus; returned from <see cref="MilvusCollection.DescribeIndexAsync" />.
 /// </summary>
 public sealed class MilvusIndex
 {
-    /// <summary>
-    /// Milvus Index.
-    /// </summary>
-    /// <param name="fieldName">Field name.</param>
-    /// <param name="indexName">Index name.</param>
-    /// <param name="indexId">Index id</param>
-    /// <param name="params">Params</param>
-    public MilvusIndex(
+    internal MilvusIndex(
         string fieldName,
         string indexName,
         long indexId,
-        IDictionary<string, string> @params)
+        IReadOnlyDictionary<string, string> @params)
     {
         FieldName = fieldName;
         IndexName = indexName;
@@ -42,7 +35,7 @@ public sealed class MilvusIndex
     /// <summary>
     /// Contains index_type, metric_type, params.
     /// </summary>
-    public IDictionary<string, string> Params { get; }
+    public IReadOnlyDictionary<string, string> Params { get; }
 
     /// <summary>
     /// Get string data of <see cref="MilvusIndex"/>

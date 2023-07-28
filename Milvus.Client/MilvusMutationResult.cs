@@ -49,12 +49,12 @@ public sealed class MilvusMutationResult
     /// <summary>
     /// Success index.
     /// </summary>
-    public IList<uint> SuccessIndex { get; }
+    public IReadOnlyList<uint> SuccessIndex { get; }
 
     /// <summary>
     /// Error index.
     /// </summary>
-    public IList<uint> ErrorIndex { get; }
+    public IReadOnlyList<uint> ErrorIndex { get; }
 
     /// <summary>
     /// The IDs of the rows returned from the search.

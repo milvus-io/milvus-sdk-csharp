@@ -1,4 +1,3 @@
-// ReSharper disable once CheckNamespace
 namespace Milvus.Client;
 
 #pragma warning disable CS1591 // Missing XML docs
@@ -6,7 +5,7 @@ namespace Milvus.Client;
 /// <summary>
 /// An error code returned in <see cref="MilvusException.ErrorCode" />.
 /// </summary>
-public enum ErrorCode
+public enum MilvusErrorCode
 {
     Success = Grpc.ErrorCode.Success,
     UnexpectedError = Grpc.ErrorCode.UnexpectedError,

@@ -308,7 +308,7 @@ public partial class MilvusCollection
     /// Returns sealed segments information of a collection.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task<IEnumerable<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
+    public async Task<IReadOnlyList<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         CancellationToken cancellationToken = default)
     {
         var request = new GetPersistentSegmentInfoRequest { CollectionName = Name };
@@ -322,7 +322,13 @@ public partial class MilvusCollection
             _client.GrpcClient.GetPersistentSegmentInfoAsync,
             request, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        return MilvusPersistentSegmentInfo.From(response.Infos);
+        return response.Infos.Select(i => new MilvusPersistentSegmentInfo(
+                i.CollectionID,
+                i.PartitionID,
+                i.SegmentID,
+                i.NumRows,
+                i.State))
+            .ToList();
     }
 
     /// <summary>
@@ -352,7 +358,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<MilvusQueryResult> QueryAsync(
+    public async Task<IReadOnlyList<FieldData>> QueryAsync(
         string expression,
         IReadOnlyList<string>? outputFields = null,
         ConsistencyLevel? consistencyLevel = null,
@@ -431,11 +437,7 @@ public partial class MilvusCollection
             await _client.InvokeAsync(_client.GrpcClient.QueryAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return new MilvusQueryResult
-        {
-            CollectionName = response.CollectionName,
-            FieldsData = response.FieldsData.Select(FieldData.FromGrpcFieldData).ToList()
-        };
+        return response.FieldsData.Select(FieldData.FromGrpcFieldData).ToList();
     }
 
     /// <summary>
@@ -460,7 +462,10 @@ public partial class MilvusCollection
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        return MilvusQuerySegmentInfoResult.From(response).ToList();
+        return response.Infos.Select(i => new MilvusQuerySegmentInfoResult(
+                i.CollectionID, i.IndexName, i.IndexID, i.MemSize, i.NodeID, i.NumRows, i.PartitionID, i.SegmentID,
+                (MilvusSegmentState)i.State))
+            .ToList();
     }
 
     ulong CalculateGuaranteeTimestamp(

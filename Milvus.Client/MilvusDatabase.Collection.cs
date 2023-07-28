@@ -163,7 +163,7 @@ public partial class MilvusDatabase
     /// Lists the collections available in the database.
     /// </summary>
     /// <param name="collectionNames">An optional list of collection names by which to filter.</param>
-    /// <param name="showType">
+    /// <param name="listCollectionFilter">
     /// Determines whether all collections are returned, or only ones which have been loaded to memory.
     /// </param>
     /// <param name="cancellationToken">
@@ -171,10 +171,10 @@ public partial class MilvusDatabase
     /// </param>
     public async Task<IReadOnlyList<MilvusCollectionInfo>> ShowCollectionsAsync(
         IReadOnlyList<string>? collectionNames = null,
-        ShowType showType = ShowType.All,
+        ListCollectionFilter listCollectionFilter = ListCollectionFilter.All,
         CancellationToken cancellationToken = default)
     {
-        ShowCollectionsRequest request = new() { Type = (Grpc.ShowType)showType, };
+        ShowCollectionsRequest request = new() { Type = (Grpc.ShowType)listCollectionFilter, };
 
         if (Name is not null)
         {

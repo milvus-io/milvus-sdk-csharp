@@ -5,68 +5,70 @@
 /// </summary>
 public sealed class MilvusQuerySegmentInfoResult
 {
+    internal MilvusQuerySegmentInfoResult(
+        long collectionId,
+        string indexName,
+        long indexId,
+        long memSize,
+        long nodeId,
+        long numRows,
+        long partitionId,
+        long segmentId,
+        MilvusSegmentState state)
+    {
+        CollectionId = collectionId;
+        IndexName = indexName;
+        IndexId = indexId;
+        MemSize = memSize;
+        NodeId = nodeId;
+        NumRows = numRows;
+        PartitionId = partitionId;
+        SegmentId = segmentId;
+        State = state;
+    }
+
     /// <summary>
     /// Collection id.
     /// </summary>
-    public long CollectionId { get; set; }
+    public long CollectionId { get; }
 
     /// <summary>
     /// Index name.
     /// </summary>
-    public required string IndexName { get; set; }
+    public string IndexName { get; }
 
     /// <summary>
     /// Index id.
     /// </summary>
-    public long IndexId { get; set; }
+    public long IndexId { get; }
 
     /// <summary>
     /// Memory size.
     /// </summary>
-    public long MemSize { get; set; }
+    public long MemSize { get; }
 
     /// <summary>
     /// Node id.
     /// </summary>
-    public long NodeId { get; set; }
+    public long NodeId { get; }
 
     /// <summary>
     /// Number of rows.
     /// </summary>
-    public long NumRows { get; set; }
+    public long NumRows { get; }
 
     /// <summary>
     /// Partition id.
     /// </summary>
-    public long PartitionId { get; set; }
+    public long PartitionId { get; }
 
     /// <summary>
     /// Segment id.
     /// </summary>
-    public long SegmentId { get; set; }
+    public long SegmentId { get; }
 
     /// <summary>
     /// State.
     /// </summary>
-    public MilvusSegmentState State { get; set; }
-
-    internal static IEnumerable<MilvusQuerySegmentInfoResult> From(
-        GetQuerySegmentInfoResponse response)
-    {
-        foreach (QuerySegmentInfo info in response.Infos)
-        {
-            yield return new MilvusQuerySegmentInfoResult
-            {
-                CollectionId = info.CollectionID,
-                IndexName = info.IndexName,
-                IndexId = info.IndexID,
-                MemSize = info.MemSize,
-                NodeId = info.NodeID,
-                NumRows = info.NumRows,
-                PartitionId = info.PartitionID,
-                SegmentId = info.SegmentID,
-                State = (MilvusSegmentState)info.State
-            };
-        }
-    }
+    public MilvusSegmentState State { get; }
 }

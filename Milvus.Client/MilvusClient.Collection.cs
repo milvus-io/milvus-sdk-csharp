@@ -75,17 +75,17 @@ public partial class MilvusClient
     /// Lists the collections available in the database.
     /// </summary>
     /// <param name="collectionNames">An optional list of collection names by which to filter.</param>
-    /// <param name="showType">
+    /// <param name="filter">
     /// Determines whether all collections are returned, or only ones which have been loaded to memory.
     /// </param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<IReadOnlyList<MilvusCollectionInfo>> ShowCollectionsAsync(
+    public Task<IReadOnlyList<MilvusCollectionInfo>> ListCollectionsAsync(
         IReadOnlyList<string>? collectionNames = null,
-        ShowType showType = ShowType.All,
+        ListCollectionFilter filter = ListCollectionFilter.All,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.ShowCollectionsAsync(collectionNames, showType, cancellationToken);
+        => _defaultDatabase.ShowCollectionsAsync(collectionNames, filter, cancellationToken);
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.

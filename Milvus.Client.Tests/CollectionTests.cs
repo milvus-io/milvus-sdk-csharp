@@ -233,16 +233,16 @@ public class CollectionTests : IAsyncLifetime
             "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
             new Dictionary<string, string>(), "float_vector_idx");
 
-        Assert.Single(await Client.ShowCollectionsAsync(), c => c.Name == CollectionName);
-        Assert.DoesNotContain(await Client.ShowCollectionsAsync(showType: ShowType.InMemory),
+        Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
+        Assert.DoesNotContain(await Client.ListCollectionsAsync(filter: ListCollectionFilter.InMemory),
             c => c.Name == CollectionName);
 
         await collection.LoadAsync();
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
-        Assert.Single(await Client.ShowCollectionsAsync(), c => c.Name == CollectionName);
-        Assert.Single(await Client.ShowCollectionsAsync(showType: ShowType.InMemory),
+        Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
+        Assert.Single(await Client.ListCollectionsAsync(filter: ListCollectionFilter.InMemory),
             c => c.Name == CollectionName);
     }
 
@@ -308,7 +308,7 @@ public class CollectionTests : IAsyncLifetime
             "foo",
             new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
 
-        Assert.Equal("UnexpectedError", exception.ErrorCode);
+        Assert.Equal(MilvusErrorCode.UnexpectedError, exception.ErrorCode);
         Assert.Equal("ErrorCode: UnexpectedError Reason: database:non_existing_db not found", exception.Message);
     }
 

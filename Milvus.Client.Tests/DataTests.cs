@@ -38,9 +38,9 @@ public class DataTests : IAsyncLifetime
         await collection.LoadAsync();
         await collection.WaitForCollectionLoadAsync();
 
-        var queryResult = await collection.QueryAsync("id in [2]");
+        var results = await collection.QueryAsync("id in [2]");
 
-        var result = Assert.IsType<FieldData<long>>(Assert.Single(queryResult.FieldsData));
+        var result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Equal(2, Assert.Single(result.Data));
 
         mutationResult = await collection.DeleteAsync("id in [2]");
@@ -50,9 +50,9 @@ public class DataTests : IAsyncLifetime
         Assert.Equal(0, mutationResult.UpsertCount);
         ulong timestamp = mutationResult.Timestamp;
 
-        queryResult = await collection.QueryAsync(
+        results = await collection.QueryAsync(
             "id in [2]", consistencyLevel: ConsistencyLevel.Customized, guaranteeTimestamp: timestamp);
-        result = Assert.IsType<FieldData<long>>(Assert.Single(queryResult.FieldsData));
+        result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Empty(result.Data);
     }
 

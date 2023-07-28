@@ -35,7 +35,11 @@ public class MiscTests
     }
 
     [Fact]
-    public async Task DisposeTest()
+    public async Task GetVersion()
+        => Assert.Contains(".", await Client.GetVersionAsync());
+
+    [Fact]
+    public async Task Dispose()
     {
         var client = TestEnvironment.CreateClient();
 

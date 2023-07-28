@@ -1,47 +1,15 @@
 ﻿namespace Milvus.Client;
 
-/// <summary>
-/// Milvus segment state.
-/// </summary>
+#pragma warning disable CS1591 // Missing documentation for the below
+
 public enum MilvusSegmentState
 {
-    /// <summary>
-    /// None.
-    /// </summary>
-    None = 0,
-
-    /// <summary>
-    /// Not exist.
-    /// </summary>
-    NotExist = 1,
-
-    /// <summary>
-    /// Growing.
-    /// </summary>
-    Growing = 2,
-
-    /// <summary>
-    /// Sealed.
-    /// </summary>
-    Sealed = 3,
-
-    /// <summary>
-    /// Flushed.
-    /// </summary>
-    Flushed = 4,
-
-    /// <summary>
-    /// Flushing.
-    /// </summary>
-    Flushing = 5,
-
-    /// <summary>
-    /// Dropped.
-    /// </summary>
-    Dropped = 6,
-
-    /// <summary>
-    /// Importing.
-    /// </summary>
-    Importing = 7,
+    None = Grpc.SegmentState.None,
+    NotExist = Grpc.SegmentState.NotExist,
+    Growing = Grpc.SegmentState.Growing,
+    Sealed = Grpc.SegmentState.Sealed,
+    Flushed = Grpc.SegmentState.Flushed,
+    Flushing = Grpc.SegmentState.Flushing,
+    Dropped = Grpc.SegmentState.Dropped,
+    Importing = Grpc.SegmentState.Importing,
 }

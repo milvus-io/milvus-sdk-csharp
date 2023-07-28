@@ -11,5 +11,5 @@ internal static partial class LoggingExtensions
     public static partial void OperationInvoked(this ILogger logger, string operationName, object argument);
 
     [LoggerMessage(3, LogLevel.Error, "{OperationName} failed: {ErrorCode}, {Reason}")]
-    public static partial void OperationFailed(this ILogger logger, string operationName, ErrorCode errorCode, string reason);
+    public static partial void OperationFailed(this ILogger logger, string operationName, MilvusErrorCode errorCode, string reason);
 }

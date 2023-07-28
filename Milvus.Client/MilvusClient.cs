@@ -25,14 +25,14 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="callOptions">
     /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
     /// </param>
-    /// <param name="log">An optional logger through which the Milvus client will log.</param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         string address,
         string username,
         string password,
         CallOptions callOptions = default,
-        ILogger? log = null)
-        : this(new Uri(address), username, password, callOptions, log)
+        ILoggerFactory? loggerFactory = null)
+        : this(new Uri(address), username, password, callOptions, loggerFactory)
     {
     }
 
@@ -48,14 +48,14 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="callOptions">
     /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
     /// </param>
-    /// <param name="log">An optional logger through which the Milvus client will log.</param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         Uri address,
         string username,
         string password,
         CallOptions callOptions = default,
-        ILogger? log = null)
-        : this(GrpcChannel.ForAddress(address), ownsGrpcChannel: true, username, password, callOptions, log)
+        ILoggerFactory? loggerFactory = null)
+        : this(GrpcChannel.ForAddress(address), ownsGrpcChannel: true, username, password, callOptions, loggerFactory)
     {
     }
 
@@ -68,14 +68,14 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="callOptions">
     /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
     /// </param>
-    /// <param name="log">An optional logger through which the Milvus client will log.</param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         GrpcChannel grpcChannel,
         string username,
         string password,
         CallOptions callOptions = default,
-        ILogger? log = null)
-        : this(grpcChannel, ownsGrpcChannel: false, username, password, callOptions, log)
+        ILoggerFactory? loggerFactory = null)
+        : this(grpcChannel, ownsGrpcChannel: false, username, password, callOptions, loggerFactory)
     {
     }
 
@@ -85,7 +85,7 @@ public sealed partial class MilvusClient : IDisposable
         string username,
         string password,
         CallOptions callOptions = default,
-        ILogger? log = null)
+        ILoggerFactory? loggerFactory = null)
     {
         Verify.NotNull(grpcChannel);
 
@@ -98,7 +98,7 @@ public sealed partial class MilvusClient : IDisposable
             { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}")) }
         });
 
-        _log = log ?? NullLogger<MilvusClient>.Instance;
+        _log = loggerFactory?.CreateLogger("Milvus.Client") ?? NullLogger.Instance;
 
         _defaultDatabase = new MilvusDatabase(this, databaseName: null);
     }
@@ -122,7 +122,7 @@ public sealed partial class MilvusClient : IDisposable
             _log.HealthCheckFailed(response.Reasons);
         }
 
-        return new MilvusHealthState(response.IsHealthy, response.Status.Reason, (ErrorCode)response.Status.ErrorCode);
+        return new MilvusHealthState(response.IsHealthy, response.Status.Reason, (MilvusErrorCode)response.Status.ErrorCode);
     }
 
     /// <summary>
@@ -185,9 +185,9 @@ public sealed partial class MilvusClient : IDisposable
 
         if (status.ErrorCode != Grpc.ErrorCode.Success)
         {
-            _log.OperationFailed(callerName, (ErrorCode)status.ErrorCode, status.Reason);
+            _log.OperationFailed(callerName, (MilvusErrorCode)status.ErrorCode, status.Reason);
 
-            throw new MilvusException((ErrorCode)status.ErrorCode, status.Reason);
+            throw new MilvusException((MilvusErrorCode)status.ErrorCode, status.Reason);
         }
 
         return response;

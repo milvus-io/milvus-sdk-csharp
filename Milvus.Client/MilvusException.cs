@@ -1,21 +1,14 @@
-﻿
-
-// ReSharper disable once CheckNamespace
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 /// <summary>
-///  Exception thrown for errors related to the Milvus client.
+/// Exception thrown for errors related to the Milvus client.
 /// </summary>
 public sealed class MilvusException : Exception
 {
-    // TODO: Decide how to expose the error code (string or enum?)
-
     /// <summary>
     /// The error code.
     /// </summary>
-    public string? ErrorCode { get; }
-
-    // TODO: Make sure whether we want this to be publicly-constructed
+    public MilvusErrorCode ErrorCode { get; }
 
     /// <inheritdoc />
     public MilvusException()
@@ -32,9 +25,12 @@ public sealed class MilvusException : Exception
     {
     }
 
-    internal MilvusException(ErrorCode errorCode, string reason)
+    /// <summary>
+    /// Instantiates a new <see cref="MilvusException" />.
+    /// </summary>
+    public MilvusException(MilvusErrorCode errorCode, string reason)
         : base($"ErrorCode: {errorCode} Reason: {reason}")
     {
-        ErrorCode = errorCode.ToString();
+        ErrorCode = errorCode;
     }
 }

@@ -174,3 +174,6 @@ dotnet_diagnostic.CA2016.severity = warning
 
 # CA1720: Identifiers should not contain type names
 dotnet_diagnostic.CA1720.severity = silent
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = silent

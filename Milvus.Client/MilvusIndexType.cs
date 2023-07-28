@@ -1,7 +1,5 @@
 ﻿namespace Milvus.Client;
 
-// ReSharper disable IdentifierTypo
-
 #pragma warning disable CS1591 // Missing XML comments. Documentation is missing for some of the index types below.
 
 /// <summary>

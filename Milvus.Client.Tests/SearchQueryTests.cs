@@ -8,15 +8,14 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Query()
     {
-        var queryResult = await Collection.QueryAsync(
+        var results = await Collection.QueryAsync(
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             consistencyLevel: ConsistencyLevel.Strong);
 
-        Assert.Equal(CollectionName, queryResult.CollectionName);
-        Assert.Equal(2, queryResult.FieldsData.Count);
+        Assert.Equal(2, results.Count);
 
-        var idData = (FieldData<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
+        var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(MilvusDataType.Int64, idData.DataType);
         Assert.Equal(2, idData.RowCount);
         Assert.False(idData.IsDynamic);
@@ -25,7 +24,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             id => Assert.Equal(3, id));
 
         var floatVectorData =
-            (FloatVectorFieldData)Assert.Single(queryResult.FieldsData, d => d.FieldName == "float_vector");
+            (FloatVectorFieldData)Assert.Single(results, d => d.FieldName == "float_vector");
         Assert.Equal(MilvusDataType.FloatVector, floatVectorData.DataType);
         Assert.Equal(2, floatVectorData.RowCount);
         Assert.False(floatVectorData.IsDynamic);
@@ -45,13 +44,13 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Query_with_offset()
     {
-        var queryResult = await Collection.QueryAsync(
+        var results = await Collection.QueryAsync(
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             limit: 2, offset: 1,
             consistencyLevel: ConsistencyLevel.Strong);
 
-        var idData = (FieldData<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
+        var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
         Assert.Collection(idData.Data, id => Assert.Equal(3, id));
     }
@@ -59,13 +58,13 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Query_with_limit()
     {
-        var queryResult = await Collection.QueryAsync(
+        var results = await Collection.QueryAsync(
             "id in [2, 3]",
             outputFields: new[] { "float_vector" },
             limit: 1,
             consistencyLevel: ConsistencyLevel.Strong);
 
-        var idData = (FieldData<long>)Assert.Single(queryResult.FieldsData, d => d.FieldName == "id");
+        var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
         Assert.Collection(idData.Data, id => Assert.Equal(2, id));
     }
@@ -277,7 +276,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
         // Query without time travel
         var results = await collection.QueryAsync("id > 0");
-        var idData = (FieldData<long>)Assert.Single(results.FieldsData, d => d.FieldName == "id");
+        var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Collection(idData.Data,
             id => Assert.Equal(1, id),
             id => Assert.Equal(2, id));
@@ -285,7 +284,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         // Query with time travel
         results = await collection.QueryAsync("id > 0",
             timeTravelTimestamp: MilvusTimestampUtils.FromDateTime(timestamp));
-        idData = (FieldData<long>)Assert.Single(results.FieldsData, d => d.FieldName == "id");
+        idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Collection(idData.Data, id => Assert.Equal(1, id));
     }
 

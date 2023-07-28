@@ -1,5 +1,4 @@
-﻿// ReSharper disable once CheckNamespace
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 /// <summary>
 /// Utilities for converting <see cref="DateTime" /> to Milvus timestamps and back.

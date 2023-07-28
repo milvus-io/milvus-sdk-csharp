@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-// ReSharper disable once CheckNamespace
 namespace Milvus.Client;
 
 internal static class Verify

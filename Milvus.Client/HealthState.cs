@@ -8,7 +8,7 @@ public sealed class MilvusHealthState
     internal MilvusHealthState(
         bool isHealthy,
         string errorMsg,
-        ErrorCode errorCode)
+        MilvusErrorCode errorCode)
     {
         IsHealthy = isHealthy;
         ErrorMsg = errorMsg;
@@ -28,7 +28,7 @@ public sealed class MilvusHealthState
     /// <summary>
     /// Error code.
     /// </summary>
-    public ErrorCode ErrorCode { get; }
+    public MilvusErrorCode ErrorCode { get; }
 
     /// <summary>
     /// Get string data.
