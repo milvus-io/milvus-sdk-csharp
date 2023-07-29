@@ -468,6 +468,29 @@ public partial class MilvusCollection
             .ToList();
     }
 
+    /// <summary>
+    /// Flush and polls Milvus for the flush state util it is fully flush.
+    /// </summary>
+    /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
+    /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns></returns>
+    public async Task WaitForFlushAsync(
+        TimeSpan? waitingInterval = null,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
+    {
+        MilvusFlushResult response = await FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (IReadOnlyList<long> ids in response.CollSegIDs.Values.Where(p => p.Count > 0))
+        {
+            await _client.WaitForFlushAsync(ids, waitingInterval, timeout, cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
     ulong CalculateGuaranteeTimestamp(
         string collectionName, ConsistencyLevel consistencyLevel, ulong? userProvidedGuaranteeTimestamp)
     {

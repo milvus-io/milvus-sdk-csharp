@@ -71,12 +71,14 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    ///
+    /// Polls Milvus for the flush all state.
     /// </summary>
-    /// <param name="flushAllTs"></param>
-    /// <param name="waitingInterval"></param>
-    /// <param name="timeout"></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="flushAllTs">Flush all timestamp.</param>
+    /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
+    /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <returns></returns>
     public async Task WaitForFlushAllAsync(
         ulong flushAllTs,

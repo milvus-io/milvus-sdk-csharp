@@ -1,23 +1,39 @@
 ﻿namespace Milvus.Client;
 
 /// <summary>
-/// milvus flush result.
+/// Milvus flush result.
 /// </summary>
 public sealed class MilvusFlushResult
 {
     /// <summary>
-    /// Coll segIDs.
+    /// Collection segment ids.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A segment is a data file automatically created by Milvus for holding inserted data.
+    /// </para>
+    /// <para>
+    /// A collection can have multiple segments and a segment can have multiple entities.
+    /// </para>
+    /// </remarks>
     public IReadOnlyDictionary<string, IReadOnlyList<long>> CollSegIDs { get; }
 
     /// <summary>
-    /// FlushCollSegIds.
+    /// Flush collection segment ids.
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<long>> FlushCollSegIds { get; }
 
     /// <summary>
-    /// CollSealTimes.
+    /// Collection seal times.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A segment can be either growing or sealed. A growing segment keeps receiving the newly inserted data till it is sealed.
+    /// </para>
+    /// <para>
+    /// A sealed segment no longer receives any new data, and will be flushed to the object storage
+    /// </para>
+    /// </remarks>
     public IReadOnlyDictionary<string, long> CollSealTimes { get; }
 
     internal static MilvusFlushResult From(FlushResponse response)
