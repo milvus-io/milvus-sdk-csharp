@@ -173,13 +173,18 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
-    [Fact(Skip = "This times out - just like pymilvus binary_example.py")]
-    public async Task Search_binary_vector()
+    [Theory]
+    [InlineData(MilvusIndexType.BinFlat, MilvusSimilarityMetricType.Jaccard)]
+    [InlineData(MilvusIndexType.BinFlat, MilvusSimilarityMetricType.Hamming)]
+    [InlineData(MilvusIndexType.BinIvfFlat, MilvusSimilarityMetricType.Hamming)]
+    public async Task Search_binary_vector(
+        MilvusIndexType milvusIndexType,
+        MilvusSimilarityMetricType milvusSimilarityMetricType)
     {
-        MilvusCollection collection = Client.GetCollection(nameof(Search_binary_vector));
-        var collectionName = collection.Name;
+        MilvusCollection binaryVectorCollection = Client.GetCollection(nameof(Search_binary_vector));
+        var collectionName = binaryVectorCollection.Name;
 
-        await collection.DropAsync();
+        await binaryVectorCollection.DropAsync();
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
@@ -189,9 +194,10 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 FieldSchema.CreateBinaryVector("binary_vector", 128)
             });
 
-        await Collection.CreateIndexAsync(
-            "binary_vector", MilvusIndexType.BinFlat, MilvusSimilarityMetricType.Jaccard,
-            new Dictionary<string, string>(), "float_vector_idx");
+        await binaryVectorCollection.CreateIndexAsync(
+            "binary_vector", milvusIndexType, milvusSimilarityMetricType,
+            new Dictionary<string, string>() { { "nlist", "128" } },
+            "float_vector_idx");
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
@@ -202,7 +208,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             Enumerable.Range(3, 16).Select(i => (byte)i).ToArray(),
         };
 
-        await Collection.InsertAsync(
+        await binaryVectorCollection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", ids),
@@ -210,23 +216,23 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 FieldData.CreateBinaryVectors("binary_vector", binaryVectors)
             });
 
-        await Collection.LoadAsync();
-        await Collection.WaitForCollectionLoadAsync(
+        await binaryVectorCollection.LoadAsync();
+        await binaryVectorCollection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
-        var results = await Collection.SearchAsync(
+        var results = await binaryVectorCollection.SearchAsync(
             "binary_vector",
-            new ReadOnlyMemory<byte>[] { new byte[] { 2, 3 } },
-            MilvusSimilarityMetricType.Jaccard,
+            new ReadOnlyMemory<byte>[] { binaryVectors[0] },
+            milvusSimilarityMetricType,
             limit: 2,
-            new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            searchParameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
 
         Assert.Equal(collectionName, results.CollectionName);
 
         Assert.Empty(results.FieldsData);
         Assert.Collection(results.Ids.LongIds!,
             id => Assert.Equal(1, id),
-            id => Assert.Equal(2, id));
+            id => Assert.Equal(3, id));
         Assert.Null(results.Ids.StringIds);
         Assert.Equal(1, results.NumQueries);
         Assert.Equal(2, results.Scores.Count);
