@@ -104,7 +104,9 @@ public partial class MilvusCollection
     /// <param name="limit">
     /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
     /// </param>
-    /// <param name="searchParameters">Various additional parameters to configure the similarity search.</param>
+    /// <param name="parameters">
+    /// Various additional optional parameters to configure the similarity search.
+    /// </param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
@@ -114,48 +116,84 @@ public partial class MilvusCollection
         IReadOnlyList<ReadOnlyMemory<T>> vectors,
         MilvusSimilarityMetricType metricType,
         int limit,
-        SearchParameters? searchParameters = null,
+        SearchParameters? parameters = null,
         CancellationToken cancellationToken = default)
     {
-        searchParameters ??= new();
-
-        Grpc.SearchRequest request = new() { CollectionName = Name };
-
-        if (searchParameters.PartitionNames.Count > 0)
+        Grpc.SearchRequest request = new()
         {
-            request.PartitionNames.AddRange(searchParameters.PartitionNames);
-        }
+            CollectionName = Name,
+            DslType = Grpc.DslType.BoolExprV1
+        };
 
-        if (searchParameters.OutputFields.Count > 0)
+        if (parameters is not null)
         {
-            request.OutputFields.AddRange(searchParameters.OutputFields);
-        }
+            if (parameters.PartitionNames.Count > 0)
+            {
+                request.PartitionNames.AddRange(parameters.PartitionNames);
+            }
 
-        if (searchParameters.TravelTimestamp is not null)
-        {
-            request.TravelTimestamp = searchParameters.TravelTimestamp.Value;
+            if (parameters.OutputFields.Count > 0)
+            {
+                request.OutputFields.AddRange(parameters.OutputFields);
+            }
+
+            if (parameters.Expression is not null)
+            {
+                request.Dsl = parameters.Expression;
+            }
+
+            if (parameters.TimeTravelTimestamp is not null)
+            {
+                request.TravelTimestamp = parameters.TimeTravelTimestamp.Value;
+            }
+
+            if (parameters.Offset is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.Offset,
+                    Value = parameters.Offset.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.RoundDecimal is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.RoundDecimal,
+                    Value = parameters.RoundDecimal.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.IgnoreGrowing is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.IgnoreGrowing, Value = parameters.IgnoreGrowing.Value.ToString()
+                });
+            }
         }
 
         // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
         // from the former and should be sufficient. TODO: Confirm this.
-        if (searchParameters.ConsistencyLevel is null)
+        if (parameters?.ConsistencyLevel is null)
         {
-            if (searchParameters.GuaranteeTimestamp is null)
+            if (parameters?.GuaranteeTimestamp is null)
             {
                 request.UseDefaultConsistency = true;
             }
             else
             {
                 request.ConsistencyLevel = Grpc.ConsistencyLevel.Customized;
-                request.GuaranteeTimestamp = searchParameters.GuaranteeTimestamp.Value;
+                request.GuaranteeTimestamp = parameters.GuaranteeTimestamp.Value;
             }
         }
         else
         {
-            request.ConsistencyLevel = (Grpc.ConsistencyLevel)searchParameters.ConsistencyLevel.Value;
+            request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
             request.GuaranteeTimestamp =
                 CalculateGuaranteeTimestamp(
-                    Name, searchParameters.ConsistencyLevel.Value, searchParameters.GuaranteeTimestamp);
+                    Name, parameters.ConsistencyLevel.Value, parameters.GuaranteeTimestamp);
         }
 
         Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
@@ -180,41 +218,13 @@ public partial class MilvusCollection
                 new Grpc.KeyValuePair { Key = Constants.VectorField, Value = vectorFieldName },
                 new Grpc.KeyValuePair { Key = Constants.TopK, Value = limit.ToString(CultureInfo.InvariantCulture) },
                 new Grpc.KeyValuePair { Key = Constants.MetricType, Value = metricType.ToString().ToUpperInvariant() },
-                new Grpc.KeyValuePair { Key = Constants.Params, Value = Combine(searchParameters.Parameters) },
+                new Grpc.KeyValuePair
+                {
+                    Key = Constants.Params,
+                    Value = parameters is null ? "{}" : Combine(parameters.Parameters)
+                }
             });
 
-        if (searchParameters.Offset is not null)
-        {
-            request.SearchParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.Offset,
-                Value = searchParameters.Offset.Value.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        if (searchParameters.RoundDecimal is not null)
-        {
-            request.SearchParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.RoundDecimal,
-                Value = searchParameters.RoundDecimal.Value.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        if (searchParameters.IgnoreGrowing is not null)
-        {
-            request.SearchParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.IgnoreGrowing, Value = searchParameters.IgnoreGrowing.Value.ToString()
-            });
-        }
-
-        request.DslType = Grpc.DslType.BoolExprV1;
-
-        if (searchParameters.Expression is not null)
-        {
-            request.Dsl = searchParameters.Expression;
-        }
 
         if (DatabaseName is not null)
         {
@@ -335,102 +345,83 @@ public partial class MilvusCollection
     /// Retrieves rows from a collection via scalar filtering based on a boolean expression
     /// </summary>
     /// <param name="expression">A boolean expression determining which rows are to be returned.</param>
-    /// <param name="outputFields">
-    /// The names of fields to be returned from the search. Vector fields currently cannot be returned.
-    /// </param>
-    /// <param name="consistencyLevel">The consistency level to be used in the query.</param>
-    /// <param name="partitionNames">An optional list of partitions names which are to be queried.</param>
-    /// <param name="guaranteeTimestamp">
-    /// If set, guarantee that the search operation will be performed after any updates up to the provided timestamp.
-    /// If a query node isn't yet up to date for the timestamp, it waits until the missing data is received.
-    /// If unset, the server executes the search immediately.
-    /// </param>
-    /// <param name="limit">
-    /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
-    /// </param>
-    /// <param name="offset">
-    /// Number of entities to skip during the search. The sum of this parameter and <paramref name="limit" /> should be
-    /// less than 16384.
-    /// </param>
-    /// <param name="timeTravelTimestamp">
-    /// Specifies an optional travel timestamp; the search will get results based on the data at that point in time.
-    /// </param>
+    /// <param name="parameters">Various additional optional parameters to configure the query.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     public async Task<IReadOnlyList<FieldData>> QueryAsync(
         string expression,
-        IReadOnlyList<string>? outputFields = null,
-        ConsistencyLevel? consistencyLevel = null,
-        IReadOnlyList<string>? partitionNames = null,
-        ulong timeTravelTimestamp = 0,
-        ulong? guaranteeTimestamp = null,
-        long limit = 0,
-        long offset = 0,
+        QueryParameters? parameters = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(expression);
-        Verify.GreaterThanOrEqualTo(offset, 0);
-        Verify.GreaterThanOrEqualTo(limit, 0);
 
         QueryRequest request = new()
         {
             CollectionName = Name,
-            Expr = expression,
-            TravelTimestamp = timeTravelTimestamp,
+            Expr = expression
         };
+
+        if (parameters is not null)
+        {
+            if (parameters.TimeTravelTimestamp is not null)
+            {
+                request.TravelTimestamp = parameters.TimeTravelTimestamp.Value;
+            }
+
+            if (parameters.PartitionNames.Count > 0)
+            {
+                request.PartitionNames.AddRange(parameters.PartitionNames);
+            }
+
+            if (parameters.OutputFields.Count > 0)
+            {
+                request.OutputFields.AddRange(parameters.OutputFields);
+            }
+
+            if (parameters.Offset is not null)
+            {
+                request.QueryParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.Offset,
+                    Value = parameters.Offset.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.Limit is not null)
+            {
+                request.QueryParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = "limit", Value = parameters.Limit.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+        }
 
         if (DatabaseName is not null)
         {
             request.DbName = DatabaseName;
         }
 
-        if (outputFields is not null)
-        {
-            request.OutputFields.AddRange(outputFields);
-        }
-
-        if (partitionNames?.Count > 0)
-        {
-            request.PartitionNames.AddRange(partitionNames);
-        }
-
-        if (offset > 0)
-        {
-            Verify.GreaterThan(limit, 0);
-            request.QueryParams.Add(new Grpc.KeyValuePair
-            {
-                Key = "offset", Value = offset.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        if (limit > 0)
-        {
-            request.QueryParams.Add(new Grpc.KeyValuePair
-            {
-                Key = "limit", Value = limit.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
         // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
         // from the former and should be sufficient. TODO: Confirm this.
-        if (consistencyLevel is null)
+        if (parameters?.ConsistencyLevel is null)
         {
-            if (guaranteeTimestamp is null)
+            if (parameters?.GuaranteeTimestamp is null)
             {
                 request.UseDefaultConsistency = true;
             }
             else
             {
                 request.ConsistencyLevel = Grpc.ConsistencyLevel.Customized;
-                request.GuaranteeTimestamp = guaranteeTimestamp.Value;
+                request.GuaranteeTimestamp = parameters.GuaranteeTimestamp.Value;
             }
         }
         else
         {
-            request.ConsistencyLevel = (Grpc.ConsistencyLevel)consistencyLevel.Value;
+            request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
             request.GuaranteeTimestamp =
-                CalculateGuaranteeTimestamp(Name, consistencyLevel.Value, guaranteeTimestamp);
+                CalculateGuaranteeTimestamp(Name, parameters.ConsistencyLevel.Value,
+                    parameters.GuaranteeTimestamp);
         }
 
         QueryResults response =

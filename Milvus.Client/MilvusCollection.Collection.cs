@@ -123,7 +123,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<int> GetEntityCount(CancellationToken cancellationToken = default)
+    public async Task<int> GetEntityCountAsync(CancellationToken cancellationToken = default)
     {
         var request = new GetCollectionStatisticsRequest { CollectionName = Name };
 

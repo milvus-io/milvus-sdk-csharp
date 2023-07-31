@@ -3,7 +3,7 @@
   {
     "Milvus":
     {
-      "Address": "http://localhost:19530",
+      "Host": "localhost",
       "Username": "root",
       "Password": "Milvus"
     }

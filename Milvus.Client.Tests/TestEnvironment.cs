@@ -14,19 +14,19 @@ public static class TestEnvironment
 
     static TestEnvironment()
     {
-        Address = Config["Address"] ?? "http://localhost";
+        Host = Config["Host"] ?? "localhost";
         Username = Config["Username"] ?? "root";
         Password = Config["Password"] ?? "Milvus";
 
         Client = CreateClient();
     }
 
-    public static string Address { get; private set; }
+    public static string Host { get; private set; }
     public static string Username { get; private set; }
     public static string Password { get; private set; }
 
     public static MilvusClient CreateClient()
-        => new(Address, Username, Password);
+        => new MilvusClient(Host, username: Username, password: Password);
 
     public static MilvusClient Client { get; }
 }

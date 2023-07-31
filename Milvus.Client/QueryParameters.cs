@@ -1,26 +1,34 @@
-﻿namespace Milvus.Client;
+namespace Milvus.Client;
 
 /// <summary>
-/// A set of optional parameters for performing a vector similarity search via
-/// <see cref="MilvusCollection.SearchAsync{T}" />.
+/// A set of optional parameters for performing a query via <see cref="MilvusCollection.QueryAsync" />.
 /// </summary>
-public class SearchParameters
+public class QueryParameters
 {
+    private List<string>? _outputFields;
+    private List<string>? _partitionNames;
+
     /// <summary>
-    /// Number of entities to skip during the search. The sum of this parameter and <c>Limit</c> should be less than
-    /// 16384.
+    /// The maximum number of records to return, also known as 'topk'. If set, the sum of this parameter and of
+    /// <see cref="Offset" /> must be between 1 and 16384.
+    /// </summary>
+    public int? Limit { get; set; }
+
+    /// <summary>
+    /// Number of entities to skip during the search. If set, the sum of this parameter and of <see cref="Limit" /> must
+    /// be between 1 and 16384.
     /// </summary>
     public int? Offset { get; set; }
 
     /// <summary>
     /// An optional list of partitions to be searched in the collection.
     /// </summary>
-    public IList<string> PartitionNames { get; } = new List<string>();
+    public IList<string> PartitionNames => _partitionNames ??= new();
 
     /// <summary>
     /// The names of fields to be returned from the search. Vector fields currently cannot be returned.
     /// </summary>
-    public IList<string> OutputFields { get; } = new List<string>();
+    public IList<string> OutputFields => _outputFields ??= new();
 
     /// <summary>
     /// The consistency level to be used in the search. Defaults to the consistency level configured
@@ -45,28 +53,4 @@ public class SearchParameters
     /// For more details, see <see href="https://milvus.io/docs/v2.1.x/timetravel.md"/>.
     /// </remarks>
     public ulong? TimeTravelTimestamp { get; set; }
-
-    /// <summary>
-    /// An optional boolean expression to filter scalar fields before performing the vector similarity search.
-    /// </summary>
-    public string? Expression { get; set; }
-
-    /// <summary>
-    /// Specifies the decimal place of the returned results.
-    /// </summary>
-    public long? RoundDecimal { get; set; }
-
-    /// <summary>
-    /// Search parameter(s) specific to the specified index type.
-    /// </summary>
-    /// <remarks>
-    /// See <see href="https://milvus.io/docs/index.md" /> for more information.
-    /// </remarks>
-    public IDictionary<string, string> Parameters { get; } = new Dictionary<string, string>();
-
-    /// <summary>
-    /// Whether to ignore growing segments during similarity searches. Defaults to <c>false</c>, indicating that
-    /// searches involve growing segments.
-    /// </summary>
-    public bool? IgnoreGrowing { get; private set; }
 }

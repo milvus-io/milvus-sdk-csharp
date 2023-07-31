@@ -37,7 +37,7 @@ public class DatabaseTests : IAsyncLifetime
             MilvusDatabase database = Client.GetDatabase(DatabaseName);
 
             // First drop all collections from a possible previous test run, otherwise dropping fails
-            foreach (var collection in await database.ShowCollectionsAsync())
+            foreach (var collection in await database.ListCollectionsAsync())
             {
                 await database.GetCollection(collection.Name).DropAsync();
             }

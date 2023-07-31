@@ -11,13 +11,13 @@ public partial class MilvusClient
     internal ConcurrentDictionary<string, ulong> CollectionLastMutationTimestamps { get; } = new();
 
     /// <summary>
-    /// Get the flush state of multiple segments.
+    /// Gets the flush state of multiple segments.
     /// </summary>
-    /// <param name="segmentIds">Segment ids</param>
+    /// <param name="segmentIds">A list of segment IDs for which to get the flush state</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns>If segments flushed.</returns>
+    /// <returns>Whether the provided segments have been flushed.</returns>
     public async Task<bool> GetFlushStateAsync(
         IReadOnlyList<long> segmentIds,
         CancellationToken cancellationToken = default)
@@ -35,14 +35,21 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Flush all collections. All insertions, deletions, and upserts before <see cref="FlushAllAsync(CancellationToken)"/> will be synced.
+    /// Flushes all collections. All insertions, deletions, and upserts prior to this call will be synced to disk.
     /// </summary>
     /// <remarks>
-    /// This method returns FlushAllTs, but the returned FlushAllTs may not yet be persisted.
-    /// If <see cref="GetFlushAllStateAsync(ulong, CancellationToken)"/> returns True, then we can say that the flushAll action is finished.
+    /// While this method starts flushing, that process may not be complete when the method returns. The returned
+    /// timestamp can be used to check on the state of the flush process, either via
+    /// <see cref="GetFlushAllStateAsync" /> (for a single check) or via <see cref="WaitForFlushAllAsync" />
+    /// (to wait until the process is complete).
     /// </remarks>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>FlushAllTs</returns>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>
+    /// A timestamp that can be passed to <see cref="GetFlushAllStateAsync" /> to check the state of the flush, or to
+    /// <see cref="WaitForFlushAllAsync" /> to wait for it to complete.
+    /// </returns>
     public async Task<ulong> FlushAllAsync(CancellationToken cancellationToken = default)
     {
         FlushAllResponse response =
@@ -53,15 +60,18 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Get the flush state of <see cref="FlushAllAsync(CancellationToken)"/>.
+    /// Returns whether a flush initiated by a previous <see cref="FlushAllAsync(CancellationToken)" /> call has
+    /// completed.
     /// </summary>
-    /// <param name="flushAllTs">Value return by <see cref="FlushAllAsync(CancellationToken)"/></param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="timestamp">A timestamp value return by <see cref="FlushAllAsync(CancellationToken)" />.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<bool> GetFlushAllStateAsync(
-        ulong flushAllTs,
+        ulong timestamp,
         CancellationToken cancellationToken = default)
     {
-        GetFlushAllStateRequest request = new() { FlushAllTs = flushAllTs };
+        GetFlushAllStateRequest request = new() { FlushAllTs = timestamp };
 
         GetFlushAllStateResponse response =
             await InvokeAsync(GrpcClient.GetFlushAllStateAsync, request, static r => r.Status, cancellationToken)
@@ -71,17 +81,17 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Polls Milvus for the flush all state.
+    /// Polls Milvus for the state of a flush process initiated by a previous
+    /// <see cref="FlushAllAsync(CancellationToken)" /> call, until that process is complete.
     /// </summary>
-    /// <param name="flushAllTs">Flush all timestamp.</param>
+    /// <param name="timestamp">A timestamp value return by <see cref="FlushAllAsync(CancellationToken)" />.</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
     public async Task WaitForFlushAllAsync(
-        ulong flushAllTs,
+        ulong timestamp,
         TimeSpan? waitingInterval = null,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
@@ -89,7 +99,7 @@ public partial class MilvusClient
         await Utils.Poll(
             async () =>
             {
-                bool result = await GetFlushAllStateAsync(flushAllTs, cancellationToken)
+                bool result = await GetFlushAllStateAsync(timestamp, cancellationToken)
                     .ConfigureAwait(false);
                 return (result, result);
             },
@@ -98,15 +108,14 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Polls Milvus for the flush state of the specified segments.
+    /// Polls Milvus for the flush state of the specific segments, until those segments are fully flushed.
     /// </summary>
-    /// <param name="segmentIds">Segment Ids.</param>
+    /// <param name="segmentIds">The segment IDs whose flush state should be polled..</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
     public async Task WaitForFlushAsync(
         IReadOnlyList<long> segmentIds,
         TimeSpan? waitingInterval = null,

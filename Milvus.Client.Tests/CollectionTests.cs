@@ -210,12 +210,12 @@ public class CollectionTests : IAsyncLifetime
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
-        _ = await collection.QueryAsync("id in [2, 3]", outputFields: new[] { "float_vector" });
+        _ = await collection.QueryAsync("id in [2, 3]", new() { OutputFields = { "float_vector" } });
 
         await collection.ReleaseAsync();
 
         await Assert.ThrowsAsync<MilvusException>(() =>
-            collection.QueryAsync("id in [2, 3]", outputFields: new[] { "float_vector" }));
+            collection.QueryAsync("id in [2, 3]", new() { OutputFields = { "float_vector" } }));
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public class CollectionTests : IAsyncLifetime
             new Dictionary<string, string>(), "float_vector_idx");
 
         Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
-        Assert.DoesNotContain(await Client.ListCollectionsAsync(filter: ListCollectionFilter.InMemory),
+        Assert.DoesNotContain(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory),
             c => c.Name == CollectionName);
 
         await collection.LoadAsync();
@@ -242,7 +242,7 @@ public class CollectionTests : IAsyncLifetime
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
 
         Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
-        Assert.Single(await Client.ListCollectionsAsync(filter: ListCollectionFilter.InMemory),
+        Assert.Single(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory),
             c => c.Name == CollectionName);
     }
 
@@ -257,7 +257,7 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        Assert.Equal(0, await collection.GetEntityCount());
+        Assert.Equal(0, await collection.GetEntityCountAsync());
 
         await collection.InsertAsync(
             new FieldData[]
@@ -273,7 +273,7 @@ public class CollectionTests : IAsyncLifetime
         await collection.FlushAsync();
 
         // There's some delay in updating the statistics so we only assert the existence of row_count for now
-        _ = await collection.GetEntityCount();
+        _ = await collection.GetEntityCountAsync();
     }
 
     [Fact]

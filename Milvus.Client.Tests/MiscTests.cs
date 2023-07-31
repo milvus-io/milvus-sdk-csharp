@@ -10,7 +10,8 @@ public class MiscTests
     [Fact]
     public async Task Auth_failure_with_wrong_password()
     {
-        using var badClient = new MilvusClient(TestEnvironment.Address, TestEnvironment.Username, "incorrect_password");
+        using var badClient = new MilvusClient(
+            TestEnvironment.Host, username: TestEnvironment.Username, password: "incorrect_password");
 
         try
         {

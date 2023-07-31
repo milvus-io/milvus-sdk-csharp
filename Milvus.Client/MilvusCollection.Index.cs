@@ -112,8 +112,11 @@ public partial class MilvusCollection
     /// </summary>
     /// <param name="fieldName">The name of the field which has the index to be dropped.</param>
     /// <param name="indexName">An optional name of the index to be dropped.</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    public async Task DropIndexAsync(string fieldName, string? indexName, CancellationToken cancellationToken = default)
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public async Task DropIndexAsync(
+        string fieldName, string? indexName = null, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
         Verify.NotNullOrWhiteSpace(indexName);
@@ -141,7 +144,6 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
     public async Task<IList<MilvusIndex>> DescribeIndexAsync(
         string fieldName,
         string? indexName = null,
@@ -189,7 +191,6 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns>Index state.</returns>
     public async Task<IndexState> GetIndexStateAsync(string fieldName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
@@ -227,7 +228,6 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns>Index build progress.</returns>
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string fieldName,
         string? indexName = null,

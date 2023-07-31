@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,13 +14,13 @@ public sealed partial class MilvusClient : IDisposable
 {
     private readonly MilvusDatabase _defaultDatabase;
 
+    private const int DefaultMilvusPort = 19530;
+
     /// <summary>
-    /// Creates a new <see cref="MilvusClient" />.
+    /// Creates a new <see cref="MilvusClient" />, connecting to the given hostname on the default Milvus port of 19530.
     /// </summary>
-    /// <param name="address">
-    /// A URI to use for connecting to Milvus via gRPC. Must be a valid URI containing the port (the default Milvus gRPC
-    /// port is 19530).
-    /// </param>
+    /// <param name="host">The hostname or IP address to connect to.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
     /// <param name="username">The username to use for authentication.</param>
     /// <param name="password">The password to use for authentication.</param>
     /// <param name="callOptions">
@@ -27,19 +28,40 @@ public sealed partial class MilvusClient : IDisposable
     /// </param>
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
-        string address,
-        string username,
-        string password,
+        string host,
+        int port = DefaultMilvusPort,
+        string? username = null,
+        string? password = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
-        : this(new Uri(address), username, password, callOptions, loggerFactory)
+        : this(new UriBuilder("http", host, port).Uri, username, password, callOptions, loggerFactory)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="MilvusClient" />, connecting to the given hostname on the default Milvus port of 19530.
+    /// </summary>
+    /// <param name="host">The hostname or IP address to connect to.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="apiKey">An API key to be used for authentication, instead of a username and password.</param>
+    /// <param name="callOptions">
+    /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
+    /// </param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
+    public MilvusClient(
+        string host,
+        int port = DefaultMilvusPort,
+        string? apiKey = null,
+        CallOptions callOptions = default,
+        ILoggerFactory? loggerFactory = null)
+        : this(new UriBuilder("http", host, port).Uri, apiKey, callOptions, loggerFactory)
     {
     }
 
     /// <summary>
     /// Creates a new <see cref="MilvusClient" />.
     /// </summary>
-    /// <param name="address">
+    /// <param name="endpoint">
     /// A URI to use for connecting to Milvus via gRPC. Must be a valid URI containing the port (the default Milvus gRPC
     /// port is 19530).
     /// </param>
@@ -50,12 +72,47 @@ public sealed partial class MilvusClient : IDisposable
     /// </param>
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
-        Uri address,
-        string username,
-        string password,
+        Uri endpoint,
+        string? username = null,
+        string? password = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
-        : this(GrpcChannel.ForAddress(address), ownsGrpcChannel: true, username, password, callOptions, loggerFactory)
+        : this(
+            GrpcChannel.ForAddress(endpoint, new GrpcChannelOptions { LoggerFactory = loggerFactory }),
+            ownsGrpcChannel: true,
+            username,
+            password,
+            apiKey: null,
+            callOptions,
+            loggerFactory)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="MilvusClient" />.
+    /// </summary>
+    /// <param name="endpoint">
+    /// A URI to use for connecting to Milvus via gRPC. Must be a valid URI containing the port (the default Milvus gRPC
+    /// port is 19530).
+    /// </param>
+    /// <param name="apiKey">An API key to be used for authentication, instead of a username and password.</param>
+    /// <param name="callOptions">
+    /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
+    /// </param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
+    public MilvusClient(
+        Uri endpoint,
+        string? apiKey = null,
+        CallOptions callOptions = default,
+        ILoggerFactory? loggerFactory = null)
+        : this(
+            GrpcChannel.ForAddress(endpoint, new GrpcChannelOptions { LoggerFactory = loggerFactory }),
+            ownsGrpcChannel: true,
+            username: null,
+            password: null,
+            apiKey,
+            callOptions,
+            loggerFactory)
     {
     }
 
@@ -71,19 +128,38 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         GrpcChannel grpcChannel,
-        string username,
-        string password,
+        string? username = null,
+        string? password = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
-        : this(grpcChannel, ownsGrpcChannel: false, username, password, callOptions, loggerFactory)
+        : this(grpcChannel, ownsGrpcChannel: false, username, password, apiKey: null, callOptions, loggerFactory)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="MilvusClient" />.
+    /// </summary>
+    /// <param name="grpcChannel">The gRPC channel to use for connecting to Milvus.</param>
+    /// <param name="apiKey">An API key to be used for authentication, instead of a username and password.</param>
+    /// <param name="callOptions">
+    /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
+    /// </param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
+    public MilvusClient(
+        GrpcChannel grpcChannel,
+        string? apiKey = null,
+        CallOptions callOptions = default,
+        ILoggerFactory? loggerFactory = null)
+        : this(grpcChannel, ownsGrpcChannel: false, username: null, password: null, apiKey, callOptions, loggerFactory)
     {
     }
 
     private MilvusClient(
         GrpcChannel grpcChannel,
         bool ownsGrpcChannel,
-        string username,
-        string password,
+        string? username = null,
+        string? password = null,
+        string? apiKey = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
     {
@@ -93,10 +169,19 @@ public sealed partial class MilvusClient : IDisposable
         GrpcClient = new MilvusService.MilvusServiceClient(_grpcChannel);
         _ownsGrpcChannel = ownsGrpcChannel;
 
-        _callOptions = callOptions.WithHeaders(new Metadata
+        Debug.Assert(apiKey is null || username is null);
+
+        string? authorization = username is null
+            ? apiKey
+            : $"{username}:{password}";
+
+        if (authorization is not null)
         {
-            { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}")) }
-        });
+            _callOptions = callOptions.WithHeaders(new Metadata
+            {
+                { "authorization", Convert.ToBase64String(Encoding.UTF8.GetBytes(authorization)) }
+            });
+        }
 
         _log = loggerFactory?.CreateLogger("Milvus.Client") ?? NullLogger.Instance;
 
@@ -111,32 +196,35 @@ public sealed partial class MilvusClient : IDisposable
     /// <summary>
     /// Ensure to connect to Milvus server before any operations.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns></returns>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     public async Task<MilvusHealthState> HealthAsync(CancellationToken cancellationToken = default)
     {
-        CheckHealthResponse response = await InvokeAsync(GrpcClient.CheckHealthAsync, new CheckHealthRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        CheckHealthResponse response =
+            await GrpcClient.CheckHealthAsync(new CheckHealthRequest(),
+                    _callOptions.WithCancellationToken(cancellationToken))
+                .ConfigureAwait(false);
 
         if (!response.IsHealthy)
         {
             _log.HealthCheckFailed(response.Reasons);
         }
 
-        return new MilvusHealthState(response.IsHealthy, response.Status.Reason, (MilvusErrorCode)response.Status.ErrorCode);
+        return new MilvusHealthState(response.IsHealthy, response.Status.Reason,
+            (MilvusErrorCode)response.Status.ErrorCode);
     }
 
     /// <summary>
     /// Get Milvus version.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns>Milvus version</returns>
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
-        GetVersionResponse response = await InvokeAsync(GrpcClient.GetVersionAsync, new GetVersionRequest(), static r => r.Status, cancellationToken).ConfigureAwait(false);
+        GetVersionResponse response = await InvokeAsync(GrpcClient.GetVersionAsync, new GetVersionRequest(),
+            static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Version;
     }

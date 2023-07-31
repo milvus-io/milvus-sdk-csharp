@@ -55,7 +55,7 @@ public partial class MilvusDatabase
         Grpc.CollectionSchema grpcCollectionSchema = new()
         {
             Name = schema.Name ?? collectionName,
-            EnableDynamicField = schema.EnableDynamicField
+            EnableDynamicField = schema.EnableDynamicFields
 
             // Note that an AutoId previously existed at the schema level, but is not deprecated.
             // AutoId is now only defined at the field level.
@@ -163,18 +163,18 @@ public partial class MilvusDatabase
     /// Lists the collections available in the database.
     /// </summary>
     /// <param name="collectionNames">An optional list of collection names by which to filter.</param>
-    /// <param name="listCollectionFilter">
+    /// <param name="filter">
     /// Determines whether all collections are returned, or only ones which have been loaded to memory.
     /// </param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<IReadOnlyList<MilvusCollectionInfo>> ShowCollectionsAsync(
+    public async Task<IReadOnlyList<MilvusCollectionInfo>> ListCollectionsAsync(
         IReadOnlyList<string>? collectionNames = null,
-        ListCollectionFilter listCollectionFilter = ListCollectionFilter.All,
+        CollectionFilter filter = CollectionFilter.All,
         CancellationToken cancellationToken = default)
     {
-        ShowCollectionsRequest request = new() { Type = (Grpc.ShowType)listCollectionFilter, };
+        ShowCollectionsRequest request = new() { Type = (Grpc.ShowType)filter };
 
         if (Name is not null)
         {

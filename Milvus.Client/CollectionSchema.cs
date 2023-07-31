@@ -42,7 +42,7 @@ public sealed class CollectionSchema
     /// <remarks>
     /// <see href="https://milvus.io/docs/dynamic_schema.md#JSON-a-new-data-type" />
     /// </remarks>
-    public bool EnableDynamicField { get; set; }
+    public bool EnableDynamicFields { get; set; }
 
     // Note that an AutoId previously existed at the schema level, but is not deprecated.
     // AutoId is now only defined at the field level.

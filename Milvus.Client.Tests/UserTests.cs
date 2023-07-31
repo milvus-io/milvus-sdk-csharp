@@ -9,7 +9,7 @@ public class UserTests : IAsyncLifetime
     {
         await Client.CreateUserAsync(Username, "some_password");
 
-        using var client = new MilvusClient(TestEnvironment.Address, Username, "some_password");
+        using var client = new MilvusClient(TestEnvironment.Host, username: Username, password: "some_password");
         _ = await client.HasCollectionAsync("foo");
     }
 
@@ -28,7 +28,7 @@ public class UserTests : IAsyncLifetime
 
         await Client.UpdatePassword(Username, "some_old_password", "some_new_password");
 
-        using var client = new MilvusClient(TestEnvironment.Address, Username, "some_new_password");
+        using var client = new MilvusClient(TestEnvironment.Host, username: Username, password: "some_new_password");
         _ = await client.HasCollectionAsync("foo");
     }
 

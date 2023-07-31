@@ -7,7 +7,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     [Fact]
     public async Task Insert_Drop()
     {
-        MilvusMutationResult mutationResult = await InsertData(1, 2);
+        MilvusMutationResult mutationResult = await InsertDataAsync(1, 2);
 
         Assert.Collection(mutationResult.Ids.LongIds!,
             i => Assert.Equal(1, i),
@@ -18,7 +18,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
 
         IReadOnlyList<FieldData> results = await Collection.QueryAsync(
             "id in [2]",
-            consistencyLevel: ConsistencyLevel.Strong);
+            new() { ConsistencyLevel = ConsistencyLevel.Strong });
 
         FieldData<long> result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Equal(2, Assert.Single(result.Data));
@@ -31,7 +31,12 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
         ulong timestamp = mutationResult.Timestamp;
 
         results = await Collection.QueryAsync(
-            "id in [2]", consistencyLevel: ConsistencyLevel.Customized, guaranteeTimestamp: timestamp);
+            "id in [2]",
+            new()
+            {
+                ConsistencyLevel = ConsistencyLevel.Customized,
+                GuaranteeTimestamp = timestamp
+            });
         result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Empty(result.Data);
     }
@@ -41,7 +46,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     {
         DateTime before = DateTime.UtcNow;
 
-        MilvusCollection collection = await Client.CreateCollectionAsync(
+        await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
@@ -51,7 +56,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
 
         await Task.Delay(100);
 
-        MilvusMutationResult mutationResult = await InsertData(3, 4);
+        MilvusMutationResult mutationResult = await InsertDataAsync(3, 4);
 
         DateTime insertion = MilvusTimestampUtils.ToDateTime(mutationResult.Timestamp);
 
@@ -71,7 +76,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     {
         await Collection.WaitForFlushAsync();
         // Any insertion after a flush operation results in generating new segments.
-        await InsertData(5, 6);
+        await InsertDataAsync(5, 6);
         MilvusFlushResult newResult = await Collection.FlushAsync();
 
         Assert.NotEmpty(newResult.CollSegIDs);
@@ -83,29 +88,21 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
 
     [Fact]
     public async Task Flush_with_not_exist_collection()
-    {
-        await Assert.ThrowsAsync<MilvusException>(() => Client.FlushAsync(new[] { "NotExist" }));
-    }
+        => await Assert.ThrowsAsync<MilvusException>(() => Client.FlushAsync(new[] { "NotExist" }));
 
     [Fact]
     public async Task GetFlushState_with_empty_ids()
-    {
-        await Assert.ThrowsAsync<ArgumentException>(() => Client.GetFlushStateAsync(Array.Empty<long>()));
-    }
+        => await Assert.ThrowsAsync<ArgumentException>(() => Client.GetFlushStateAsync(Array.Empty<long>()));
 
     [Fact]
     public async Task GetFlushState_with_not_exist_ids()
-    {
-        // But return true.
-        bool result = await Client.GetFlushStateAsync(new long[] { -1, -2, -3 });
-        Assert.True(result);
-    }
+        => Assert.True(await Client.GetFlushStateAsync(new long[] { -1, -2, -3 })); // But return true.
 
     [Fact]
     public async Task Collection_waitForFlush()
     {
         MilvusCollectionDescription collectionDes = await Collection.DescribeAsync();
-        await InsertData(7, 8);
+        await InsertDataAsync(7, 8);
         await Collection.WaitForFlushAsync();
         IEnumerable<MilvusPersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
 
@@ -118,32 +115,36 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     }
 
     [Fact]
-    public async Task FlushAll_wait()
+    public async Task FlushAllAsync_and_wait()
     {
-        // This method is Time consuming.
-        await InsertData(9, 10);
+        // Waiting for FlushAllAsync can take around a minute.
+        // To make the developer inner loop quicker, we run this test only on CI.
+        if (Environment.GetEnvironmentVariable("CI") == null)
+        {
+            return;
+        }
 
-        await Task.Delay(100);
+        await InsertDataAsync(9, 10);
 
         // Flush all
-        ulong flushAllTs = await Client.FlushAllAsync();
+        ulong timestamp = await Client.FlushAllAsync();
 
         // Test if it is a timestamp
-        DateTime flushAllDateTime = MilvusTimestampUtils.ToDateTime(flushAllTs);
+        DateTime flushAllDateTime = MilvusTimestampUtils.ToDateTime(timestamp);
         Assert.True(flushAllDateTime - DateTime.UtcNow < TimeSpan.FromMilliseconds(10));
 
         // Wait
-        await Client.WaitForFlushAllAsync(flushAllTs);
+        await Client.WaitForFlushAllAsync(timestamp);
 
         IEnumerable<MilvusPersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
         Assert.True(segmentInfos.All(p => p.State == MilvusSegmentState.Flushed));
     }
 
-    private async Task<MilvusMutationResult> InsertData(long id1, long id2)
+    private async Task<MilvusMutationResult> InsertDataAsync(long id1, long id2)
         => await Collection.InsertAsync(
             new FieldData[]
             {
-                FieldData.Create("id", new []{ id1, id2 }),
+                FieldData.Create("id", new[] { id1, id2 }),
                 FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
                 {
                     new[] { 1f, 2f },

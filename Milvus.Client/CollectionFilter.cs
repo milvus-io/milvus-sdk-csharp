@@ -3,7 +3,7 @@
 /// <summary>
 /// Determines which collection to return in an invocation of <see cref="MilvusClient.ListCollectionsAsync" />.
 /// </summary>
-public enum ListCollectionFilter
+public enum CollectionFilter
 {
     /// <summary>
     /// Lists all collections.

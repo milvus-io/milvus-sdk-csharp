@@ -8,14 +8,17 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     [Fact]
     public async Task Query()
     {
-        var results = await Collection.QueryAsync(
+        var fields = await Collection.QueryAsync(
             "id in [2, 3]",
-            outputFields: new[] { "float_vector" },
-            consistencyLevel: ConsistencyLevel.Strong);
+            new()
+            {
+                OutputFields = { "float_vector" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
 
-        Assert.Equal(2, results.Count);
+        Assert.Equal(2, fields.Count);
 
-        var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
+        var idData = (FieldData<long>)Assert.Single(fields, d => d.FieldName == "id");
         Assert.Equal(MilvusDataType.Int64, idData.DataType);
         Assert.Equal(2, idData.RowCount);
         Assert.False(idData.IsDynamic);
@@ -24,7 +27,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             id => Assert.Equal(3, id));
 
         var floatVectorData =
-            (FloatVectorFieldData)Assert.Single(results, d => d.FieldName == "float_vector");
+            (FloatVectorFieldData)Assert.Single(fields, d => d.FieldName == "float_vector");
         Assert.Equal(MilvusDataType.FloatVector, floatVectorData.DataType);
         Assert.Equal(2, floatVectorData.RowCount);
         Assert.False(floatVectorData.IsDynamic);
@@ -46,9 +49,13 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     {
         var results = await Collection.QueryAsync(
             "id in [2, 3]",
-            outputFields: new[] { "float_vector" },
-            limit: 2, offset: 1,
-            consistencyLevel: ConsistencyLevel.Strong);
+            new()
+            {
+                OutputFields = { "float_vector" },
+                Limit = 2,
+                Offset = 1,
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
 
         var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
@@ -60,9 +67,12 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     {
         var results = await Collection.QueryAsync(
             "id in [2, 3]",
-            outputFields: new[] { "float_vector" },
-            limit: 1,
-            consistencyLevel: ConsistencyLevel.Strong);
+            new()
+            {
+                OutputFields = { "float_vector" },
+                Limit = 1,
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
 
         var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
@@ -225,7 +235,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             new ReadOnlyMemory<byte>[] { binaryVectors[0] },
             milvusSimilarityMetricType,
             limit: 2,
-            searchParameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
 
         Assert.Equal(collectionName, results.CollectionName);
 
@@ -288,8 +298,9 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             id => Assert.Equal(2, id));
 
         // Query with time travel
-        results = await collection.QueryAsync("id > 0",
-            timeTravelTimestamp: MilvusTimestampUtils.FromDateTime(timestamp));
+        results = await collection.QueryAsync(
+            "id > 0",
+            new() { TimeTravelTimestamp = MilvusTimestampUtils.FromDateTime(timestamp) });
         idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Collection(idData.Data, id => Assert.Equal(1, id));
     }

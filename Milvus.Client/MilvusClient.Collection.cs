@@ -83,9 +83,9 @@ public partial class MilvusClient
     /// </param>
     public Task<IReadOnlyList<MilvusCollectionInfo>> ListCollectionsAsync(
         IReadOnlyList<string>? collectionNames = null,
-        ListCollectionFilter filter = ListCollectionFilter.All,
+        CollectionFilter filter = CollectionFilter.All,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.ShowCollectionsAsync(collectionNames, filter, cancellationToken);
+        => _defaultDatabase.ListCollectionsAsync(collectionNames, filter, cancellationToken);
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.
