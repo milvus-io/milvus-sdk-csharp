@@ -119,6 +119,9 @@ public partial class MilvusCollection
         SearchParameters? parameters = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(vectorFieldName);
+        Verify.NotNull(vectors);
+
         Grpc.SearchRequest request = new()
         {
             CollectionName = Name,

@@ -24,7 +24,11 @@ public partial class MilvusDatabase
     /// </summary>
     /// <param name="collectionName">The name of the collection.</param>
     public MilvusCollection GetCollection(string collectionName)
-        => new MilvusCollection(_client, collectionName, Name);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+
+        return new MilvusCollection(_client, collectionName, Name);
+    }
 
     /// <summary>
     /// Drops the database.

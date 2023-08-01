@@ -36,6 +36,7 @@ public sealed partial class MilvusClient : IDisposable
         ILoggerFactory? loggerFactory = null)
         : this(new UriBuilder("http", host, port).Uri, username, password, callOptions, loggerFactory)
     {
+        Verify.NotNull(host);
     }
 
     /// <summary>
@@ -56,6 +57,7 @@ public sealed partial class MilvusClient : IDisposable
         ILoggerFactory? loggerFactory = null)
         : this(new UriBuilder("http", host, port).Uri, apiKey, callOptions, loggerFactory)
     {
+        Verify.NotNull(host);
     }
 
     /// <summary>
@@ -86,6 +88,7 @@ public sealed partial class MilvusClient : IDisposable
             callOptions,
             loggerFactory)
     {
+        Verify.NotNull(endpoint);
     }
 
     /// <summary>
@@ -114,6 +117,7 @@ public sealed partial class MilvusClient : IDisposable
             callOptions,
             loggerFactory)
     {
+        Verify.NotNull(endpoint);
     }
 
     /// <summary>
@@ -134,6 +138,7 @@ public sealed partial class MilvusClient : IDisposable
         ILoggerFactory? loggerFactory = null)
         : this(grpcChannel, ownsGrpcChannel: false, username, password, apiKey: null, callOptions, loggerFactory)
     {
+        Verify.NotNull(grpcChannel);
     }
 
     /// <summary>
@@ -152,6 +157,7 @@ public sealed partial class MilvusClient : IDisposable
         ILoggerFactory? loggerFactory = null)
         : this(grpcChannel, ownsGrpcChannel: false, username: null, password: null, apiKey, callOptions, loggerFactory)
     {
+        Verify.NotNull(grpcChannel);
     }
 
     private MilvusClient(

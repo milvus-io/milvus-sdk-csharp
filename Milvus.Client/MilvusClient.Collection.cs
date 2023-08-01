@@ -8,7 +8,11 @@ public partial class MilvusClient
     /// </summary>
     /// <param name="collectionName">The name of the collection.</param>
     public MilvusCollection GetCollection(string collectionName)
-        => new MilvusCollection(this, collectionName, databaseName: null);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+
+        return new MilvusCollection(this, collectionName, databaseName: null);
+    }
 
     /// <summary>
     /// Creates a new collection.

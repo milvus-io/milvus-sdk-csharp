@@ -26,6 +26,9 @@ public partial class MilvusDatabase
         int shardsNum = 1,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNull(fields);
+
         CollectionSchema schema = new(fields);
         return CreateCollectionAsync(collectionName, schema, consistencyLevel, shardsNum, cancellationToken);
     }
@@ -220,5 +223,9 @@ public partial class MilvusDatabase
     public Task<MilvusFlushResult> FlushAsync(
         IReadOnlyList<string> collectionNames,
         CancellationToken cancellationToken = default)
-        => _client.FlushAsync(collectionNames, Name, cancellationToken);
+    {
+        Verify.NotNull(collectionNames);
+
+        return _client.FlushAsync(collectionNames, Name, cancellationToken);
+    }
 }

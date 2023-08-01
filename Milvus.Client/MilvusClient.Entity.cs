@@ -122,6 +122,8 @@ public partial class MilvusClient
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrEmpty(segmentIds);
+
         await Utils.Poll(
             async () =>
             {

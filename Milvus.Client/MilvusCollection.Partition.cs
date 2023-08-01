@@ -99,7 +99,11 @@ public partial class MilvusCollection
         string partitionName,
         int replicaNumber = 1,
         CancellationToken cancellationToken = default)
-        => LoadPartitionsAsync(new[] { partitionName }, replicaNumber, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(partitionName);
+
+        return LoadPartitionsAsync(new[] { partitionName }, replicaNumber, cancellationToken);
+    }
 
     /// <summary>
     /// Loads partitions into memory so that they can be searched or queries.
@@ -143,7 +147,11 @@ public partial class MilvusCollection
     /// </param>
     /// <returns></returns>
     public Task ReleasePartitionAsync(string partitionName, CancellationToken cancellationToken = default)
-        => ReleasePartitionAsync(new[] { partitionName }, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(partitionName);
+
+        return ReleasePartitionAsync(new[] { partitionName }, cancellationToken);
+    }
 
     /// <summary>
     /// Releases loaded partitions from memory.

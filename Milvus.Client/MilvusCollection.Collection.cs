@@ -83,6 +83,8 @@ public partial class MilvusCollection
     /// </param>
     public async Task RenameAsync(string newName, CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(newName);
+
         var request = new RenameCollectionRequest { OldName = Name, NewName = newName };
 
         if (DatabaseName is not null)

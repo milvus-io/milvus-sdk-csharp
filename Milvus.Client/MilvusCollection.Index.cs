@@ -119,7 +119,6 @@ public partial class MilvusCollection
         string fieldName, string? indexName = null, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
-        Verify.NotNullOrWhiteSpace(indexName);
 
         var request = new DropIndexRequest
         {
@@ -275,6 +274,8 @@ public partial class MilvusCollection
         IProgress<IndexBuildProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNullOrWhiteSpace(fieldName);
+
         await Utils.Poll(
             async () =>
             {

@@ -10,7 +10,11 @@ public partial class MilvusClient
     /// </remarks>
     /// <param name="databaseName">The name of the database.</param>
     public MilvusDatabase GetDatabase(string databaseName)
-        => new MilvusDatabase(this, databaseName);
+    {
+        Verify.NotNullOrWhiteSpace(databaseName);
+
+        return new MilvusDatabase(this, databaseName);
+    }
 
     /// <summary>
     /// Creates a new database.
