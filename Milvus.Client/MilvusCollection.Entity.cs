@@ -127,14 +127,14 @@ public partial class MilvusCollection
 
         if (parameters is not null)
         {
-            if (parameters.PartitionNames.Count > 0)
+            if (parameters.PartitionNamesInternal?.Count > 0)
             {
-                request.PartitionNames.AddRange(parameters.PartitionNames);
+                request.PartitionNames.AddRange(parameters.PartitionNamesInternal);
             }
 
-            if (parameters.OutputFields.Count > 0)
+            if (parameters.OutputFieldsInternal?.Count > 0)
             {
-                request.OutputFields.AddRange(parameters.OutputFields);
+                request.OutputFields.AddRange(parameters.OutputFieldsInternal);
             }
 
             if (parameters.Expression is not null)
@@ -369,14 +369,14 @@ public partial class MilvusCollection
                 request.TravelTimestamp = parameters.TimeTravelTimestamp.Value;
             }
 
-            if (parameters.PartitionNames.Count > 0)
+            if (parameters.PartitionNamesInternal?.Count > 0)
             {
-                request.PartitionNames.AddRange(parameters.PartitionNames);
+                request.PartitionNames.AddRange(parameters.PartitionNamesInternal);
             }
 
-            if (parameters.OutputFields.Count > 0)
+            if (parameters.OutputFieldsInternal?.Count > 0)
             {
-                request.OutputFields.AddRange(parameters.OutputFields);
+                request.OutputFields.AddRange(parameters.OutputFieldsInternal);
             }
 
             if (parameters.Offset is not null)

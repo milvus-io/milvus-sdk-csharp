@@ -6,6 +6,9 @@
 /// </summary>
 public class SearchParameters
 {
+    internal List<string>? OutputFieldsInternal { get; private set; }
+    internal List<string>? PartitionNamesInternal { get; private set; }
+
     /// <summary>
     /// Number of entities to skip during the search. The sum of this parameter and <c>Limit</c> should be less than
     /// 16384.
@@ -15,12 +18,12 @@ public class SearchParameters
     /// <summary>
     /// An optional list of partitions to be searched in the collection.
     /// </summary>
-    public IList<string> PartitionNames { get; } = new List<string>();
+    public IList<string> PartitionNames => PartitionNamesInternal ??= new();
 
     /// <summary>
     /// The names of fields to be returned from the search. Vector fields currently cannot be returned.
     /// </summary>
-    public IList<string> OutputFields { get; } = new List<string>();
+    public IList<string> OutputFields => OutputFieldsInternal ??= new();
 
     /// <summary>
     /// The consistency level to be used in the search. Defaults to the consistency level configured

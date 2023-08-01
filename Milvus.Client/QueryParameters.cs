@@ -5,8 +5,8 @@ namespace Milvus.Client;
 /// </summary>
 public class QueryParameters
 {
-    private List<string>? _outputFields;
-    private List<string>? _partitionNames;
+    internal List<string>? OutputFieldsInternal { get; private set; }
+    internal List<string>? PartitionNamesInternal { get; private set; }
 
     /// <summary>
     /// The maximum number of records to return, also known as 'topk'. If set, the sum of this parameter and of
@@ -23,12 +23,12 @@ public class QueryParameters
     /// <summary>
     /// An optional list of partitions to be searched in the collection.
     /// </summary>
-    public IList<string> PartitionNames => _partitionNames ??= new();
+    public IList<string> PartitionNames => PartitionNamesInternal ??= new();
 
     /// <summary>
     /// The names of fields to be returned from the search. Vector fields currently cannot be returned.
     /// </summary>
-    public IList<string> OutputFields => _outputFields ??= new();
+    public IList<string> OutputFields => OutputFieldsInternal ??= new();
 
     /// <summary>
     /// The consistency level to be used in the search. Defaults to the consistency level configured
