@@ -302,9 +302,9 @@ public class CollectionTests : IAsyncLifetime
     [Fact]
     public async Task Create_in_non_existing_database_fails()
     {
-        MilvusDatabase nonExistingDb = Client.GetDatabase("non_existing_db");
+        using MilvusClient databaseClient = TestEnvironment.CreateClientForDatabase("non_existing_db");
 
-        var exception = await Assert.ThrowsAsync<MilvusException>(() => nonExistingDb.CreateCollectionAsync(
+        var exception = await Assert.ThrowsAsync<MilvusException>(() => databaseClient.CreateCollectionAsync(
             "foo",
             new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
 

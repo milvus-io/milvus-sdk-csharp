@@ -15,11 +15,6 @@ public partial class MilvusCollection
 
         var request = new CreatePartitionRequest { CollectionName = Name, PartitionName = partitionName };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         await _client.InvokeAsync(_client.GrpcClient.CreatePartitionAsync, request, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -36,11 +31,6 @@ public partial class MilvusCollection
         Verify.NotNullOrWhiteSpace(partitionName);
 
         var request = new HasPartitionRequest { CollectionName = Name, PartitionName = partitionName };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         BoolResponse response =
             await _client.InvokeAsync(_client.GrpcClient.HasPartitionAsync, request, static r => r.Status,
@@ -59,11 +49,6 @@ public partial class MilvusCollection
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(CancellationToken cancellationToken = default)
     {
         var request = new ShowPartitionsRequest { CollectionName = Name };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         ShowPartitionsResponse response =
             await _client.InvokeAsync(_client.GrpcClient.ShowPartitionsAsync, request, static r => r.Status,
@@ -127,11 +112,6 @@ public partial class MilvusCollection
             ReplicaNumber = replicaNumber
         };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         request.PartitionNames.AddRange(partitionNames);
 
         await _client.InvokeAsync(_client.GrpcClient.LoadPartitionsAsync, request, cancellationToken)
@@ -169,11 +149,6 @@ public partial class MilvusCollection
 
         ReleasePartitionsRequest request = new() { CollectionName = Name };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         request.PartitionNames.AddRange(partitionNames);
 
         await _client.InvokeAsync(_client.GrpcClient.ReleasePartitionsAsync, request, cancellationToken)
@@ -193,11 +168,6 @@ public partial class MilvusCollection
         Verify.NotNullOrWhiteSpace(partitionName);
 
         var request = new DropPartitionRequest { CollectionName = Name, PartitionName = partitionName };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         await _client.InvokeAsync(_client.GrpcClient.DropPartitionAsync, request, cancellationToken)
             .ConfigureAwait(false);
@@ -222,11 +192,6 @@ public partial class MilvusCollection
             CollectionName = Name,
             PartitionName = partitionName
         };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         GetPartitionStatisticsResponse response =
             await _client.InvokeAsync(_client.GrpcClient.GetPartitionStatisticsAsync, request, static r => r.Status,

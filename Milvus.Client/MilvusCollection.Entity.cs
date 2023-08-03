@@ -24,11 +24,6 @@ public partial class MilvusCollection
 
         InsertRequest request = new() { CollectionName = Name };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         if (partitionName is not null)
         {
             request.PartitionName = partitionName;
@@ -77,11 +72,6 @@ public partial class MilvusCollection
             Expr = expression,
             PartitionName = !string.IsNullOrEmpty(partitionName) ? partitionName : string.Empty
         };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         MutationResult response =
             await _client.InvokeAsync(_client.GrpcClient.DeleteAsync, request, static r => r.Status, cancellationToken)
@@ -229,11 +219,6 @@ public partial class MilvusCollection
             });
 
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         Grpc.SearchResults response =
             await _client.InvokeAsync(_client.GrpcClient.SearchAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
@@ -315,7 +300,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     public Task<MilvusFlushResult> FlushAsync(CancellationToken cancellationToken = default)
-        => _client.FlushAsync(new[] { Name }, DatabaseName, cancellationToken);
+        => _client.FlushAsync(new[] { Name }, cancellationToken);
 
     /// <summary>
     /// Returns sealed segments information of a collection.
@@ -325,11 +310,6 @@ public partial class MilvusCollection
         CancellationToken cancellationToken = default)
     {
         var request = new GetPersistentSegmentInfoRequest { CollectionName = Name };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         GetPersistentSegmentInfoResponse response = await _client.InvokeAsync(
             _client.GrpcClient.GetPersistentSegmentInfoAsync,
@@ -400,11 +380,6 @@ public partial class MilvusCollection
             }
         }
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
         // from the former and should be sufficient. TODO: Confirm this.
         if (parameters?.ConsistencyLevel is null)
@@ -445,11 +420,6 @@ public partial class MilvusCollection
         CancellationToken cancellationToken = default)
     {
         var request = new GetQuerySegmentInfoRequest { CollectionName = Name };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         GetQuerySegmentInfoResponse response =
             await _client.InvokeAsync(_client.GrpcClient.GetQuerySegmentInfoAsync, request, static r => r.Status,

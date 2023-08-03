@@ -10,11 +10,19 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task CreateAliasAsync(
+    public async Task CreateAliasAsync(
         string collectionName,
         string alias,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.CreateAliasAsync(collectionName, alias, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(alias);
+
+        var request = new CreateAliasRequest { CollectionName = collectionName, Alias = alias };
+
+        await InvokeAsync(GrpcClient.CreateAliasAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Drops an alias.
@@ -23,8 +31,14 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task DropAliasAsync(string alias, CancellationToken cancellationToken = default)
-        => _defaultDatabase.DropAliasAsync(alias, cancellationToken);
+    public async Task DropAliasAsync(string alias, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(alias);
+
+        var request = new DropAliasRequest { Alias = alias };
+
+        await InvokeAsync(GrpcClient.DropAliasAsync, request, cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Alters an alias to point to a new collection.
@@ -34,9 +48,17 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task AlterAliasAsync(
+    public async Task AlterAliasAsync(
         string collectionName,
         string alias,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.AlterAliasAsync(collectionName, alias, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNullOrWhiteSpace(alias);
+
+        var request = new AlterAliasRequest { CollectionName = collectionName, Alias = alias };
+
+        await InvokeAsync(GrpcClient.AlterAliasAsync, request, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
 }

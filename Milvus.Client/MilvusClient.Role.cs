@@ -302,13 +302,32 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public Task GrantRolePrivilegeAsync(
+    public async Task GrantRolePrivilegeAsync(
         string roleName,
         string @object,
         string objectName,
         string privilege,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.GrantRolePrivilegeAsync(roleName, @object, objectName, privilege, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(roleName);
+        Verify.NotNullOrWhiteSpace(@object);
+        Verify.NotNullOrWhiteSpace(objectName);
+        Verify.NotNullOrWhiteSpace(privilege);
+
+        var request = new OperatePrivilegeRequest
+        {
+            Type = OperatePrivilegeType.Grant,
+            Entity = new GrantEntity
+            {
+                Role = new() { Name = roleName },
+                Object = new() { Name = @object },
+                ObjectName = objectName,
+                Grantor = new() { Privilege = new() { Name = privilege } }
+            }
+        };
+
+        await InvokeAsync(GrpcClient.OperatePrivilegeAsync, request, cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Revokes a privilege from a role.
@@ -333,13 +352,32 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public Task RevokeRolePrivilegeAsync(
+    public async Task RevokeRolePrivilegeAsync(
         string roleName,
         string @object,
         string objectName,
         string privilege,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.RevokeRolePrivilegeAsync(roleName, @object, objectName, privilege, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(roleName);
+        Verify.NotNullOrWhiteSpace(@object);
+        Verify.NotNullOrWhiteSpace(objectName);
+        Verify.NotNullOrWhiteSpace(privilege);
+
+        var request = new OperatePrivilegeRequest
+        {
+            Type = OperatePrivilegeType.Revoke,
+            Entity = new GrantEntity
+            {
+                Role = new() { Name = roleName },
+                Object = new() { Name = @object },
+                ObjectName = objectName,
+                Grantor = new() { Privilege = new() { Name = privilege } },
+            }
+        };
+
+        await InvokeAsync(GrpcClient.OperatePrivilegeAsync, request, cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>
     ///  List a grant info for the role and the specific object

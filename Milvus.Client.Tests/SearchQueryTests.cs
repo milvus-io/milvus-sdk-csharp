@@ -192,7 +192,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         MilvusSimilarityMetricType milvusSimilarityMetricType)
     {
         MilvusCollection binaryVectorCollection = Client.GetCollection(nameof(Search_binary_vector));
-        var collectionName = binaryVectorCollection.Name;
+        string collectionName = binaryVectorCollection.Name;
 
         await binaryVectorCollection.DropAsync();
         await Client.CreateCollectionAsync(
@@ -232,7 +232,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
         var results = await binaryVectorCollection.SearchAsync(
             "binary_vector",
-            new ReadOnlyMemory<byte>[] { binaryVectors[0] },
+            new[] { binaryVectors[0] },
             milvusSimilarityMetricType,
             limit: 2,
             parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });

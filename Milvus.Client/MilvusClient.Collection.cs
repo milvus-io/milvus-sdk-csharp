@@ -1,4 +1,6 @@
-﻿namespace Milvus.Client;
+﻿using System.Globalization;
+
+namespace Milvus.Client;
 
 public partial class MilvusClient
 {
@@ -11,7 +13,7 @@ public partial class MilvusClient
     {
         Verify.NotNullOrWhiteSpace(collectionName);
 
-        return new MilvusCollection(this, collectionName, databaseName: null);
+        return new MilvusCollection(this, collectionName);
     }
 
     /// <summary>
@@ -35,8 +37,13 @@ public partial class MilvusClient
         ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
         int shardsNum = 1,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.CreateCollectionAsync(
-            collectionName, fields, consistencyLevel, shardsNum, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNull(fields);
+
+        CollectionSchema schema = new(fields);
+        return CreateCollectionAsync(collectionName, schema, consistencyLevel, shardsNum, cancellationToken);
+    }
 
     /// <summary>
     /// Creates a new collection.
@@ -50,14 +57,77 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<MilvusCollection> CreateCollectionAsync(
+    public async Task<MilvusCollection> CreateCollectionAsync(
         string collectionName,
         CollectionSchema schema,
         ConsistencyLevel consistencyLevel = ConsistencyLevel.Session,
         int shardsNum = 1,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.CreateCollectionAsync(
-            collectionName, schema, consistencyLevel, shardsNum, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+        Verify.NotNull(schema);
+
+        Grpc.CollectionSchema grpcCollectionSchema = new()
+        {
+            Name = schema.Name ?? collectionName,
+            EnableDynamicField = schema.EnableDynamicFields
+
+            // Note that an AutoId previously existed at the schema level, but is not deprecated.
+            // AutoId is now only defined at the field level.
+        };
+
+        if (schema.Description is not null)
+        {
+            grpcCollectionSchema.Description = schema.Description;
+        }
+
+        foreach (FieldSchema field in schema.Fields)
+        {
+            Grpc.FieldSchema grpcField = new()
+            {
+                Name = field.Name,
+                DataType = (DataType)(int)field.DataType,
+                IsPrimaryKey = field.IsPrimaryKey,
+                IsPartitionKey = field.IsPartitionKey,
+                AutoID = field.AutoId,
+                Description = field.Description
+            };
+
+            if (field.MaxLength is not null)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.VarcharMaxLength,
+                    Value = field.MaxLength.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (field.Dimension is not null)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.VectorDim,
+                    Value = field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            grpcCollectionSchema.Fields.Add(grpcField);
+        }
+
+        grpcCollectionSchema.AutoID = schema.Fields.Any(static p => p.AutoId);
+
+        var request = new CreateCollectionRequest
+        {
+            CollectionName = collectionName,
+            ConsistencyLevel = (Grpc.ConsistencyLevel)(int)consistencyLevel,
+            ShardsNum = shardsNum,
+            Schema = grpcCollectionSchema.ToByteString()
+        };
+
+        await InvokeAsync(GrpcClient.CreateCollectionAsync, request, cancellationToken).ConfigureAwait(false);
+
+        return new MilvusCollection(this, collectionName);
+    }
 
     /// <summary>
     /// Checks whether a collection exists.
@@ -69,11 +139,25 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<bool> HasCollectionAsync(
+    public async Task<bool> HasCollectionAsync(
         string collectionName,
         ulong timestamp = 0,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.HasCollectionAsync(collectionName, timestamp, cancellationToken);
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+
+        var request = new HasCollectionRequest
+        {
+            CollectionName = collectionName,
+            TimeStamp = timestamp,
+        };
+
+        BoolResponse response =
+            await InvokeAsync(GrpcClient.HasCollectionAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        return response.Value;
+    }
 
     /// <summary>
     /// Lists the collections available in the database.
@@ -85,11 +169,37 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<IReadOnlyList<MilvusCollectionInfo>> ListCollectionsAsync(
+    public async Task<IReadOnlyList<MilvusCollectionInfo>> ListCollectionsAsync(
         IReadOnlyList<string>? collectionNames = null,
         CollectionFilter filter = CollectionFilter.All,
         CancellationToken cancellationToken = default)
-        => _defaultDatabase.ListCollectionsAsync(collectionNames, filter, cancellationToken);
+    {
+        ShowCollectionsRequest request = new() { Type = (Grpc.ShowType)filter };
+
+        if (collectionNames is not null)
+        {
+            request.CollectionNames.AddRange(collectionNames);
+        }
+
+        ShowCollectionsResponse response =
+            await InvokeAsync(GrpcClient.ShowCollectionsAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        List<MilvusCollectionInfo> collections = new();
+        if (response.CollectionIds is not null)
+        {
+            for (int i = 0; i < response.CollectionIds.Count; i++)
+            {
+                collections.Add(new MilvusCollectionInfo(
+                    response.CollectionIds[i],
+                    response.CollectionNames[i],
+                    response.CreatedUtcTimestamps[i],
+                    response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
+            }
+        }
+
+        return collections;
+    }
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.
@@ -101,24 +211,13 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<MilvusFlushResult> FlushAsync(
+    public async Task<MilvusFlushResult> FlushAsync(
         IReadOnlyList<string> collectionNames,
-        CancellationToken cancellationToken = default)
-        => FlushAsync(collectionNames, databaseName: null, cancellationToken);
-
-    internal async Task<MilvusFlushResult> FlushAsync(
-        IReadOnlyList<string> collectionNames,
-        string? databaseName,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrEmpty(collectionNames);
 
         FlushRequest request = new();
-
-        if (databaseName is not null)
-        {
-            request.DbName = databaseName;
-        }
 
         request.CollectionNames.AddRange(collectionNames);
 

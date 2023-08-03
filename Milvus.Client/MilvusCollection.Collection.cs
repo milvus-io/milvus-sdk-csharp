@@ -16,11 +16,6 @@ public partial class MilvusCollection
     {
         var request = new DescribeCollectionRequest { CollectionName = Name };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         DescribeCollectionResponse response =
             await _client.InvokeAsync(_client.GrpcClient.DescribeCollectionAsync, request, r => r.Status,
                     cancellationToken)
@@ -87,11 +82,6 @@ public partial class MilvusCollection
 
         var request = new RenameCollectionRequest { OldName = Name, NewName = newName };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         await _client.InvokeAsync(_client.GrpcClient.RenameCollectionAsync, request, cancellationToken)
             .ConfigureAwait(false);
 
@@ -108,11 +98,6 @@ public partial class MilvusCollection
     {
         var request = new DropCollectionRequest { CollectionName = Name };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         await _client.InvokeAsync(_client.GrpcClient.DropCollectionAsync, request, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -128,11 +113,6 @@ public partial class MilvusCollection
     public async Task<int> GetEntityCountAsync(CancellationToken cancellationToken = default)
     {
         var request = new GetCollectionStatisticsRequest { CollectionName = Name };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         GetCollectionStatisticsResponse response = await _client.InvokeAsync(
             _client.GrpcClient.GetCollectionStatisticsAsync,
@@ -164,11 +144,6 @@ public partial class MilvusCollection
             request.ReplicaNumber = replicaNumber.Value;
         }
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         await _client.InvokeAsync(_client.GrpcClient.LoadCollectionAsync, request, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -180,11 +155,6 @@ public partial class MilvusCollection
     public async Task ReleaseAsync(CancellationToken cancellationToken = default)
     {
         var request = new ReleaseCollectionRequest { CollectionName = Name };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         await _client.InvokeAsync(_client.GrpcClient.ReleaseCollectionAsync, request, cancellationToken)
             .ConfigureAwait(false);
@@ -204,11 +174,6 @@ public partial class MilvusCollection
         CancellationToken cancellationToken = default)
     {
         GetLoadingProgressRequest request = new() { CollectionName = Name };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         if (partitionNames is not null)
         {

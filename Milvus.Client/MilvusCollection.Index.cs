@@ -31,11 +31,6 @@ public partial class MilvusCollection
             FieldName = fieldName
         };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         if (indexName is not null)
         {
             request.IndexName = indexName;
@@ -127,11 +122,6 @@ public partial class MilvusCollection
             IndexName = indexName
         };
 
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
-
         await _client.InvokeAsync(_client.GrpcClient.DropIndexAsync, request, cancellationToken).ConfigureAwait(false);
     }
 
@@ -155,11 +145,6 @@ public partial class MilvusCollection
         if (indexName is not null)
         {
             request.IndexName = indexName;
-        }
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
         }
 
         DescribeIndexResponse response =
@@ -195,11 +180,6 @@ public partial class MilvusCollection
         Verify.NotNullOrWhiteSpace(fieldName);
 
         var request = new GetIndexStateRequest { CollectionName = Name, FieldName = fieldName };
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
-        }
 
         GetIndexStateResponse response =
             await _client.InvokeAsync(_client.GrpcClient.GetIndexStateAsync, request, static r => r.Status,
@@ -239,11 +219,6 @@ public partial class MilvusCollection
         if (indexName is not null)
         {
             request.IndexName = indexName;
-        }
-
-        if (DatabaseName is not null)
-        {
-            request.DbName = DatabaseName;
         }
 
         GetIndexBuildProgressResponse response =
