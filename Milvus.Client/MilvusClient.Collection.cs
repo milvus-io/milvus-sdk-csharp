@@ -211,7 +211,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<MilvusFlushResult> FlushAsync(
+    public async Task<FlushResult> FlushAsync(
         IReadOnlyList<string> collectionNames,
         CancellationToken cancellationToken = default)
     {
@@ -225,6 +225,6 @@ public partial class MilvusClient
             await InvokeAsync(GrpcClient.FlushAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return MilvusFlushResult.From(response);
+        return FlushResult.From(response);
     }
 }

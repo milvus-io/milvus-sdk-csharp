@@ -3,9 +3,9 @@
 /// <summary>
 /// Milvus compaction plans.
 /// </summary>
-public sealed class MilvusCompactionPlans
+public sealed class CompactionPlans
 {
-    internal MilvusCompactionPlans(IReadOnlyList<MilvusCompactionPlan> plans, MilvusCompactionState state)
+    internal CompactionPlans(IReadOnlyList<MilvusCompactionPlan> plans, CompactionState state)
     {
         Plans = plans;
         State = state;
@@ -19,7 +19,7 @@ public sealed class MilvusCompactionPlans
     /// <summary>
     /// State.
     /// </summary>
-    public MilvusCompactionState State { get; }
+    public CompactionState State { get; }
 }
 
 /// <summary>

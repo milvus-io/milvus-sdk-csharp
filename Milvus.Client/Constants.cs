@@ -36,12 +36,12 @@ internal static class Constants
     internal const string Offset = "offset";
 
     /// <summary>
-    /// Key name in parameters.<see cref="MilvusIndexType"/>
+    /// Key name in parameters.<see cref="Client.IndexType"/>
     /// </summary>
     internal const string IndexType = "index_type";
 
     /// <summary>
-    /// Key name in parameters.<see cref="MilvusSimilarityMetricType"/>
+    /// Key name in parameters.<see cref="SimilarityMetricType"/>
     /// </summary>
     internal const string MetricType = "metric_type";
 

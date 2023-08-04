@@ -34,7 +34,7 @@ public class PartitionTests : IAsyncLifetime
     {
         await Collection.CreatePartitionAsync("partition");
         await Collection.CreateIndexAsync(
-            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
             new Dictionary<string, string>(), "float_vector_idx");
         await Collection.WaitForIndexBuildAsync("float_vector");
 

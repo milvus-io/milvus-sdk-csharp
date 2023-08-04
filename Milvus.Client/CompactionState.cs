@@ -4,7 +4,7 @@
 /// The state of an compaction previously started via <see cref="MilvusCollection.CompactAsync" />, returned by
 /// <see cref="MilvusClient.GetCompactionStateAsync" />.
 /// </summary>
-public enum MilvusCompactionState
+public enum CompactionState
 {
     /// <summary>
     /// The provided compaction ID doesn't refer to a unknown compaction.

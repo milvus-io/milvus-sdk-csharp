@@ -106,7 +106,7 @@ public sealed class FieldSchema
     {
         Name = name;
         DataType = dataType;
-        State = MilvusFieldState.Unknown;
+        State = FieldState.Unknown;
         IsPrimaryKey = isPrimaryKey;
         AutoId = autoId;
         IsPartitionKey = isPartitionKey;
@@ -118,7 +118,7 @@ public sealed class FieldSchema
         long id,
         string name,
         MilvusDataType dataType,
-        MilvusFieldState state,
+        FieldState state,
         bool isPrimaryKey,
         bool autoId,
         bool isPartitionKey,
@@ -196,7 +196,7 @@ public sealed class FieldSchema
     /// <summary>
     /// The state of the field.
     /// </summary>
-    public MilvusFieldState State { get; private set; }
+    public FieldState State { get; private set; }
 
     /// <summary>
     /// The internal Milvus ID assigned to this ID.

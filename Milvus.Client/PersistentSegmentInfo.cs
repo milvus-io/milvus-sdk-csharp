@@ -3,16 +3,16 @@
 /// <summary>
 /// Milvus persistent segment info
 /// </summary>
-public sealed class MilvusPersistentSegmentInfo
+public sealed class PersistentSegmentInfo
 {
-    internal MilvusPersistentSegmentInfo(
-        long collectionId, long partitionId, long segmentId, long numRows, SegmentState state)
+    internal PersistentSegmentInfo(
+        long collectionId, long partitionId, long segmentId, long numRows, Grpc.SegmentState state)
     {
         CollectionId = collectionId;
         PartitionId = partitionId;
         SegmentId = segmentId;
         NumRows = numRows;
-        State = (MilvusSegmentState)state;
+        State = (SegmentState)state;
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public sealed class MilvusPersistentSegmentInfo
     /// <summary>
     /// State
     /// </summary>
-    public MilvusSegmentState State { get; }
+    public SegmentState State { get; }
 
     /// <summary>
     /// Returns a string that represents the current object.

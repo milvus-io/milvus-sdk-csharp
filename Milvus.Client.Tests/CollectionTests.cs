@@ -46,7 +46,7 @@ public class CollectionTests : IAsyncLifetime
         Assert.Equal(2, collectionDescription.ShardsNum);
         Assert.Equal(ConsistencyLevel.Eventually, collectionDescription.ConsistencyLevel);
 
-        Assert.All(collectionDescription.Schema.Fields, f => Assert.Equal(MilvusFieldState.FieldCreated, f.State));
+        Assert.All(collectionDescription.Schema.Fields, f => Assert.Equal(FieldState.FieldCreated, f.State));
 
         Assert.Collection(collectionDescription.Schema.Fields,
             f =>
@@ -203,7 +203,7 @@ public class CollectionTests : IAsyncLifetime
             });
 
         await collection.CreateIndexAsync(
-            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
             new Dictionary<string, string>(), "float_vector_idx");
 
         await collection.LoadAsync();
@@ -230,7 +230,7 @@ public class CollectionTests : IAsyncLifetime
             });
 
         await collection.CreateIndexAsync(
-            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
             new Dictionary<string, string>(), "float_vector_idx");
 
         Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
@@ -292,11 +292,11 @@ public class CollectionTests : IAsyncLifetime
 
         await Client.WaitForCompactionAsync(compactionId);
 
-        MilvusCompactionState state = await Client.GetCompactionStateAsync(compactionId);
-        Assert.Equal(MilvusCompactionState.Completed, state);
+        CompactionState state = await Client.GetCompactionStateAsync(compactionId);
+        Assert.Equal(CompactionState.Completed, state);
 
-        MilvusCompactionPlans compactionPlans = await Client.GetCompactionPlansAsync(compactionId);
-        Assert.Equal(MilvusCompactionState.Completed, compactionPlans.State);
+        CompactionPlans compactionPlans = await Client.GetCompactionPlansAsync(compactionId);
+        Assert.Equal(CompactionState.Completed, compactionPlans.State);
     }
 
     [Fact]

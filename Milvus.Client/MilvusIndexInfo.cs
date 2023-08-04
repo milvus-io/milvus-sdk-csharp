@@ -3,9 +3,9 @@
 /// <summary>
 /// Contains information about an index in Milvus; returned from <see cref="MilvusCollection.DescribeIndexAsync" />.
 /// </summary>
-public sealed class MilvusIndex
+public sealed class MilvusIndexInfo
 {
-    internal MilvusIndex(
+    internal MilvusIndexInfo(
         string fieldName,
         string indexName,
         long indexId,
@@ -38,7 +38,7 @@ public sealed class MilvusIndex
     public IReadOnlyDictionary<string, string> Params { get; }
 
     /// <summary>
-    /// Get string data of <see cref="MilvusIndex"/>
+    /// Get string data of <see cref="MilvusIndexInfo"/>
     /// </summary>
     /// <returns></returns>
     public override string ToString()

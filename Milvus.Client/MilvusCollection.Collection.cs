@@ -34,7 +34,7 @@ public partial class MilvusCollection
         {
             FieldSchema milvusField = new(
                 grpcField.FieldID, grpcField.Name, (MilvusDataType)grpcField.DataType,
-                (MilvusFieldState)grpcField.State, grpcField.IsPrimaryKey, grpcField.AutoID, grpcField.IsPartitionKey,
+                (FieldState)grpcField.State, grpcField.IsPrimaryKey, grpcField.AutoID, grpcField.IsPartitionKey,
                 grpcField.IsDynamic, grpcField.Description);
 
             foreach (Grpc.KeyValuePair parameter in grpcField.TypeParams)

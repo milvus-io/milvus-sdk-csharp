@@ -3,7 +3,7 @@
 /// <summary>
 /// The results from a vector similarity search executed via <see cref="MilvusCollection.SearchAsync{T}" />.
 /// </summary>
-public sealed class MilvusSearchResults
+public sealed class SearchResults
 {
     /// <summary>
     /// The name of the searched collection.

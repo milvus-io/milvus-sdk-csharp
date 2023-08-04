@@ -3,9 +3,9 @@
 /// <summary>
 /// Milvus query segment result.
 /// </summary>
-public sealed class MilvusQuerySegmentInfoResult
+public sealed class QuerySegmentInfoResult
 {
-    internal MilvusQuerySegmentInfoResult(
+    internal QuerySegmentInfoResult(
         long collectionId,
         string indexName,
         long indexId,
@@ -14,7 +14,7 @@ public sealed class MilvusQuerySegmentInfoResult
         long numRows,
         long partitionId,
         long segmentId,
-        MilvusSegmentState state)
+        SegmentState state)
     {
         CollectionId = collectionId;
         IndexName = indexName;
@@ -70,5 +70,5 @@ public sealed class MilvusQuerySegmentInfoResult
     /// <summary>
     /// State.
     /// </summary>
-    public MilvusSegmentState State { get; }
+    public SegmentState State { get; }
 }

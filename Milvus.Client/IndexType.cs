@@ -7,7 +7,7 @@
 /// by dramatically accelerating time-consuming queries on large datasets. To improve query performance, you can specify
 /// an index type for each vector field.
 /// </summary>
-public enum MilvusIndexType
+public enum IndexType
 {
     Invalid = 0,
 

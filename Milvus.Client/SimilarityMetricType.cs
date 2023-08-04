@@ -9,7 +9,7 @@
 /// <remarks>
 /// For more details, see <see href="https://milvus.io/docs/metric.md" />.
 /// </remarks>
-public enum MilvusSimilarityMetricType
+public enum SimilarityMetricType
 {
     Invalid,
 

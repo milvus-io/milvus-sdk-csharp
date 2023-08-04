@@ -3,9 +3,9 @@
 /// <summary>
 /// Contains results information about an operation which modified rows in a collection.
 /// </summary>
-public sealed class MilvusMutationResult
+public sealed class MutationResult
 {
-    internal MilvusMutationResult(Grpc.MutationResult mutationResult)
+    internal MutationResult(Grpc.MutationResult mutationResult)
     {
         InsertCount = mutationResult.InsertCnt;
         DeleteCount = mutationResult.DeleteCnt;

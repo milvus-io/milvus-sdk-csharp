@@ -17,8 +17,8 @@ public partial class MilvusCollection
     /// </param>
     public async Task CreateIndexAsync(
         string fieldName,
-        MilvusIndexType? milvusIndexType = null,
-        MilvusSimilarityMetricType? milvusMetricType = null,
+        IndexType? milvusIndexType = null,
+        SimilarityMetricType? milvusMetricType = null,
         IDictionary<string, string>? extraParams = null,
         string? indexName = null,
         CancellationToken cancellationToken = default)
@@ -66,37 +66,37 @@ public partial class MilvusCollection
         await _client.InvokeAsync(_client.GrpcClient.CreateIndexAsync, request, cancellationToken)
             .ConfigureAwait(false);
 
-        static string GetGrpcIndexType(MilvusIndexType indexType)
+        static string GetGrpcIndexType(IndexType indexType)
             => indexType switch
             {
-                MilvusIndexType.Invalid => "INVALID",
-                MilvusIndexType.Flat => "FLAT",
-                MilvusIndexType.IvfFlat => "IVF_FLAT",
-                MilvusIndexType.IvfPq => "IVF_PQ",
-                MilvusIndexType.IvfSq8 => "IVF_SQ8",
-                MilvusIndexType.Hnsw => "HNSW",
-                MilvusIndexType.RhnswFlat => "RHNSW_FLAT",
-                MilvusIndexType.RhnswPq => "RHNSW_PQ",
-                MilvusIndexType.RhnswSq => "RHNSW_SQ",
-                MilvusIndexType.Annoy => "ANNOY",
-                MilvusIndexType.BinFlat => "BIN_FLAT",
-                MilvusIndexType.BinIvfFlat => "BIN_IVF_FLAT",
-                MilvusIndexType.AutoIndex => "AUTOINDEX",
+                IndexType.Invalid => "INVALID",
+                IndexType.Flat => "FLAT",
+                IndexType.IvfFlat => "IVF_FLAT",
+                IndexType.IvfPq => "IVF_PQ",
+                IndexType.IvfSq8 => "IVF_SQ8",
+                IndexType.Hnsw => "HNSW",
+                IndexType.RhnswFlat => "RHNSW_FLAT",
+                IndexType.RhnswPq => "RHNSW_PQ",
+                IndexType.RhnswSq => "RHNSW_SQ",
+                IndexType.Annoy => "ANNOY",
+                IndexType.BinFlat => "BIN_FLAT",
+                IndexType.BinIvfFlat => "BIN_IVF_FLAT",
+                IndexType.AutoIndex => "AUTOINDEX",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
             };
 
-        static string GetGrpcMetricType(MilvusSimilarityMetricType similarityMetricType)
+        static string GetGrpcMetricType(SimilarityMetricType similarityMetricType)
             => similarityMetricType switch
             {
-                MilvusSimilarityMetricType.Invalid => "INVALID",
-                MilvusSimilarityMetricType.L2 => "L2",
-                MilvusSimilarityMetricType.Ip => "IP",
-                MilvusSimilarityMetricType.Jaccard => "JACCARD",
-                MilvusSimilarityMetricType.Tanimoto => "TANIMOTO",
-                MilvusSimilarityMetricType.Hamming => "HAMMING",
-                MilvusSimilarityMetricType.Superstructure => "SUPERSTRUCTURE",
-                MilvusSimilarityMetricType.Substructure => "SUBSTRUCTURE",
+                SimilarityMetricType.Invalid => "INVALID",
+                SimilarityMetricType.L2 => "L2",
+                SimilarityMetricType.Ip => "IP",
+                SimilarityMetricType.Jaccard => "JACCARD",
+                SimilarityMetricType.Tanimoto => "TANIMOTO",
+                SimilarityMetricType.Hamming => "HAMMING",
+                SimilarityMetricType.Superstructure => "SUPERSTRUCTURE",
+                SimilarityMetricType.Substructure => "SUBSTRUCTURE",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(similarityMetricType), similarityMetricType, null)
             };
@@ -133,7 +133,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<IList<MilvusIndex>> DescribeIndexAsync(
+    public async Task<IList<MilvusIndexInfo>> DescribeIndexAsync(
         string fieldName,
         string? indexName = null,
         CancellationToken cancellationToken = default)
@@ -152,12 +152,12 @@ public partial class MilvusCollection
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        List<MilvusIndex> indexes = new();
+        List<MilvusIndexInfo> indexes = new();
         if (response.IndexDescriptions is not null)
         {
             foreach (IndexDescription index in response.IndexDescriptions)
             {
-                indexes.Add(new MilvusIndex(
+                indexes.Add(new MilvusIndexInfo(
                     index.FieldName,
                     index.IndexName,
                     index.IndexID,

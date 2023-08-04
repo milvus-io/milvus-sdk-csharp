@@ -60,7 +60,7 @@ public class DatabaseTests : IAsyncLifetime
             });
 
         await collection.CreateIndexAsync(
-            "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
             new Dictionary<string, string>(), "float_vector_idx");
 
         long[] ids = { 1, 2, 3, 4, 5 };
@@ -89,7 +89,7 @@ public class DatabaseTests : IAsyncLifetime
         var results = await collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
-            MilvusSimilarityMetricType.L2,
+            SimilarityMetricType.L2,
             limit: 2);
 
         Assert.Equal(collection.Name, results.CollectionName);

@@ -3,7 +3,7 @@
 /// <summary>
 /// Milvus flush result.
 /// </summary>
-public sealed class MilvusFlushResult
+public sealed class FlushResult
 {
     /// <summary>
     /// Collection segment ids.
@@ -36,7 +36,7 @@ public sealed class MilvusFlushResult
     /// </remarks>
     public IReadOnlyDictionary<string, long> CollSealTimes { get; }
 
-    internal static MilvusFlushResult From(FlushResponse response)
+    internal static FlushResult From(FlushResponse response)
         => new(
             response.CollSegIDs.ToDictionary(static p => p.Key,
                 static p => (IReadOnlyList<long>)p.Value.Data.ToArray()),
@@ -44,7 +44,7 @@ public sealed class MilvusFlushResult
                 static p => (IReadOnlyList<long>)p.Value.Data.ToArray()),
             response.CollSealTimes);
 
-    private MilvusFlushResult(
+    private FlushResult(
         IReadOnlyDictionary<string, IReadOnlyList<long>> collSegIDs,
         IReadOnlyDictionary<string, IReadOnlyList<long>> flushCollSegIDs,
         IReadOnlyDictionary<string, long> collSealTimes)

@@ -2,7 +2,7 @@
 
 #pragma warning disable CS1591 // Missing documentation for the below
 
-public enum MilvusSegmentState
+public enum SegmentState
 {
     None = Grpc.SegmentState.None,
     NotExist = Grpc.SegmentState.NotExist,

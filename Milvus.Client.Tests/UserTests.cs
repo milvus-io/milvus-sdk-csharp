@@ -50,7 +50,7 @@ public class UserTests : IAsyncLifetime
 
         await Client.CreateRoleAsync(RoleName);
 
-        MilvusRoleResult? result = await Client.SelectRoleAsync(RoleName);
+        RoleResult? result = await Client.SelectRoleAsync(RoleName);
         Assert.NotNull(result);
         Assert.NotNull(result.Users);
         Assert.Empty(result.Users);
@@ -80,7 +80,7 @@ public class UserTests : IAsyncLifetime
 
         await Client.CreateUserAsync(Username, "some_password");
 
-        MilvusUserResult? result = await Client.SelectUserAsync(Username);
+        UserResult? result = await Client.SelectUserAsync(Username);
         Assert.NotNull(result);
         Assert.NotNull(result.Roles);
         Assert.Empty(result.Roles);
@@ -112,9 +112,9 @@ public class UserTests : IAsyncLifetime
         await Client.GrantRolePrivilegeAsync(
             roleName: RoleName, @object: "Collection", objectName: "*", privilege: "Search");
 
-        IReadOnlyList<MilvusGrantEntity> results = await Client.ListGrantsForRoleAsync(RoleName);
+        IReadOnlyList<GrantEntity> results = await Client.ListGrantsForRoleAsync(RoleName);
 
-        MilvusGrantEntity result = Assert.Single(results);
+        GrantEntity result = Assert.Single(results);
         Assert.Equal("default", result.DbName);
         Assert.Equal("Collection", result.Object);
         Assert.Equal("*", result.ObjectName);
@@ -129,7 +129,7 @@ public class UserTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        MilvusRoleResult? roleResult = await Client.SelectRoleAsync(RoleName, includeUserInfo: true);
+        RoleResult? roleResult = await Client.SelectRoleAsync(RoleName, includeUserInfo: true);
         if (roleResult is not null)
         {
             foreach (string username in roleResult.Users)
@@ -137,7 +137,7 @@ public class UserTests : IAsyncLifetime
                 await Client.RemoveUserFromRoleAsync(username, RoleName);
             }
 
-            foreach (MilvusGrantEntity grantEntity in await Client.ListGrantsForRoleAsync(RoleName))
+            foreach (GrantEntity grantEntity in await Client.ListGrantsForRoleAsync(RoleName))
             {
                 await Client.RevokeRolePrivilegeAsync(
                     RoleName, grantEntity.Object, grantEntity.ObjectName, grantEntity.Grantor.Privilege);

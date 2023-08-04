@@ -7,7 +7,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     [Fact]
     public async Task Insert_Drop()
     {
-        MilvusMutationResult mutationResult = await InsertDataAsync(1, 2);
+        MutationResult mutationResult = await InsertDataAsync(1, 2);
 
         Assert.Collection(mutationResult.Ids.LongIds!,
             i => Assert.Equal(1, i),
@@ -56,7 +56,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
 
         await Task.Delay(100);
 
-        MilvusMutationResult mutationResult = await InsertDataAsync(3, 4);
+        MutationResult mutationResult = await InsertDataAsync(3, 4);
 
         DateTime insertion = MilvusTimestampUtils.ToDateTime(mutationResult.Timestamp);
 
@@ -77,7 +77,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
         await Collection.WaitForFlushAsync();
         // Any insertion after a flush operation results in generating new segments.
         await InsertDataAsync(5, 6);
-        MilvusFlushResult newResult = await Collection.FlushAsync();
+        FlushResult newResult = await Collection.FlushAsync();
 
         Assert.NotEmpty(newResult.CollSegIDs);
         Assert.Equal(CollectionName, newResult.CollSegIDs.First().Key);
@@ -104,12 +104,12 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
         MilvusCollectionDescription collectionDes = await Collection.DescribeAsync();
         await InsertDataAsync(7, 8);
         await Collection.WaitForFlushAsync();
-        IEnumerable<MilvusPersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
+        IEnumerable<PersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
 
-        MilvusPersistentSegmentInfo? segmentInfo = segmentInfos.LastOrDefault();
+        PersistentSegmentInfo? segmentInfo = segmentInfos.LastOrDefault();
 
         Assert.NotNull(segmentInfo);
-        Assert.Equal(MilvusSegmentState.Flushed, segmentInfo.State);
+        Assert.Equal(SegmentState.Flushed, segmentInfo.State);
         Assert.True(segmentInfo.NumRows > 0);
         Assert.Equal(collectionDes.CollectionId, segmentInfo.CollectionId);
     }
@@ -136,11 +136,11 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
         // Wait
         await Client.WaitForFlushAllAsync(timestamp);
 
-        IEnumerable<MilvusPersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
-        Assert.True(segmentInfos.All(p => p.State == MilvusSegmentState.Flushed));
+        IEnumerable<PersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
+        Assert.True(segmentInfos.All(p => p.State == SegmentState.Flushed));
     }
 
-    private async Task<MilvusMutationResult> InsertDataAsync(long id1, long id2)
+    private async Task<MutationResult> InsertDataAsync(long id1, long id2)
         => await Collection.InsertAsync(
             new FieldData[]
             {
@@ -171,7 +171,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
                     FieldSchema.CreateFloatVector("float_vector", 2)
                 });
 
-            await Collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+            await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
             await Collection.WaitForIndexBuildAsync("float_vector");
             await Collection.LoadAsync();
             await Collection.WaitForCollectionLoadAsync();

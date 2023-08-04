@@ -85,7 +85,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
-            MilvusSimilarityMetricType.L2,
+            SimilarityMetricType.L2,
             limit: 2);
 
         Assert.Equal(CollectionName, results.CollectionName);
@@ -106,7 +106,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
-            MilvusSimilarityMetricType.L2,
+            SimilarityMetricType.L2,
             limit: 2,
             new()
             {
@@ -145,7 +145,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
-            MilvusSimilarityMetricType.L2,
+            SimilarityMetricType.L2,
             limit: 2,
             new() { Offset = 1 });
 
@@ -167,7 +167,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         var results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
-            MilvusSimilarityMetricType.L2,
+            SimilarityMetricType.L2,
             limit: 2,
             new() { Expression = """json_thing["Number"] > 2""" });
 
@@ -184,12 +184,12 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     }
 
     [Theory]
-    [InlineData(MilvusIndexType.BinFlat, MilvusSimilarityMetricType.Jaccard)]
-    [InlineData(MilvusIndexType.BinFlat, MilvusSimilarityMetricType.Hamming)]
-    [InlineData(MilvusIndexType.BinIvfFlat, MilvusSimilarityMetricType.Hamming)]
+    [InlineData(IndexType.BinFlat, SimilarityMetricType.Jaccard)]
+    [InlineData(IndexType.BinFlat, SimilarityMetricType.Hamming)]
+    [InlineData(IndexType.BinIvfFlat, SimilarityMetricType.Hamming)]
     public async Task Search_binary_vector(
-        MilvusIndexType milvusIndexType,
-        MilvusSimilarityMetricType milvusSimilarityMetricType)
+        IndexType indexType,
+        SimilarityMetricType similarityMetricType)
     {
         MilvusCollection binaryVectorCollection = Client.GetCollection(nameof(Search_binary_vector));
         string collectionName = binaryVectorCollection.Name;
@@ -205,7 +205,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
             });
 
         await binaryVectorCollection.CreateIndexAsync(
-            "binary_vector", milvusIndexType, milvusSimilarityMetricType,
+            "binary_vector", indexType, similarityMetricType,
             new Dictionary<string, string>() { { "nlist", "128" } },
             "float_vector_idx");
 
@@ -233,7 +233,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         var results = await binaryVectorCollection.SearchAsync(
             "binary_vector",
             new[] { binaryVectors[0] },
-            milvusSimilarityMetricType,
+            similarityMetricType,
             limit: 2,
             parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
 
@@ -268,7 +268,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 FieldSchema.CreateFloatVector("float_vector", 2)
             });
 
-        await collection.CreateIndexAsync("float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
 
         await collection.InsertAsync(
             new FieldData[]
@@ -310,7 +310,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         => Assert.ThrowsAsync<MilvusException>(() => Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
-            MilvusSimilarityMetricType.Ip,
+            SimilarityMetricType.Ip,
             limit: 2));
 
     [Fact]
@@ -319,7 +319,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         var exception = await Assert.ThrowsAsync<ArgumentException>(() => Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<string>[] { new[] { "foo", "bar" } },
-            MilvusSimilarityMetricType.Ip,
+            SimilarityMetricType.Ip,
             limit: 2));
 
         Assert.Equal("vectors", exception.ParamName);
@@ -346,7 +346,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 });
 
             await Collection.CreateIndexAsync(
-                "float_vector", MilvusIndexType.Flat, MilvusSimilarityMetricType.L2,
+                "float_vector", IndexType.Flat, SimilarityMetricType.L2,
                 new Dictionary<string, string>(), "float_vector_idx");
 
             long[] ids = { 1, 2, 3, 4, 5 };

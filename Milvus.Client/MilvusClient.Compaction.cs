@@ -9,7 +9,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<MilvusCompactionState> GetCompactionStateAsync(
+    public async Task<CompactionState> GetCompactionStateAsync(
         long compactionId,
         CancellationToken cancellationToken = default)
     {
@@ -19,7 +19,7 @@ public partial class MilvusClient
                 new GetCompactionStateRequest { CompactionID = compactionId }, static r => r.Status, cancellationToken)
             .ConfigureAwait(false);
 
-        return (MilvusCompactionState)response.State;
+        return (CompactionState)response.State;
     }
 
     /// <summary>
@@ -41,15 +41,15 @@ public partial class MilvusClient
         await Utils.Poll(
             async () =>
             {
-                MilvusCompactionState state = await GetCompactionStateAsync(compactionId, cancellationToken)
+                CompactionState state = await GetCompactionStateAsync(compactionId, cancellationToken)
                     .ConfigureAwait(false);
 
                 return state switch
                 {
-                    MilvusCompactionState.Undefined
+                    CompactionState.Undefined
                         => throw new InvalidOperationException($"Compaction with ID {compactionId} is in an undefined state."),
-                    MilvusCompactionState.Executing => (false, 0),
-                    MilvusCompactionState.Completed => (true, 0),
+                    CompactionState.Executing => (false, 0),
+                    CompactionState.Completed => (true, 0),
 
                     _ => throw new ArgumentOutOfRangeException("Invalid state: " + state)
                 };
@@ -65,7 +65,7 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<MilvusCompactionPlans> GetCompactionPlansAsync(
+    public async Task<CompactionPlans> GetCompactionPlansAsync(
         long compactionId,
         CancellationToken cancellationToken = default)
     {
@@ -79,6 +79,6 @@ public partial class MilvusClient
             response.MergeInfos
                 .Select(static x => new MilvusCompactionPlan { Sources = x.Sources, Target = x.Target })
                 .ToList(),
-            (MilvusCompactionState)response.State);
+            (CompactionState)response.State);
     }
 }

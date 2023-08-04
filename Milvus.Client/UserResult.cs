@@ -9,9 +9,9 @@ namespace Milvus.Client;
 /// <remarks>
 /// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
 /// </remarks>
-public sealed class MilvusUserResult
+public sealed class UserResult
 {
-    internal MilvusUserResult(string user, RepeatedField<RoleEntity> roles)
+    internal UserResult(string user, RepeatedField<RoleEntity> roles)
     {
         User = user;
         Roles = roles.Select(static r => r.Name).ToList();

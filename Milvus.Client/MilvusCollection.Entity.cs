@@ -15,7 +15,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<MilvusMutationResult> InsertAsync(
+    public async Task<MutationResult> InsertAsync(
         IReadOnlyList<FieldData> data,
         string? partitionName = null,
         CancellationToken cancellationToken = default)
@@ -42,13 +42,13 @@ public partial class MilvusCollection
 
         request.NumRows = (uint)count;
 
-        MutationResult response =
+        Grpc.MutationResult response =
             await _client.InvokeAsync(_client.GrpcClient.InsertAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
         _client.CollectionLastMutationTimestamps[Name] = response.Timestamp;
 
-        return new MilvusMutationResult(response);
+        return new MutationResult(response);
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<MilvusMutationResult> DeleteAsync(
+    public async Task<MutationResult> DeleteAsync(
         string expression,
         string? partitionName = null,
         CancellationToken cancellationToken = default)
@@ -73,13 +73,13 @@ public partial class MilvusCollection
             PartitionName = !string.IsNullOrEmpty(partitionName) ? partitionName : string.Empty
         };
 
-        MutationResult response =
+        Grpc.MutationResult response =
             await _client.InvokeAsync(_client.GrpcClient.DeleteAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
         _client.CollectionLastMutationTimestamps[Name] = response.Timestamp;
 
-        return new MilvusMutationResult(response);
+        return new MutationResult(response);
     }
 
     /// <summary>
@@ -101,10 +101,10 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns></returns>
-    public async Task<MilvusSearchResults> SearchAsync<T>(
+    public async Task<SearchResults> SearchAsync<T>(
         string vectorFieldName,
         IReadOnlyList<ReadOnlyMemory<T>> vectors,
-        MilvusSimilarityMetricType metricType,
+        SimilarityMetricType metricType,
         int limit,
         SearchParameters? parameters = null,
         CancellationToken cancellationToken = default)
@@ -223,7 +223,7 @@ public partial class MilvusCollection
             await _client.InvokeAsync(_client.GrpcClient.SearchAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return new MilvusSearchResults
+        return new SearchResults
         {
             CollectionName = response.CollectionName,
             FieldsData = response.Results.FieldsData.Select(FieldData.FromGrpcFieldData).ToList(),
@@ -299,14 +299,14 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public Task<MilvusFlushResult> FlushAsync(CancellationToken cancellationToken = default)
+    public Task<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
         => _client.FlushAsync(new[] { Name }, cancellationToken);
 
     /// <summary>
     /// Returns sealed segments information of a collection.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task<IReadOnlyList<MilvusPersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
+    public async Task<IReadOnlyList<PersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         CancellationToken cancellationToken = default)
     {
         var request = new GetPersistentSegmentInfoRequest { CollectionName = Name };
@@ -315,7 +315,7 @@ public partial class MilvusCollection
             _client.GrpcClient.GetPersistentSegmentInfoAsync,
             request, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
-        return response.Infos.Select(i => new MilvusPersistentSegmentInfo(
+        return response.Infos.Select(i => new PersistentSegmentInfo(
                 i.CollectionID,
                 i.PartitionID,
                 i.SegmentID,
@@ -415,8 +415,8 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns><see cref="MilvusQuerySegmentInfoResult"/></returns>
-    public async Task<IReadOnlyList<MilvusQuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
+    /// <returns><see cref="QuerySegmentInfoResult"/></returns>
+    public async Task<IReadOnlyList<QuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
         CancellationToken cancellationToken = default)
     {
         var request = new GetQuerySegmentInfoRequest { CollectionName = Name };
@@ -426,9 +426,9 @@ public partial class MilvusCollection
                     cancellationToken)
                 .ConfigureAwait(false);
 
-        return response.Infos.Select(i => new MilvusQuerySegmentInfoResult(
+        return response.Infos.Select(i => new QuerySegmentInfoResult(
                 i.CollectionID, i.IndexName, i.IndexID, i.MemSize, i.NodeID, i.NumRows, i.PartitionID, i.SegmentID,
-                (MilvusSegmentState)i.State))
+                (SegmentState)i.State))
             .ToList();
     }
 
@@ -446,7 +446,7 @@ public partial class MilvusCollection
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
-        MilvusFlushResult response = await FlushAsync(cancellationToken).ConfigureAwait(false);
+        FlushResult response = await FlushAsync(cancellationToken).ConfigureAwait(false);
 
         foreach (IReadOnlyList<long> ids in response.CollSegIDs.Values.Where(p => p.Count > 0))
         {

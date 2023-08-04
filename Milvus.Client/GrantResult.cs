@@ -7,9 +7,9 @@
 /// <see cref="MilvusClient.ListGrantsForRoleAsync"/> and
 /// <see cref="Client.MilvusClient.SelectGrantForRoleAndObjectAsync(string, string, string, System.Threading.CancellationToken)"/>
 /// </remarks>
-public sealed class MilvusGrantEntity
+public sealed class GrantEntity
 {
-    internal MilvusGrantEntity(
+    internal GrantEntity(
         MilvusGrantorEntity grantor,
         string dbName,
         string @object,

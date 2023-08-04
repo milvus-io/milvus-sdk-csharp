@@ -130,7 +130,7 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public async Task<MilvusRoleResult?> SelectRoleAsync(
+    public async Task<RoleResult?> SelectRoleAsync(
         string roleName,
         bool includeUserInfo = true,
         CancellationToken cancellationToken = default)
@@ -156,8 +156,8 @@ public partial class MilvusClient
             case 0:
                 return null;
             case 1:
-                RoleResult result = response.Results[0];
-                return new MilvusRoleResult(result.Role.Name, result.Users);
+                Grpc.RoleResult result = response.Results[0];
+                return new RoleResult(result.Role.Name, result.Users);
             default:
                 throw new InvalidOperationException(
                     $"Unexpected multiple role results returned in {nameof(SelectRoleAsync)}");
@@ -179,7 +179,7 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public async Task<IReadOnlyList<MilvusRoleResult>> SelectAllRolesAsync(
+    public async Task<IReadOnlyList<RoleResult>> SelectAllRolesAsync(
         bool includeUserInfo = true,
         CancellationToken cancellationToken = default)
     {
@@ -194,7 +194,7 @@ public partial class MilvusClient
             await InvokeAsync(GrpcClient.SelectRoleAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return response.Results.Select(r => new MilvusRoleResult(r.Role.Name, r.Users)).ToList();
+        return response.Results.Select(r => new RoleResult(r.Role.Name, r.Users)).ToList();
     }
 
     /// <summary>
@@ -213,7 +213,7 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public async Task<MilvusUserResult?> SelectUserAsync(
+    public async Task<UserResult?> SelectUserAsync(
         string username,
         bool includeRoleInfo = true,
         CancellationToken cancellationToken = default)
@@ -239,8 +239,8 @@ public partial class MilvusClient
             case 0:
                 return null;
             case 1:
-                UserResult result = response.Results[0];
-                return new MilvusUserResult(result.User.Name, result.Roles);
+                Grpc.UserResult result = response.Results[0];
+                return new UserResult(result.User.Name, result.Roles);
             default:
                 throw new InvalidOperationException(
                     $"Unexpected multiple role results returned in {nameof(SelectRoleAsync)}");
@@ -262,7 +262,7 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public async Task<IReadOnlyList<MilvusUserResult>> SelectAllUsersAsync(
+    public async Task<IReadOnlyList<UserResult>> SelectAllUsersAsync(
         bool includeRoleInfo = true,
         CancellationToken cancellationToken = default)
     {
@@ -277,7 +277,7 @@ public partial class MilvusClient
             await InvokeAsync(GrpcClient.SelectUserAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return response.Results.Select(r => new MilvusUserResult(r.User.Name, r.Roles)).ToList();
+        return response.Results.Select(r => new UserResult(r.User.Name, r.Roles)).ToList();
     }
 
     /// <summary>
@@ -317,7 +317,7 @@ public partial class MilvusClient
         var request = new OperatePrivilegeRequest
         {
             Type = OperatePrivilegeType.Grant,
-            Entity = new GrantEntity
+            Entity = new Grpc.GrantEntity
             {
                 Role = new() { Name = roleName },
                 Object = new() { Name = @object },
@@ -367,7 +367,7 @@ public partial class MilvusClient
         var request = new OperatePrivilegeRequest
         {
             Type = OperatePrivilegeType.Revoke,
-            Entity = new GrantEntity
+            Entity = new Grpc.GrantEntity
             {
                 Role = new() { Name = roleName },
                 Object = new() { Name = @object },
@@ -390,7 +390,7 @@ public partial class MilvusClient
     /// <param name="roleName">Role name. RoleName cannot be empty or null.</param>
     /// <param name="cancellationToken">Cancellation name.</param>
     /// <returns></returns>
-    public async Task<IReadOnlyList<MilvusGrantEntity>> ListGrantsForRoleAsync(
+    public async Task<IReadOnlyList<GrantEntity>> ListGrantsForRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
     {
@@ -402,7 +402,7 @@ public partial class MilvusClient
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Entities
-            .Select(e => new MilvusGrantEntity(
+            .Select(e => new GrantEntity(
                 MilvusGrantorEntity.Parse(e.Grantor),
                 e.DbName,
                 e.Object.Name,
@@ -424,7 +424,7 @@ public partial class MilvusClient
     /// <param name="objectName">objectName. objectName cannot be empty or null.</param>
     /// <param name="cancellationToken">Cancellation name.</param>
     /// <returns></returns>
-    public async Task<IReadOnlyList<MilvusGrantEntity>> SelectGrantForRoleAndObjectAsync(
+    public async Task<IReadOnlyList<GrantEntity>> SelectGrantForRoleAndObjectAsync(
         string roleName,
         string @object,
         string objectName,
@@ -445,7 +445,7 @@ public partial class MilvusClient
         }, static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.Entities
-            .Select(e => new MilvusGrantEntity(
+            .Select(e => new GrantEntity(
                 MilvusGrantorEntity.Parse(e.Grantor),
                 e.DbName,
                 e.Object.Name,
