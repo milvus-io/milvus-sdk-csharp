@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>2.2.1-alpha.5</Version>
+    <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DeveloperBuild)' == 'True'">net6.0</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AnalysisMode>All</AnalysisMode>
+
+    <Authors>weigan</Authors>
+    <Description>Milvus C# SDK</Description>
+    <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
+    <PackageIcon>milvussharp.png</PackageIcon>
+    <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
+    <PackageTags>milvus;vector database</PackageTags>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\docs\readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\milvussharp.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Protobuf Include="Protos\proto\common.proto" GrpcServices="Client" Access="internal" />
+    <Protobuf Include="Protos\proto\schema.proto" GrpcServices="Client" ProtoRoot="Protos\proto" Access="internal" />
+    <Protobuf Include="Protos\proto\milvus.proto" GrpcServices="Client" ProtoRoot="Protos\proto" Access="internal" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Bcl.HashCode" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Google.Protobuf" />
+    <Using Include="Grpc.Core" />
+    <Using Include="Grpc.Net.Client" />
+    <Using Include="Milvus.Client.Grpc" />
+  </ItemGroup>
+
+</Project>

@@ -1,70 +1,63 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+  pull_request:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  # build on windows
-  build-windows:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        # TODO: Test against latest previews too. This currently doesn't work because preview releases don't publish
+        # a milvus-standalone-docker-compose.yml
+        milvus_version: [v2.2.11]
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
           submodules: 'recursive'
           fetch-depth: 0
-      - name: 'Cache: .nuke/temp, ~/.nuget/packages'
-        uses: actions/cache@v3
-        with:
-          path: |
-            .nuke/temp
-            ~/.nuget/packages
-          key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
+
+      - name: Start Milvus
+        run: |
+          wget https://github.com/milvus-io/milvus/releases/download/${{ matrix.milvus_version }}/milvus-standalone-docker-compose.yml -O docker-compose.yml
+
+          # Turn on authorization. This involves downloading milvus.yml and setting authorization to true, and then
+          # using a docker-compose.override.yml file to get it picked up.
+          wget https://raw.githubusercontent.com/milvus-io/milvus/${{ matrix.milvus_version }}/configs/milvus.yaml
+          sed -i 's/authorizationEnabled: false/authorizationEnabled: true/' milvus.yaml
+
+          cat <<EOF > docker-compose.override.yml
+          services:
+            standalone:
+              volumes:
+                - ${PWD}/milvus.yaml:/milvus/configs/milvus.yaml
+          EOF
+
+          sudo docker-compose up -d
 
       - name: Setup .NET SDKs
         uses: actions/setup-dotnet@v3
+
+      - name: Wait for Milvus to become available
+        run: sleep 30 # TODO: Find a better way to do this, e.g. try polling with curl until we detect that milvus is up
+
+      - name: Test
+        run: dotnet test --logger "GitHubActions;report-warnings=false"
+
+      - name: Pack
+        run: dotnet pack -c Release -o Artifacts
+
+      - name: Upload artifacts (nupkg)
+        uses: actions/upload-artifact@v3
         with:
-          dotnet-version: |
-            7.0.x
+          name: nupkgs
+          path: |
+            Artifacts/*.nupkg
+            Artifacts/*.snupkg
 
-      - name: Run NUKE
-        run: .\src\build.ps1
-        env:
-          NuGetApiKey: ${{ secrets.NugetKey }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # build on ubuntu
-  #build-ubuntu:
-  #  runs-on: ubuntu-latest
-
-  #  # Steps represent a sequence of tasks that will be executed as part of the job
-  #  steps:
-    
-  #  # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-  #    - uses: actions/checkout@v2
-  #      with:
-  #        submodules: 'recursive'
-  #        fetch-depth: 0
-  #    - name: 'Cache: .nuke/temp, ~/.nuget/packages'
-  #      uses: actions/cache@v3
-  #      with:
-  #        path: |
-  #          .nuke/temp
-  #          ~/.nuget/packages
-  #        key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-
-  #    - name: Setup .NET SDKs
-  #      uses: actions/setup-dotnet@v3
-  #      with:
-  #        dotnet-version: |
-  #          6.0.x
-  #          7.0.x
-
-  #    - name: Run NUKE
-  #      run: ./src/build.cmd
-  #      env:
-  #        NuGetApiKey: ${{ secrets.NugetKey }}
-  #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
