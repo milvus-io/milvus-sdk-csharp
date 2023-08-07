@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>2.2.1-alpha.5</Version>
     <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(DeveloperBuild)' == 'True'">net6.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -9,6 +8,7 @@
 
     <Authors>weigan</Authors>
     <Description>Milvus C# SDK</Description>
+    <PackageId>IO.Milvus</PackageId>
     <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
     <PackageIcon>milvussharp.png</PackageIcon>
     <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
