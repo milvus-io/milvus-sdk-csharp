@@ -8,7 +8,6 @@
 
     <Authors>weigan</Authors>
     <Description>Milvus C# SDK</Description>
-    <PackageId>IO.Milvus</PackageId>
     <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
     <PackageIcon>milvussharp.png</PackageIcon>
     <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
