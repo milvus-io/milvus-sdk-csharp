@@ -7,7 +7,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalysisMode>All</AnalysisMode>
 
-    <Authors>weigan</Authors>
     <Description>Milvus C# SDK</Description>
     <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
     <PackageIcon>milvussharp.png</PackageIcon>

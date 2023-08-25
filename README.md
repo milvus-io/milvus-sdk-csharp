@@ -22,8 +22,9 @@ Milvus.Client is delivered via NuGet package manager.
 
 | Nuget version | Branch | Description | Milvus version
 | --- | --- | --- | --- |
-| v2.2.1 | main | Support restfulapi and grpc | 2.2.x |
-| v2.2.0 | 2.2 | Support grpc only | 2.2.x |
+| v2.2.2 | main | Support grpc only | 2.2.x |
+| v2.2.1 | main | Support restfulapi and grpc[**Obsolete**] | 2.2.x |
+| v2.2.0 | 2.2 | Support grpc only[**Obsolete**] | 2.2.x |
 
 ## Docs 📚
 
@@ -44,8 +45,5 @@ You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
 * [05.Build an Index on Vectors.ipynb](./docs/notebooks/05.Build%20an%20Index%20on%20Vectors.ipynb)
 * [06.Search.ipynb](./docs/notebooks/06.Search.ipynb)
 * [07.Query.ipynb](./docs/notebooks/07.Query.ipynb)
-* [08.Calculate Distance.ipynb](./docs/notebooks/08.Calculate%20Distance.ipynb)
----
-* [x1.OpenAISample.ipynb](./docs/notebooks/x1.OpenAISample.ipynb)
 
 > Requirements: C# notebooks require .NET 7 and the VS Code Polyglot extension.

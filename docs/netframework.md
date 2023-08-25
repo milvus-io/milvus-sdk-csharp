@@ -20,11 +20,9 @@
         public MilvusServiceClient CreateClient()
         {
             MilvusClient client = new Milvus.Client.MilvusClient(
-                "{Endpoint}",
-                {Port},
+                grpcChannel:CreateChannel($"{Endpoint}:{Port}"
                 "{Usename}",
-                "Password",
-                grpcChannel:CreateChannel($"{Endpoint}:{Port}")
+                "Password")
             );
         }
 ```
