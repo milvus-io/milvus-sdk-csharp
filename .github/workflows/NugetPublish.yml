@@ -1,0 +1,44 @@
+name: Publish to nuget.org
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Setup .NET SDKs
+        uses: actions/setup-dotnet@v3
+
+      # https://github.com/dotnet-campus/dotnetCampus.TagToVersion
+      - name: Install dotnet tool
+        run: dotnet tool install -g dotnetCampus.TagToVersion
+
+      - name: Set tag to version  
+        run: dotnet TagToVersion -t ${{ github.ref }} -f Version.props
+
+      - name: Build
+        run: dotnet build -c Release
+
+      - name: Pack
+        run: dotnet pack -c Release -o Artifacts
+
+      - name: Upload artifacts (nupkg)
+        uses: actions/upload-artifact@v3
+        with:
+          name: nupkgs
+          path: |
+            Artifacts/*.nupkg
+            Artifacts/*.snupkg
+
+      - name: Publish to nuget.org
+        run: dotnet nuget push Artifacts/*.nupkg --api-key ${{ secrets.NugetKey }} --source https://api.nuget.org/v3/index.json
