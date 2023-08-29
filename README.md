@@ -2,8 +2,8 @@
 
 <div class="column" align="middle">
   <a href="https://milvusio.slack.com/archives/C053HTUQGUC"><img src="https://img.shields.io/badge/Join-Slack-orange?logo=slack&amp;logoColor=white&style=flat-square"></a>
-  <img src="https://img.shields.io/nuget/v/io.milvus"/>
-  <img src="https://img.shields.io/nuget/dt/io.milvus"/>
+  <img src="https://img.shields.io/nuget/v/milvus.client"/>
+  <img src="https://img.shields.io/nuget/dt/milvus.client"/>
 </div>
 
 <div align="middle">
