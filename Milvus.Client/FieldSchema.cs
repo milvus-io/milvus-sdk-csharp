@@ -76,7 +76,7 @@ public sealed class FieldSchema
     /// <param name="name">The field name.</param>
     /// <param name="dimension">The dimension of the vector. Must be greater than zero.</param>
     /// <param name="description">An optional description for the field.</param>
-    public static FieldSchema CreateFloatVector(string name, long dimension, string description = "")
+    public static FieldSchema CreateFloatVector(string name, int dimension, string description = "")
         => new(name, MilvusDataType.FloatVector, description: description) { Dimension = dimension };
 
     /// <summary>
@@ -85,7 +85,7 @@ public sealed class FieldSchema
     /// <param name="name">The field name.</param>
     /// <param name="dimension">The dimension of the vector. Must be greater than zero.</param>
     /// <param name="description">An optional description for the field.</param>
-    public static FieldSchema CreateBinaryVector(string name, long dimension, string description = "")
+    public static FieldSchema CreateBinaryVector(string name, int dimension, string description = "")
         => new(name, MilvusDataType.BinaryVector, description: description) { Dimension = dimension };
 
     /// <summary>
@@ -191,7 +191,7 @@ public sealed class FieldSchema
     /// The dimension of the vector. Mandatory for <see cref="MilvusDataType.FloatVector" />
     /// and <see cref="MilvusDataType.BinaryVector" /> fields, and must be greater than zero.
     /// </summary>
-    public long? Dimension { get; set; }
+    public int? Dimension { get; set; }
 
     /// <summary>
     /// The state of the field.

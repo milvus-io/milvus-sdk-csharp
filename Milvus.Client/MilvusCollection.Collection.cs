@@ -46,7 +46,7 @@ public partial class MilvusCollection
                         break;
 
                     case Constants.VectorDim:
-                        milvusField.Dimension = long.Parse(parameter.Value, CultureInfo.InvariantCulture);
+                        milvusField.Dimension = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
                 }
             }
