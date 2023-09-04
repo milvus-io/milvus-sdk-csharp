@@ -1,8 +1,15 @@
-﻿namespace Milvus.Client;
+﻿#if NET462
+using System.Runtime.Serialization;
+#endif
+
+namespace Milvus.Client;
 
 /// <summary>
 /// Exception thrown for errors related to the Milvus client.
 /// </summary>
+#if NET462
+[Serializable]
+#endif
 public sealed class MilvusException : Exception
 {
     /// <summary>
@@ -33,4 +40,11 @@ public sealed class MilvusException : Exception
     {
         ErrorCode = errorCode;
     }
+
+#if NET462
+    private MilvusException(SerializationInfo info, StreamingContext context)
+    {
+        info.AddValue(nameof(ErrorCode), ErrorCode);
+    }
+#endif
 }
