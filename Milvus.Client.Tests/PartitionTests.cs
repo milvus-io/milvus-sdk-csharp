@@ -39,13 +39,13 @@ public class PartitionTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("float_vector");
 
         await Collection.LoadPartitionsAsync(new[] { "partition" });
-        await Collection.ReleasePartitionAsync(new[] { "partition" });
+        await Collection.ReleasePartitionsAsync(new[] { "partition" });
     }
 
     [Fact]
     public async Task Drop()
     {
-        await Collection.DropPartitionsAsync("partition");
+        await Collection.DropPartitionAsync("partition");
         Assert.False(await Collection.HasPartitionAsync("partition"));
     }
 
