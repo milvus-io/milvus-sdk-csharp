@@ -6,8 +6,8 @@ public partial class MilvusCollection
     /// Creates an index.
     /// </summary>
     /// <param name="fieldName">The name of the field in the collection for which the index will be created.</param>
-    /// <param name="milvusIndexType">The type of the index to be created.</param>
-    /// <param name="milvusMetricType"></param>
+    /// <param name="indexType">The type of the index to be created.</param>
+    /// <param name="metricType"></param>
     /// <param name="extraParams">
     /// Extra parameters specific to each index type; consult the documentation for your index type for more details.
     /// </param>
@@ -17,8 +17,8 @@ public partial class MilvusCollection
     /// </param>
     public async Task CreateIndexAsync(
         string fieldName,
-        IndexType? milvusIndexType = null,
-        SimilarityMetricType? milvusMetricType = null,
+        IndexType? indexType = null,
+        SimilarityMetricType? metricType = null,
         IDictionary<string, string>? extraParams = null,
         string? indexName = null,
         CancellationToken cancellationToken = default)
@@ -36,21 +36,21 @@ public partial class MilvusCollection
             request.IndexName = indexName;
         }
 
-        if (milvusMetricType is not null)
+        if (metricType is not null)
         {
             request.ExtraParams.Add(new Grpc.KeyValuePair
             {
                 Key = "metric_type",
-                Value = GetGrpcMetricType(milvusMetricType.Value)
+                Value = GetGrpcMetricType(metricType.Value)
             });
         }
 
-        if (milvusIndexType is not null)
+        if (indexType is not null)
         {
             request.ExtraParams.Add(new Grpc.KeyValuePair
             {
                 Key = "index_type",
-                Value = GetGrpcIndexType(milvusIndexType.Value)
+                Value = GetGrpcIndexType(indexType.Value)
             });
         }
 
