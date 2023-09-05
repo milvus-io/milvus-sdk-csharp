@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - main
+    - "2.3"
   pull_request:
 
 jobs:
@@ -14,7 +15,7 @@ jobs:
       matrix:
         # TODO: Test against latest previews too. This currently doesn't work because preview releases don't publish
         # a milvus-standalone-docker-compose.yml
-        milvus_version: [v2.2.11]
+        milvus_version: [v2.3.0]
 
     steps:
       - name: Checkout
