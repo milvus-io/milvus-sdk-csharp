@@ -115,12 +115,12 @@ public partial class MilvusCollection
     {
         Verify.NotNullOrWhiteSpace(fieldName);
 
-        var request = new DropIndexRequest
+        var request = new DropIndexRequest { CollectionName = Name, FieldName = fieldName };
+
+        if (indexName is not null)
         {
-            CollectionName = Name,
-            FieldName = fieldName,
-            IndexName = indexName
-        };
+            request.IndexName = indexName;
+        }
 
         await _client.InvokeAsync(_client.GrpcClient.DropIndexAsync, request, cancellationToken).ConfigureAwait(false);
     }
