@@ -55,10 +55,11 @@ public partial class MilvusCollection
     /// Deletes rows from a collection by given expression.
     /// </summary>
     /// <param name="expression">A boolean expression determining which rows are to be deleted.</param>
-    /// <param name="partitionName">An optional name of a partition from which rows are to be deleted..</param>
+    /// <param name="partitionName">An optional name of a partition from which rows are to be deleted.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>A <see cref="MutationResult" /> containing information about the drop operation.</returns>
     public async Task<MutationResult> DeleteAsync(
         string expression,
         string? partitionName = null,
@@ -299,6 +300,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>A <see cref="FlushResult" /> containing information about the flush operation.</returns>
     public Task<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
         => _client.FlushAsync(new[] { Name }, cancellationToken);
 
@@ -325,13 +327,14 @@ public partial class MilvusCollection
     }
 
     /// <summary>
-    /// Retrieves rows from a collection via scalar filtering based on a boolean expression
+    /// Retrieves rows from a collection via scalar filtering based on a boolean expression.
     /// </summary>
     /// <param name="expression">A boolean expression determining which rows are to be returned.</param>
     /// <param name="parameters">Various additional optional parameters to configure the query.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>A list of <see cref="FieldData{TData}" /> instances with the query results.</returns>
     public async Task<IReadOnlyList<FieldData>> QueryAsync(
         string expression,
         QueryParameters? parameters = null,

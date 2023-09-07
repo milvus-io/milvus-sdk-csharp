@@ -203,8 +203,7 @@ public class CollectionTests : IAsyncLifetime
             });
 
         await collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
-            new Dictionary<string, string>(), "float_vector_idx");
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
         await collection.LoadAsync();
         await collection.WaitForCollectionLoadAsync(
@@ -230,8 +229,7 @@ public class CollectionTests : IAsyncLifetime
             });
 
         await collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
-            new Dictionary<string, string>(), "float_vector_idx");
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
         Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
         Assert.DoesNotContain(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory),

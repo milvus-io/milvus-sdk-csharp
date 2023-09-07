@@ -7,11 +7,11 @@ public partial class MilvusCollection
     /// </summary>
     /// <param name="fieldName">The name of the field in the collection for which the index will be created.</param>
     /// <param name="indexType">The type of the index to be created.</param>
-    /// <param name="metricType"></param>
+    /// <param name="metricType">Method used to measure the distance between vectors during search.</param>
+    /// <param name="indexName">An optional name for the index to be created.</param>
     /// <param name="extraParams">
     /// Extra parameters specific to each index type; consult the documentation for your index type for more details.
     /// </param>
-    /// <param name="indexName">An optional name for the index to be created.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
@@ -19,8 +19,8 @@ public partial class MilvusCollection
         string fieldName,
         IndexType? indexType = null,
         SimilarityMetricType? metricType = null,
-        IDictionary<string, string>? extraParams = null,
         string? indexName = null,
+        IDictionary<string, string>? extraParams = null,
         CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
@@ -126,13 +126,14 @@ public partial class MilvusCollection
     }
 
     /// <summary>
-    /// Describes an index, returning information about it's configuration.
+    /// Describes an index, returning information about its configuration.
     /// </summary>
     /// <param name="fieldName">The name of the field which has the index to be described.</param>
     /// <param name="indexName">An optional name of the index to be described.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>A list of <see cref="MilvusIndexInfo" /> containing information about the matching indexes.</returns>
     public async Task<IList<MilvusIndexInfo>> DescribeIndexAsync(
         string fieldName,
         string? indexName = null,
@@ -171,15 +172,25 @@ public partial class MilvusCollection
     /// <summary>
     /// Gets the state of an index.
     /// </summary>
-    /// <param name="fieldName">The vector field name in this particular collection</param>
+    /// <param name="fieldName">The name of the field which has the index to get the state for.</param>
+    /// <param name="indexName">An optional name of the index to get the state for.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    public async Task<IndexState> GetIndexStateAsync(string fieldName, CancellationToken cancellationToken = default)
+    /// <returns></returns>
+    public async Task<IndexState> GetIndexStateAsync(
+        string fieldName,
+        string? indexName = null,
+        CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
 
         var request = new GetIndexStateRequest { CollectionName = Name, FieldName = fieldName };
+
+        if (indexName is not null)
+        {
+            request.IndexName = indexName;
+        }
 
         GetIndexStateResponse response =
             await _client.InvokeAsync(_client.GrpcClient.GetIndexStateAsync, request, static r => r.Status,
@@ -207,6 +218,9 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>
+    /// An <see cref="IndexBuildProgress" /> with the number of rows indexed and the total number of rows.
+    /// </returns>
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string fieldName,
         string? indexName = null,
@@ -233,8 +247,8 @@ public partial class MilvusCollection
     /// Polls Milvus for building progress of an index until it is fully built.
     /// To perform a single progress check, use <see cref="GetIndexBuildProgressAsync" />.
     /// </summary>
-    /// <param name="fieldName">The vector field name in this particular collection</param>
-    /// <param name="indexName">An optional name for the index to be created.</param>
+    /// <param name="fieldName">The name of the field which has the index.</param>
+    /// <param name="indexName">An optional name of the index.</param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>

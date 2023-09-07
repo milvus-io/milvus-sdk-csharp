@@ -247,8 +247,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
         await binaryVectorCollection.CreateIndexAsync(
             "binary_vector", indexType, similarityMetricType,
-            new Dictionary<string, string>() { { "nlist", "128" } },
-            "float_vector_idx");
+            "float_vector_idx", new Dictionary<string, string>() { { "nlist", "128" } });
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
@@ -387,8 +386,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
                 });
 
             await Collection.CreateIndexAsync(
-                "float_vector", IndexType.Flat, SimilarityMetricType.L2,
-                new Dictionary<string, string>(), "float_vector_idx");
+                "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
             long[] ids = { 1, 2, 3, 4, 5 };
             string[] strings = { "one", "two", "three", "four", "five" };

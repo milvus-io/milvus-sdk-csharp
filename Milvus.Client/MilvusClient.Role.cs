@@ -1,18 +1,19 @@
-﻿using Google.Protobuf.Collections;
-
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 public partial class MilvusClient
 {
     /// <summary>
-    /// Create a role.
+    /// Creates a role.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// available in <c>Milvus 2.2.9</c>
+    /// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
+    /// </para>
+    /// <para>
+    /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <param name="roleName">Role name that will be created.</param>
+    /// <param name="roleName">The name of the role to be created.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
@@ -27,18 +28,20 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Drop a role.
+    /// Drops a role.
     /// </summary>
     /// <remarks>
-    ///  <para>
-    /// available in <c>Milvus 2.2.9</c>
+    /// <para>
+    /// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
+    /// </para>
+    /// <para>
+    /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <param name="roleName"></param>
+    /// <param name="roleName">The name of the role to be dropped.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
     public async Task DropRoleAsync(string roleName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(roleName);
@@ -50,18 +53,18 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Add user to role.
+    /// Adds a user to a role.
     /// </summary>
     /// <remarks>
-    ///<para>
-    /// The user will get permissions that the role are allowed to perform operations.
-    ///</para>
     /// <para>
-    /// available in <c>Milvus 2.2.9</c>
+    /// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
+    /// </para>
+    /// <para>
+    /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <param name="username">Username.</param>
-    /// <param name="roleName">Role name.</param>
+    /// <param name="username">The name of the username to be added to the role.</param>
+    /// <param name="roleName">The name of the role the user will be added to.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
@@ -83,18 +86,18 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    /// Remove user from role.
+    /// Removes a user from a role.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The user will remove permissions that the role are allowed to perform operations.
+    /// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
     /// </para>
     /// <para>
-    /// available in <c>Milvus 2.2.9</c>
+    /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <param name="username">Username.</param>
-    /// <param name="roleName">RoleName.</param>
+    /// <param name="username">The name of the user to be removed from the role.</param>
+    /// <param name="roleName">The name of the role from which the user is to be removed.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
@@ -130,6 +133,10 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
+    /// <returns>
+    /// A <see cref="RoleResult" /> instance containing information about the role, or <c>null</c> if the role does not
+    /// exist.
+    /// </returns>
     public async Task<RoleResult?> SelectRoleAsync(
         string roleName,
         bool includeUserInfo = true,
@@ -179,6 +186,7 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
+    /// <returns>A list of <see cref="RoleResult" /> instances containing information about all the roles.</returns>
     public async Task<IReadOnlyList<RoleResult>> SelectAllRolesAsync(
         bool includeUserInfo = true,
         CancellationToken cancellationToken = default)
@@ -213,6 +221,10 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
+    /// <returns>
+    /// A <see cref="UserResult" /> instance containing information about the user, or <c>null</c> if the user does not
+    /// exist.
+    /// </returns>
     public async Task<UserResult?> SelectUserAsync(
         string username,
         bool includeRoleInfo = true,
@@ -262,6 +274,7 @@ public partial class MilvusClient
     /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
+    /// <returns>A list of <see cref="UserResult" /> instances containing information about all the users.</returns>
     public async Task<IReadOnlyList<UserResult>> SelectAllUsersAsync(
         bool includeRoleInfo = true,
         CancellationToken cancellationToken = default)
@@ -331,7 +344,6 @@ public partial class MilvusClient
 
     /// <summary>
     /// Revokes a privilege from a role.
-    /// <see href="https://milvus.io/docs/users_and_roles.md"/>
     /// </summary>
     /// <param name="roleName">The name of the role to be revoked a privilege.</param>
     /// <param name="object">
@@ -380,16 +392,21 @@ public partial class MilvusClient
     }
 
     /// <summary>
-    ///  List a grant info for the role and the specific object
+    /// Lists a grant info for the role and the specific object.
     /// </summary>
+    /// <param name="roleName">The name of the role.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
     /// <remarks>
     /// <para>
-    /// available in <c>Milvus 2.2.9</c>
+    /// For more details, see <see href="https://milvus.io/docs/rbac.md" />.
+    /// </para>
+    /// <para>
+    /// Roles are available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    /// <param name="roleName">Role name. RoleName cannot be empty or null.</param>
-    /// <param name="cancellationToken">Cancellation name.</param>
-    /// <returns></returns>
+    /// <returns>A list of <see cref="GrantEntity" /> instances describing the grants assigned to the role.</returns>
     public async Task<IReadOnlyList<GrantEntity>> ListGrantsForRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default)
