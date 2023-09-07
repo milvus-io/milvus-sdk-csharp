@@ -60,8 +60,7 @@ public class DatabaseTests : IAsyncLifetime
             });
 
         await collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2,
-            new Dictionary<string, string>(), "float_vector_idx");
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
         long[] ids = { 1, 2, 3, 4, 5 };
         string[] strings = { "one", "two", "three", "four", "five" };

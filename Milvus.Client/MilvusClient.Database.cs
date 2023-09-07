@@ -14,8 +14,7 @@ public partial class MilvusClient
     /// Available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
-    public async Task CreateDatabaseAsync(
-        string databaseName, CancellationToken cancellationToken = default)
+    public async Task CreateDatabaseAsync(string databaseName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(databaseName);
 
@@ -32,6 +31,7 @@ public partial class MilvusClient
     /// Available starting Milvus 2.2.9.
     /// </para>
     /// </remarks>
+    /// <returns>The list of available databases.</returns>
     public async Task<IReadOnlyList<string>> ListDatabasesAsync(CancellationToken cancellationToken = default)
     {
         ListDatabasesResponse response = await InvokeAsync(

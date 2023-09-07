@@ -26,6 +26,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>Whether the partition exists or not.</returns>
     public async Task<bool> HasPartitionAsync(string partitionName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(partitionName);
@@ -46,6 +47,9 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>
+    /// A list of <see cref="MilvusPartition" /> instances providing information about all partitions in the collection.
+    /// </returns>
     public async Task<IList<MilvusPartition>> ShowPartitionsAsync(CancellationToken cancellationToken = default)
     {
         var request = new ShowPartitionsRequest { CollectionName = Name };
@@ -93,7 +97,7 @@ public partial class MilvusCollection
     /// <summary>
     /// Loads partitions into memory so that they can be searched or queries.
     /// </summary>
-    /// <param name="partitionNames">The names of the partition to be loaded.</param>
+    /// <param name="partitionNames">The names of the partitions to be loaded.</param>
     /// <param name="replicaNumber">An optional replica number to load.</param>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
@@ -180,7 +184,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
+    /// <returns>A dictionary containing statistics about the partition.</returns>
     public async Task<IDictionary<string, string>> GetPartitionStatisticsAsync(
         string partitionName,
         CancellationToken cancellationToken = default)

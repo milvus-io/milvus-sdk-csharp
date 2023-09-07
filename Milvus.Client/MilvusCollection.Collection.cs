@@ -12,6 +12,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>A description of the collection.</returns>
     public async Task<MilvusCollectionDescription> DescribeAsync(CancellationToken cancellationToken = default)
     {
         var request = new DescribeCollectionRequest { CollectionName = Name };
@@ -110,6 +111,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>The number of entities currently in the collection.</returns>
     public async Task<int> GetEntityCountAsync(CancellationToken cancellationToken = default)
     {
         var request = new GetCollectionStatisticsRequest { CollectionName = Name };
@@ -149,7 +151,7 @@ public partial class MilvusCollection
     }
 
     /// <summary>
-    /// Release a collection loaded before
+    /// Releases a collection that has been previously loaded.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task ReleaseAsync(CancellationToken cancellationToken = default)
@@ -169,6 +171,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>The loading progress of the collection.</returns>
     public async Task<long> GetLoadingProgressAsync(
         IReadOnlyList<string>? partitionNames = null,
         CancellationToken cancellationToken = default)
@@ -192,7 +195,9 @@ public partial class MilvusCollection
     /// Polls Milvus for loading progress of a collection until it is fully loaded.
     /// To perform a single progress check, use <see cref="GetLoadingProgressAsync" />.
     /// </summary>
-    /// <param name="partitionNames">Partition names.</param>
+    /// <param name="partitionNames">
+    /// An optional list of partition names for which to check the loading progress.
+    /// </param>
     /// <param name="waitingInterval">Waiting interval. Defaults to 500 milliseconds.</param>
     /// <param name="timeout">How long to poll for before throwing a <see cref="TimeoutException" />.</param>
     /// <param name="progress">Provides information about the progress of the loading operation.</param>
@@ -220,11 +225,12 @@ public partial class MilvusCollection
     }
 
     /// <summary>
-    /// Returns the loading progress for a collection, and optionally one or more of its partitions.
+    /// Compacts the collection.
     /// </summary>
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    /// <returns>The compaction ID.</returns>
     public async Task<long> CompactAsync(CancellationToken cancellationToken = default)
     {
         MilvusCollectionDescription description = await DescribeAsync(cancellationToken).ConfigureAwait(false);

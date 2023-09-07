@@ -53,8 +53,9 @@ public class IndexTests : IAsyncLifetime
     [InlineData(IndexType.AutoIndex, """{ }""")]
     public async Task Index_types_float(IndexType indexType, string extraParamsString)
     {
-        await Collection.CreateIndexAsync("float_vector", indexType, SimilarityMetricType.L2,
-            JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
+        await Collection.CreateIndexAsync(
+            "float_vector", indexType, SimilarityMetricType.L2,
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
         await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
@@ -73,8 +74,9 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
             });
 
-        await Collection.CreateIndexAsync("binary_vector", indexType, SimilarityMetricType.Jaccard,
-            JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
+        await Collection.CreateIndexAsync(
+            "binary_vector", indexType, SimilarityMetricType.Jaccard,
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
         await Collection.WaitForIndexBuildAsync("binary_vector");
     }
 
@@ -140,11 +142,10 @@ public class IndexTests : IAsyncLifetime
 
         await Collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2,
-            extraParams: new Dictionary<string, string>
+            indexName: "float_vector_idx", extraParams: new Dictionary<string, string>
             {
                 ["nlist"] = "1024"
-            },
-            indexName: "float_vector_idx");
+            });
         await Collection.WaitForIndexBuildAsync("float_vector");
 
         var indexes = await Collection.DescribeIndexAsync("float_vector");
