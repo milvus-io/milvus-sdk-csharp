@@ -65,7 +65,7 @@ public class SearchParameters
     /// <remarks>
     /// See <see href="https://milvus.io/docs/index.md" /> for more information.
     /// </remarks>
-    public IDictionary<string, string> Parameters { get; } = new Dictionary<string, string>();
+    public IDictionary<string, string> ExtraParameters { get; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Whether to ignore growing segments during similarity searches. Defaults to <c>false</c>, indicating that

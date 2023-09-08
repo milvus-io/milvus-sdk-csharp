@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
+    <!-- We target net462 directly since the net462 version of Grpc.Net.Client automatically uses WinHttpHandler -->
+    <TargetFrameworks>net6.0;netstandard2.0;net462</TargetFrameworks>
     <TargetFrameworks Condition="'$(DeveloperBuild)' == 'True'">net6.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalysisMode>All</AnalysisMode>
@@ -43,7 +44,7 @@
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net462'">
     <PackageReference Include="Microsoft.Bcl.HashCode" />
   </ItemGroup>
 

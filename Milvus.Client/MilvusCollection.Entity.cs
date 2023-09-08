@@ -214,7 +214,7 @@ public partial class MilvusCollection
                 new Grpc.KeyValuePair
                 {
                     Key = Constants.Params,
-                    Value = parameters is null ? "{}" : Combine(parameters.Parameters)
+                    Value = parameters is null ? "{}" : Combine(parameters.ExtraParameters)
                 }
             });
 
@@ -227,7 +227,7 @@ public partial class MilvusCollection
         {
             CollectionName = response.CollectionName,
             FieldsData = response.Results.FieldsData.Select(FieldData.FromGrpcFieldData).ToList(),
-            Ids = MilvusIds.FromGrpc(response.Results.Ids),
+            Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
             NumQueries = response.Results.NumQueries,
             Scores = response.Results.Scores,
             Limit = response.Results.TopK,

@@ -31,10 +31,10 @@ public static class TestEnvironment
     public static string? Database { get; private set; }
 
     public static MilvusClient CreateClient()
-        => new MilvusClient(Host, Port, Username, Password, Database);
+        => new MilvusClient(Host, Username, Password, Port, ssl: false, Database);
 
     public static MilvusClient CreateClientForDatabase(string database)
-        => new MilvusClient(Host, Port, Username, Password, database);
+        => new MilvusClient(Host, Username, Password, Port, ssl: false, database);
 
     public static MilvusClient Client { get; }
 }

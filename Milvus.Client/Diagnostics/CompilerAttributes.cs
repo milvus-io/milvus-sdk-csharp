@@ -6,7 +6,7 @@
 
 namespace System.Runtime.CompilerServices;
 
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET462
 
 using ComponentModel;
 

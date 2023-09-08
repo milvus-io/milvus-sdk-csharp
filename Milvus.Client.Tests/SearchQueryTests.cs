@@ -162,6 +162,47 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     }
 
     [Fact]
+    public async Task Search_with_no_results()
+    {
+        // Create and load an empty collection
+        MilvusCollection collection = Client.GetCollection(nameof(Search_with_no_results));
+        string collectionName = collection.Name;
+
+        await collection.DropAsync();
+        collection = await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            SimilarityMetricType.L2,
+            limit: 2,
+            new() { OutputFields = { "id" } });
+
+        Assert.Equal(collectionName, results.CollectionName);
+
+        // When there are no results, Milvus returns a null "Ids" result, so there's no way to know if it's generally
+        // long or string IDs
+        Assert.Null(results.Ids.LongIds);
+        Assert.Null(results.Ids.StringIds);
+
+        Assert.Empty(results.FieldsData);
+        Assert.Equal(1, results.NumQueries);
+        Assert.Empty(results.Scores);
+    }
+
+    [Fact]
     public async Task Search_with_json_filter()
     {
         var results = await Collection.SearchAsync(

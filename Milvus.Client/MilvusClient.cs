@@ -19,8 +19,7 @@ public sealed partial class MilvusClient : IDisposable
     /// </summary>
     /// <param name="host">The hostname or IP address to connect to.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="username">The username to use for authentication.</param>
-    /// <param name="password">The password to use for authentication.</param>
+    /// <param name="ssl">Whether to use TLS/SSL. Defaults to <c>false</c>.</param>
     /// <param name="database">The database to connect to. Defaults to the default Milvus database.</param>
     /// <param name="callOptions">
     /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
@@ -29,12 +28,11 @@ public sealed partial class MilvusClient : IDisposable
     public MilvusClient(
         string host,
         int port = DefaultMilvusPort,
-        string? username = null,
-        string? password = null,
+        bool ssl = false,
         string? database = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
-        : this(new UriBuilder("http", host, port).Uri, username, password, database, callOptions, loggerFactory)
+        : this(new UriBuilder(ssl ? "https" : "http", host, port).Uri, database, callOptions, loggerFactory)
     {
         Verify.NotNull(host);
     }
@@ -43,8 +41,10 @@ public sealed partial class MilvusClient : IDisposable
     /// Creates a new <see cref="MilvusClient" />, connecting to the given hostname on the default Milvus port of 19530.
     /// </summary>
     /// <param name="host">The hostname or IP address to connect to.</param>
+    /// <param name="username">The username to use for authentication.</param>
+    /// <param name="password">The password to use for authentication.</param>
     /// <param name="port">The port to connect to. Defaults to 19530.</param>
-    /// <param name="apiKey">An API key to be used for authentication, instead of a username and password.</param>
+    /// <param name="ssl">Whether to use TLS/SSL. Defaults to <c>false</c>.</param>
     /// <param name="database">The database to connect to. Defaults to the default Milvus database.</param>
     /// <param name="callOptions">
     /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
@@ -52,14 +52,73 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         string host,
+        string username,
+        string password,
         int port = DefaultMilvusPort,
-        string? apiKey = null,
+        bool ssl = false,
         string? database = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
-        : this(new UriBuilder("http", host, port).Uri, apiKey, database, callOptions, loggerFactory)
+        : this(
+            new UriBuilder(ssl ? "https" : "http", host, port).Uri,
+            username, password, database, callOptions, loggerFactory)
     {
         Verify.NotNull(host);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="MilvusClient" />, connecting to the given hostname on the default Milvus port of 19530.
+    /// </summary>
+    /// <param name="host">The hostname or IP address to connect to.</param>
+    /// <param name="apiKey">An API key to be used for authentication, instead of a username and password.</param>
+    /// <param name="port">The port to connect to. Defaults to 19530.</param>
+    /// <param name="ssl">Whether to use TLS/SSL. Defaults to <c>false</c>.</param>
+    /// <param name="database">The database to connect to. Defaults to the default Milvus database.</param>
+    /// <param name="callOptions">
+    /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
+    /// </param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
+    public MilvusClient(
+        string host,
+        string apiKey,
+        int port = DefaultMilvusPort,
+        bool ssl = false,
+        string? database = null,
+        CallOptions callOptions = default,
+        ILoggerFactory? loggerFactory = null)
+        : this(new UriBuilder(ssl ? "https" : "http", host, port).Uri, apiKey, database, callOptions, loggerFactory)
+    {
+        Verify.NotNull(host);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="MilvusClient" />.
+    /// </summary>
+    /// <param name="endpoint">
+    /// A URI to use for connecting to Milvus via gRPC. Must be a valid URI containing the port (the default Milvus gRPC
+    /// port is 19530).
+    /// </param>
+    /// <param name="database">The database to connect to. Defaults to the default Milvus database.</param>
+    /// <param name="callOptions">
+    /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
+    /// </param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
+    public MilvusClient(
+        Uri endpoint,
+        string? database = null,
+        CallOptions callOptions = default,
+        ILoggerFactory? loggerFactory = null)
+        : this(
+            GrpcChannel.ForAddress(endpoint, new GrpcChannelOptions { LoggerFactory = loggerFactory }),
+            ownsGrpcChannel: true,
+            username: null,
+            password: null,
+            apiKey: null,
+            database,
+            callOptions,
+            loggerFactory)
+    {
+        Verify.NotNull(endpoint);
     }
 
     /// <summary>
@@ -78,8 +137,8 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         Uri endpoint,
-        string? username = null,
-        string? password = null,
+        string username,
+        string password,
         string? database = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
@@ -111,7 +170,7 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         Uri endpoint,
-        string? apiKey = null,
+        string apiKey,
         string? database = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
@@ -132,6 +191,26 @@ public sealed partial class MilvusClient : IDisposable
     /// Creates a new <see cref="MilvusClient" />.
     /// </summary>
     /// <param name="grpcChannel">The gRPC channel to use for connecting to Milvus.</param>
+    /// <param name="database">The database to connect to. Defaults to the default Milvus database.</param>
+    /// <param name="callOptions">
+    /// Optional gRPC call options to pass by default when sending requests, e.g. the default deadline.
+    /// </param>
+    /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
+    public MilvusClient(
+        GrpcChannel grpcChannel,
+        string? database = null,
+        CallOptions callOptions = default,
+        ILoggerFactory? loggerFactory = null)
+        : this(grpcChannel, ownsGrpcChannel: false, username: null, password: null, apiKey: null, database, callOptions,
+            loggerFactory)
+    {
+        Verify.NotNull(grpcChannel);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="MilvusClient" />.
+    /// </summary>
+    /// <param name="grpcChannel">The gRPC channel to use for connecting to Milvus.</param>
     /// <param name="username">The username to use for authentication.</param>
     /// <param name="password">The password to use for authentication.</param>
     /// <param name="database">The database to connect to. Defaults to the default Milvus database.</param>
@@ -141,8 +220,8 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         GrpcChannel grpcChannel,
-        string? username = null,
-        string? password = null,
+        string username,
+        string password,
         string? database = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
@@ -164,7 +243,7 @@ public sealed partial class MilvusClient : IDisposable
     /// <param name="loggerFactory">An optional logger factory through which the Milvus client will log.</param>
     public MilvusClient(
         GrpcChannel grpcChannel,
-        string? apiKey = null,
+        string apiKey,
         string? database = null,
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)

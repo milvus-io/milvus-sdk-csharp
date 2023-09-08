@@ -80,7 +80,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns></returns>
-    public Task LoadPartitionsAsync(
+    public Task LoadPartitionAsync(
         string partitionName,
         int replicaNumber = 1,
         CancellationToken cancellationToken = default)
@@ -130,7 +130,7 @@ public partial class MilvusCollection
     {
         Verify.NotNullOrWhiteSpace(partitionName);
 
-        return ReleasePartitionAsync(new[] { partitionName }, cancellationToken);
+        return ReleasePartitionsAsync(new[] { partitionName }, cancellationToken);
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns></returns>
-    public async Task ReleasePartitionAsync(
+    public async Task ReleasePartitionsAsync(
         IReadOnlyList<string> partitionNames,
         CancellationToken cancellationToken = default)
     {
@@ -163,7 +163,7 @@ public partial class MilvusCollection
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
     /// <returns></returns>
-    public async Task DropPartitionsAsync(string partitionName, CancellationToken cancellationToken = default)
+    public async Task DropPartitionAsync(string partitionName, CancellationToken cancellationToken = default)
     {
         Verify.NotNullOrWhiteSpace(partitionName);
 
