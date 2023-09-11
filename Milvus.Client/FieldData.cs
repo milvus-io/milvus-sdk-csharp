@@ -21,10 +21,16 @@ public abstract class FieldData
         IsDynamic = isDynamic;
     }
 
+    private protected FieldData(MilvusDataType dataType, bool isDynamic = false)
+    {
+        DataType = dataType;
+        IsDynamic = isDynamic;
+    }
+
     /// <summary>
     /// Field name
     /// </summary>
-    public string FieldName { get; private set; }
+    public string? FieldName { get; private set; }
 
     /// <summary>
     /// Row count.
@@ -45,6 +51,11 @@ public abstract class FieldData
     /// Is dynamic.
     /// </summary>
     public bool IsDynamic { get; private set; }
+
+    /// <summary>
+    /// Used only internally for dynamic fields, which get serialized to JSON.
+    /// </summary>
+    internal abstract object GetValueAsObject(int index);
 
     /// <summary>
     /// Get string data.
@@ -112,18 +123,18 @@ public abstract class FieldData
                 return fieldData.Scalars.DataCase switch
                 {
                     Grpc.ScalarField.DataOneofCase.BoolData
-                        => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data),
+                        => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data, fieldData.IsDynamic),
                     Grpc.ScalarField.DataOneofCase.FloatData
-                        => Create(fieldData.FieldName, fieldData.Scalars.FloatData.Data),
+                        => Create(fieldData.FieldName, fieldData.Scalars.FloatData.Data, fieldData.IsDynamic),
                     Grpc.ScalarField.DataOneofCase.IntData
-                        => Create(fieldData.FieldName, fieldData.Scalars.IntData.Data),
+                        => Create(fieldData.FieldName, fieldData.Scalars.IntData.Data, fieldData.IsDynamic),
                     Grpc.ScalarField.DataOneofCase.LongData
-                        => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data),
+                        => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data, fieldData.IsDynamic),
                     Grpc.ScalarField.DataOneofCase.StringData
-                        => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data),
+                        => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
                     Grpc.ScalarField.DataOneofCase.JsonData
                         => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data
-                            .Select(p => p.ToStringUtf8()).ToList()),
+                            .Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
 
                     _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
                 };
@@ -204,9 +215,13 @@ public abstract class FieldData
     /// </typeparam>
     /// <param name="fieldName">Field name</param>
     /// <param name="data">Data in this field</param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
-    public static FieldData<TData> Create<TData>(string fieldName, IReadOnlyList<TData> data)
-        => new(fieldName, data);
+    public static FieldData<TData> Create<TData>(
+        string fieldName,
+        IReadOnlyList<TData> data,
+        bool isDynamic = false)
+        => new(fieldName, data, isDynamic);
 
     /// <summary>
     /// Create a varchar field.
@@ -327,6 +342,10 @@ public class FieldData<TData> : FieldData
         : base(fieldName, milvusDataType, isDynamic)
         => Data = data;
 
+    internal FieldData(IReadOnlyList<TData> data, MilvusDataType milvusDataType, bool isDynamic)
+        : base(milvusDataType, isDynamic)
+        => Data = data;
+
     /// <summary>
     /// Vector data
     /// </summary>
@@ -348,10 +367,14 @@ public class FieldData<TData> : FieldData
 
         Grpc.FieldData fieldData = new()
         {
-            FieldName = FieldName,
             Type = (Grpc.DataType)DataType,
             IsDynamic = IsDynamic
         };
+
+        if (FieldName is not null)
+        {
+            fieldData.FieldName = FieldName;
+        }
 
         switch (DataType)
         {
@@ -433,6 +456,24 @@ public class FieldData<TData> : FieldData
         return fieldData;
     }
 
+    internal override object GetValueAsObject(int index)
+        => DataType switch
+        {
+            MilvusDataType.Bool => ((IReadOnlyList<bool>)Data)[index],
+            MilvusDataType.Int8 => ((IReadOnlyList<sbyte>)Data)[index],
+            MilvusDataType.Int16 => ((IReadOnlyList<short>)Data)[index],
+            MilvusDataType.Int32 => ((IReadOnlyList<int>)Data)[index],
+            MilvusDataType.Int64 => ((IReadOnlyList<long>)Data)[index],
+            MilvusDataType.Float => ((IReadOnlyList<float>)Data)[index],
+            MilvusDataType.Double => ((IReadOnlyList<double>)Data)[index],
+            MilvusDataType.String => ((IReadOnlyList<string>)Data)[index],
+            MilvusDataType.VarChar => ((IReadOnlyList<string>)Data)[index],
+            MilvusDataType.Json => ((IReadOnlyList<string>)Data)[index],
+
+            MilvusDataType.None => throw new MilvusException($"DataType Error:{DataType}"),
+            _ => throw new MilvusException($"DataType Error:{DataType}, not supported")
+        };
+
     /// <summary>
     /// Return string value of <see cref="FieldData{TData}"/>
     /// </summary>
@@ -442,8 +483,6 @@ public class FieldData<TData> : FieldData
 
     private void Check()
     {
-        Verify.NotNullOrWhiteSpace(FieldName);
-
         if (Data.Any() != true)
         {
             throw new MilvusException($"{nameof(FieldData)}.{nameof(Data)} is empty");

@@ -65,4 +65,7 @@ public sealed class BinaryVectorFieldData : FieldData<ReadOnlyMemory<byte>>
 
         return result;
     }
+
+    internal override object GetValueAsObject(int index)
+        => throw new NotSupportedException("Dynamic vector fields are not supported");
 }
