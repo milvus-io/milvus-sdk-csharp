@@ -41,4 +41,7 @@ public sealed class ByteStringFieldData : FieldData
             }
         };
     }
+
+    internal override object GetValueAsObject(int index)
+        => throw new NotSupportedException("Dynamic ByteString fields are not supported");
 }
