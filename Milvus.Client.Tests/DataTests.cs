@@ -46,14 +46,6 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     {
         DateTime before = DateTime.UtcNow;
 
-        await Client.CreateCollectionAsync(
-            CollectionName,
-            new[]
-            {
-                FieldSchema.Create<long>("id", isPrimaryKey: true),
-                FieldSchema.CreateFloatVector("float_vector", 2)
-            });
-
         await Task.Delay(100);
 
         MutationResult mutationResult = await InsertDataAsync(3, 4);
@@ -140,6 +132,37 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
         Assert.True(segmentInfos.All(p => p.State == SegmentState.Flushed));
     }
 
+    [Fact]
+    public async Task Insert_dynamic_field()
+    {
+        await Collection.DropAsync();
+
+        await TestEnvironment.Client.CreateCollectionAsync(
+            Collection.Name,
+            new CollectionSchema
+            {
+                Fields =
+                {
+                    FieldSchema.Create<long>("id", isPrimaryKey: true),
+                    FieldSchema.CreateFloatVector("float_vector", 2)
+                },
+                EnableDynamicFields = true
+            });
+
+        await Collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f }
+                }),
+                FieldData.CreateVarChar("unknown_varchar", new[] { "dynamic str1", "dynamic str2" }, isDynamic: true),
+                FieldData.Create("unknown_int", new[] { 8L, 9L }, isDynamic: true)
+            });
+    }
+
     private async Task<MutationResult> InsertDataAsync(long id1, long id2)
         => await Collection.InsertAsync(
             new FieldData[]
@@ -154,10 +177,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
 
     public class DataCollectionFixture : IAsyncLifetime
     {
-        public MilvusCollection Collection { get; }
-
-        public DataCollectionFixture()
-            => Collection = TestEnvironment.Client.GetCollection(CollectionName);
+        public MilvusCollection Collection { get; } = TestEnvironment.Client.GetCollection(CollectionName);
 
         public async Task InitializeAsync()
         {

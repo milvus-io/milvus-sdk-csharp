@@ -80,4 +80,7 @@ public sealed class FloatVectorFieldData : FieldData<ReadOnlyMemory<float>>
             }
         };
     }
+
+    internal override object GetValueAsObject(int index)
+        => throw new NotSupportedException("Dynamic vector fields are not supported");
 }

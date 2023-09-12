@@ -1,7 +1,10 @@
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using Google.Protobuf.Collections;
 
 namespace Milvus.Client;
 
@@ -33,6 +36,8 @@ public partial class MilvusCollection
             request.PartitionName = partitionName;
         }
 
+        Dictionary<string, object?>?[]? dynamicFieldsData = null;
+
         long count = data[0].RowCount;
         foreach (FieldData field in data)
         {
@@ -41,7 +46,34 @@ public partial class MilvusCollection
                 throw new MilvusException("All fields must have the same number of rows.");
             }
 
-            request.FieldsData.Add(field.ToGrpcFieldData());
+            if (field.IsDynamic)
+            {
+                dynamicFieldsData ??= new Dictionary<string, object?>[count];
+
+                for (int rowNum = 0; rowNum < count; rowNum++)
+                {
+                    Dictionary<string, object?> rowDynamicData =
+                        dynamicFieldsData[rowNum] ?? (dynamicFieldsData[rowNum] = new Dictionary<string, object?>());
+
+                    rowDynamicData[field.FieldName!] = field.GetValueAsObject(rowNum);
+                }
+            }
+            else
+            {
+                request.FieldsData.Add(field.ToGrpcFieldData());
+            }
+        }
+
+        if (dynamicFieldsData is not null)
+        {
+            string[] encodedJsonStrings = new string[count];
+            for (int rowNum = 0; rowNum < count; rowNum++)
+            {
+                encodedJsonStrings[rowNum] = JsonSerializer.Serialize(dynamicFieldsData[rowNum]);
+            }
+
+            FieldData metaFieldData = new FieldData<string>(encodedJsonStrings, MilvusDataType.Json, isDynamic: true);
+            request.FieldsData.Add(metaFieldData.ToGrpcFieldData());
         }
 
         request.NumRows = (uint)count;
@@ -216,15 +248,16 @@ public partial class MilvusCollection
                 }
             });
 
-
         Grpc.SearchResults response =
             await _client.InvokeAsync(_client.GrpcClient.SearchAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
+        List<FieldData> fieldData = ProcessReturnedFieldData(response.Results.FieldsData);
+
         return new SearchResults
         {
             CollectionName = response.CollectionName,
-            FieldsData = response.Results.FieldsData.Select(FieldData.FromGrpcFieldData).ToList(),
+            FieldsData = fieldData,
             Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
             NumQueries = response.Results.NumQueries,
             Scores = response.Results.Scores,
@@ -399,7 +432,7 @@ public partial class MilvusCollection
             await _client.InvokeAsync(_client.GrpcClient.QueryAsync, request, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-        return response.FieldsData.Select(FieldData.FromGrpcFieldData).ToList();
+        return ProcessReturnedFieldData(response.FieldsData);
     }
 
     /// <summary>
@@ -448,7 +481,140 @@ public partial class MilvusCollection
         }
     }
 
-    ulong CalculateGuaranteeTimestamp(string collectionName, ConsistencyLevel consistencyLevel, ulong? userProvidedGuaranteeTimestamp)
+    private static List<FieldData> ProcessReturnedFieldData(RepeatedField<Grpc.FieldData> grpcFields)
+    {
+        int fieldCount = grpcFields.Count;
+        List<FieldData> results = new List<FieldData>(fieldCount);
+
+        Grpc.FieldData? metaFieldData = null;
+
+        foreach (Grpc.FieldData grpcField in grpcFields)
+        {
+            if (grpcField.IsDynamic)
+            {
+                if (metaFieldData is not null)
+                {
+                    throw new NotSupportedException("Multiple dynamic fields in results");
+                }
+
+                metaFieldData = grpcField;
+            }
+            else
+            {
+                results.Add(FieldData.FromGrpcFieldData(grpcField));
+            }
+        }
+
+        if (metaFieldData is null)
+        {
+            return results;
+        }
+
+        // Dynamic data is present, parse out the fields from the JSON
+
+        if (metaFieldData.FieldCase != Grpc.FieldData.FieldOneofCase.Scalars
+            || metaFieldData.Scalars.DataCase != ScalarField.DataOneofCase.JsonData)
+        {
+            throw new NotSupportedException("Non-JSON dynamic field in results");
+        }
+
+        RepeatedField<ByteString> rawJsonValues = metaFieldData.Scalars.JsonData.Data;
+
+        Dictionary<string, Array> dynamicFields = new();
+
+        int rowCount = rawJsonValues.Count;
+        for (int rowNum = 0; rowNum < rowCount; rowNum++)
+        {
+            Utf8JsonReader jsonReader = new(metaFieldData.Scalars.JsonData.Data[rowNum].Span);
+
+            if (!jsonReader.Read() || jsonReader.TokenType != JsonTokenType.StartObject)
+            {
+                throw ParseError();
+            }
+
+            while (true)
+            {
+                if (!jsonReader.Read())
+                {
+                    throw ParseError();
+                }
+
+                if (jsonReader.TokenType == JsonTokenType.EndObject)
+                {
+                    break;
+                }
+
+                if (jsonReader.TokenType != JsonTokenType.PropertyName
+                    || jsonReader.GetString() is not string fieldName
+                    || !jsonReader.Read())
+
+                {
+                    throw ParseError();
+                }
+
+                switch (jsonReader.TokenType)
+                {
+                    case JsonTokenType.String:
+                        {
+                            if (!dynamicFields.TryGetValue(fieldName, out Array? array))
+                            {
+                                array = dynamicFields[fieldName] = new string[rowCount];
+                            }
+
+                            ((string[])array)[rowNum] = jsonReader.GetString()!;
+                            break;
+                        }
+
+                    case JsonTokenType.Number:
+                        {
+                            if (!dynamicFields.TryGetValue(fieldName, out Array? array))
+                            {
+                                array = dynamicFields[fieldName] = new long[rowCount];
+                            }
+
+                            ((long[])array)[rowNum] = jsonReader.GetInt64();
+                            break;
+                        }
+
+                    case JsonTokenType.True:
+                    case JsonTokenType.False:
+                        {
+                            if (!dynamicFields.TryGetValue(fieldName, out Array? array))
+                            {
+                                array = dynamicFields[fieldName] = new bool[rowCount];
+                            }
+
+                            ((bool[])array)[rowNum] = jsonReader.TokenType == JsonTokenType.True;
+                            break;
+                        }
+
+                    default:
+                        throw ParseError();
+                }
+            }
+
+            MilvusException ParseError()
+                => new MilvusException("Couldn't parse dynamic JSON data: " +
+                                       metaFieldData.Scalars.JsonData.Data[rowNum].ToStringUtf8());
+        }
+
+        foreach (KeyValuePair<string, Array> kvp in dynamicFields)
+        {
+            results.Add(kvp.Value switch
+            {
+                string[] stringArray => FieldData.CreateVarChar(kvp.Key, stringArray, isDynamic: true),
+                long[] longArray => FieldData.Create(kvp.Key, longArray, isDynamic: true),
+                bool[] boolArray => FieldData.Create(kvp.Key, boolArray, isDynamic: true),
+                _ => throw new MilvusException("Unexpected array type when deserializing dynamic data: " +
+                                               kvp.Value.GetType())
+            });
+        }
+
+        return results;
+    }
+
+    ulong CalculateGuaranteeTimestamp(
+        string collectionName, ConsistencyLevel consistencyLevel, ulong? userProvidedGuaranteeTimestamp)
     {
         if (userProvidedGuaranteeTimestamp is not null && consistencyLevel != ConsistencyLevel.Customized)
         {

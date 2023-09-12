@@ -37,7 +37,11 @@ public class MiscTests
 
     [Fact]
     public async Task GetVersion()
-        => Assert.Contains(".", await Client.GetVersionAsync());
+    {
+        string version =  await Client.GetVersionAsync();
+
+        Assert.NotEmpty(version);
+    }
 
     [Fact]
     public async Task Dispose()

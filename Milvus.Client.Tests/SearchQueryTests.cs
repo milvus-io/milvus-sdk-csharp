@@ -80,6 +80,82 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
     }
 
     [Fact]
+    public async Task Query_dynamic_field()
+    {
+        await Collection.DropAsync();
+
+        await Client.CreateCollectionAsync(
+            Collection.Name,
+            new CollectionSchema
+            {
+                Fields =
+                {
+                    FieldSchema.Create<long>("id", isPrimaryKey: true),
+                    FieldSchema.CreateFloatVector("float_vector", 2)
+                },
+                EnableDynamicFields = true
+            });
+
+        await Collection.CreateIndexAsync(
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
+
+        await Collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f },
+                    new[] { 5f, 6f }
+                }),
+                FieldData.CreateVarChar("dynamic_varchar", new[] { "str1", "str2", "str3" }, isDynamic: true),
+                FieldData.Create("dynamic_long", new[] { 8L, 9L, 10L }, isDynamic: true),
+                FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
+            });
+
+        await Collection.LoadAsync();
+        await Collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        IReadOnlyList<FieldData> fields = await Collection.QueryAsync(
+            "dynamic_long > 8",
+            new QueryParameters { OutputFields = { "*" } });
+
+        var idData = (FieldData<long>)Assert.Single(fields, d => d.FieldName == "id");
+        Assert.Equal(MilvusDataType.Int64, idData.DataType);
+        Assert.Equal(2, idData.RowCount);
+        Assert.False(idData.IsDynamic);
+        Assert.Collection(idData.Data,
+            id => Assert.Equal(2, id),
+            id => Assert.Equal(3, id));
+
+        var dynamicVarcharData = (FieldData<string>)Assert.Single(fields, d => d.FieldName == "dynamic_varchar");
+        Assert.Equal(MilvusDataType.VarChar, dynamicVarcharData.DataType);
+        Assert.Equal(2, dynamicVarcharData.RowCount);
+        Assert.True(dynamicVarcharData.IsDynamic);
+        Assert.Collection(dynamicVarcharData.Data,
+            s => Assert.Equal("str2", s),
+            s => Assert.Equal("str3", s));
+
+        var dynamicLongData = (FieldData<long>)Assert.Single(fields, d => d.FieldName == "dynamic_long");
+        Assert.Equal(MilvusDataType.Int64, dynamicLongData.DataType);
+        Assert.Equal(2, dynamicLongData.RowCount);
+        Assert.True(dynamicVarcharData.IsDynamic);
+        Assert.Collection(dynamicLongData.Data,
+            i => Assert.Equal(9L, i),
+            i => Assert.Equal(10L, i));
+
+        var dynamicBoolData = (FieldData<bool>)Assert.Single(fields, d => d.FieldName == "dynamic_bool");
+        Assert.Equal(MilvusDataType.Bool, dynamicBoolData.DataType);
+        Assert.Equal(2, dynamicBoolData.RowCount);
+        Assert.True(dynamicBoolData.IsDynamic);
+        Assert.Collection(dynamicBoolData.Data,
+            Assert.False,
+            Assert.True);
+    }
+
+    [Fact]
     public async Task Search_with_minimal_inputs()
     {
         var results = await Collection.SearchAsync(
@@ -224,13 +300,96 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
+    [Fact]
+    public async Task Search_with_dynamic_field_filter()
+    {
+        await Collection.DropAsync();
+
+        await Client.CreateCollectionAsync(
+            Collection.Name,
+            new CollectionSchema
+            {
+                Fields =
+                {
+                    FieldSchema.Create<long>("id", isPrimaryKey: true),
+                    FieldSchema.CreateFloatVector("float_vector", 2)
+                },
+                EnableDynamicFields = true
+            });
+
+        await Collection.CreateIndexAsync(
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
+
+        await Collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f },
+                    new[] { 5f, 6f }
+                }),
+                FieldData.CreateVarChar("dynamic_varchar", new[] { "str1", "str2", "str3" }, isDynamic: true),
+                FieldData.Create("dynamic_long", new[] { 8L, 9L, 10L }, isDynamic: true),
+                FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
+            });
+
+        await Collection.LoadAsync();
+        await Collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await Collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 3f, 4f } },
+            SimilarityMetricType.L2,
+            limit: 2,
+            new()
+            {
+                Expression = """dynamic_long > 8""",
+                OutputFields = { "*" }
+            });
+
+        var fields = results.FieldsData;
+
+        var idData = (FieldData<long>)Assert.Single(fields, d => d.FieldName == "id");
+        Assert.Equal(MilvusDataType.Int64, idData.DataType);
+        Assert.Equal(2, idData.RowCount);
+        Assert.False(idData.IsDynamic);
+        Assert.Collection(idData.Data,
+            id => Assert.Equal(2, id),
+            id => Assert.Equal(3, id));
+
+        var dynamicVarcharData = (FieldData<string>)Assert.Single(fields, d => d.FieldName == "dynamic_varchar");
+        Assert.Equal(MilvusDataType.VarChar, dynamicVarcharData.DataType);
+        Assert.Equal(2, dynamicVarcharData.RowCount);
+        Assert.True(dynamicVarcharData.IsDynamic);
+        Assert.Collection(dynamicVarcharData.Data,
+            s => Assert.Equal("str2", s),
+            s => Assert.Equal("str3", s));
+
+        var dynamicLongData = (FieldData<long>)Assert.Single(fields, d => d.FieldName == "dynamic_long");
+        Assert.Equal(MilvusDataType.Int64, dynamicLongData.DataType);
+        Assert.Equal(2, dynamicLongData.RowCount);
+        Assert.True(dynamicVarcharData.IsDynamic);
+        Assert.Collection(dynamicLongData.Data,
+            i => Assert.Equal(9L, i),
+            i => Assert.Equal(10L, i));
+
+        var dynamicBoolData = (FieldData<bool>)Assert.Single(fields, d => d.FieldName == "dynamic_bool");
+        Assert.Equal(MilvusDataType.Bool, dynamicBoolData.DataType);
+        Assert.Equal(2, dynamicBoolData.RowCount);
+        Assert.True(dynamicBoolData.IsDynamic);
+        Assert.Collection(dynamicBoolData.Data,
+            Assert.False,
+            Assert.True);
+    }
+
     [Theory]
     [InlineData(IndexType.BinFlat, SimilarityMetricType.Jaccard)]
     [InlineData(IndexType.BinFlat, SimilarityMetricType.Hamming)]
     [InlineData(IndexType.BinIvfFlat, SimilarityMetricType.Hamming)]
-    public async Task Search_binary_vector(
-        IndexType indexType,
-        SimilarityMetricType similarityMetricType)
+    public async Task Search_binary_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
     {
         MilvusCollection binaryVectorCollection = Client.GetCollection(nameof(Search_binary_vector));
         string collectionName = binaryVectorCollection.Name;
@@ -367,10 +526,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
     public class QueryCollectionFixture : IAsyncLifetime
     {
-        public MilvusCollection Collection { get; }
-
-        public QueryCollectionFixture()
-            => Collection = TestEnvironment.Client.GetCollection("CollectionName");
+        public MilvusCollection Collection { get; } = TestEnvironment.Client.GetCollection(nameof(SearchQueryTests));
 
         public async Task InitializeAsync()
         {
@@ -425,7 +581,7 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
     private readonly QueryCollectionFixture _queryCollectionFixture;
     private MilvusCollection Collection => _queryCollectionFixture.Collection;
-    private string CollectionName => Collection.Name; // TODO: Vemo
+    private string CollectionName => Collection.Name;
 
     public SearchQueryTests(QueryCollectionFixture queryCollectionFixture)
         => _queryCollectionFixture = queryCollectionFixture;
