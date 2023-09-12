@@ -10,6 +10,10 @@ namespace Milvus.Client;
 
 public partial class MilvusCollection
 {
+    private const ulong GuaranteeTimestampStrong = 0;
+    private const ulong GuaranteeTimestampEventually = 1;
+    private const ulong GuaranteeTimestampBounded = 2;
+
     /// <summary>
     /// Inserts rows of data into a collection.
     /// </summary>
@@ -201,25 +205,18 @@ public partial class MilvusCollection
         }
 
         // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
-        // from the former and should be sufficient. TODO: Confirm this.
+        // from the former and should be sufficient.
         if (parameters?.ConsistencyLevel is null)
         {
-            if (parameters?.GuaranteeTimestamp is null)
-            {
-                request.UseDefaultConsistency = true;
-            }
-            else
-            {
-                request.ConsistencyLevel = Grpc.ConsistencyLevel.Customized;
-                request.GuaranteeTimestamp = parameters.GuaranteeTimestamp.Value;
-            }
+            request.UseDefaultConsistency = true;
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(Name, ConsistencyLevel.Session, userProvidedGuaranteeTimestamp: null);
         }
         else
         {
             request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
             request.GuaranteeTimestamp =
-                CalculateGuaranteeTimestamp(
-                    Name, parameters.ConsistencyLevel.Value, parameters.GuaranteeTimestamp);
+                CalculateGuaranteeTimestamp(Name, parameters.ConsistencyLevel.Value,
+                    parameters.GuaranteeTimestamp);
         }
 
         Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
@@ -417,18 +414,11 @@ public partial class MilvusCollection
         }
 
         // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
-        // from the former and should be sufficient. TODO: Confirm this.
+        // from the former and should be sufficient.
         if (parameters?.ConsistencyLevel is null)
         {
-            if (parameters?.GuaranteeTimestamp is null)
-            {
-                request.UseDefaultConsistency = true;
-            }
-            else
-            {
-                request.ConsistencyLevel = Grpc.ConsistencyLevel.Customized;
-                request.GuaranteeTimestamp = parameters.GuaranteeTimestamp.Value;
-            }
+            request.UseDefaultConsistency = true;
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(Name, ConsistencyLevel.Session, userProvidedGuaranteeTimestamp: null);
         }
         else
         {
@@ -634,18 +624,16 @@ public partial class MilvusCollection
 
         ulong guaranteeTimestamp = consistencyLevel switch
         {
-            ConsistencyLevel.Strong => 0,
+            ConsistencyLevel.Strong => GuaranteeTimestampStrong,
 
             ConsistencyLevel.Session
                 => _client.CollectionLastMutationTimestamps.TryGetValue(collectionName, out ulong lastMutationTimestamp)
                     ? lastMutationTimestamp
-                    : 1,
+                    : GuaranteeTimestampEventually,
 
-            // TODO: This follows pymilvus, but confirm.
-            // TODO: The Java SDK subtracts a graceful period from the current timestamp instead.
-            ConsistencyLevel.BoundedStaleness => 2,
+            ConsistencyLevel.BoundedStaleness => GuaranteeTimestampBounded,
 
-            ConsistencyLevel.Eventually => 1,
+            ConsistencyLevel.Eventually => GuaranteeTimestampEventually,
 
             ConsistencyLevel.Customized => userProvidedGuaranteeTimestamp
                 ?? throw new ArgumentException(
