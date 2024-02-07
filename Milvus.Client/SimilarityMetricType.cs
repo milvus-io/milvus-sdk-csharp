@@ -125,4 +125,29 @@ public enum SimilarityMetricType
     /// For more details, see <see href="https://milvus.io/docs/metric.md#Substructure" />.
     /// </remarks>
     Substructure,
+
+    /// <summary>
+    /// <see cref="Cosine" /> is used to measure the cosine of the angle between two non-zero vectors in a multidimensional space,
+    /// reflecting the degree of similarity between them. The value ranges from -1 to 1, where 1 indicates that the vectors
+    /// are identical.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This metric is particularly useful for measuring the similarity in text analysis and other types of data where 
+    /// the magnitude of the vectors does not matter as much as the direction. In these cases, cosine similarity can 
+    /// effectively capture the similarity between vectors, regardless of their size.
+    /// </para>
+    /// <para>
+    /// It's widely used in applications involving natural language processing, search engines, and recommendation systems 
+    /// to calculate the similarity between documents or user preferences.
+    /// </para>
+    /// <para>
+    /// This metric type is valid for float vectors only.
+    /// </para>
+    /// <para>
+    /// For more details, see <see href="https://milvus.io/docs/metric.md#Cosine-Similarity" />.
+    /// </para>
+    /// </remarks>
+    Cosine,
+
 }
