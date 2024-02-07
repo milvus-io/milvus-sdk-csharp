@@ -80,6 +80,7 @@ public class IndexTests : IAsyncLifetime
     [Theory]
     [InlineData(SimilarityMetricType.L2)]
     [InlineData(SimilarityMetricType.Ip)]
+    [InlineData(SimilarityMetricType.Cosine)]
     public async Task Similarity_metric_types(SimilarityMetricType similarityMetricType)
     {
         await Collection.CreateIndexAsync("float_vector", IndexType.Flat, similarityMetricType);
