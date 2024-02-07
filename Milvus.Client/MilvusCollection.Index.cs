@@ -92,6 +92,7 @@ public partial class MilvusCollection
                 SimilarityMetricType.Invalid => "INVALID",
                 SimilarityMetricType.L2 => "L2",
                 SimilarityMetricType.Ip => "IP",
+                SimilarityMetricType.Cosine => "COSINE",
                 SimilarityMetricType.Jaccard => "JACCARD",
                 SimilarityMetricType.Tanimoto => "TANIMOTO",
                 SimilarityMetricType.Hamming => "HAMMING",
