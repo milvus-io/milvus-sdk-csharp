@@ -68,7 +68,6 @@ public enum MilvusErrorCode
     /// Coord is switching from standby mode to active mode
     /// </summary>
     NotReadyCoordActivating = Grpc.ErrorCode.NotReadyCoordActivating,
-    NotFoundTsafer = Grpc.ErrorCode.NotFoundTsafer,
 
     /// <summary>
     /// Service availability.

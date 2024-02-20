@@ -158,10 +158,27 @@ public partial class MilvusCollection
         {
             foreach (IndexDescription index in response.IndexDescriptions)
             {
+                IndexState state = index.State switch
+                {
+                    Grpc.IndexState.None => IndexState.None,
+                    Grpc.IndexState.Unissued => IndexState.Unissued,
+                    Grpc.IndexState.InProgress => IndexState.InProgress,
+                    Grpc.IndexState.Finished => IndexState.Finished,
+                    Grpc.IndexState.Failed => IndexState.Failed,
+                    Grpc.IndexState.Retry => IndexState.Retry,
+
+                    _ => throw new InvalidOperationException($"Unknown {nameof(Grpc.IndexState)}: {index.State}")
+                };
+
                 indexes.Add(new MilvusIndexInfo(
                     index.FieldName,
                     index.IndexName,
                     index.IndexID,
+                    state,
+                    index.IndexedRows,
+                    index.TotalRows,
+                    index.PendingIndexRows,
+                    index.IndexStateFailReason,
                     index.Params.ToDictionary(static p => p.Key, static p => p.Value)));
             }
         }
@@ -177,7 +194,7 @@ public partial class MilvusCollection
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
-    /// <returns></returns>
+    [Obsolete("Use DescribeIndex instead")]
     public async Task<IndexState> GetIndexStateAsync(
         string fieldName,
         string? indexName = null,
@@ -221,6 +238,7 @@ public partial class MilvusCollection
     /// <returns>
     /// An <see cref="IndexBuildProgress" /> with the number of rows indexed and the total number of rows.
     /// </returns>
+    [Obsolete("Use DescribeIndex instead")]
     public async Task<IndexBuildProgress> GetIndexBuildProgressAsync(
         string fieldName,
         string? indexName = null,
@@ -268,9 +286,23 @@ public partial class MilvusCollection
         await Utils.Poll(
             async () =>
             {
-                IndexBuildProgress progress = await GetIndexBuildProgressAsync(fieldName, indexName, cancellationToken)
-                    .ConfigureAwait(false);
-                return (progress.IsComplete, progress);
+                IList<MilvusIndexInfo> indexInfos =
+                    await DescribeIndexAsync(fieldName, indexName, cancellationToken).ConfigureAwait(false);
+
+                MilvusIndexInfo indexInfo = indexInfos.FirstOrDefault(i => i.FieldName == fieldName) ?? indexInfos[0];
+
+                var progress = new IndexBuildProgress(indexInfo.IndexedRows, indexInfo.TotalRows);
+
+                return indexInfo.State switch
+                {
+                    IndexState.Finished => (true, progress),
+                    IndexState.InProgress => (false, progress),
+
+                    IndexState.Failed
+                        => throw new MilvusException("Index creation failed: " + indexInfo.IndexStateFailReason),
+
+                    _ => throw new MilvusException("Index isn't building, state is " + indexInfo.State)
+                };
             },
             indexName is null
                 ? $"Timeout when waiting for index on collection '{Name}' to build"

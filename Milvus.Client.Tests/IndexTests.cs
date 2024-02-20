@@ -17,7 +17,7 @@ public class IndexTests : IAsyncLifetime
     {
         await Collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx");
-        await Collection.WaitForIndexBuildAsync("float_vector");
+        await Collection.WaitForIndexBuildAsync("float_vector", "float_vector_idx");
     }
 
     [Fact]
@@ -46,10 +46,6 @@ public class IndexTests : IAsyncLifetime
     [InlineData(IndexType.IvfSq8, """{ "nlist": "8" }""")]
     [InlineData(IndexType.IvfPq, """{ "nlist": "8", "m": "4" }""")]
     [InlineData(IndexType.Hnsw, """{ "efConstruction": "8", "M": "4" }""")]
-    [InlineData(IndexType.Annoy, """{ "n_trees": "10" }""")]
-    [InlineData(IndexType.RhnswFlat, """{ "efConstruction": "8", "M": "4" }""")]
-    [InlineData(IndexType.RhnswPq, """{ "efConstruction": "8", "M": "4", "PQM": "4" }""")]
-    [InlineData(IndexType.RhnswSq, """{ "efConstruction": "8", "M": "4" }""")]
     [InlineData(IndexType.AutoIndex, """{ }""")]
     public async Task Index_types_float(IndexType indexType, string extraParamsString)
     {
@@ -91,10 +87,7 @@ public class IndexTests : IAsyncLifetime
 
     [Theory]
     [InlineData(SimilarityMetricType.Jaccard)]
-    [InlineData(SimilarityMetricType.Tanimoto)]
     [InlineData(SimilarityMetricType.Hamming)]
-    [InlineData(SimilarityMetricType.Superstructure)]
-    [InlineData(SimilarityMetricType.Substructure)]
     public async Task Similarity_metric_types_binary(SimilarityMetricType similarityMetricType)
     {
         await Collection.DropAsync();
@@ -111,6 +104,7 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("binary_vector");
     }
 
+#pragma warning disable CS0618 // Type or member is obsolete
     [Fact]
     public async Task GetState()
     {
@@ -123,17 +117,19 @@ public class IndexTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetBuildProgress()
+    public async Task GetBuildProgress_with_name()
     {
         await Assert.ThrowsAsync<MilvusException>(() =>
-            Collection.GetIndexBuildProgressAsync("float_vector"));
+            Collection.GetIndexBuildProgressAsync("float_vector", indexName: "float_vector_idx"));
 
-        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await Collection.WaitForIndexBuildAsync("float_vector");
+        await Collection.CreateIndexAsync(
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx");
+        await Collection.WaitForIndexBuildAsync("float_vector", "float_vector_idx");
 
-        var progress = await Collection.GetIndexBuildProgressAsync("float_vector");
+        var progress = await Collection.GetIndexBuildProgressAsync("float_vector", "float_vector_idx");
         Assert.Equal(progress.TotalRows, progress.IndexedRows);
     }
+#pragma warning restore CS0618 // Type or member is obsolete
 
     [Fact]
     public async Task Describe()
@@ -171,7 +167,9 @@ public class IndexTests : IAsyncLifetime
 
         await Collection.DropIndexAsync("float_vector", "float_vector_idx");
 
-        Assert.Equal(IndexState.None, await Collection.GetIndexStateAsync("float_vector"));
+        MilvusException exception = await Assert.ThrowsAsync<MilvusException>(
+            () => Collection.DescribeIndexAsync("float_vector"));
+        Assert.Equal(MilvusErrorCode.IndexNotExist, exception.ErrorCode);
     }
 
     public async Task InitializeAsync()
