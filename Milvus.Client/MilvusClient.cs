@@ -318,8 +318,7 @@ public sealed partial class MilvusClient : IDisposable
             _log.HealthCheckFailed(response.Reasons);
         }
 
-        return new MilvusHealthState(response.IsHealthy, response.Status.Reason,
-            (MilvusErrorCode)response.Status.ErrorCode);
+        return new MilvusHealthState(response.IsHealthy, response.Status.Reason, (MilvusErrorCode)response.Status.Code);
     }
 
     /// <summary>
@@ -378,12 +377,13 @@ public sealed partial class MilvusClient : IDisposable
 
         TResponse response = await func(request, _callOptions.WithCancellationToken(cancellationToken)).ConfigureAwait(false);
         Grpc.Status status = getStatus(response);
+        var code = (MilvusErrorCode)status.Code;
 
-        if (status.ErrorCode != Grpc.ErrorCode.Success)
+        if (code != MilvusErrorCode.Success)
         {
-            _log.OperationFailed(callerName, (MilvusErrorCode)status.ErrorCode, status.Reason);
+            _log.OperationFailed(callerName, code, status.Reason);
 
-            throw new MilvusException((MilvusErrorCode)status.ErrorCode, status.Reason);
+            throw new MilvusException(code, status.Reason);
         }
 
         return response;

@@ -114,7 +114,9 @@ public partial class MilvusClient
             grpcCollectionSchema.Fields.Add(grpcField);
         }
 
+#pragma warning disable CS0612 // Schema-level AutoID is obsolete, but still there in pymilvus
         grpcCollectionSchema.AutoID = schema.Fields.Any(static p => p.AutoId);
+#pragma warning restore CS0612 // Type or member is obsolete
 
         var request = new CreateCollectionRequest
         {
@@ -169,6 +171,8 @@ public partial class MilvusClient
     /// <param name="cancellationToken">
     /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
     /// </param>
+    // ShowType and CollectionNames are obsolete, but seem required and is still used in pymilvus
+#pragma warning disable CS0612
     public async Task<IReadOnlyList<MilvusCollectionInfo>> ListCollectionsAsync(
         IReadOnlyList<string>? collectionNames = null,
         CollectionFilter filter = CollectionFilter.All,
@@ -200,6 +204,7 @@ public partial class MilvusClient
 
         return collections;
     }
+#pragma warning restore CS0612
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.

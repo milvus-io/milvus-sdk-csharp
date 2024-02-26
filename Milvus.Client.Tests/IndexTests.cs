@@ -170,7 +170,7 @@ public class IndexTests : IAsyncLifetime
 
         MilvusException exception = await Assert.ThrowsAsync<MilvusException>(
             () => Collection.DescribeIndexAsync("float_vector"));
-        Assert.Equal(MilvusErrorCode.IndexNotExist, exception.ErrorCode);
+        Assert.Equal(MilvusErrorCode.IndexNotFound, exception.ErrorCode);
     }
 
     public async Task InitializeAsync()

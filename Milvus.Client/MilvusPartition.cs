@@ -12,13 +12,11 @@ public sealed class MilvusPartition
     internal MilvusPartition(
         long partitionId,
         string partitionName,
-        ulong creationTimestamp,
-        long inMemoryPercentage)
+        ulong creationTimestamp)
     {
         PartitionId = partitionId;
         PartitionName = partitionName;
         CreationTimestamp = creationTimestamp;
-        InMemoryPercentage = inMemoryPercentage;
     }
 
     /// <summary>
@@ -30,11 +28,6 @@ public sealed class MilvusPartition
     /// Partition name.
     /// </summary>
     public string PartitionName { get; }
-
-    /// <summary>
-    /// Load percentage on query node.
-    /// </summary>
-    public long InMemoryPercentage { get; }
 
     /// <summary>
     /// An opaque identifier for the point in time in which the partition was created. Can be passed to
@@ -50,5 +43,5 @@ public sealed class MilvusPartition
     /// Return string value of <see cref="MilvusPartition"/>.
     /// </summary>
     public override string ToString()
-        => $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreationTimestamp)}:{CreationTimestamp}, {nameof(InMemoryPercentage)}: {InMemoryPercentage}}}";
+        => $"MilvusPartition: {{{nameof(PartitionName)}: {PartitionName}, {nameof(PartitionId)}: {PartitionId}, {nameof(CreationTimestamp)}:{CreationTimestamp}}}";
 }
