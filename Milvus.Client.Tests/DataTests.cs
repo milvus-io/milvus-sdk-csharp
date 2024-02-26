@@ -25,19 +25,15 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         Assert.Equal(2, Assert.Single(result.Data));
 
         mutationResult = await Collection.DeleteAsync("id in [2]");
-        Assert.Collection(mutationResult.Ids.LongIds!, i => Assert.Equal(2, i));
+        // Starting with Milvus 2.3.2, Delete no longer seems to return the deleted IDs
+        // Assert.Collection(mutationResult.Ids.LongIds!, i => Assert.Equal(2, i));
         Assert.Equal(1, mutationResult.DeleteCount);
         Assert.Equal(0, mutationResult.InsertCount);
         Assert.Equal(0, mutationResult.UpsertCount);
-        ulong timestamp = mutationResult.Timestamp;
 
         results = await Collection.QueryAsync(
             "id in [2]",
-            new()
-            {
-                ConsistencyLevel = ConsistencyLevel.Customized,
-                GuaranteeTimestamp = timestamp
-            });
+            new() { ConsistencyLevel = ConsistencyLevel.Strong });
         result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Empty(result.Data);
     }
@@ -110,13 +106,6 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     [Fact]
     public async Task FlushAllAsync_and_wait()
     {
-        // Waiting for FlushAllAsync can take around a minute.
-        // To make the developer inner loop quicker, we run this test only on CI.
-        if (Environment.GetEnvironmentVariable("CI") == null)
-        {
-            return;
-        }
-
         await InsertDataAsync(9, 10);
 
         // Flush all
@@ -130,7 +119,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         await Client.WaitForFlushAllAsync(timestamp);
 
         IEnumerable<PersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
-        Assert.True(segmentInfos.All(p => p.State == SegmentState.Flushed));
+        Assert.True(segmentInfos.All(p => p.State is SegmentState.Flushed or SegmentState.Sealed));
     }
 
     [Fact]

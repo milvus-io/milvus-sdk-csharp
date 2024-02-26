@@ -453,7 +453,7 @@ public partial class MilvusCollection
                 .ConfigureAwait(false);
 
         return response.Infos.Select(i => new QuerySegmentInfoResult(
-                i.CollectionID, i.IndexName, i.IndexID, i.MemSize, i.NodeID, i.NumRows, i.PartitionID, i.SegmentID,
+                i.CollectionID, i.IndexName, i.IndexID, i.MemSize, i.NodeIds, i.NumRows, i.PartitionID, i.SegmentID,
                 (SegmentState)i.State))
             .ToList();
     }

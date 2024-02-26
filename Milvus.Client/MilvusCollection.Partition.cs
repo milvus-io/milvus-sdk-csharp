@@ -64,11 +64,11 @@ public partial class MilvusCollection
         {
             for (int i = 0; i < response.PartitionIDs.Count; i++)
             {
-                partitions.Add(new MilvusPartition(
-                    response.PartitionIDs[i],
-                    response.PartitionNames[i],
-                    response.CreatedUtcTimestamps[i],
-                    response.InMemoryPercentages?.Count > 0 ? response.InMemoryPercentages[i] : -1));
+                partitions.Add(
+                    new MilvusPartition(
+                        response.PartitionIDs[i],
+                        response.PartitionNames[i],
+                        response.CreatedUtcTimestamps[i]));
             }
         }
 

@@ -8,7 +8,7 @@ namespace Milvus.Client.Tests.TestContainer;
 
 public class MilvusBuilder : ContainerBuilder<MilvusBuilder, MilvusContainer, MilvusConfiguration>
 {
-    public const string MilvusImage = "milvusdb/milvus:v2.3.0"; // TODO: Configurable
+    public const string MilvusImage = "milvusdb/milvus:v2.3.10"; // TODO: Configurable
     public const ushort MilvusGrpcPort = 19530;
     public const ushort MilvusManagementPort = 9091;
 

@@ -10,7 +10,7 @@ public sealed class QuerySegmentInfoResult
         string indexName,
         long indexId,
         long memSize,
-        long nodeId,
+        IReadOnlyList<long> nodeIds,
         long numRows,
         long partitionId,
         long segmentId,
@@ -20,7 +20,7 @@ public sealed class QuerySegmentInfoResult
         IndexName = indexName;
         IndexId = indexId;
         MemSize = memSize;
-        NodeId = nodeId;
+        NodeIds = nodeIds;
         NumRows = numRows;
         PartitionId = partitionId;
         SegmentId = segmentId;
@@ -50,7 +50,7 @@ public sealed class QuerySegmentInfoResult
     /// <summary>
     /// Node id.
     /// </summary>
-    public long NodeId { get; }
+    public IReadOnlyList<long> NodeIds { get; }
 
     /// <summary>
     /// Number of rows.
