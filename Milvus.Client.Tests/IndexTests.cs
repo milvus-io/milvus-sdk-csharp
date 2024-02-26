@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
+[Collection("Milvus")]
 public class IndexTests : IAsyncLifetime
 {
     [Fact]
@@ -186,14 +187,20 @@ public class IndexTests : IAsyncLifetime
     }
 
     public Task DisposeAsync()
-        => Task.CompletedTask;
+    {
+        Client.Dispose();
+        return Task.CompletedTask;
+    }
 
     private const string CollectionName = nameof(IndexTests);
 
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusClient Client;
 
     private MilvusCollection Collection { get; }
 
-    public IndexTests()
-        => Collection = Client.GetCollection(CollectionName);
+    public IndexTests(MilvusFixture milvusFixture)
+    {
+        Client = milvusFixture.CreateClient();
+        Collection = Client.GetCollection(CollectionName);
+    }
 }

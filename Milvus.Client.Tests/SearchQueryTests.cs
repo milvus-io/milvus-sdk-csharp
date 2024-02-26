@@ -3,7 +3,11 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFixture>
+[Collection("Milvus")]
+public class SearchQueryTests(
+    MilvusFixture milvusFixture,
+    SearchQueryTests.QueryCollectionFixture queryCollectionFixture)
+    : IClassFixture<SearchQueryTests.QueryCollectionFixture>, IDisposable
 {
     [Fact]
     public async Task Query()
@@ -526,12 +530,19 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
 
     public class QueryCollectionFixture : IAsyncLifetime
     {
-        public MilvusCollection Collection { get; } = TestEnvironment.Client.GetCollection(nameof(SearchQueryTests));
+        public QueryCollectionFixture(MilvusFixture milvusFixture)
+        {
+            Client = milvusFixture.CreateClient();
+            Collection = Client.GetCollection(nameof(SearchQueryTests));
+        }
+
+        private readonly MilvusClient Client;
+        public readonly MilvusCollection Collection;
 
         public async Task InitializeAsync()
         {
             await Collection.DropAsync();
-            await TestEnvironment.Client.CreateCollectionAsync(
+            await Client.CreateCollectionAsync(
                 Collection.Name,
                 new[]
                 {
@@ -574,17 +585,18 @@ public class SearchQueryTests : IClassFixture<SearchQueryTests.QueryCollectionFi
         }
 
         public Task DisposeAsync()
-            => Task.CompletedTask;
+        {
+            Client.Dispose();
+            return Task.CompletedTask;
+        }
     }
 
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusClient Client = milvusFixture.CreateClient();
 
-    private readonly QueryCollectionFixture _queryCollectionFixture;
-    private MilvusCollection Collection => _queryCollectionFixture.Collection;
+    private MilvusCollection Collection => queryCollectionFixture.Collection;
     private string CollectionName => Collection.Name;
 
-    public SearchQueryTests(QueryCollectionFixture queryCollectionFixture)
-        => _queryCollectionFixture = queryCollectionFixture;
+    public void Dispose() => Client.Dispose();
 
     internal class JsonThing
     {

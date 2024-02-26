@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
+[Collection("Milvus")]
 public class CollectionTests : IAsyncLifetime
 {
     [Fact]
@@ -300,7 +301,8 @@ public class CollectionTests : IAsyncLifetime
     [Fact]
     public async Task Create_in_non_existing_database_fails()
     {
-        using MilvusClient databaseClient = TestEnvironment.CreateClientForDatabase("non_existing_db");
+        // using MilvusClient databaseClient = TestEnvironment.CreateClientForDatabase("non_existing_db");
+        using MilvusClient databaseClient = Fixture.CreateClient("non_existing_db");
 
         var exception = await Assert.ThrowsAsync<MilvusException>(() => databaseClient.CreateCollectionAsync(
             "foo",
@@ -310,13 +312,24 @@ public class CollectionTests : IAsyncLifetime
         Assert.Equal("ErrorCode: UnexpectedError Reason: database:non_existing_db not found", exception.Message);
     }
 
+    public CollectionTests(MilvusFixture milvusFixture)
+    {
+        ArgumentNullException.ThrowIfNull(milvusFixture);
+        Fixture = milvusFixture;
+        Client = milvusFixture.CreateClient();
+    }
+
     public Task InitializeAsync()
         => Client.GetCollection(CollectionName).DropAsync();
 
     public Task DisposeAsync()
-        => Task.CompletedTask;
+    {
+        Client.Dispose();
+        return Task.CompletedTask;
+    }
 
     private const string CollectionName = nameof(CollectionTests);
 
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusFixture Fixture;
+    private readonly MilvusClient Client;
 }
