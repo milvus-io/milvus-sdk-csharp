@@ -3,6 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
         <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);CA1062</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,17 +19,12 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+        <PackageReference Include="Testcontainers" />
         <PackageReference Include="GitHubActionsTestLogger" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Milvus.Client\Milvus.Client.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="config.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
     </ItemGroup>
 
 </Project>

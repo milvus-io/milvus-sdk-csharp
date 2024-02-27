@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
+[Collection("Milvus")]
 public class PartitionTests : IAsyncLifetime
 {
     [Fact]
@@ -48,6 +49,12 @@ public class PartitionTests : IAsyncLifetime
         Assert.False(await Collection.HasPartitionAsync("partition"));
     }
 
+    public PartitionTests(MilvusFixture milvusFixture)
+    {
+        Client = milvusFixture.CreateClient();
+        Collection = Client.GetCollection(CollectionName);
+    }
+
     public async Task InitializeAsync()
     {
         await Collection.DropAsync();
@@ -62,13 +69,13 @@ public class PartitionTests : IAsyncLifetime
     }
 
     public Task DisposeAsync()
-        => Task.CompletedTask;
+    {
+        Client.Dispose();
+        return Task.CompletedTask;
+    }
 
     private const string CollectionName = nameof(PartitionTests);
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusClient Client;
 
     private MilvusCollection Collection { get; }
-
-    public PartitionTests()
-        => Collection = Client.GetCollection(CollectionName);
 }

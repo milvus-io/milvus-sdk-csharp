@@ -2,7 +2,8 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-public class DatabaseTests : IAsyncLifetime
+[Collection("Milvus")]
+public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
 {
     [Fact]
     public async Task Create_List_Drop()
@@ -36,7 +37,7 @@ public class DatabaseTests : IAsyncLifetime
     {
         string databaseName = nameof(Search_on_non_default_database);
 
-        using var databaseClient = TestEnvironment.CreateClientForDatabase(databaseName);
+        using var databaseClient = milvusFixture.CreateClient(databaseName);
 
         // If the database exists, drop it using the regular client and recreate it.
         if ((await DefaultClient.ListDatabasesAsync()).Contains(databaseName))
@@ -105,8 +106,6 @@ public class DatabaseTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        DatabaseClient = TestEnvironment.CreateClientForDatabase(DatabaseName);
-
         if ((await DefaultClient.ListDatabasesAsync()).Contains(DatabaseName))
         {
             // First drop all collections from a possible previous test run, otherwise dropping fails
@@ -121,13 +120,13 @@ public class DatabaseTests : IAsyncLifetime
 
     public Task DisposeAsync()
     {
+        DefaultClient.Dispose();
         DatabaseClient.Dispose();
         return Task.CompletedTask;
     }
 
-    private MilvusClient DefaultClient => TestEnvironment.Client;
-
-    private MilvusClient DatabaseClient { get; set; } = null!;
+    private readonly MilvusClient DefaultClient = milvusFixture.CreateClient();
+    private readonly MilvusClient DatabaseClient = milvusFixture.CreateClient(DatabaseName);
 
     private const string DatabaseName = nameof(DatabaseTests);
 }

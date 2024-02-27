@@ -2,7 +2,8 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
+[Collection("Milvus")]
+public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncLifetime
 {
     [Fact]
     public async Task Insert_Drop()
@@ -137,7 +138,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
     {
         await Collection.DropAsync();
 
-        await TestEnvironment.Client.CreateCollectionAsync(
+        await Client.CreateCollectionAsync(
             Collection.Name,
             new CollectionSchema
             {
@@ -177,13 +178,21 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
 
     public class DataCollectionFixture : IAsyncLifetime
     {
-        public MilvusCollection Collection { get; } = TestEnvironment.Client.GetCollection(CollectionName);
+        private readonly MilvusClient Client;
+
+        public DataCollectionFixture(MilvusFixture milvusFixture)
+        {
+            Client = milvusFixture.CreateClient();
+            Collection = Client.GetCollection(CollectionName);
+        }
+
+        public MilvusCollection Collection;
 
         public async Task InitializeAsync()
         {
             await Collection.DropAsync();
 
-            await TestEnvironment.Client.CreateCollectionAsync(
+            await Client.CreateCollectionAsync(
                 Collection.Name,
                 new[]
                 {
@@ -198,14 +207,28 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>
         }
 
         public Task DisposeAsync()
-            => Task.CompletedTask;
+        {
+            Client.Dispose();
+            return Task.CompletedTask;
+        }
     }
 
     private readonly DataCollectionFixture _dataCollectionFixture;
     private const string CollectionName = nameof(DataTests);
     private MilvusCollection Collection => _dataCollectionFixture.Collection;
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusClient Client;
 
-    public DataTests(DataCollectionFixture dataCollectionFixture)
-        => _dataCollectionFixture = dataCollectionFixture;
+    public DataTests(MilvusFixture milvusFixture, DataCollectionFixture dataCollectionFixture)
+    {
+        Client = milvusFixture.CreateClient();
+        _dataCollectionFixture = dataCollectionFixture;
+    }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync()
+    {
+        Client.Dispose();
+        return Task.CompletedTask;
+    }
 }

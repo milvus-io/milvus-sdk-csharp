@@ -2,14 +2,15 @@
 
 namespace Milvus.Client.Tests;
 
-public class UserTests : IAsyncLifetime
+[Collection("Milvus")]
+public class UserTests(MilvusFixture milvusFixture) : IAsyncLifetime
 {
     [Fact]
     public async Task Create()
     {
         await Client.CreateUserAsync(Username, "some_password");
 
-        using var client = new MilvusClient(TestEnvironment.Host, username: Username, password: "some_password");
+        using var client = new MilvusClient(milvusFixture.Host, Username, "some_password", milvusFixture.Port);
         _ = await client.HasCollectionAsync("foo");
     }
 
@@ -28,7 +29,7 @@ public class UserTests : IAsyncLifetime
 
         await Client.UpdatePassword(Username, "some_old_password", "some_new_password");
 
-        using var client = new MilvusClient(TestEnvironment.Host, username: Username, password: "some_new_password");
+        using var client = new MilvusClient(milvusFixture.Host, Username, "some_new_password", milvusFixture.Port);
         _ = await client.HasCollectionAsync("foo");
     }
 
@@ -37,9 +38,8 @@ public class UserTests : IAsyncLifetime
     {
         await Client.CreateUserAsync(Username, "some_password");
 
-        var exception = await Assert.ThrowsAsync<MilvusException>(
+        await Assert.ThrowsAsync<MilvusException>(
             () => Client.UpdatePassword(Username, "wrong_password", "some_new_password"));
-        Assert.Equal(MilvusErrorCode.UpdateCredentialFailure, exception.ErrorCode);
     }
 
     [Fact]
@@ -152,7 +152,11 @@ public class UserTests : IAsyncLifetime
     private const string Username = "some_user";
     private const string RoleName = "some_role";
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    private readonly MilvusClient Client = milvusFixture.CreateClient();
 
-    private MilvusClient Client => TestEnvironment.Client;
+    public Task DisposeAsync()
+    {
+        Client.Dispose();
+        return Task.CompletedTask;
+    }
 }

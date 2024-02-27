@@ -3,7 +3,8 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-public class MiscTests
+[Collection("Milvus")]
+public class MiscTests(MilvusFixture milvusFixture) : IDisposable
 {
     // If this test is failing for you, that means you haven't enabled authorization in Milvus; follow the instructions
     // in https://milvus.io/docs/authenticate.md.
@@ -11,7 +12,7 @@ public class MiscTests
     public async Task Auth_failure_with_wrong_password()
     {
         using var badClient = new MilvusClient(
-            TestEnvironment.Host, username: TestEnvironment.Username, password: "incorrect_password");
+            milvusFixture.Host, username: milvusFixture.Username, password: "incorrect_password");
 
         try
         {
@@ -44,17 +45,17 @@ public class MiscTests
     }
 
     [Fact]
-    public async Task Dispose()
+    public async Task Dispose_client()
     {
-        var client = TestEnvironment.CreateClient();
-
-        MilvusHealthState state = await client.HealthAsync();
+        MilvusHealthState state = await Client.HealthAsync();
         Assert.True(state.IsHealthy);
 
-        client.Dispose();
+        Client.Dispose();
 
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => client.HealthAsync());
-    }
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => Client.HealthAsync());
+      }
 
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusClient Client = milvusFixture.CreateClient();
+
+    public void Dispose() => Client.Dispose();
 }

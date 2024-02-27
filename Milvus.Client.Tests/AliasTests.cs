@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
+[Collection("Milvus")]
 public class AliasTests : IAsyncLifetime
 {
     [Fact]
@@ -50,8 +51,11 @@ public class AliasTests : IAsyncLifetime
 
     private MilvusCollection Collection { get; set; }
 
-    public AliasTests()
-        => Collection = Client.GetCollection(CollectionName);
+    public AliasTests(MilvusFixture milvusFixture)
+    {
+        Client = milvusFixture.CreateClient();
+        Collection = Client.GetCollection(CollectionName);
+    }
 
     public async Task InitializeAsync()
     {
@@ -69,8 +73,11 @@ public class AliasTests : IAsyncLifetime
             });
     }
 
-    private MilvusClient Client => TestEnvironment.Client;
+    private readonly MilvusClient Client;
 
     public Task DisposeAsync()
-        => Task.CompletedTask;
+    {
+        Client.Dispose();
+        return Task.CompletedTask;
+    }
 }
