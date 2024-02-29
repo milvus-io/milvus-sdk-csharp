@@ -75,6 +75,7 @@ public partial class MilvusCollection
                 IndexType.IvfPq => "IVF_PQ",
                 IndexType.IvfSq8 => "IVF_SQ8",
                 IndexType.Hnsw => "HNSW",
+                IndexType.DiskANN => "DISKANN",
                 IndexType.RhnswFlat => "RHNSW_FLAT",
                 IndexType.RhnswPq => "RHNSW_PQ",
                 IndexType.RhnswSq => "RHNSW_SQ",

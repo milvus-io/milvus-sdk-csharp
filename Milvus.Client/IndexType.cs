@@ -98,6 +98,13 @@ public enum IndexType
     Hnsw,
 
     /// <summary>
+    /// SCANN (Score-aware quantization loss) is similar to <see cref="IvfPq" /> in terms of vector clustering and
+    /// product quantization. What makes them different lies in the implementation details of product quantization and
+    /// the use of SIMD (Single-Instruction / Multi-data) for efficient calculation.
+    /// </summary>
+    DiskANN,
+
+    /// <summary>
     /// ANNOY (Approximate Nearest Neighbors Oh Yeah) is an index that uses a hyperplane to divide a high-dimensional
     /// space into multiple subspaces, and then stores them in a tree structure.
     /// </summary>
