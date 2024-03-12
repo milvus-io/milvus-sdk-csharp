@@ -39,6 +39,56 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     }
 
     [Fact]
+    public async Task Upsert()
+    {
+        await Collection.InsertAsync(
+            [
+                FieldData.Create("id", new[] { 1L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 20f, 30f } })
+            ]);
+
+        MutationResult upsertResult = await Collection.UpsertAsync(
+        [
+            FieldData.Create("id", new[] { 1L, 2L }),
+            FieldData.CreateFloatVector(
+                "float_vector",
+                new ReadOnlyMemory<float>[] { new[] { 1f, 2f }, new[] { 3f, 4f } })
+        ]);
+
+        Assert.Collection(upsertResult.Ids.LongIds!,
+            i => Assert.Equal(1, i),
+            i => Assert.Equal(2, i));
+        // TODO: Weirdly these all seem to contain 2, though we're supposed to have inserted one row and updated one
+        // Assert.Equal(0, upsertResult.DeleteCount);
+        // Assert.Equal(1, upsertResult.InsertCount);
+        // Assert.Equal(1, upsertResult.UpsertCount);
+
+        IReadOnlyList<FieldData> results = await Collection.QueryAsync(
+            "id in [1,2]",
+            new()
+            {
+                OutputFields = { "float_vector" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
+
+        Assert.Collection(
+            results.OrderBy(r => r.FieldName),
+            r =>
+            {
+                Assert.Equal("float_vector", r.FieldName);
+                Assert.Collection(
+                    ((FloatVectorFieldData)r).Data,
+                    v => Assert.Equal(new[] { 1f, 2f }, v),
+                    v => Assert.Equal(new[] { 3f, 4f }, v));
+            },
+            r =>
+            {
+                Assert.Equal("id", r.FieldName);
+                Assert.Equivalent(new[] { 1L, 2L }, ((FieldData<long>)r).Data);
+            });
+    }
+
+    [Fact]
     public async Task Timestamp_conversion()
     {
         DateTime before = DateTime.UtcNow;
