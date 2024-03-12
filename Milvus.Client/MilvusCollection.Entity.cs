@@ -36,10 +36,60 @@ public partial class MilvusCollection
             request.PartitionName = partitionName;
         }
 
+        PopulateData(data, request.FieldsData);
+
+        request.NumRows = (uint)data[0].RowCount;
+
+        Grpc.MutationResult response =
+            await _client.InvokeAsync(_client.GrpcClient.InsertAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        _client.CollectionLastMutationTimestamps[Name] = response.Timestamp;
+
+        return new MutationResult(response);
+    }
+
+    /// <summary>
+    /// Upserts rows of data into a collection.
+    /// </summary>
+    /// <param name="data">The field data to upsert; each field contains a list of row values.</param>
+    /// <param name="partitionName">An optional name of a partition to upsert into.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    public async Task<MutationResult> UpsertAsync(
+        IReadOnlyList<FieldData> data,
+        string? partitionName = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(data);
+
+        UpsertRequest request = new() { CollectionName = Name };
+
+        if (partitionName is not null)
+        {
+            request.PartitionName = partitionName;
+        }
+
+        PopulateData(data, request.FieldsData);
+
+        request.NumRows = (uint)data[0].RowCount;
+
+        Grpc.MutationResult response =
+            await _client.InvokeAsync(_client.GrpcClient.UpsertAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        _client.CollectionLastMutationTimestamps[Name] = response.Timestamp;
+
+        return new MutationResult(response);
+    }
+
+    private static void PopulateData(IReadOnlyList<FieldData> fieldsData, RepeatedField<Grpc.FieldData> grpcFieldsData)
+    {
         Dictionary<string, object?>?[]? dynamicFieldsData = null;
 
-        long count = data[0].RowCount;
-        foreach (FieldData field in data)
+        long count = fieldsData[0].RowCount;
+        foreach (FieldData field in fieldsData)
         {
             if (field.RowCount != count)
             {
@@ -60,7 +110,7 @@ public partial class MilvusCollection
             }
             else
             {
-                request.FieldsData.Add(field.ToGrpcFieldData());
+                grpcFieldsData.Add(field.ToGrpcFieldData());
             }
         }
 
@@ -73,18 +123,8 @@ public partial class MilvusCollection
             }
 
             FieldData metaFieldData = new FieldData<string>(encodedJsonStrings, MilvusDataType.Json, isDynamic: true);
-            request.FieldsData.Add(metaFieldData.ToGrpcFieldData());
+            grpcFieldsData.Add(metaFieldData.ToGrpcFieldData());
         }
-
-        request.NumRows = (uint)count;
-
-        Grpc.MutationResult response =
-            await _client.InvokeAsync(_client.GrpcClient.InsertAsync, request, static r => r.Status, cancellationToken)
-                .ConfigureAwait(false);
-
-        _client.CollectionLastMutationTimestamps[Name] = response.Timestamp;
-
-        return new MutationResult(response);
     }
 
     /// <summary>
