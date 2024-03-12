@@ -242,6 +242,29 @@ public class SearchQueryTests(
     }
 
     [Fact]
+    public async Task Search_with_range_search()
+    {
+        var results = await Collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            SimilarityMetricType.L2,
+            limit: 5,
+            new()
+            {
+                ExtraParameters =
+                {
+                    { "radius", "60" },
+                    { "range_filter", "10" }
+                }
+            });
+
+        Assert.Collection(
+            results.Ids.LongIds!.Order(),
+            id => Assert.Equal(2, id),
+            id => Assert.Equal(3, id));
+    }
+
+    [Fact]
     public async Task Search_with_no_results()
     {
         // Create and load an empty collection
