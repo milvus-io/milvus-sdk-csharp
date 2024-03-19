@@ -1,12 +1,10 @@
-using System.Globalization;
-using Microsoft.Extensions.Configuration;
-using Milvus.Client.Tests.TestContainer;
+using Testcontainers.Milvus;
 using Xunit;
 
 namespace Milvus.Client.Tests;
 
 [CollectionDefinition("Milvus")]
-public sealed class QdrantCollection : ICollectionFixture<MilvusFixture>;
+public sealed class MilvusTestCollection : ICollectionFixture<MilvusFixture>;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {

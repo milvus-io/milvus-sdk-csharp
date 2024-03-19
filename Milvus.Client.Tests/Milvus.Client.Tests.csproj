@@ -19,7 +19,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
-        <PackageReference Include="Testcontainers" />
+        <PackageReference Include="Testcontainers.Milvus" />
         <PackageReference Include="GitHubActionsTestLogger" />
     </ItemGroup>
 
