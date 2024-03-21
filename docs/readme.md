@@ -17,7 +17,13 @@ And restful api support is ready now.
 ```csharp
 using Milvus.Client;
 
-MilvusClient milvusClient = new MilvusClient("{Endpoint}", "{Port}", "{Username}", "{Password}", "{Database}(Optional)");
+string Host = "localhost";
+int Port = 19530; // This is Milvus's default port
+bool UseSsl = false; // Default value is false
+string Database = "my_database"; // Defaults to the default Milvus database
+
+// See documentation for other constructor paramters
+MilvusClient milvusClient = new MilvusClient(Host, Port, UseSsl);
 MilvusHealthState result = await milvusClient.HealthAsync();
 ```
 
@@ -41,7 +47,7 @@ await milvusClient.CreateCollectionAsync(
                 FieldSchema.Create<long>("book_id", isPrimaryKey:true),
                 FieldSchema.Create<long>("word_count"),
                 FieldSchema.CreateVarchar("book_name", 256),
-                FieldSchema.CreateFloatVector("book_intro", 2L)
+                FieldSchema.CreateFloatVector("book_intro", 2)
             }
         );
 ```
@@ -80,7 +86,7 @@ MutationResult result = await collection.InsertAsync(
     });
 
 // Check result
-Console.WriteLine("Insert count:{0},", result.InsertCount);
+Console.WriteLine("Insert status: {0},", result.ToString());
 ```
 
 ### Create a index and load collection.
@@ -101,7 +107,7 @@ foreach(var info in indexInfos){
 }
 
 // Then load it
-await milvusClient.LoadCollectionAsync(collectionName);
+await collection.LoadAsync();
 ```
 
 ### Search and query.
