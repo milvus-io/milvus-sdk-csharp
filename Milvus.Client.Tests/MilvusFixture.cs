@@ -8,7 +8,11 @@ public sealed class MilvusTestCollection : ICollectionFixture<MilvusFixture>;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {
-    private readonly MilvusContainer _container = new MilvusBuilder().Build();
+    private const string DefaultMilvusImage = "milvusdb/milvus:v2.4.0-rc.1";
+
+    private readonly MilvusContainer _container = new MilvusBuilder()
+        .WithImage(Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage)
+        .Build();
 
     public string Host => _container.Hostname;
     public int Port => _container.GetMappedPublicPort(MilvusBuilder.MilvusGrpcPort);
