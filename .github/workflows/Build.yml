@@ -12,9 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        # TODO: Test against latest previews too. This currently doesn't work because preview releases don't publish
-        # a milvus-standalone-docker-compose.yml
-        milvus_version: [v2.3.10]
+        milvus_version: [v2.3.10, v2.4.0-rc.1]
 
     steps:
       - name: Checkout
@@ -28,6 +26,8 @@ jobs:
 
       - name: Test
         run: dotnet test --logger "GitHubActions;report-warnings=false"
+        env:
+          MILVUS_IMAGE: milvusdb/milvus:${{ matrix.milvus_version }}
 
       - name: Pack
         run: dotnet pack -c Release -o Artifacts
