@@ -58,6 +58,25 @@ public class IndexTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(IndexType.GpuCagra, """{ "nlist": "8" }""")]
+    [InlineData(IndexType.GpuIvfFlat, """{ "nlist": "8" }""")]
+    [InlineData(IndexType.GpuIvfPq, """{ "nlist": "8", "m": "4" }""")]
+    [InlineData(IndexType.GpuBruteForce, """{ "nlist": "8" }""")]
+    public async Task Index_types_float_gpu(IndexType indexType, string extraParamsString)
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            // GPU indexes were introduced in Milvus 2.4
+            return;
+        }
+
+        await Collection.CreateIndexAsync(
+            "float_vector", indexType, SimilarityMetricType.L2,
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
+        await Collection.WaitForIndexBuildAsync("float_vector");
+    }
+
+    [Theory]
     [InlineData(IndexType.BinFlat, """{ "n_trees": "10" }""")]
     [InlineData(IndexType.BinIvfFlat, """{ "n_trees": "8", "nlist": "8" }""")]
     public async Task Index_types_binary(IndexType indexType, string extraParamsString)

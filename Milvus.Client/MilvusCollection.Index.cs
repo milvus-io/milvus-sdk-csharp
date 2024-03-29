@@ -76,6 +76,12 @@ public partial class MilvusCollection
                 IndexType.IvfSq8 => "IVF_SQ8",
                 IndexType.Hnsw => "HNSW",
                 IndexType.DiskANN => "DISKANN",
+
+                IndexType.GpuCagra => "GPU_CAGRA",
+                IndexType.GpuIvfFlat => "GPU_IVF_FLAT",
+                IndexType.GpuIvfPq => "GPU_IVF_PQ",
+                IndexType.GpuBruteForce => "GPU_BRUTE_FORCE",
+
                 IndexType.RhnswFlat => "RHNSW_FLAT",
                 IndexType.RhnswPq => "RHNSW_PQ",
                 IndexType.RhnswSq => "RHNSW_SQ",
