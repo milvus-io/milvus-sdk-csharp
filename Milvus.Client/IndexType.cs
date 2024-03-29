@@ -105,6 +105,46 @@ public enum IndexType
     DiskANN,
 
     /// <summary>
+    /// A graph-based index optimized for GPUs, GPU_CAGRA performs well on inference GPUs. It's best suited for
+    /// situations with a small number of queries, where training GPUs with lower memory frequency may not yield optimal
+    /// results.
+    /// </summary>
+    /// <remarks>
+    /// <see href="https://milvus.io/docs/gpu_index.md" />
+    /// </remarks>
+    GpuCagra,
+
+    /// <summary>
+    /// This quantization-based index organizes vector data into clusters and employs product quantization for efficient
+    /// search. It is ideal for scenarios requiring fast queries and can manage limited memory resources while balancing
+    /// accuracy and speed..
+    /// </summary>
+    /// <remarks>
+    /// <see href="https://milvus.io/docs/gpu_index.md" />
+    /// </remarks>
+    GpuIvfFlat,
+
+    /// <summary>
+    /// This quantization-based index organizes vector data into clusters and employs product quantization for efficient
+    /// search. It is ideal for scenarios requiring fast queries and can manage limited memory resources while balancing
+    /// accuracy and speed..
+    /// </summary>
+    /// <remarks>
+    /// <see href="https://milvus.io/docs/gpu_index.md" />
+    /// </remarks>
+    GpuIvfPq,
+
+    /// <summary>
+    /// This index is tailored for cases where extremely high recall is crucial, guaranteeing a recall of 1 by comparing
+    /// each query with all vectors in the dataset. It only requires the metric type (metric_type) and top-k (limit) as
+    /// index building and search parameters.
+    /// </summary>
+    /// <remarks>
+    /// <see href="https://milvus.io/docs/gpu_index.md" />
+    /// </remarks>
+    GpuBruteForce,
+
+    /// <summary>
     /// ANNOY (Approximate Nearest Neighbors Oh Yeah) is an index that uses a hyperplane to divide a high-dimensional
     /// space into multiple subspaces, and then stores them in a tree structure.
     /// </summary>

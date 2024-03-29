@@ -287,7 +287,7 @@ public class CollectionTests : IAsyncLifetime
             });
 
         long compactionId = await collection.CompactAsync();
-        if ((await Client.GetVersionAsync()).StartsWith("v2.4.", StringComparison.Ordinal))
+        if (await Client.GetParsedMilvusVersion() >= new Version(2, 4))
         {
             // Milvus 2.4 returns -1 here as the compaction ID
             return;
