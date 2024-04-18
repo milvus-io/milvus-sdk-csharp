@@ -95,6 +95,43 @@ public sealed class FieldSchema
     public static FieldSchema CreateJson(string name)
         => new(name, MilvusDataType.Json);
 
+    /// <summary>
+    /// Create a field schema for a <c>array</c> of <c>TData</c> field.
+    /// </summary>
+    /// <typeparam name="TData">Determines the element data type of array stored in the field based.</typeparam>
+    /// <param name="name">The field name.</param>
+    /// <param name="capacity">Maximum number of elements that an array field can contain.</param>
+    /// <param name="description">An optional description for the field.</param>
+    public static FieldSchema CreateArray<TData>(
+        string name,
+        int capacity,
+        string description = "")
+        => new(name, MilvusDataType.Array, description: description)
+        {
+            ElementDataType = FieldData.EnsureDataType<TData>(),
+            MaxCapacity = capacity,
+        };
+
+    /// <summary>
+    /// Create a field schema for a <c>array</c> of <c>varchar</c> field.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="capacity">Maximum number of elements that an array field can contain.</param>
+    /// <param name="maxLength">Maximum length of strings for each <c>varchar</c> element in an array field.</param>
+    /// <param name="description">An optional description for the field.</param>
+    public static FieldSchema CreateVarcharArray(
+        string name,
+        int capacity,
+        int maxLength,
+        string description = "")
+        => new(name, MilvusDataType.Array, description: description)
+        {
+            ElementDataType = MilvusDataType.VarChar,
+            MaxCapacity = capacity,
+            MaxLength = maxLength,
+            
+        };
+
     // Construct used when the user constructs a schema to be provided to CreateSchema
     private FieldSchema(
         string name,
@@ -118,6 +155,7 @@ public sealed class FieldSchema
         long id,
         string name,
         MilvusDataType dataType,
+        MilvusDataType elementType,
         FieldState state,
         bool isPrimaryKey,
         bool autoId,
@@ -128,6 +166,7 @@ public sealed class FieldSchema
         FieldId = id;
         Name = name;
         DataType = dataType;
+        ElementDataType = elementType;
         State = state;
         IsPrimaryKey = isPrimaryKey;
         AutoId = autoId;
@@ -145,6 +184,11 @@ public sealed class FieldSchema
     /// The data type stored in the field.
     /// </summary>
     public MilvusDataType DataType { get; }
+
+    /// <summary>
+    /// The element data type for array stored in the field.
+    /// </summary>
+    public MilvusDataType ElementDataType { get; set; }
 
     /// <summary>
     /// Whether the field is a primary key.
@@ -186,6 +230,11 @@ public sealed class FieldSchema
     /// zero.
     /// </summary>
     public int? MaxLength { get; set; }
+
+    /// <summary>
+    /// Maximum number of elements that an array field can contain. Mandatory for <see cref="MilvusDataType.Array" /> fields, and must be in a range [1, 4096]
+    /// </summary>
+    public int? MaxCapacity { get; set; }
 
     /// <summary>
     /// The dimension of the vector. Mandatory for <see cref="MilvusDataType.FloatVector" />
