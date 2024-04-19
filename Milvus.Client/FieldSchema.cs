@@ -129,7 +129,6 @@ public sealed class FieldSchema
             ElementDataType = MilvusDataType.VarChar,
             MaxCapacity = capacity,
             MaxLength = maxLength,
-            
         };
 
     // Construct used when the user constructs a schema to be provided to CreateSchema
