@@ -33,6 +33,7 @@
     <Protobuf Include="Protos\proto\milvus.proto" GrpcServices="Client" ProtoRoot="Protos\proto" Access="internal" />
     <Protobuf Include="Protos\proto\msg.proto" GrpcServices="Client" ProtoRoot="Protos\proto" Access="internal" />
     <Protobuf Include="Protos\proto\feder.proto" GrpcServices="Client" ProtoRoot="Protos\proto" Access="internal" />
+    <Protobuf Include="Protos\proto\rg.proto" GrpcServices="Client" ProtoRoot="Protos\proto" Access="internal" />
   </ItemGroup>
 
   <ItemGroup>
