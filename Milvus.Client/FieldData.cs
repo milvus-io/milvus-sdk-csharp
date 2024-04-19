@@ -165,7 +165,7 @@ public abstract class FieldData
     internal static MilvusDataType EnsureDataType<TDataType>()
     {
         Type type = typeof(TDataType);
-        MilvusDataType dataType = MilvusDataType.Double;
+        MilvusDataType dataType = MilvusDataType.None;
 
         if (type == typeof(bool))
         {
@@ -209,7 +209,7 @@ public abstract class FieldData
         }
         else
         {
-            throw new NotSupportedException($"Not Support DataType:{dataType}");
+            throw new NotSupportedException($"Type {type.Name} cannot be mapped to DataType");
         }
 
         return dataType;
