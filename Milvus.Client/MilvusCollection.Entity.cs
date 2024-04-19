@@ -534,7 +534,7 @@ public partial class MilvusCollection
             var leftItemsCount = userLimit - processedItemsCount;
 
             // If user limit is reached, we should break the loop
-            if(leftItemsCount == 0) yield break;
+            if(leftItemsCount <= 0) yield break;
 
             // Setup next iteration limit and expression
             ReplaceKeyValueItems(
