@@ -36,6 +36,26 @@ internal static class Constants
     internal const string Offset = "offset";
 
     /// <summary>
+    /// Top parameter key name.
+    /// </summary>
+    internal const string Limit = "limit";
+
+    /// <summary>
+    /// Top parameter key name.
+    /// </summary>
+    internal const string BatchSize = "batch_size";
+
+    /// <summary>
+    /// Top parameter key name.
+    /// </summary>
+    internal const string Iterator = "iterator";
+
+    /// <summary>
+    /// Top parameter key name.
+    /// </summary>
+    internal const string ReduceStopForBest = "reduce_stop_for_best";
+
+    /// <summary>
     /// Key name in parameters.<see cref="Client.IndexType"/>
     /// </summary>
     internal const string IndexType = "index_type";
