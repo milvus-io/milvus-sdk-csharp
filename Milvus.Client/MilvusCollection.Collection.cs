@@ -34,9 +34,16 @@ public partial class MilvusCollection
         foreach (Grpc.FieldSchema grpcField in response.Schema.Fields)
         {
             FieldSchema milvusField = new(
-                grpcField.FieldID, grpcField.Name, (MilvusDataType)grpcField.DataType,
-                (FieldState)grpcField.State, grpcField.IsPrimaryKey, grpcField.AutoID, grpcField.IsPartitionKey,
-                grpcField.IsDynamic, grpcField.Description);
+                grpcField.FieldID,
+                grpcField.Name,
+                (MilvusDataType) grpcField.DataType,
+                (MilvusDataType) grpcField.ElementType,
+                (FieldState) grpcField.State,
+                grpcField.IsPrimaryKey,
+                grpcField.AutoID,
+                grpcField.IsPartitionKey,
+                grpcField.IsDynamic,
+                grpcField.Description);
 
             foreach (Grpc.KeyValuePair parameter in grpcField.TypeParams)
             {
@@ -44,6 +51,10 @@ public partial class MilvusCollection
                 {
                     case Constants.VarcharMaxLength:
                         milvusField.MaxLength = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
+                        break;
+
+                    case Constants.MaxCapacity:
+                        milvusField.MaxCapacity = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
 
                     case Constants.VectorDim:

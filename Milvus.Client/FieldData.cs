@@ -13,7 +13,7 @@ public abstract class FieldData
     /// </summary>
     /// <param name="fieldName">Field name.</param>
     /// <param name="dataType">Field data type.</param>
-    /// <param name="isDynamic"></param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
     protected FieldData(string fieldName, MilvusDataType dataType, bool isDynamic = false)
     {
         FieldName = fieldName;
@@ -120,23 +120,41 @@ public abstract class FieldData
                 }
 
             case Grpc.FieldData.FieldOneofCase.Scalars:
-                return fieldData.Scalars.DataCase switch
+                return fieldData.Scalars switch
                 {
-                    Grpc.ScalarField.DataOneofCase.BoolData
+                    { DataCase: ScalarField.DataOneofCase.BoolData }
                         => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data, fieldData.IsDynamic),
-                    Grpc.ScalarField.DataOneofCase.FloatData
+                    { DataCase: ScalarField.DataOneofCase.FloatData }
                         => Create(fieldData.FieldName, fieldData.Scalars.FloatData.Data, fieldData.IsDynamic),
-                    Grpc.ScalarField.DataOneofCase.IntData
+                    { DataCase: ScalarField.DataOneofCase.IntData }
                         => Create(fieldData.FieldName, fieldData.Scalars.IntData.Data, fieldData.IsDynamic),
-                    Grpc.ScalarField.DataOneofCase.LongData
+                    { DataCase: ScalarField.DataOneofCase.LongData }
                         => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data, fieldData.IsDynamic),
-                    Grpc.ScalarField.DataOneofCase.StringData
+                    { DataCase: ScalarField.DataOneofCase.StringData }
                         => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
-                    Grpc.ScalarField.DataOneofCase.JsonData
-                        => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data
-                            .Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
-
-                    _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not support"),
+                    { DataCase: ScalarField.DataOneofCase.JsonData }
+                        => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int8 }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int16 }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int32 }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int64 }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.LongData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Float }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.FloatData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Double }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.DoubleData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.String }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.VarChar }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData.Data).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Json }
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.JsonData.Data).ToArray(), fieldData.IsDynamic),
+                    _ => throw new NotSupportedException($"{ fieldData.Scalars.DataCase } not support"),
                 };
 
             default:
@@ -147,7 +165,7 @@ public abstract class FieldData
     internal static MilvusDataType EnsureDataType<TDataType>()
     {
         Type type = typeof(TDataType);
-        MilvusDataType dataType = MilvusDataType.Double;
+        MilvusDataType dataType;
 
         if (type == typeof(bool))
         {
@@ -191,7 +209,7 @@ public abstract class FieldData
         }
         else
         {
-            throw new NotSupportedException($"Not Support DataType:{dataType}");
+            throw new NotSupportedException($"Type {type.Name} cannot be mapped to DataType");
         }
 
         return dataType;
@@ -227,14 +245,29 @@ public abstract class FieldData
     /// Create a varchar field.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
-    /// <param name="data">Data.</param>
-    /// <param name="isDynamic"></param>
+    /// <param name="data">Data in this field</param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
     public static FieldData<string> CreateVarChar(
         string fieldName,
         IReadOnlyList<string> data,
         bool isDynamic = false)
         => new(fieldName, data, MilvusDataType.VarChar, isDynamic);
+
+    /// <summary>
+    /// Create array of elements.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    /// <returns></returns>
+    public static ArrayFieldData<TElement> CreateArray<TElement>(
+        string fieldName,
+        IReadOnlyList<IReadOnlyList<TElement>> data,
+        bool isDynamic = false)
+    {
+        return new(fieldName, data, isDynamic);
+    }
 
     /// <summary>
     /// Create a field from <see cref="byte"/> array.
@@ -267,8 +300,8 @@ public abstract class FieldData
     /// <summary>
     /// Create a binary vectors
     /// </summary>
-    /// <param name="fieldName"></param>
-    /// <param name="data"></param>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
     /// <returns></returns>
     public static BinaryVectorFieldData CreateBinaryVectors(string fieldName, IReadOnlyList<ReadOnlyMemory<byte>> data)
     {
@@ -281,7 +314,7 @@ public abstract class FieldData
     /// Create a float vector.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
-    /// <param name="data">Data</param>
+    /// <param name="data">Data in this field</param>
     /// <returns></returns>
     public static FloatVectorFieldData CreateFloatVector(string fieldName, IReadOnlyList<ReadOnlyMemory<float>> data)
         => new(fieldName, data);
@@ -290,7 +323,7 @@ public abstract class FieldData
     /// Create a field from stream
     /// </summary>
     /// <param name="fieldName">Field name</param>
-    /// <param name="stream"></param>
+    /// <param name="stream">Stream data</param>
     /// <param name="dimension">Dimension of data</param>
     /// <returns>New created field</returns>
     public static FieldData CreateFromStream(string fieldName, Stream stream, long dimension)
@@ -305,8 +338,8 @@ public abstract class FieldData
     /// Create json field.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
-    /// <param name="json">json field.</param>
-    /// <param name="isDynamic"></param>
+    /// <param name="json">Json field.</param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
     public static FieldData CreateJson(string fieldName, IReadOnlyList<string> json, bool isDynamic = false)
     {
@@ -324,9 +357,9 @@ public class FieldData<TData> : FieldData
     /// <summary>
     /// Construct a field
     /// </summary>
-    /// <param name="fieldName"></param>
-    /// <param name="data"></param>
-    /// <param name="isDynamic"></param>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
     public FieldData(string fieldName, IReadOnlyList<TData> data, bool isDynamic = false)
         : base(fieldName, EnsureDataType<TData>(), isDynamic)
         => Data = data;
@@ -334,10 +367,10 @@ public class FieldData<TData> : FieldData
     /// <summary>
     /// Construct a field
     /// </summary>
-    /// <param name="fieldName"></param>
-    /// <param name="data"></param>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
     /// <param name="milvusDataType">Milvus data type.</param>
-    /// <param name="isDynamic"></param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
     public FieldData(string fieldName, IReadOnlyList<TData> data, MilvusDataType milvusDataType, bool isDynamic)
         : base(fieldName, milvusDataType, isDynamic)
         => Data = data;
@@ -446,7 +479,6 @@ public class FieldData<TData> : FieldData
                 }
                 fieldData.Scalars = new Grpc.ScalarField { JsonData = jsonData, };
                 break;
-
             case MilvusDataType.None:
                 throw new MilvusException($"DataType Error:{DataType}");
             default:
@@ -481,7 +513,11 @@ public class FieldData<TData> : FieldData
     public override string ToString()
         => $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data?.Count}, {nameof(RowCount)}: {RowCount}}}";
 
-    private void Check()
+    /// <summary>
+    /// Checks data
+    /// </summary>
+    /// <exception cref="MilvusException"></exception>
+    protected void Check()
     {
         if (Data.Any() != true)
         {
