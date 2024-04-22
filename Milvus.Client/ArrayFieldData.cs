@@ -11,8 +11,8 @@ public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElem
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <param name="isDynamic"></param>
-    public ArrayFieldData(string fieldName, IEnumerable<IEnumerable<TElementData>> data, bool isDynamic)
-        : base(fieldName, data.Select(x => x.ToArray()).ToArray(), MilvusDataType.Array, isDynamic)
+    public ArrayFieldData(string fieldName, IReadOnlyList<IReadOnlyList<TElementData>> data, bool isDynamic)
+        : base(fieldName, data, MilvusDataType.Array, isDynamic)
     {
         ElementType = EnsureDataType<TElementData>();
     }
@@ -53,119 +53,77 @@ public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElem
             switch (ElementType)
             {
                 case MilvusDataType.Bool:
-                    Grpc.BoolArray boolData = new();
+                    BoolArray boolData = new();
                     boolData.Data.AddRange(array as IEnumerable<bool>);
-                    arrayArray.Data.Add(new ScalarField {BoolData = boolData});
+                    arrayArray.Data.Add(new ScalarField { BoolData = boolData, });
                     break;
 
                 case MilvusDataType.Int8:
-                    Grpc.IntArray int8Data = new();
+                    IntArray int8Data = new();
                     var sbytes = array as IEnumerable<sbyte> ?? Enumerable.Empty<sbyte>();
                     int8Data.Data.AddRange(sbytes.Select(x => (int) x));
-                    arrayArray.Data.Add(new ScalarField {IntData = int8Data});
+                    arrayArray.Data.Add(new ScalarField { IntData = int8Data, });
                     break;
 
                 case MilvusDataType.Int16:
-                    Grpc.IntArray int16Data = new();
+                    IntArray int16Data = new();
                     var shorts = array as IEnumerable<short> ?? Enumerable.Empty<short>();
-                    int16Data.Data.AddRange(shorts.Select(x=>(int)x));
-                    arrayArray.Data.Add(new ScalarField {IntData = int16Data});
+                    int16Data.Data.AddRange(shorts.Select(x => (int) x));
+                    arrayArray.Data.Add(new ScalarField { IntData = int16Data, });
                     break;
 
                 case MilvusDataType.Int32:
-                    Grpc.IntArray int32Data = new();
+                    IntArray int32Data = new();
                     int32Data.Data.AddRange(array as IEnumerable<int>);
-                    arrayArray.Data.Add(new ScalarField {IntData = int32Data});
+                    arrayArray.Data.Add(new ScalarField { IntData = int32Data, });
                     break;
 
                 case MilvusDataType.Int64:
-                    Grpc.LongArray int64Data = new();
+                    LongArray int64Data = new();
                     int64Data.Data.AddRange(array as IEnumerable<long>);
-                    arrayArray.Data.Add(new ScalarField {LongData = int64Data});
+                    arrayArray.Data.Add(new ScalarField { LongData = int64Data, });
                     break;
 
                 case MilvusDataType.Float:
-                    Grpc.FloatArray floatData = new();
+                    FloatArray floatData = new();
                     floatData.Data.AddRange(array as IEnumerable<float>);
-                    arrayArray.Data.Add(new ScalarField {FloatData = floatData});
+                    arrayArray.Data.Add(new ScalarField { FloatData = floatData, });
                     break;
 
                 case MilvusDataType.Double:
-                    Grpc.DoubleArray doubleData = new();
+                    DoubleArray doubleData = new();
                     doubleData.Data.AddRange(array as IEnumerable<double>);
-                    arrayArray.Data.Add(new ScalarField {DoubleData = doubleData});
+                    arrayArray.Data.Add(new ScalarField { DoubleData = doubleData, });
                     break;
 
                 case MilvusDataType.String:
-                    Grpc.StringArray stringData = new();
+                    StringArray stringData = new();
                     stringData.Data.AddRange(array as IEnumerable<string>);
-                    arrayArray.Data.Add(new ScalarField {StringData = stringData});
+                    arrayArray.Data.Add(new ScalarField { StringData = stringData, });
                     break;
 
                 case MilvusDataType.VarChar:
-                    Grpc.StringArray varcharData = new();
+                    StringArray varcharData = new();
                     varcharData.Data.AddRange(array as IEnumerable<string>);
-                    arrayArray.Data.Add(new ScalarField {StringData = varcharData});
+                    arrayArray.Data.Add(new ScalarField { StringData = varcharData, });
                     break;
 
                 case MilvusDataType.Json:
-                    Grpc.JSONArray jsonData = new();
+                    JSONArray jsonData = new();
                     var enumerable = array as IEnumerable<string> ?? Enumerable.Empty<string>();
                     jsonData.Data.AddRange(enumerable.Select(ByteString.CopyFromUtf8));
-                    arrayArray.Data.Add(new ScalarField {JsonData = jsonData});
+                    arrayArray.Data.Add(new ScalarField { JsonData = jsonData, });
                     break;
+
                 case MilvusDataType.None:
                     throw new MilvusException($"ElementType Error:{DataType}");
+
                 default:
                     throw new MilvusException($"ElementType Error:{DataType}, not supported");
             }
         }
 
         return fieldData;
-
-        /*
-        int dataCount = Data.Count;
-        if (dataCount == 0)
-        {
-            throw new MilvusException("The number of vectors must be positive.");
-        }
-
-        int vectorByteLength = Data[0].Length;
-        int totalByteLength = vectorByteLength;
-        for (int i = 1; i < dataCount; i++)
-        {
-            int rowLength = Data[i].Length;
-            if (rowLength != vectorByteLength)
-            {
-                throw new MilvusException("All vectors must have the same dimensionality.");
-            }
-
-            checked { totalByteLength += rowLength; }
-        }
-
-        byte[] bytes = ArrayPool<byte>.Shared.Rent(totalByteLength);
-        int pos = 0;
-        for (int i = 0; i < dataCount; i++)
-        {
-            ReadOnlyMemory<byte> row = Data[i];
-            row.Span.CopyTo(bytes.AsSpan(pos, row.Length));
-            pos += row.Length;
-        }
-        Debug.Assert(pos == totalByteLength);
-
-        var result = new Grpc.FieldData
-        {
-            FieldName = FieldName,
-            Type = (Grpc.DataType)DataType,
-            Vectors = new Grpc.VectorField
-            {
-                BinaryVector = ByteString.CopyFrom(bytes.AsSpan(0, totalByteLength)),
-                Dim = vectorByteLength * 8,
-            }
-        };
-
-        ArrayPool<byte>.Shared.Return(bytes);
-        */
     }
 
     internal override object GetValueAsObject(int index)

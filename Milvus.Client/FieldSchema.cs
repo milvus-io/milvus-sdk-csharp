@@ -100,34 +100,34 @@ public sealed class FieldSchema
     /// </summary>
     /// <typeparam name="TData">Determines the element data type of array stored in the field based.</typeparam>
     /// <param name="name">The field name.</param>
-    /// <param name="capacity">Maximum number of elements that an array field can contain.</param>
+    /// <param name="maxCapacity">Maximum number of elements that an array field can contain.</param>
     /// <param name="description">An optional description for the field.</param>
     public static FieldSchema CreateArray<TData>(
         string name,
-        int capacity,
+        int maxCapacity,
         string description = "")
         => new(name, MilvusDataType.Array, description: description)
         {
             ElementDataType = FieldData.EnsureDataType<TData>(),
-            MaxCapacity = capacity,
+            MaxCapacity = maxCapacity,
         };
 
     /// <summary>
     /// Create a field schema for a <c>array</c> of <c>varchar</c> field.
     /// </summary>
     /// <param name="name">The field name.</param>
-    /// <param name="capacity">Maximum number of elements that an array field can contain.</param>
+    /// <param name="maxCapacity">Maximum number of elements that an array field can contain.</param>
     /// <param name="maxLength">Maximum length of strings for each <c>varchar</c> element in an array field.</param>
     /// <param name="description">An optional description for the field.</param>
     public static FieldSchema CreateVarcharArray(
         string name,
-        int capacity,
+        int maxCapacity,
         int maxLength,
         string description = "")
         => new(name, MilvusDataType.Array, description: description)
         {
             ElementDataType = MilvusDataType.VarChar,
-            MaxCapacity = capacity,
+            MaxCapacity = maxCapacity,
             MaxLength = maxLength,
         };
 
