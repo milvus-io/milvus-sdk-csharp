@@ -67,4 +67,141 @@ public class FieldTests
         Assert.Equal(2, field.RowCount);
         Assert.Equal(2, field.Data.Count);
     }
+
+    [Fact]
+    public void CreateInt8ArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new sbyte[][]
+            {
+                [1, 2],
+                [3, 4],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Int8, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
+    public void CreateInt16ArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new short[][]
+            {
+                [1, 2],
+                [3, 4],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Int16, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
+    public void CreateInt32ArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new int[][]
+            {
+                [1, 2],
+                [3, 4],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Int32, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
+    public void CreateInt64ArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new long[][]
+            {
+                [1, 2],
+                [3, 4],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Int64, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
+    public void CreateBoolArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new bool[][]
+            {
+                [true, false],
+                [false, false],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Bool, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
+    public void CreateFloatArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new float[][]
+            {
+                [1, 2],
+                [3, 4],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Float, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
+    public void CreateDoubleArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new double[][]
+            {
+                [1, 2],
+                [3, 4],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.Double, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    //TODO: differentiate VarChar and String somehow
+    [Fact]
+    public void CreateVarCharArrayTest()
+    {
+        var field = FieldData.CreateArray(
+            "vector",
+            new string[][]
+            {
+                ["3d4d387208e04a9abe77be65e2b7c7b3", "a5502ddb557047968a70ff69720d2dd2"],
+                ["4c246789a91f4b15aa3b26799df61457", "00a23e95823b4f14854ceed5f7059953"],
+            });
+
+        Assert.Equal(MilvusDataType.Array, field.DataType);
+        Assert.Equal(MilvusDataType.VarChar, field.ElementType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
 }

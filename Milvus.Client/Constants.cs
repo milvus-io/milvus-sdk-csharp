@@ -71,6 +71,11 @@ internal static class Constants
     internal const string FailedReason = "failed_reason";
 
     /// <summary>
+    /// Key name.
+    /// </summary>
+    internal const string MaxCapacity = "max_capacity";
+
+    /// <summary>
     /// Files.
     /// </summary>
     internal const string ImportFiles = "files";

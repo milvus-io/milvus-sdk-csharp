@@ -87,6 +87,7 @@ public partial class MilvusClient
             {
                 Name = field.Name,
                 DataType = (DataType)(int)field.DataType,
+                ElementType = (DataType)(int)field.ElementDataType,
                 IsPrimaryKey = field.IsPrimaryKey,
                 IsPartitionKey = field.IsPartitionKey,
                 AutoID = field.AutoId,
@@ -108,6 +109,15 @@ public partial class MilvusClient
                 {
                     Key = Constants.VectorDim,
                     Value = field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (field.MaxCapacity is not null)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.MaxCapacity,
+                    Value = field.MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
                 });
             }
 
