@@ -101,6 +101,11 @@ internal static class Constants
     internal const string IgnoreGrowing = "ignore_growing";
 
     /// <summary>
+    /// Key name.
+    /// </summary>
+    internal const string GroupByField = "group_by_field";
+
+    /// <summary>
     /// Default database name.
     /// </summary>
     internal const string DefaultDatabaseName = "default";

@@ -551,6 +551,30 @@ public class SearchQueryTests(
         Assert.Equal("vectors", exception.ParamName);
     }
 
+    [Fact]
+    public async Task Search_with_group_by_field()
+    {
+        var parameters = new SearchParameters();
+        parameters.GroupByField = "id";
+        var results = await Collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            SimilarityMetricType.L2,
+            parameters: parameters,
+            limit: 2);
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Empty(results.FieldsData);
+        Assert.Collection(results.Ids.LongIds!,
+            id => Assert.Equal(1, id),
+            id => Assert.Equal(2, id));
+        Assert.Null(results.Ids.StringIds); // TODO: Need to test string IDs
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
     public class QueryCollectionFixture : IAsyncLifetime
     {
         public QueryCollectionFixture(MilvusFixture milvusFixture)
