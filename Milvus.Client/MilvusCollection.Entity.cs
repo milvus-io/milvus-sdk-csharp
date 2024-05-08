@@ -242,6 +242,15 @@ public partial class MilvusCollection
                     Key = Constants.IgnoreGrowing, Value = parameters.IgnoreGrowing.Value.ToString()
                 });
             }
+
+            if (parameters.GroupByField is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.GroupByField,
+                    Value = parameters.GroupByField
+                });
+            }
         }
 
         // Note that we send both the consistency level and the guarantee timestamp, although the latter is derived
