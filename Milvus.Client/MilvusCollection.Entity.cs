@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Google.Protobuf.Collections;
+using KeyValuePair = Milvus.Client.Grpc.KeyValuePair;
 
 namespace Milvus.Client;
 
@@ -143,7 +144,7 @@ public partial class MilvusCollection
     {
         Verify.NotNullOrWhiteSpace(expression);
 
-        var request = new DeleteRequest
+        DeleteRequest request = new DeleteRequest
         {
             CollectionName = Name,
             Expr = expression,
@@ -390,7 +391,7 @@ public partial class MilvusCollection
     public async Task<IReadOnlyList<PersistentSegmentInfo>> GetPersistentSegmentInfosAsync(
         CancellationToken cancellationToken = default)
     {
-        var request = new GetPersistentSegmentInfoRequest { CollectionName = Name };
+        GetPersistentSegmentInfoRequest request = new GetPersistentSegmentInfoRequest { CollectionName = Name };
 
         GetPersistentSegmentInfoResponse response = await _client.InvokeAsync(
             _client.GrpcClient.GetPersistentSegmentInfoAsync,
@@ -429,7 +430,7 @@ public partial class MilvusCollection
 
         PopulateQueryRequestFromParameters(request, parameters);
 
-        var response = await _client.InvokeAsync(
+        QueryResults? response = await _client.InvokeAsync(
                 _client.GrpcClient.QueryAsync,
                 request,
                 static r => r.Status,
@@ -460,22 +461,22 @@ public partial class MilvusCollection
             throw new MilvusException("Not support offset when searching iteration");
         }
 
-        var describeResponse = await _client.InvokeAsync(
+        DescribeCollectionResponse? describeResponse = await _client.InvokeAsync(
                 _client.GrpcClient.DescribeCollectionAsync,
                 new DescribeCollectionRequest { CollectionName = Name },
                 r => r.Status,
                 cancellationToken)
                 .ConfigureAwait(false);
 
-        var pkField = describeResponse.Schema.Fields.FirstOrDefault(x => x.IsPrimaryKey);
+        Grpc.FieldSchema? pkField = describeResponse.Schema.Fields.FirstOrDefault(x => x.IsPrimaryKey);
         if (pkField == null)
         {
             throw new MilvusException("Schema must contain pk field");
         }
 
-        var isUserRequestPkField = parameters?.OutputFieldsInternal?.Contains(pkField.Name) ?? false;
-        var userExpression = expression;
-        var userLimit = parameters?.Limit ?? int.MaxValue;
+        bool isUserRequestPkField = parameters?.OutputFieldsInternal?.Contains(pkField.Name) ?? false;
+        string? userExpression = expression;
+        int userLimit = parameters?.Limit ?? int.MaxValue;
 
         QueryRequest request = new()
         {
@@ -486,8 +487,10 @@ public partial class MilvusCollection
                 {userExpression: not null} => userExpression,
                 // If user expression is null and pk field is string
                 {pkField.DataType: DataType.VarChar} => $"{pkField.Name} != ''",
-                // If user expression is null and pk field is not string
-                _ => $"{pkField.Name} < {long.MaxValue}",
+                // If user expression is null and pk field is int
+                {pkField.DataType: DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64} => $"{pkField.Name} < {long.MaxValue}",
+                // If user expression is null and pk field is not string and not int
+                _ => throw new MilvusException("Unsupported data type for primary key field")
             }
         };
 
@@ -497,17 +500,18 @@ public partial class MilvusCollection
         if (!isUserRequestPkField) request.OutputFields.Add(pkField.Name);
 
         // Replace parameters required for iterator
+        string iterationBatchSize = Math.Min(batchSize, userLimit).ToString(CultureInfo.InvariantCulture);
         ReplaceKeyValueItems(request.QueryParams,
             new Grpc.KeyValuePair {Key = Constants.Iterator, Value = "True"},
             new Grpc.KeyValuePair {Key = Constants.ReduceStopForBest, Value = "True"},
-            new Grpc.KeyValuePair {Key = Constants.BatchSize, Value = batchSize.ToString(CultureInfo.InvariantCulture)},
-            new Grpc.KeyValuePair {Key = Constants.Offset, Value = 0.ToString(CultureInfo.InvariantCulture)},
-            new Grpc.KeyValuePair {Key = Constants.Limit, Value = Math.Min(batchSize, userLimit).ToString(CultureInfo.InvariantCulture)});
+            new Grpc.KeyValuePair {Key = Constants.BatchSize, Value = iterationBatchSize},
+            new Grpc.KeyValuePair {Key = Constants.Offset, Value = "0"},
+            new Grpc.KeyValuePair {Key = Constants.Limit, Value = iterationBatchSize});
 
-        var processedItemsCount = 0;
-        while (!cancellationToken.IsCancellationRequested)
+        int processedItemsCount = 0;
+        while (true)
         {
-            var response = await _client.InvokeAsync(
+            QueryResults? response = await _client.InvokeAsync(
                     _client.GrpcClient.QueryAsync,
                     request,
                     static r => r.Status,
@@ -516,16 +520,25 @@ public partial class MilvusCollection
 
             object? pkLastValue;
             int processedDuringIterationCount;
-            var pkFieldsData = response.FieldsData.Single(x => x.FieldId == pkField.FieldID);
-            if (pkField.DataType == DataType.VarChar)
+            Grpc.FieldData? pkFieldsData = response.FieldsData.Single(x => x.FieldId == pkField.FieldID);
+            switch (pkField.DataType)
             {
-                pkLastValue = pkFieldsData.Scalars.StringData.Data.LastOrDefault();
-                processedDuringIterationCount = pkFieldsData.Scalars.StringData.Data.Count;
-            }
-            else
-            {
-                pkLastValue = pkFieldsData.Scalars.IntData.Data.LastOrDefault();
-                processedDuringIterationCount = pkFieldsData.Scalars.IntData.Data.Count;
+                case DataType.VarChar:
+                    pkLastValue = pkFieldsData.Scalars.StringData.Data.LastOrDefault();
+                    processedDuringIterationCount = pkFieldsData.Scalars.StringData.Data.Count;
+                    break;
+                case DataType.Int8:
+                case DataType.Int16:
+                case DataType.Int32:
+                    pkLastValue = pkFieldsData.Scalars.IntData.Data.LastOrDefault();
+                    processedDuringIterationCount = pkFieldsData.Scalars.IntData.Data.Count;
+                    break;
+                case DataType.Int64:
+                    pkLastValue = pkFieldsData.Scalars.LongData.Data.LastOrDefault();
+                    processedDuringIterationCount = pkFieldsData.Scalars.LongData.Data.Count;
+                    break;
+                default:
+                    throw new MilvusException("Unsupported data type for primary key field");
             }
 
             // If there are no more items to process, we should break the loop
@@ -540,7 +553,7 @@ public partial class MilvusCollection
             yield return ProcessReturnedFieldData(response.FieldsData);
 
             processedItemsCount += processedDuringIterationCount;
-            var leftItemsCount = userLimit - processedItemsCount;
+            int leftItemsCount = userLimit - processedItemsCount;
 
             // If user limit is reached, we should break the loop
             if(leftItemsCount <= 0) yield break;
@@ -554,13 +567,16 @@ public partial class MilvusCollection
                     Value = Math.Min(batchSize, leftItemsCount).ToString(CultureInfo.InvariantCulture)
                 });
 
-            var nextExpression = pkField.DataType == DataType.VarChar
-                ? $"{pkField.Name} > '{pkLastValue}'"
-                : $"{pkField.Name} > {pkLastValue}";
+            string nextExpression = pkField.DataType switch
+            {
+                DataType.VarChar => $"{pkField.Name} > '{pkLastValue}'",
+                DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > {pkLastValue}",
+                _ => throw new MilvusException("Unsupported data type for primary key field")
+            };
 
             if (!string.IsNullOrWhiteSpace(userExpression))
             {
-                nextExpression += $" and {userExpression}";
+                nextExpression += $" and ({userExpression})";
             }
 
             request.Expr = nextExpression;
@@ -577,7 +593,7 @@ public partial class MilvusCollection
     public async Task<IReadOnlyList<QuerySegmentInfoResult>> GetQuerySegmentInfoAsync(
         CancellationToken cancellationToken = default)
     {
-        var request = new GetQuerySegmentInfoRequest { CollectionName = Name };
+        GetQuerySegmentInfoRequest request = new GetQuerySegmentInfoRequest { CollectionName = Name };
 
         GetQuerySegmentInfoResponse response =
             await _client.InvokeAsync(_client.GrpcClient.GetQuerySegmentInfoAsync, request, static r => r.Status,
@@ -780,14 +796,14 @@ public partial class MilvusCollection
 
     private static void ReplaceKeyValueItems(RepeatedField<Grpc.KeyValuePair> collection, params Grpc.KeyValuePair[] pairs)
     {
-        var obsoleteParameterKeys = pairs.Select(x => x.Key).Distinct().ToArray();
-        var obsoleteParameters = collection.Where(x => obsoleteParameterKeys.Contains(x.Key)).ToArray();
-        foreach (var field in obsoleteParameters)
+        string[] obsoleteParameterKeys = pairs.Select(x => x.Key).Distinct().ToArray();
+        KeyValuePair[] obsoleteParameters = collection.Where(x => obsoleteParameterKeys.Contains(x.Key)).ToArray();
+        foreach (KeyValuePair field in obsoleteParameters)
         {
             collection.Remove(field);
         }
 
-        foreach (var pair in pairs)
+        foreach (KeyValuePair pair in pairs)
         {
             collection.Add(pair);
         }
