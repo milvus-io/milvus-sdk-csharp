@@ -570,7 +570,7 @@ public partial class MilvusCollection
             string nextExpression = pkField.DataType switch
             {
                 DataType.VarChar => $"{pkField.Name} > '{pkLastValue}'",
-                DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > '{pkLastValue}'",
+                DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > {pkLastValue}",
                 _ => throw new MilvusException("Unsupported data type for primary key field")
             };
 
