@@ -509,7 +509,7 @@ public partial class MilvusCollection
             new Grpc.KeyValuePair {Key = Constants.Limit, Value = iterationBatchSize});
 
         int processedItemsCount = 0;
-        while (!cancellationToken.IsCancellationRequested)
+        while (true)
         {
             QueryResults? response = await _client.InvokeAsync(
                     _client.GrpcClient.QueryAsync,
