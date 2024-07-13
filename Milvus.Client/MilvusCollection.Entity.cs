@@ -505,7 +505,7 @@ public partial class MilvusCollection
             new Grpc.KeyValuePair {Key = Constants.Iterator, Value = "True"},
             new Grpc.KeyValuePair {Key = Constants.ReduceStopForBest, Value = "True"},
             new Grpc.KeyValuePair {Key = Constants.BatchSize, Value = iterationBatchSize},
-            new Grpc.KeyValuePair {Key = Constants.Offset, Value = 0.ToString(CultureInfo.InvariantCulture)},
+            new Grpc.KeyValuePair {Key = Constants.Offset, Value = "0"},
             new Grpc.KeyValuePair {Key = Constants.Limit, Value = iterationBatchSize});
 
         int processedItemsCount = 0;
