@@ -530,9 +530,12 @@ public partial class MilvusCollection
                 case DataType.Int8:
                 case DataType.Int16:
                 case DataType.Int32:
-                case DataType.Int64:
                     pkLastValue = pkFieldsData.Scalars.IntData.Data.LastOrDefault();
                     processedDuringIterationCount = pkFieldsData.Scalars.IntData.Data.Count;
+                    break;
+                case DataType.Int64:
+                    pkLastValue = pkFieldsData.Scalars.LongData.Data.LastOrDefault();
+                    processedDuringIterationCount = pkFieldsData.Scalars.LongData.Data.Count;
                     break;
                 default:
                     throw new MilvusException("Unsupported data type for primary key field");
