@@ -567,13 +567,16 @@ public partial class MilvusCollection
                     Value = Math.Min(batchSize, leftItemsCount).ToString(CultureInfo.InvariantCulture)
                 });
 
-            string nextExpression = pkField.DataType == DataType.VarChar
-                ? $"{pkField.Name} > '{pkLastValue}'"
-                : $"{pkField.Name} > {pkLastValue}";
+            string nextExpression = pkField.DataType switch
+            {
+                DataType.VarChar => $"{pkField.Name} > '{pkLastValue}'",
+                DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > '{pkLastValue}'",
+                _ => throw new MilvusException("Unsupported data type for primary key field")
+            };
 
             if (!string.IsNullOrWhiteSpace(userExpression))
             {
-                nextExpression += $" and {userExpression}";
+                nextExpression += $" and ({userExpression})";
             }
 
             request.Expr = nextExpression;
