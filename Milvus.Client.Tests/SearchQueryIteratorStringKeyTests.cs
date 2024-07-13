@@ -6,7 +6,7 @@ namespace Milvus.Client.Tests;
 public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIteratorStringKeyTests.DataCollectionFixture>,
                                                  IAsyncLifetime
 {
-    private const string CollectionName = nameof(DataTests);
+    private const string CollectionName = nameof(SearchQueryIteratorStringKeyTests);
 
     private readonly DataCollectionFixture _dataCollectionFixture;
     private readonly MilvusClient Client;
