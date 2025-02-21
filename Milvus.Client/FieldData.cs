@@ -135,26 +135,26 @@ public abstract class FieldData
                     { DataCase: ScalarField.DataOneofCase.JsonData }
                         => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.BoolData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int8 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.IntData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int16 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.IntData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int32 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.IntData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int64 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.LongData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.LongData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Float }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.FloatData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.FloatData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Double }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.DoubleData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.DoubleData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.String }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.StringData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.VarChar }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.StringData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Json }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.JsonData.Data).ToArray(), fieldData.IsDynamic),
-                    _ => throw new NotSupportedException($"{ fieldData.Scalars.DataCase } not support"),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData?.Data?.Select(x => x.JsonData?.Data ?? []).ToArray() ?? [], fieldData.IsDynamic),
+                    _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not supported"),
                 };
 
             default:
