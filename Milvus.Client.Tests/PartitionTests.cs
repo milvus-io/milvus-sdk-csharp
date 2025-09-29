@@ -38,8 +38,8 @@ public class PartitionTests : IAsyncLifetime
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
         await Collection.WaitForIndexBuildAsync("float_vector");
 
-        await Collection.LoadPartitionsAsync(new[] { "partition" });
-        await Collection.ReleasePartitionsAsync(new[] { "partition" });
+        await Collection.LoadPartitionsAsync(["partition"]);
+        await Collection.ReleasePartitionsAsync(["partition"]);
     }
 
     [Fact]
@@ -60,12 +60,11 @@ public class PartitionTests : IAsyncLifetime
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateFloatVector("float_vector", 4),
-            });
+            ]);
     }
 
     public Task DisposeAsync()

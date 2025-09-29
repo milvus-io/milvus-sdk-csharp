@@ -65,12 +65,11 @@ public class AliasTests : IAsyncLifetime
         await Collection.DropAsync();
         Collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
     }
 
     private readonly MilvusClient Client;

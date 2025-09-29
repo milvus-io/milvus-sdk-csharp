@@ -57,7 +57,7 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("float_vector");
     }
 
-    [Theory]
+    [Theory(Skip = "Gpu indexes is not relevant for SRS. Hence there is no point in test them")]
     [InlineData(IndexType.GpuCagra, """{ "nlist": "8" }""")]
     [InlineData(IndexType.GpuIvfFlat, """{ "nlist": "8" }""")]
     [InlineData(IndexType.GpuIvfPq, """{ "nlist": "8", "m": "4" }""")]
@@ -84,12 +84,11 @@ public class IndexTests : IAsyncLifetime
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             nameof(IndexTests),
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
-            });
+            ]);
 
         await Collection.CreateIndexAsync(
             "binary_vector", indexType, SimilarityMetricType.Jaccard,
@@ -115,12 +114,11 @@ public class IndexTests : IAsyncLifetime
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             nameof(IndexTests),
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
-            });
+            ]);
 
         await Collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, similarityMetricType);
         await Collection.WaitForIndexBuildAsync("binary_vector");
@@ -130,7 +128,7 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task GetState()
     {
-        Assert.Equal(IndexState.None, await Collection.GetIndexStateAsync("float_vector"));
+        await Assert.ThrowsAsync<MilvusException>(async () => await Collection.GetIndexStateAsync("float_vector"));
 
         await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
         await Collection.WaitForIndexBuildAsync("float_vector");
@@ -199,12 +197,11 @@ public class IndexTests : IAsyncLifetime
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateFloatVector("float_vector", 4),
-            });
+            ]);
     }
 
     public Task DisposeAsync()

@@ -9,6 +9,7 @@ using KeyValuePair = Milvus.Client.Grpc.KeyValuePair;
 
 namespace Milvus.Client;
 
+#pragma warning disable CA1711
 public partial class MilvusCollection
 {
     private const ulong GuaranteeTimestampStrong = 0;
@@ -862,3 +863,4 @@ public partial class MilvusCollection
         }
     }
 }
+#pragma warning restore CA1711

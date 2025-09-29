@@ -379,12 +379,14 @@ public sealed partial class MilvusClient : IDisposable
         Grpc.Status status = getStatus(response);
         var code = (MilvusErrorCode)status.Code;
 
-        if (code != MilvusErrorCode.Success)
+#pragma warning disable CS0612 // Type or member is obsolete
+        if (code != MilvusErrorCode.Success || status.ErrorCode != ErrorCode.Success)
         {
             _log.OperationFailed(callerName, code, status.Reason);
 
             throw new MilvusException(code, status.Reason);
         }
+#pragma warning restore CS0612 // Type or member is obsolete
 
         return response;
     }

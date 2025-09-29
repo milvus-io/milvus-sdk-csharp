@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <NoWarn>$(NoWarn);CA1062</NoWarn>
     </PropertyGroup>
@@ -26,5 +26,11 @@
     <ItemGroup>
         <ProjectReference Include="..\Milvus.Client\Milvus.Client.csproj" />
     </ItemGroup>
+
+	<ItemGroup>
+		<Content Include="milvus.yaml">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
 </Project>

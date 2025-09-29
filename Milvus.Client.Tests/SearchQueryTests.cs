@@ -104,19 +104,18 @@ public class SearchQueryTests(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
         await Collection.InsertAsync(
-            new FieldData[]
-            {
-                FieldData.Create("id", new[] { 1L, 2L, 3L }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
-                {
+            [
+                FieldData.Create("id", [1L, 2L, 3L]),
+                FieldData.CreateFloatVector("float_vector",
+                [
                     new[] { 1f, 2f },
                     new[] { 3f, 4f },
                     new[] { 5f, 6f }
-                }),
-                FieldData.CreateVarChar("dynamic_varchar", new[] { "str1", "str2", "str3" }, isDynamic: true),
-                FieldData.Create("dynamic_long", new[] { 8L, 9L, 10L }, isDynamic: true),
-                FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
-            });
+                ]),
+                FieldData.CreateVarChar("dynamic_varchar", ["str1", "str2", "str3"], isDynamic: true),
+                FieldData.Create("dynamic_long", [8L, 9L, 10L], isDynamic: true),
+                FieldData.Create("dynamic_bool", [true, false, true], isDynamic: true)
+            ]);
 
         await Collection.LoadAsync();
         await Collection.WaitForCollectionLoadAsync(
@@ -274,11 +273,7 @@ public class SearchQueryTests(
         await collection.DropAsync();
         collection = await Client.CreateCollectionAsync(
             collectionName,
-            new[]
-            {
-                FieldSchema.Create<long>("id", isPrimaryKey: true),
-                FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            [FieldSchema.Create<long>("id", isPrimaryKey: true), FieldSchema.CreateFloatVector("float_vector", 2)]);
 
         await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
 
@@ -300,7 +295,7 @@ public class SearchQueryTests(
         Assert.Null(results.Ids.LongIds);
         Assert.Null(results.Ids.StringIds);
 
-        Assert.Empty(results.FieldsData);
+        Assert.Equal(0, results.FieldsData[0].RowCount);
         Assert.Equal(1, results.NumQueries);
         Assert.Empty(results.Scores);
     }
@@ -348,19 +343,18 @@ public class SearchQueryTests(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
         await Collection.InsertAsync(
-            new FieldData[]
-            {
-                FieldData.Create("id", new[] { 1L, 2L, 3L }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
-                {
+            [
+                FieldData.Create("id", [1L, 2L, 3L]),
+                FieldData.CreateFloatVector("float_vector",
+                [
                     new[] { 1f, 2f },
                     new[] { 3f, 4f },
                     new[] { 5f, 6f }
-                }),
-                FieldData.CreateVarChar("dynamic_varchar", new[] { "str1", "str2", "str3" }, isDynamic: true),
-                FieldData.Create("dynamic_long", new[] { 8L, 9L, 10L }, isDynamic: true),
-                FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
-            });
+                ]),
+                FieldData.CreateVarChar("dynamic_varchar", ["str1", "str2", "str3"], isDynamic: true),
+                FieldData.Create("dynamic_long", [8L, 9L, 10L], isDynamic: true),
+                FieldData.Create("dynamic_bool", [true, false, true], isDynamic: true)
+            ]);
 
         await Collection.LoadAsync();
         await Collection.WaitForCollectionLoadAsync(
@@ -424,33 +418,31 @@ public class SearchQueryTests(
         await binaryVectorCollection.DropAsync();
         await Client.CreateCollectionAsync(
             collectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateBinaryVector("binary_vector", 128)
-            });
+            ]);
 
         await binaryVectorCollection.CreateIndexAsync(
             "binary_vector", indexType, similarityMetricType,
             "float_vector_idx", new Dictionary<string, string>() { { "nlist", "128" } });
 
-        long[] ids = { 1, 2, 3 };
-        string[] strings = { "one", "two", "three" };
+        long[] ids = [1, 2, 3];
+        string[] strings = ["one", "two", "three"];
         ReadOnlyMemory<byte>[] binaryVectors =
-        {
+        [
             Enumerable.Range(1, 16).Select(i => (byte)i).ToArray(),
             Enumerable.Range(2, 16).Select(i => (byte)i).ToArray(),
             Enumerable.Range(3, 16).Select(i => (byte)i).ToArray(),
-        };
+        ];
 
         await binaryVectorCollection.InsertAsync(
-            new FieldData[]
-            {
+            [
                 FieldData.Create("id", ids),
                 FieldData.Create("varchar", strings),
                 FieldData.CreateBinaryVectors("binary_vector", binaryVectors)
-            });
+            ]);
 
         await binaryVectorCollection.LoadAsync();
         await binaryVectorCollection.WaitForCollectionLoadAsync(
@@ -458,7 +450,7 @@ public class SearchQueryTests(
 
         var results = await binaryVectorCollection.SearchAsync(
             "binary_vector",
-            new[] { binaryVectors[0] },
+            [binaryVectors[0]],
             similarityMetricType,
             limit: 2,
             parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
@@ -488,29 +480,26 @@ public class SearchQueryTests(
         await collection.DropAsync();
         collection = await Client.CreateCollectionAsync(
             collectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
 
         await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
 
         await collection.InsertAsync(
-            new FieldData[]
-            {
+            [
                 FieldData.Create("id", new long[] { 1 }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 1f, 2f } })
-            });
+                FieldData.CreateFloatVector("float_vector", [new[] { 1f, 2f }])
+            ]);
 
         var timestamp = DateTime.UtcNow;
 
         await collection.InsertAsync(
-            new FieldData[]
-            {
+            [
                 FieldData.Create("id", new long[] { 2 }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 3f, 4f } })
-            });
+                FieldData.CreateFloatVector("float_vector", [new[] { 3f, 4f }])
+            ]);
 
         await collection.LoadAsync();
         await collection.WaitForCollectionLoadAsync(
@@ -591,40 +580,38 @@ public class SearchQueryTests(
             await Collection.DropAsync();
             await Client.CreateCollectionAsync(
                 Collection.Name,
-                new[]
-                {
+                [
                     FieldSchema.Create<long>("id", isPrimaryKey: true),
                     FieldSchema.CreateVarchar("varchar", 256),
                     FieldSchema.CreateJson("json_thing"),
                     FieldSchema.CreateFloatVector("float_vector", 2)
-                });
+                ]);
 
             await Collection.CreateIndexAsync(
                 "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
-            long[] ids = { 1, 2, 3, 4, 5 };
-            string[] strings = { "one", "two", "three", "four", "five" };
+            long[] ids = [1, 2, 3, 4, 5];
+            string[] strings = ["one", "two", "three", "four", "five"];
             ReadOnlyMemory<float>[] floatVectors =
-            {
+            [
                 new[] { 1f, 2f },
                 new[] { 3.5f, 4.5f },
                 new[] { 5f, 6f },
                 new[] { 7.7f, 8.8f },
                 new[] { 9f, 10f }
-            };
+            ];
 
             List<string> jsons = Enumerable.Range(1, 5)
                 .Select(i => JsonSerializer.Serialize(new JsonThing { Title = "Title" + i, Number = i }))
                 .ToList();
 
             await Collection.InsertAsync(
-                new[]
-                {
+                [
                     FieldData.Create("id", ids),
                     FieldData.Create("varchar", strings),
                     FieldData.CreateJson("json_thing", jsons),
                     FieldData.CreateFloatVector("float_vector", floatVectors)
-                });
+                ]);
 
             await Collection.LoadAsync();
             await Collection.WaitForCollectionLoadAsync(

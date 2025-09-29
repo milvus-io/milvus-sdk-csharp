@@ -16,7 +16,7 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
 
         MilvusCollection collection = await DatabaseClient.CreateCollectionAsync(
             "foo",
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
+            [FieldSchema.Create<long>("id", isPrimaryKey: true), FieldSchema.CreateFloatVector("vec", 32)]);
 
         // The collection should be visible on the database-bound client, but not on the default client.
         Assert.True(await DatabaseClient.HasCollectionAsync("foo"));
@@ -28,7 +28,7 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await Assert.ThrowsAsync<MilvusException>(() =>
             DatabaseClient.CreateCollectionAsync(
                 "foo",
-                new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
+                [FieldSchema.Create<long>("id", isPrimaryKey: true)]));
         Assert.DoesNotContain(DatabaseName, await DefaultClient.ListDatabasesAsync());
     }
 
@@ -53,34 +53,32 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await DefaultClient.CreateDatabaseAsync(nameof(Search_on_non_default_database));
         MilvusCollection collection = await databaseClient.CreateCollectionAsync(
             "coll",
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
 
         await collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
 
-        long[] ids = { 1, 2, 3, 4, 5 };
-        string[] strings = { "one", "two", "three", "four", "five" };
+        long[] ids = [1, 2, 3, 4, 5];
+        string[] strings = ["one", "two", "three", "four", "five"];
         ReadOnlyMemory<float>[] floatVectors =
-        {
+        [
             new[] { 1f, 2f },
             new[] { 3.5f, 4.5f },
             new[] { 5f, 6f },
             new[] { 7.7f, 8.8f },
             new[] { 9f, 10f }
-        };
+        ];
 
         await collection.InsertAsync(
-            new FieldData[]
-            {
+            [
                 FieldData.Create("id", ids),
                 FieldData.Create("varchar", strings),
                 FieldData.CreateFloatVector("float_vector", floatVectors)
-            });
+            ]);
 
         await collection.LoadAsync();
         await collection.WaitForCollectionLoadAsync(

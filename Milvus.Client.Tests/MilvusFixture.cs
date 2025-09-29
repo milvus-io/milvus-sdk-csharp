@@ -8,10 +8,11 @@ public sealed class MilvusTestCollection : ICollectionFixture<MilvusFixture>;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {
-    private const string DefaultMilvusImage = "milvusdb/milvus:v2.4.0-rc.1";
+    private const string DefaultMilvusImage = "milvusdb/milvus:v2.5.18";
 
     private readonly MilvusContainer _container = new MilvusBuilder()
         .WithImage(Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage)
+        .WithResourceMapping("./milvus.yaml", "/milvus/configs/")
         .Build();
 
     public string Host => _container.Hostname;

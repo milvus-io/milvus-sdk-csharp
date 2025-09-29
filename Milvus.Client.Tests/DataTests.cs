@@ -43,16 +43,16 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     {
         await Collection.InsertAsync(
             [
-                FieldData.Create("id", new[] { 1L }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 20f, 30f } })
+                FieldData.Create("id", [1L]),
+                FieldData.CreateFloatVector("float_vector", [new[] { 20f, 30f }])
             ]);
 
         MutationResult upsertResult = await Collection.UpsertAsync(
         [
-            FieldData.Create("id", new[] { 1L, 2L }),
+            FieldData.Create("id", [1L, 2L]),
             FieldData.CreateFloatVector(
                 "float_vector",
-                new ReadOnlyMemory<float>[] { new[] { 1f, 2f }, new[] { 3f, 4f } })
+                [new[] { 1f, 2f }, new[] { 3f, 4f }])
         ]);
 
         Assert.Collection(upsertResult.Ids.LongIds!,
@@ -127,7 +127,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
     [Fact]
     public async Task Flush_with_not_exist_collection()
-        => await Assert.ThrowsAsync<MilvusException>(() => Client.FlushAsync(new[] { "NotExist" }));
+        => await Assert.ThrowsAsync<MilvusException>(() => Client.FlushAsync(["NotExist"]));
 
     [Fact]
     public async Task GetFlushState_with_empty_ids()
@@ -135,7 +135,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
     [Fact]
     public async Task GetFlushState_with_not_exist_ids()
-        => Assert.True(await Client.GetFlushStateAsync(new long[] { -1, -2, -3 })); // But return true.
+        => Assert.True(await Client.GetFlushStateAsync([-1, -2, -3])); // But return true.
 
     [Fact]
     public async Task Collection_waitForFlush()
@@ -190,30 +190,28 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
             });
 
         await Collection.InsertAsync(
-            new FieldData[]
-            {
-                FieldData.Create("id", new[] { 1L, 2L }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
-                {
+            [
+                FieldData.Create("id", [1L, 2L]),
+                FieldData.CreateFloatVector("float_vector",
+                [
                     new[] { 1f, 2f },
                     new[] { 3f, 4f }
-                }),
-                FieldData.CreateVarChar("unknown_varchar", new[] { "dynamic str1", "dynamic str2" }, isDynamic: true),
-                FieldData.Create("unknown_int", new[] { 8L, 9L }, isDynamic: true)
-            });
+                ]),
+                FieldData.CreateVarChar("unknown_varchar", ["dynamic str1", "dynamic str2"], isDynamic: true),
+                FieldData.Create("unknown_int", [8L, 9L], isDynamic: true)
+            ]);
     }
 
     private async Task<MutationResult> InsertDataAsync(long id1, long id2)
         => await Collection.InsertAsync(
-            new FieldData[]
-            {
-                FieldData.Create("id", new[] { id1, id2 }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
-                {
+            [
+                FieldData.Create("id", [id1, id2]),
+                FieldData.CreateFloatVector("float_vector",
+                [
                     new[] { 1f, 2f },
                     new[] { 3f, 4f }
-                })
-            });
+                ])
+            ]);
 
     public class DataCollectionFixture : IAsyncLifetime
     {
@@ -233,11 +231,10 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
             await Client.CreateCollectionAsync(
                 Collection.Name,
-                new[]
-                {
+                [
                     FieldSchema.Create<long>("id", isPrimaryKey: true),
                     FieldSchema.CreateFloatVector("float_vector", 2)
-                });
+                ]);
 
             await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
             await Collection.WaitForIndexBuildAsync("float_vector");

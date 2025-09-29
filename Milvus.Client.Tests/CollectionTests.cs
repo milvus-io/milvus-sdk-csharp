@@ -10,7 +10,7 @@ public class CollectionTests : IAsyncLifetime
     {
         MilvusCollection collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
+            [FieldSchema.Create<long>("id", isPrimaryKey: true), FieldSchema.CreateFloatVector("vec", 32)]);
         Assert.True(await Client.HasCollectionAsync(CollectionName));
 
         await collection.DropAsync();
@@ -24,8 +24,7 @@ public class CollectionTests : IAsyncLifetime
 
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("book_id", isPrimaryKey: true, autoId: true),
                 FieldSchema.Create<bool>("is_cartoon", description: "Some cartoon"),
                 FieldSchema.Create<sbyte>("chapter_count"),
@@ -37,7 +36,7 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateVarchar("book_name", maxLength: 256, isPartitionKey: true),
                 FieldSchema.CreateFloatVector("book_intro", dimension: 2),
                 FieldSchema.CreateJson("some_json")
-            },
+            ],
             shardsNum: 2,
             consistencyLevel: ConsistencyLevel.Eventually);
 
@@ -182,7 +181,7 @@ public class CollectionTests : IAsyncLifetime
 
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
+            [FieldSchema.Create<long>("id", isPrimaryKey: true), FieldSchema.CreateFloatVector("vec", 32)]);
 
         await collection.RenameAsync(renamedCollectionName);
 
@@ -197,11 +196,10 @@ public class CollectionTests : IAsyncLifetime
     {
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
 
         await collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
@@ -223,11 +221,10 @@ public class CollectionTests : IAsyncLifetime
     {
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
 
         await collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
@@ -250,24 +247,22 @@ public class CollectionTests : IAsyncLifetime
     {
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
 
         Assert.Equal(0, await collection.GetEntityCountAsync());
 
         await collection.InsertAsync(
-            new FieldData[]
-            {
+            [
                 FieldData.Create("id", new long[] { 1, 2 }),
-                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
-                {
+                FieldData.CreateFloatVector("float_vector",
+                [
                     new[] { 1f, 2f },
                     new[] { 3f, 4f }
-                })
-            });
+                ])
+            ]);
 
         await collection.FlushAsync();
 
@@ -280,11 +275,10 @@ public class CollectionTests : IAsyncLifetime
     {
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[]
-            {
+            [
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            ]);
 
         long compactionId = await collection.CompactAsync();
         if (await Client.GetParsedMilvusVersion() >= new Version(2, 4))
@@ -311,11 +305,11 @@ public class CollectionTests : IAsyncLifetime
 
         var exception = await Assert.ThrowsAsync<MilvusException>(() => databaseClient.CreateCollectionAsync(
             "foo",
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
+            [FieldSchema.Create<long>("id", isPrimaryKey: true), FieldSchema.CreateFloatVector("vec", 32)]));
 
         // Expected: UnexpectedError, Actual:   65535
         // Assert.Equal(MilvusErrorCode.UnexpectedError, exception.ErrorCode);
-        Assert.Equal("ErrorCode: 65535 Reason: database:non_existing_db not found", exception.Message);
+        Assert.Equal("ErrorCode: 800 Reason: database not found[database=non_existing_db]", exception.Message);
     }
 
     public CollectionTests(MilvusFixture milvusFixture)

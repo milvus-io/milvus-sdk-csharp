@@ -195,11 +195,10 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
 
             await Client.CreateCollectionAsync(
                 Collection.Name,
-                new[]
-                {
+                [
                     FieldSchema.Create<long>("id", isPrimaryKey: true),
                     FieldSchema.CreateFloatVector("float_vector", 2)
-                });
+                ]);
 
             await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
             await Collection.WaitForIndexBuildAsync("float_vector");
