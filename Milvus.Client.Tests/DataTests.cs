@@ -89,6 +89,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     }
 
     [Fact]
+    //TODO: this test is unstable. Fix
     public async Task Timestamp_conversion()
     {
         DateTime before = DateTime.UtcNow;
@@ -154,6 +155,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     }
 
     [Fact]
+    //TODO: this test is unstable. Fix
     public async Task FlushAllAsync_and_wait()
     {
         await InsertDataAsync(9, 10);
