@@ -191,6 +191,123 @@ public partial class MilvusCollection
         Verify.NotNullOrWhiteSpace(vectorFieldName);
         Verify.NotNull(vectors);
 
+        SearchRequest request = PrepareSearchRequest(vectorFieldName, vectors, metricType, limit, parameters);
+
+        Grpc.SearchResults response =
+            await _client.InvokeAsync(_client.GrpcClient.SearchAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        List<FieldData> fieldData = ProcessReturnedFieldData(response.Results.FieldsData);
+
+        return new SearchResults
+        {
+            CollectionName = response.CollectionName,
+            FieldsData = fieldData,
+            Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
+            NumQueries = response.Results.NumQueries,
+            Scores = response.Results.Scores,
+            Limit = response.Results.TopK,
+            Limits = response.Results.Topks,
+        };
+    }
+
+    /// <summary>
+    /// This operation performs multi-vector search on a collection and returns search results after reranking
+    /// </summary>
+    /// <param name="searchRequests">
+    /// A list of search requests, where each request is an ANNSearchRequest object. Each request corresponds to a
+    /// different vector field and a different set of search parameters.
+    /// </param>
+    /// <param name="ranker">
+    /// The reranking strategy to use for hybrid search.
+    /// </param>
+    /// <param name="limit">
+    /// The maximum total number of records to return, also known as 'topk'. Must be between 1 and 16384.
+    /// </param>
+    /// <param name="outputFields">
+    /// The names of fields to be returned from the search.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns></returns>
+    public async Task<SearchResults> HybridSearchAsync(
+        IReadOnlyList<Milvus.Client.HybridSearchRequest> searchRequests,
+        FunctionSchema ranker,
+        int limit,
+        IReadOnlyList<string>? outputFields = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrEmpty(searchRequests);
+        Verify.NotNull(ranker);
+
+        if (ranker.Type != FunctionType.Rerank)
+        {
+            throw new ArgumentException("Expected ranker with function type Rerank", nameof(ranker));
+        }
+
+        Grpc.HybridSearchRequest hybridSearchRequest = new()
+        {
+            CollectionName = Name,
+            Requests = { searchRequests.Select(PrepareSearchRequest) },
+            RankParams =
+            {
+                new KeyValuePair { Key = "limit", Value = limit.ToString(CultureInfo.InvariantCulture) }
+            },
+            FunctionScore = new FunctionScore { Functions = { ranker.ToGrpc() } },
+        };
+
+        if (outputFields is not null)
+        {
+            hybridSearchRequest.OutputFields.Add(outputFields);
+        }
+
+        Grpc.SearchResults response =
+            await _client.InvokeAsync(_client.GrpcClient.HybridSearchAsync,
+                    hybridSearchRequest,
+                    static r => r.Status,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        List<FieldData> fieldData = ProcessReturnedFieldData(response.Results.FieldsData);
+
+        return new SearchResults
+        {
+            CollectionName = response.CollectionName,
+            FieldsData = fieldData,
+            Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
+            NumQueries = response.Results.NumQueries,
+            Scores = response.Results.Scores,
+            Limit = response.Results.TopK,
+            Limits = response.Results.Topks,
+        };
+
+    }
+
+    private SearchRequest PrepareSearchRequest(HybridSearchRequest hybridSearchRequest)
+    {
+        return hybridSearchRequest switch
+        {
+            HybridSearchRequest<float> floatSearchRequest =>
+                PrepareSearchRequest(floatSearchRequest.VectorFieldName,
+                    [floatSearchRequest.Vector],
+                    floatSearchRequest.MetricType,
+                    floatSearchRequest.Limit,
+                    floatSearchRequest.Parameters),
+            HybridSearchRequest<byte> byteSearchRequest =>
+                PrepareSearchRequest(byteSearchRequest.VectorFieldName,
+                    [byteSearchRequest.Vector],
+                    byteSearchRequest.MetricType,
+                    byteSearchRequest.Limit,
+                    byteSearchRequest.Parameters),
+            _ => throw new ArgumentException("Only requests with vector of float or byte are supported",
+                nameof(hybridSearchRequest))
+        };
+    }
+
+    private SearchRequest PrepareSearchRequest<T>(string vectorFieldName, IReadOnlyList<ReadOnlyMemory<T>> vectors,
+        SimilarityMetricType metricType, int limit, SearchParameters? parameters)
+    {
         Grpc.SearchRequest request = new()
         {
             CollectionName = Name,
@@ -287,60 +404,59 @@ public partial class MilvusCollection
         request.PlaceholderGroup = new Grpc.PlaceholderGroup { Placeholders = { placeholderValue } }.ToByteString();
 
         request.SearchParams.AddRange(
-            new[]
+        [
+            new Grpc.KeyValuePair { Key = Constants.VectorField, Value = vectorFieldName },
+            new Grpc.KeyValuePair { Key = Constants.TopK, Value = limit.ToString(CultureInfo.InvariantCulture) },
+            new Grpc.KeyValuePair { Key = Constants.MetricType, Value = metricType.ToString().ToUpperInvariant() },
+            new Grpc.KeyValuePair
             {
-                new Grpc.KeyValuePair { Key = Constants.VectorField, Value = vectorFieldName },
-                new Grpc.KeyValuePair { Key = Constants.TopK, Value = limit.ToString(CultureInfo.InvariantCulture) },
-                new Grpc.KeyValuePair { Key = Constants.MetricType, Value = metricType.ToString().ToUpperInvariant() },
-                new Grpc.KeyValuePair
-                {
-                    Key = Constants.Params,
-                    Value = parameters is null ? "{}" : Combine(parameters.ExtraParameters)
-                }
-            });
+                Key = Constants.Params,
+                Value = parameters is null ? "{}" : Combine(parameters.ExtraParameters)
+            }
+        ]);
+        return request;
+    }
 
-        Grpc.SearchResults response =
-            await _client.InvokeAsync(_client.GrpcClient.SearchAsync, request, static r => r.Status, cancellationToken)
-                .ConfigureAwait(false);
+    private static void PopulateBinaryVectorData(IReadOnlyList<ReadOnlyMemory<byte>> vectors, PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
 
-        List<FieldData> fieldData = ProcessReturnedFieldData(response.Results.FieldsData);
-
-        return new SearchResults
+        foreach (ReadOnlyMemory<byte> milvusVector in vectors)
         {
-            CollectionName = response.CollectionName,
-            FieldsData = fieldData,
-            Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
-            NumQueries = response.Results.NumQueries,
-            Scores = response.Results.Scores,
-            Limit = response.Results.TopK,
-            Limits = response.Results.Topks,
-        };
+            placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
+        }
+    }
 
-        static void PopulateFloatVectorData(
-            IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    private static void PopulateBinaryVectorData(ReadOnlyMemory<byte> vector, PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
+        placeholderValue.Values.Add(ByteString.CopyFrom(vector.Span));
+    }
+
+    private static void PopulateFloatVectorData(IReadOnlyList<ReadOnlyMemory<float>> vectors, PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
+
+        foreach (ReadOnlyMemory<float> milvusVector in vectors)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
-
-            foreach (ReadOnlyMemory<float> milvusVector in vectors)
-            {
 #if NET6_0_OR_GREATER
-                if (BitConverter.IsLittleEndian)
-                {
-                    placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
-                    continue;
-                }
+            if (BitConverter.IsLittleEndian)
+            {
+                placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
+                continue;
+            }
 #endif
 
-                int length = milvusVector.Length * sizeof(float);
+            int length = milvusVector.Length * sizeof(float);
 
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    Span<byte> destination = bytes.AsSpan(i * sizeof(float));
-                    float f = milvusVector.Span[i];
+            for (int i = 0; i < milvusVector.Length; i++)
+            {
+                Span<byte> destination = bytes.AsSpan(i * sizeof(float));
+                float f = milvusVector.Span[i];
 #if NET6_0_OR_GREATER
-                    BinaryPrimitives.WriteSingleLittleEndian(destination, f);
+                BinaryPrimitives.WriteSingleLittleEndian(destination, f);
 #else
                     if (!BitConverter.IsLittleEndian)
                     {
@@ -352,24 +468,52 @@ public partial class MilvusCollection
                     }
                     MemoryMarshal.Write(destination, ref f);
 #endif
-                }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-
-                ArrayPool<byte>.Shared.Return(bytes);
             }
-        }
 
-        static void PopulateBinaryVectorData(
-            IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
+
+    private static void PopulateFloatVectorData(ReadOnlyMemory<float> vector, PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
+
+#if NET6_0_OR_GREATER
+        if (BitConverter.IsLittleEndian)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
-
-            foreach (ReadOnlyMemory<byte> milvusVector in vectors)
-            {
-                placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
-            }
+            placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(vector.Span)));
+            return;
         }
+#endif
+
+        int length = vector.Length * sizeof(float);
+
+        byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+
+        for (int i = 0; i < vector.Length; i++)
+        {
+            Span<byte> destination = bytes.AsSpan(i * sizeof(float));
+            float f = vector.Span[i];
+#if NET6_0_OR_GREATER
+            BinaryPrimitives.WriteSingleLittleEndian(destination, f);
+#else
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        unsafe
+                        {
+                            int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
+                            f = *(float*)&tmp;
+                        }
+                    }
+                    MemoryMarshal.Write(destination, ref f);
+#endif
+        }
+
+        placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+
+        ArrayPool<byte>.Shared.Return(bytes);
     }
 
     /// <summary>

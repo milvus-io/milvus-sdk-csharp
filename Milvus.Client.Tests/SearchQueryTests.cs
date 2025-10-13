@@ -564,6 +564,134 @@ public class SearchQueryTests(
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
+    [Fact]
+    public async Task HybridSearch_with_single_request()
+    {
+        List<HybridSearchRequest<float>> searchRequests = [
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new [] {0.1f, 0.2f },
+                SimilarityMetricType.L2,
+                2)
+        ];
+
+        var ranker = FunctionSchema.RRFRanker("rff");
+        var results = await Collection.HybridSearchAsync(searchRequests, ranker, 2);
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Empty(results.FieldsData);
+        Assert.Collection(results.Ids.LongIds!,
+            id => Assert.Equal(1, id),
+            id => Assert.Equal(2, id));
+        Assert.Null(results.Ids.StringIds);
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
+    [Fact]
+    public async Task HybridSearch_with_multiple_requests()
+    {
+        List<HybridSearchRequest<float>> searchRequests =
+        [
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new [] {0.1f, 0.2f },
+                SimilarityMetricType.L2,
+                1),
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new[] { 5.1f, 6.2f },
+                SimilarityMetricType.L2,
+                1)
+        ];
+
+        var ranker = FunctionSchema.RRFRanker("rff");
+        var results = await Collection.HybridSearchAsync(searchRequests, ranker, 2);
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Empty(results.FieldsData);
+        Assert.Collection(results.Ids.LongIds!,
+            id => Assert.Equal(1, id),
+            id => Assert.Equal(3, id));
+        Assert.Null(results.Ids.StringIds);
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
+    [Fact]
+    public async Task HybridSearch_with_OutputFields()
+    {
+        List<HybridSearchRequest<float>> searchRequests =
+        [
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new[] { 0.1f, 0.2f },
+                SimilarityMetricType.L2,
+                1),
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new[] { 5.1f, 6.2f },
+                SimilarityMetricType.L2,
+                1)
+        ];
+
+        var ranker = FunctionSchema.RRFRanker("rff");
+        var results = await Collection.HybridSearchAsync(searchRequests, ranker, 2, ["varchar", "json_thing"]);
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Collection(results.Ids.LongIds!,
+            id => Assert.Equal(1, id),
+            id => Assert.Equal(3, id));
+        Assert.Collection((results.FieldsData[0] as FieldData<string>)!.Data,
+            str => Assert.Equal("one", str),
+            str => Assert.Equal("three", str));
+        Assert.Collection((results.FieldsData[1] as FieldData<string>)!.Data,
+            jsonStr => Assert.Equal(1, JsonSerializer.Deserialize<JsonThing>(jsonStr)!.Number),
+            jsonStr => Assert.Equal(3, JsonSerializer.Deserialize<JsonThing>(jsonStr)!.Number));
+        Assert.Null(results.Ids.StringIds);
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
+    [Fact]
+    public async Task HybridSearch_with_weighted_rerank()
+    {
+        List<HybridSearchRequest<float>> searchRequests =
+        [
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new [] {0.1f, 0.2f },
+                SimilarityMetricType.L2,
+                2),
+            HybridSearchRequest.CreateFLoat(
+                "float_vector",
+                new [] {8f, 9f },
+                SimilarityMetricType.L2,
+                2),
+
+        ];
+
+        var ranker = FunctionSchema.WeightedRanker("weighted", [0.1f, 0.9f], normScore: true);
+        var results = await Collection.HybridSearchAsync(searchRequests, ranker, 2);
+
+        Assert.Equal(CollectionName, results.CollectionName);
+        Assert.Empty(results.FieldsData);
+        Assert.Collection(results.Ids.LongIds!,
+            id => Assert.Equal(5, id),
+            id => Assert.Equal(4, id));
+        Assert.Null(results.Ids.StringIds); // TODO: Need to test string IDs
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
     public class QueryCollectionFixture : IAsyncLifetime
     {
         public QueryCollectionFixture(MilvusFixture milvusFixture)
