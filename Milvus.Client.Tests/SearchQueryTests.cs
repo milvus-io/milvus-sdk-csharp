@@ -540,6 +540,151 @@ public class SearchQueryTests(
     }
 
     [Fact]
+    public async Task Search_with_all_supported_types()
+    {
+        var collection = Client.GetCollection("all_types");
+        await collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("key", isPrimaryKey: true),
+                FieldSchema.Create<bool>("bool"),
+                FieldSchema.Create<sbyte>("int8"),
+                FieldSchema.Create<short>("int16"),
+                FieldSchema.Create<int>("int32"),
+                FieldSchema.Create<long>("int64"),
+                FieldSchema.Create<float>("float"),
+                FieldSchema.Create<double>("double"),
+                FieldSchema.CreateVarchar("varchar", maxLength: 10),
+                FieldSchema.CreateArray<bool>("bool_array", maxCapacity: 2),
+                FieldSchema.CreateArray<sbyte>("int8_array", maxCapacity: 2),
+                FieldSchema.CreateArray<short>("int16_array", maxCapacity: 2),
+                FieldSchema.CreateArray<int>("int32_array", maxCapacity: 2),
+                FieldSchema.CreateArray<long>("int64_array", maxCapacity: 2),
+                FieldSchema.CreateArray<float>("float_array", maxCapacity: 2),
+                FieldSchema.CreateArray<double>("double_array", maxCapacity: 2),
+                FieldSchema.CreateVarcharArray("varchar_array", maxCapacity: 2, maxLength: 10),
+                FieldSchema.CreateJson("json"),
+                FieldSchema.CreateBinaryVector("binary_vector", dimension: 8),
+                FieldSchema.CreateFloatVector("float_vector", dimension: 2),
+            });
+
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, SimilarityMetricType.Hamming);
+
+        await collection.InsertAsync(
+            new[]
+            {
+                FieldData.Create("key", new[] { 1L, 2L }),
+                FieldData.Create("bool", new[] { false, true }),
+                FieldData.Create("int8", new sbyte[] { 1, 2 }),
+                FieldData.Create("int16", new short[] { 1, 2 }),
+                FieldData.Create("int32", new[] { 1, 2 }),
+                FieldData.Create("int64", new[] { 1L, 2L }),
+                FieldData.Create("float", new[] { 1.1f, 2.2f }),
+                FieldData.Create("double", new[] { 1.1, 2.2 }),
+                FieldData.CreateVarChar("varchar", new[] { "one", "two" }),
+                FieldData.CreateArray("bool_array", new[] { new[] { true }, new bool[] { } }),
+                FieldData.CreateArray("int8_array", new[] { new sbyte[] { 1 }, new sbyte[] { } }),
+                FieldData.CreateArray("int16_array", new[] { new short[] { 1 }, new short[] { } }),
+                FieldData.CreateArray("int32_array", new[] { new[] { 1 }, new int[] { } }),
+                FieldData.CreateArray("int64_array", new[] { new[] { 1L }, new long[] { } }),
+                FieldData.CreateArray("float_array", new[] { new[] { 1.1f }, new float[] { } }),
+                FieldData.CreateArray("double_array", new[] { new[] { 1.1 }, new double[] { } }),
+                FieldData.CreateArray("varchar_array", new[] { new[] { "one" }, new string[] { } }),
+                FieldData.CreateJson("json", new[] { "{}", "{\"a\":1}" }),
+                FieldData.CreateBinaryVectors("binary_vector", new[]
+                {
+                    (ReadOnlyMemory<byte>)new byte[] { 0x00 },
+                    (ReadOnlyMemory<byte>)new byte[] { 0xFF },
+                }),
+                FieldData.CreateFloatVector("float_vector", new[]
+                {
+                    (ReadOnlyMemory<float>)new[] { 1.1f, 2.2f },
+                    (ReadOnlyMemory<float>)new[] { 3.3f, 4.4f },
+                }),
+            });
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await collection.SearchAsync(
+            "float_vector",
+            new[] { (ReadOnlyMemory<float>)new[] { 1.1f, 2.2f } },
+            SimilarityMetricType.L2,
+            2,
+            new SearchParameters
+            {
+                OutputFields =
+                {
+                    "bool",
+                    "int8",
+                    "int16",
+                    "int32",
+                    "int64",
+                    "float",
+                    "double",
+                    "varchar",
+                    "bool_array",
+                    "int8_array",
+                    "int16_array",
+                    "int32_array",
+                    "int64_array",
+                    "float_array",
+                    "double_array",
+                    "varchar_array",
+                    "json",
+                    "binary_vector",
+                    "float_vector",
+                },
+            });
+
+        Assert.Equal(19, results.FieldsData.Count);
+
+        var boolField = (FieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool");
+        Assert.Equal(new[] { false, true }, boolField.Data);
+        var int8Field = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int8");
+        Assert.Equal(new[] { 1, 2 }, int8Field.Data);
+        var int16Field = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int16");
+        Assert.Equal(new[] { 1, 2 }, int16Field.Data);
+        var int32Field = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int32");
+        Assert.Equal(new[] { 1, 2 }, int32Field.Data);
+        var int64Field = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "int64");
+        Assert.Equal(new[] { 1L, 2L }, int64Field.Data);
+        var floatField = (FieldData<float>)results.FieldsData.Single(f => f.FieldName == "float");
+        Assert.Equal(new[] { 1.1f, 2.2f }, floatField.Data);
+        var doubleField = (FieldData<double>)results.FieldsData.Single(f => f.FieldName == "double");
+        Assert.Equal(new[] { 1.1, 2.2 }, doubleField.Data);
+        var varcharField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar");
+        Assert.Equal(new[] { "one", "two" }, varcharField.Data);
+        var boolArrayField = (ArrayFieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool_array");
+        Assert.Equal(new[] { new[] { true }, new bool[] { } }, boolArrayField.Data);
+        var int8ArrayField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int8_array");
+        Assert.Equal(new[] { new[] { 1 }, new int[] { } }, int8ArrayField.Data);
+        var int16ArrayField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int16_array");
+        Assert.Equal(new[] { new[] { 1 }, new int[] { } }, int16ArrayField.Data);
+        var int32ArrayField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int32_array");
+        Assert.Equal(new[] { new[] { 1 }, new int[] { } }, int32ArrayField.Data);
+        var int64ArrayField = (ArrayFieldData<long>)results.FieldsData.Single(f => f.FieldName == "int64_array");
+        Assert.Equal(new[] { new[] { 1L }, new long[] { } }, int64ArrayField.Data);
+        var floatArrayField = (ArrayFieldData<float>)results.FieldsData.Single(f => f.FieldName == "float_array");
+        Assert.Equal(new[] { new[] { 1.1f }, new float[] { } }, floatArrayField.Data);
+        var doubleArrayField = (ArrayFieldData<double>)results.FieldsData.Single(f => f.FieldName == "double_array");
+        Assert.Equal(new[] { new[] { 1.1 }, new double[] { } }, doubleArrayField.Data);
+        var varcharArrayField = (ArrayFieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar_array");
+        Assert.Equal(new[] { new[] { "one" }, new string[] { } }, varcharArrayField.Data);
+        var jsonField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "json");
+        Assert.Equal(new[] { "{}", "{\"a\":1}" }, jsonField.Data);
+        var binaryVectorField = (BinaryVectorFieldData)results.FieldsData.Single(f => f.FieldName == "binary_vector");
+        Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 0x00, 0xFF }, binaryVectorField.Data[0]);
+        var floatVectorField = (FloatVectorFieldData)results.FieldsData.Single(f => f.FieldName == "float_vector");
+        Assert.Equal((ReadOnlyMemory<float>)new[] { 1.1f, 2.2f }, floatVectorField.Data[0]);
+        Assert.Equal((ReadOnlyMemory<float>)new[] { 3.3f, 4.4f }, floatVectorField.Data[1]);
+    }
+
+    [Fact]
     public Task Search_with_wrong_metric_type_throws()
         => Assert.ThrowsAsync<MilvusException>(() => Collection.SearchAsync(
             "float_vector",
