@@ -679,6 +679,7 @@ public class SearchQueryTests(
         Assert.Equal(new[] { "{}", "{\"a\":1}" }, jsonField.Data);
         var binaryVectorField = (BinaryVectorFieldData)results.FieldsData.Single(f => f.FieldName == "binary_vector");
         Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 0x00, 0xFF }, binaryVectorField.Data[0]);
+        Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 0xFF }, binaryVectorField.Data[1]);
         var floatVectorField = (FloatVectorFieldData)results.FieldsData.Single(f => f.FieldName == "float_vector");
         Assert.Equal((ReadOnlyMemory<float>)new[] { 1.1f, 2.2f }, floatVectorField.Data[0]);
         Assert.Equal((ReadOnlyMemory<float>)new[] { 3.3f, 4.4f }, floatVectorField.Data[1]);

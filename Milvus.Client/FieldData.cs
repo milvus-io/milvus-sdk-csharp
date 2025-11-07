@@ -283,19 +283,25 @@ public abstract class FieldData
     /// </summary>
     /// <param name="fieldName">Field name.</param>
     /// <param name="bytes">Byte array data.</param>
-    /// <param name="dimension">Dimension of data.</param>
+    /// <param name="dimension">Dimension of data in bits.</param>
     /// <returns></returns>
     public static BinaryVectorFieldData CreateFromBytes(string fieldName, ReadOnlySpan<byte> bytes, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
         Verify.GreaterThan(dimension, 0);
 
-        List<ReadOnlyMemory<byte>> byteArray = new((int)Math.Ceiling((double)bytes.Length / dimension));
-
-        while (bytes.Length > dimension)
+        int bytesPerVector = (int)(dimension / 8L);
+        if (dimension % 8 != 0)
         {
-            byteArray.Add(bytes.Slice(0, (int)dimension).ToArray());
-            bytes = bytes.Slice((int)dimension);
+            throw new ArgumentException($"Binary vector dimension must be a multiple of 8, but got {dimension}", nameof(dimension));
+        }
+
+        List<ReadOnlyMemory<byte>> byteArray = new((int)Math.Ceiling((double)bytes.Length / bytesPerVector));
+
+        while (bytes.Length > bytesPerVector)
+        {
+            byteArray.Add(bytes.Slice(0, bytesPerVector).ToArray());
+            bytes = bytes.Slice(bytesPerVector);
         }
 
         if (!bytes.IsEmpty)
