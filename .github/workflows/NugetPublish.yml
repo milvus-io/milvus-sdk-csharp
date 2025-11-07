@@ -1,9 +1,11 @@
 name: Publish to nuget.org
 
-on:
-  push:
-    tags:
-    - '*'
+# Disable automatic publishing to nuget.org
+
+#on:
+#  push:
+#    tags:
+#    - '*'
 
 jobs:
   build:
