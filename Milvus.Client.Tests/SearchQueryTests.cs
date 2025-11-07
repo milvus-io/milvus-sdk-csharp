@@ -640,7 +640,7 @@ public class SearchQueryTests(
                 },
             });
 
-        Assert.Equal(19, results.FieldsData.Count);
+        Assert.Equal(18, results.FieldsData.Count);
 
         var boolField = (FieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool");
         Assert.Equal(new[] { false, true }, boolField.Data);
