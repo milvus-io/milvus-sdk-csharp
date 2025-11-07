@@ -16,13 +16,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           submodules: 'recursive'
           fetch-depth: 0
 
       - name: Setup .NET SDKs
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v5
 
       - name: Test
         run: dotnet test --logger "GitHubActions;report-warnings=false"
@@ -33,7 +33,7 @@ jobs:
         run: dotnet pack -c Release -o Artifacts
 
       - name: Upload artifacts (nupkg)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: nupkgs
           path: |
