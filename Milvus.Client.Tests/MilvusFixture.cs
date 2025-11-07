@@ -8,7 +8,7 @@ public sealed class MilvusTestCollection : ICollectionFixture<MilvusFixture>;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {
-    private const string DefaultMilvusImage = "milvusdb/milvus:v2.5.6";
+    private const string DefaultMilvusImage = "milvusdb/milvus:v2.5.20";
 
     private readonly MilvusContainer _container = new MilvusBuilder()
         .WithImage(Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage)

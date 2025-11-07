@@ -10,7 +10,11 @@ public class CollectionTests : IAsyncLifetime
     {
         MilvusCollection collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("vector", dimension: 2)
+            });
         Assert.True(await Client.HasCollectionAsync(CollectionName));
 
         await collection.DropAsync();
@@ -182,7 +186,11 @@ public class CollectionTests : IAsyncLifetime
 
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("vector", dimension: 2)
+            });
 
         await collection.RenameAsync(renamedCollectionName);
 
@@ -311,11 +319,14 @@ public class CollectionTests : IAsyncLifetime
 
         var exception = await Assert.ThrowsAsync<MilvusException>(() => databaseClient.CreateCollectionAsync(
             "foo",
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("vector", dimension: 2)
+            }));
 
-        // Expected: UnexpectedError, Actual:   65535
-        // Assert.Equal(MilvusErrorCode.UnexpectedError, exception.ErrorCode);
-        Assert.Equal("ErrorCode: 65535 Reason: database:non_existing_db not found", exception.Message);
+        Assert.Contains("not found", exception.Message);
+        Assert.Contains("non_existing_db", exception.Message);
     }
 
     public CollectionTests(MilvusFixture milvusFixture)

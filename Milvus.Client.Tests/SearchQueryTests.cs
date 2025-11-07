@@ -300,7 +300,15 @@ public class SearchQueryTests(
         Assert.Null(results.Ids.LongIds);
         Assert.Null(results.Ids.StringIds);
 
-        Assert.Empty(results.FieldsData);
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            Assert.Empty(results.FieldsData);
+        }
+        else
+        {
+            Assert.All(results.FieldsData, f => Assert.Equal(0, f.RowCount));
+        }
+
         Assert.Equal(1, results.NumQueries);
         Assert.Empty(results.Scores);
     }
