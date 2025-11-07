@@ -22,6 +22,12 @@ public partial class MilvusCollection
                     cancellationToken)
                 .ConfigureAwait(false);
 
+        // In Milvus 2.5, describing a non-existent collection returns success (code 0) with null schema.
+        if (response.Schema is null)
+        {
+            throw new MilvusException(MilvusErrorCode.CollectionNotFound, response.Status.Reason);
+        }
+
         CollectionSchema milvusCollectionSchema = new()
         {
             Name = response.Schema.Name,

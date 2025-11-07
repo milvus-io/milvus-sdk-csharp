@@ -16,7 +16,11 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
 
         MilvusCollection collection = await DatabaseClient.CreateCollectionAsync(
             "foo",
-            new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) });
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("vector", dimension: 2)
+            });
 
         // The collection should be visible on the database-bound client, but not on the default client.
         Assert.True(await DatabaseClient.HasCollectionAsync("foo"));
@@ -28,7 +32,11 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await Assert.ThrowsAsync<MilvusException>(() =>
             DatabaseClient.CreateCollectionAsync(
                 "foo",
-                new[] { FieldSchema.Create<long>("id", isPrimaryKey: true) }));
+                new[]
+                {
+                    FieldSchema.Create<long>("id", isPrimaryKey: true),
+                    FieldSchema.CreateFloatVector("vector", dimension: 2)
+                }));
         Assert.DoesNotContain(DatabaseName, await DefaultClient.ListDatabasesAsync());
     }
 

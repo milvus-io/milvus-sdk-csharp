@@ -163,7 +163,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
         // Test if it is a timestamp
         DateTime flushAllDateTime = MilvusTimestampUtils.ToDateTime(timestamp);
-        Assert.True(flushAllDateTime - DateTime.UtcNow < TimeSpan.FromMilliseconds(10));
+        Assert.True(Math.Abs((flushAllDateTime - DateTime.UtcNow).TotalSeconds) < 1);
 
         // Wait
         await Client.WaitForFlushAllAsync(timestamp);

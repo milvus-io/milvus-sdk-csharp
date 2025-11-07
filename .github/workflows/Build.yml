@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        milvus_version: [v2.3.10, v2.4.0-rc.1]
+        milvus_version: [v2.3.22, v2.4.23, v2.5.20]
 
     steps:
       - name: Checkout
@@ -28,15 +28,3 @@ jobs:
         run: dotnet test --logger "GitHubActions;report-warnings=false"
         env:
           MILVUS_IMAGE: milvusdb/milvus:${{ matrix.milvus_version }}
-
-      - name: Pack
-        run: dotnet pack -c Release -o Artifacts
-
-      - name: Upload artifacts (nupkg)
-        uses: actions/upload-artifact@v5
-        with:
-          name: nupkgs
-          path: |
-            Artifacts/*.nupkg
-            Artifacts/*.snupkg
-
