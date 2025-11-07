@@ -469,11 +469,18 @@ public class SearchQueryTests(
             new[] { binaryVectors[0] },
             similarityMetricType,
             limit: 2,
-            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            parameters: new SearchParameters
+            {
+                OutputFields = { "binary_vector" },
+                ConsistencyLevel = ConsistencyLevel.Strong,
+            });
 
         Assert.Equal(collectionName, results.CollectionName);
 
-        Assert.Empty(results.FieldsData);
+        var binaryVectorField = (BinaryVectorFieldData)Assert.Single(results.FieldsData);
+        Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }, binaryVectorField.Data[0]);
+        Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 }, binaryVectorField.Data[1]);
+
         Assert.Collection(results.Ids.LongIds!,
             id => Assert.Equal(1, id),
             id => Assert.Equal(3, id));
@@ -566,12 +573,10 @@ public class SearchQueryTests(
                 FieldSchema.CreateArray<double>("double_array", maxCapacity: 2),
                 FieldSchema.CreateVarcharArray("varchar_array", maxCapacity: 2, maxLength: 10),
                 FieldSchema.CreateJson("json"),
-                FieldSchema.CreateBinaryVector("binary_vector", dimension: 8),
                 FieldSchema.CreateFloatVector("float_vector", dimension: 2),
             });
 
         await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, SimilarityMetricType.Hamming);
 
         await collection.InsertAsync(
             new[]
@@ -594,11 +599,6 @@ public class SearchQueryTests(
                 FieldData.CreateArray("double_array", new[] { new[] { 1.1 }, new double[] { } }),
                 FieldData.CreateArray("varchar_array", new[] { new[] { "one" }, new string[] { } }),
                 FieldData.CreateJson("json", new[] { "{}", "{\"a\":1}" }),
-                FieldData.CreateBinaryVectors("binary_vector", new[]
-                {
-                    (ReadOnlyMemory<byte>)new byte[] { 0x00 },
-                    (ReadOnlyMemory<byte>)new byte[] { 0xFF },
-                }),
                 FieldData.CreateFloatVector("float_vector", new[]
                 {
                     (ReadOnlyMemory<float>)new[] { 1.1f, 2.2f },
@@ -636,7 +636,6 @@ public class SearchQueryTests(
                     "double_array",
                     "varchar_array",
                     "json",
-                    "binary_vector",
                     "float_vector",
                 },
             });
@@ -677,9 +676,6 @@ public class SearchQueryTests(
         Assert.Equal(new[] { new[] { "one" }, new string[] { } }, varcharArrayField.Data);
         var jsonField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "json");
         Assert.Equal(new[] { "{}", "{\"a\":1}" }, jsonField.Data);
-        var binaryVectorField = (BinaryVectorFieldData)results.FieldsData.Single(f => f.FieldName == "binary_vector");
-        Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 0x00, 0xFF }, binaryVectorField.Data[0]);
-        Assert.Equal((ReadOnlyMemory<byte>)new byte[] { 0xFF }, binaryVectorField.Data[1]);
         var floatVectorField = (FloatVectorFieldData)results.FieldsData.Single(f => f.FieldName == "float_vector");
         Assert.Equal((ReadOnlyMemory<float>)new[] { 1.1f, 2.2f }, floatVectorField.Data[0]);
         Assert.Equal((ReadOnlyMemory<float>)new[] { 3.3f, 4.4f }, floatVectorField.Data[1]);
