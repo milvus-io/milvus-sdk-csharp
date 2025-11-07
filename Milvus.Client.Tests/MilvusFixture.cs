@@ -12,6 +12,7 @@ public sealed class MilvusFixture : IAsyncLifetime
 
     private readonly MilvusContainer _container = new MilvusBuilder()
         .WithImage(Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage)
+        .WithEnvironment("QUOTA_AND_LIMITS_FLUSH_RATE_COLLECTION_MAX", "-1")
         .Build();
 
     public string Host => _container.Hostname;

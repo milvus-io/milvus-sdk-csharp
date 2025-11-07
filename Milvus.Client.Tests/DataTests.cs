@@ -113,18 +113,15 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     [Fact]
     public async Task Flush()
     {
+        await Collection.WaitForFlushAsync();
         // Any insertion after a flush operation results in generating new segments.
         await InsertDataAsync(5, 6);
-        // Wait to avoid rate limiting.
-        await Task.Delay(TimeSpan.FromSeconds(12));
         FlushResult newResult = await Collection.FlushAsync();
 
         Assert.NotEmpty(newResult.CollSegIDs);
         Assert.Equal(CollectionName, newResult.CollSegIDs.First().Key);
         Assert.NotEmpty(newResult.CollSegIDs.First().Value);
 
-        // Wait before next flush call
-        await Task.Delay(TimeSpan.FromSeconds(12));
         await Collection.WaitForFlushAsync();
     }
 
@@ -161,15 +158,12 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     {
         await InsertDataAsync(9, 10);
 
-        // Wait to avoid rate limiting.
-        await Task.Delay(TimeSpan.FromSeconds(12));
-
         // Flush all
         ulong timestamp = await Client.FlushAllAsync();
 
         // Test if it is a timestamp
         DateTime flushAllDateTime = MilvusTimestampUtils.ToDateTime(timestamp);
-        Assert.True(flushAllDateTime - DateTime.UtcNow < TimeSpan.FromSeconds(1));
+        Assert.True(Math.Abs((flushAllDateTime - DateTime.UtcNow).TotalSeconds) < 1);
 
         // Wait
         await Client.WaitForFlushAllAsync(timestamp);
