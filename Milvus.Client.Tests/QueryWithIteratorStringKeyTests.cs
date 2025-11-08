@@ -3,15 +3,15 @@
 namespace Milvus.Client.Tests;
 
 [Collection("Milvus")]
-public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIteratorStringKeyTests.DataCollectionFixture>,
+public class QueryWithIteratorStringKeyTests : IClassFixture<QueryWithIteratorStringKeyTests.DataCollectionFixture>,
                                                  IAsyncLifetime
 {
-    private const string CollectionName = nameof(SearchQueryIteratorStringKeyTests);
+    private const string CollectionName = nameof(QueryWithIteratorStringKeyTests);
 
     private readonly DataCollectionFixture _dataCollectionFixture;
     private readonly MilvusClient Client;
 
-    public SearchQueryIteratorStringKeyTests(MilvusFixture milvusFixture, DataCollectionFixture dataCollectionFixture)
+    public QueryWithIteratorStringKeyTests(MilvusFixture milvusFixture, DataCollectionFixture dataCollectionFixture)
     {
         Client = milvusFixture.CreateClient();
         _dataCollectionFixture = dataCollectionFixture;

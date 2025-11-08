@@ -3,14 +3,14 @@
 namespace Milvus.Client.Tests;
 
 [Collection("Milvus")]
-public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIteratorLongKeyTests.DataCollectionFixture>,
+public class QueryWithIteratorLongKeyTests : IClassFixture<QueryWithIteratorLongKeyTests.DataCollectionFixture>,
                                                IAsyncLifetime
 {
-    private const string CollectionName = nameof(SearchQueryIteratorLongKeyTests);
+    private const string CollectionName = nameof(QueryWithIteratorLongKeyTests);
     private readonly DataCollectionFixture _dataCollectionFixture;
     private readonly MilvusClient Client;
 
-    public SearchQueryIteratorLongKeyTests(MilvusFixture milvusFixture, DataCollectionFixture dataCollectionFixture)
+    public QueryWithIteratorLongKeyTests(MilvusFixture milvusFixture, DataCollectionFixture dataCollectionFixture)
     {
         Client = milvusFixture.CreateClient();
         _dataCollectionFixture = dataCollectionFixture;
@@ -55,17 +55,42 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
     }
 
     [Fact]
-    public void QueryWithIterator_OffsetNotZero()
+    public async Task QueryWithIterator_WithOffset()
     {
+        var items = new List<Item>
+        {
+            new(1, new[] { 10f, 20f }),
+            new(2, new[] { 30f, 40f }),
+            new(3, new[] { 50f, 60f }),
+            new(4, new[] { 70f, 80f }),
+            new(5, new[] { 90f, 100f })
+        };
+
+        await Collection.InsertAsync(
+        [
+            FieldData.Create("id", items.Select(x => x.Id).ToArray()),
+            FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
+        ]);
+
         var queryParameters = new QueryParameters
         {
-            Offset = 1
+            Offset = 2,
+            Limit = 3,
+            OutputFields = { "id", "float_vector" }
         };
 
         var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters);
 
-        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator().MoveNextAsync());
-        Assert.NotNull(exception);
+        List<IReadOnlyList<FieldData>> results = new();
+        await foreach (var result in iterator)
+        {
+            results.Add(result);
+        }
+
+        var returnedItems = results.SelectMany(ExtractItems).OrderBy(x => x.Id).ToList();
+        Assert.True(returnedItems.Count <= 3);
+        Assert.True(returnedItems.Count > 0);
+        Assert.All(returnedItems, item => Assert.True(item.Id >= 3));
     }
 
     [Fact]
