@@ -322,7 +322,7 @@ public partial class MilvusCollection
 
             foreach (ReadOnlyMemory<float> milvusVector in vectors)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 if (BitConverter.IsLittleEndian)
                 {
                     placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
@@ -331,30 +331,16 @@ public partial class MilvusCollection
 #endif
 
                 int length = milvusVector.Length * sizeof(float);
-
                 byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
                 for (int i = 0; i < milvusVector.Length; i++)
                 {
-                    Span<byte> destination = bytes.AsSpan(i * sizeof(float));
                     float f = milvusVector.Span[i];
-#if NET6_0_OR_GREATER
-                    BinaryPrimitives.WriteSingleLittleEndian(destination, f);
-#else
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        unsafe
-                        {
-                            int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
-                            f = *(float*)&tmp;
-                        }
-                    }
-                    MemoryMarshal.Write(destination, ref f);
-#endif
+                    byte[] floatBytes = BitConverter.GetBytes(f);
+                    Array.Copy(floatBytes, 0, bytes, i * sizeof(float), sizeof(float));
                 }
 
                 placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-
                 ArrayPool<byte>.Shared.Return(bytes);
             }
         }
@@ -553,7 +539,7 @@ public partial class MilvusCollection
 
             foreach (ReadOnlyMemory<float> milvusVector in vectors)
             {
-#if NET6_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 if (BitConverter.IsLittleEndian)
                 {
                     placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
@@ -562,31 +548,16 @@ public partial class MilvusCollection
 #endif
 
                 int length = milvusVector.Length * sizeof(float);
-
                 byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
                 for (int i = 0; i < milvusVector.Length; i++)
                 {
-                    Span<byte> destination = bytes.AsSpan(i * sizeof(float));
                     float f = milvusVector.Span[i];
-#if NET6_0_OR_GREATER
-                    BinaryPrimitives.WriteSingleLittleEndian(destination, f);
-#else
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        unsafe
-                        {
-                            int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
-                            f = *(float*)&tmp;
-                        }
-                    }
-
-                    MemoryMarshal.Write(destination, ref f);
-#endif
+                    byte[] floatBytes = BitConverter.GetBytes(f);
+                    Array.Copy(floatBytes, 0, bytes, i * sizeof(float), sizeof(float));
                 }
 
                 placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-
                 ArrayPool<byte>.Shared.Return(bytes);
             }
         }
