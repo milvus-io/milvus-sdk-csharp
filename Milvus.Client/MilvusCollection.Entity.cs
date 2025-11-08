@@ -314,47 +314,6 @@ public partial class MilvusCollection
             Limit = response.Results.TopK,
             Limits = response.Results.Topks,
         };
-
-        static void PopulateFloatVectorData(
-            IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
-        {
-            placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
-
-            foreach (ReadOnlyMemory<float> milvusVector in vectors)
-            {
-#if NET8_0_OR_GREATER
-                if (BitConverter.IsLittleEndian)
-                {
-                    placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
-                    continue;
-                }
-#endif
-
-                int length = milvusVector.Length * sizeof(float);
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
-
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    float f = milvusVector.Span[i];
-                    byte[] floatBytes = BitConverter.GetBytes(f);
-                    Array.Copy(floatBytes, 0, bytes, i * sizeof(float), sizeof(float));
-                }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-                ArrayPool<byte>.Shared.Return(bytes);
-            }
-        }
-
-        static void PopulateBinaryVectorData(
-            IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
-        {
-            placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
-
-            foreach (ReadOnlyMemory<byte> milvusVector in vectors)
-            {
-                placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
-            }
-        }
     }
 
     /// <summary>
@@ -531,47 +490,6 @@ public partial class MilvusCollection
                     Value = currentBatchSize.ToString(CultureInfo.InvariantCulture)
                 });
         }
-
-        static void PopulateFloatVectorData(
-            IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
-        {
-            placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
-
-            foreach (ReadOnlyMemory<float> milvusVector in vectors)
-            {
-#if NET8_0_OR_GREATER
-                if (BitConverter.IsLittleEndian)
-                {
-                    placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
-                    continue;
-                }
-#endif
-
-                int length = milvusVector.Length * sizeof(float);
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
-
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    float f = milvusVector.Span[i];
-                    byte[] floatBytes = BitConverter.GetBytes(f);
-                    Array.Copy(floatBytes, 0, bytes, i * sizeof(float), sizeof(float));
-                }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-                ArrayPool<byte>.Shared.Return(bytes);
-            }
-        }
-
-        static void PopulateBinaryVectorData(
-            IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
-        {
-            placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
-
-            foreach (ReadOnlyMemory<byte> milvusVector in vectors)
-            {
-                placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
-            }
-        }
     }
 
     /// <summary>
@@ -664,7 +582,7 @@ public partial class MilvusCollection
                 new DescribeCollectionRequest { CollectionName = Name },
                 r => r.Status,
                 cancellationToken)
-                .ConfigureAwait(false);
+            .ConfigureAwait(false);
 
         Grpc.FieldSchema? pkField = describeResponse.Schema.Fields.FirstOrDefault(x => x.IsPrimaryKey);
         if (pkField == null)
@@ -681,12 +599,11 @@ public partial class MilvusCollection
         if (userOffset > 0)
         {
             pkLastValue = await SeekToOffsetAsync(
-                pkField,
-                userExpression,
-                userOffset,
-                batchSize,
-                parameters,
-                cancellationToken)
+                    pkField,
+                    userExpression,
+                    userOffset,
+                    parameters,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -697,6 +614,7 @@ public partial class MilvusCollection
             {pkLastValue: not null} when pkField.DataType is DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 =>
                 $"{pkField.Name} > {pkLastValue}" + (userExpression != null ? $" and ({userExpression})" : ""),
             {userExpression: not null} => userExpression,
+            // A valid expression is needed so use one that always return true (see QueryIterator.__setup_next_expr in the Python SDK).
             {pkField.DataType: DataType.VarChar} => $"{pkField.Name} != ''",
             {pkField.DataType: DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64} => $"{pkField.Name} < {long.MaxValue}",
             _ => throw new MilvusException("Unsupported data type for primary key field")
@@ -711,7 +629,10 @@ public partial class MilvusCollection
         PopulateQueryRequestFromParameters(request, parameters);
 
         // Request id field in any case to proceed with an iterations
-        if (!isUserRequestPkField) request.OutputFields.Add(pkField.Name);
+        if (!isUserRequestPkField)
+        {
+            request.OutputFields.Add(pkField.Name);
+        }
 
         // Replace parameters required for iterator
         string iterationBatchSize = Math.Min(batchSize, userLimit).ToString(CultureInfo.InvariantCulture);
@@ -755,7 +676,10 @@ public partial class MilvusCollection
             }
 
             // If there are no more items to process, we should break the loop
-            if(processedDuringIterationCount == 0) yield break;
+            if (processedDuringIterationCount == 0)
+            {
+                yield break;
+            }
 
             // Respond with processed data
             if (!isUserRequestPkField)
@@ -763,13 +687,17 @@ public partial class MilvusCollection
                 // Filter out extra field if user didn't request it
                 response.FieldsData.Remove(pkFieldsData);
             }
+
             yield return ProcessReturnedFieldData(response.FieldsData);
 
             processedItemsCount += processedDuringIterationCount;
             int leftItemsCount = userLimit - processedItemsCount;
 
             // If user limit is reached, we should break the loop
-            if(leftItemsCount <= 0) yield break;
+            if (leftItemsCount <= 0)
+            {
+                yield break;
+            }
 
             // Setup next iteration limit and expression
             ReplaceKeyValueItems(
@@ -800,7 +728,6 @@ public partial class MilvusCollection
         Grpc.FieldSchema pkField,
         string? userExpression,
         int offset,
-        int batchSize,
         QueryParameters? parameters,
         CancellationToken cancellationToken)
     {
@@ -810,12 +737,12 @@ public partial class MilvusCollection
         QueryRequest seekRequest = new()
         {
             CollectionName = Name,
-            Expr = userExpression ?? (pkField.DataType switch
+            Expr = userExpression ?? pkField.DataType switch
             {
                 DataType.VarChar => $"{pkField.Name} != ''",
                 DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} < {long.MaxValue}",
                 _ => throw new MilvusException("Unsupported data type for primary key field")
-            })
+            }
         };
 
         seekRequest.OutputFields.Add(pkField.Name);
@@ -831,10 +758,9 @@ public partial class MilvusCollection
         {
             int currentBatchSize = Math.Min(maxBatchSize, offset);
 
-            string seekExpression;
             if (pkCursor != null)
             {
-                seekExpression = pkField.DataType switch
+                string seekExpression = pkField.DataType switch
                 {
                     DataType.VarChar => $"{pkField.Name} > '{pkCursor}'" + (userExpression != null ? $" and ({userExpression})" : ""),
                     DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > {pkCursor}" + (userExpression != null ? $" and ({userExpression})" : ""),
@@ -1150,7 +1076,7 @@ public partial class MilvusCollection
                 request.QueryParams.Add(new Grpc.KeyValuePair
                 {
                     Key = Constants.Offset,
-                    Value = parameters.Offset.Value.ToString(CultureInfo.InvariantCulture)
+                    Value = parameters.Offset.Value.ToString(CultureInfo.InvariantCulture),
                 });
             }
 
@@ -1158,7 +1084,8 @@ public partial class MilvusCollection
             {
                 request.QueryParams.Add(new Grpc.KeyValuePair
                 {
-                    Key = Constants.Limit, Value = parameters.Limit.Value.ToString(CultureInfo.InvariantCulture)
+                    Key = Constants.Limit,
+                    Value = parameters.Limit.Value.ToString(CultureInfo.InvariantCulture),
                 });
             }
         }
@@ -1176,6 +1103,47 @@ public partial class MilvusCollection
             request.GuaranteeTimestamp =
                 CalculateGuaranteeTimestamp(Name, parameters.ConsistencyLevel.Value,
                     parameters.GuaranteeTimestamp);
+        }
+    }
+
+    private static void PopulateFloatVectorData(
+        IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
+
+        foreach (ReadOnlyMemory<float> milvusVector in vectors)
+        {
+#if NET8_0_OR_GREATER
+            if (BitConverter.IsLittleEndian)
+            {
+                placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
+                continue;
+            }
+#endif
+
+            int length = milvusVector.Length * sizeof(float);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+
+            for (int i = 0; i < milvusVector.Length; i++)
+            {
+                float f = milvusVector.Span[i];
+                byte[] floatBytes = BitConverter.GetBytes(f);
+                Array.Copy(floatBytes, 0, bytes, i * sizeof(float), sizeof(float));
+            }
+
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
+
+    private static void PopulateBinaryVectorData(
+        IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
+
+        foreach (ReadOnlyMemory<byte> milvusVector in vectors)
+        {
+            placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
         }
     }
 }

@@ -94,6 +94,53 @@ public class QueryWithIteratorLongKeyTests : IClassFixture<QueryWithIteratorLong
     }
 
     [Fact]
+    public async Task QueryWithIterator_WithOffsetAndExpression()
+    {
+        var items = new List<Item>
+        {
+            new(1, new[] { 10f, 20f }),
+            new(2, new[] { 30f, 40f }),
+            new(3, new[] { 50f, 60f }),
+            new(4, new[] { 70f, 80f }),
+            new(5, new[] { 90f, 100f }),
+            new(6, new[] { 110f, 120f }),
+            new(7, new[] { 130f, 140f }),
+            new(8, new[] { 150f, 160f }),
+            new(9, new[] { 170f, 180f }),
+            new(10, new[] { 190f, 200f })
+        };
+
+        await Collection.InsertAsync(
+        [
+            FieldData.Create("id", items.Select(x => x.Id).ToArray()),
+            FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
+        ]);
+
+        var queryParameters = new QueryParameters
+        {
+            Offset = 2,
+            Limit = 4,
+            OutputFields = { "id", "float_vector" }
+        };
+
+        var iterator = Collection.QueryWithIteratorAsync(
+            expression: "id >= 3 and id <= 8",
+            parameters: queryParameters);
+
+        List<IReadOnlyList<FieldData>> results = new();
+        await foreach (var result in iterator)
+        {
+            results.Add(result);
+        }
+
+        var returnedItems = results.SelectMany(ExtractItems).OrderBy(x => x.Id).ToList();
+        Assert.True(returnedItems.Count <= 4);
+        Assert.True(returnedItems.Count > 0);
+        Assert.All(returnedItems, item => Assert.True(item.Id >= 3 && item.Id <= 8));
+        Assert.True(returnedItems[0].Id >= 5);
+    }
+
+    [Fact]
     public void QueryWithIterator_LimitNotZero()
     {
         var queryParameters = new QueryParameters
