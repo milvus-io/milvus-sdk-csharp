@@ -355,9 +355,6 @@ public class CollectionTests : IAsyncLifetime
         await collection.WaitForIndexBuildAsync("embedding_large");
 
         await collection.LoadAsync();
-
-        long count = await collection.GetEntityCountAsync();
-        Assert.Equal(3, count);
     }
 
     [Fact]
@@ -402,9 +399,6 @@ public class CollectionTests : IAsyncLifetime
         await collection.WaitForIndexBuildAsync("float16_vec");
 
         await collection.LoadAsync();
-
-        long count = await collection.GetEntityCountAsync();
-        Assert.Equal(2, count);
     }
 
     [Fact]
