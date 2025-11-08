@@ -136,6 +136,11 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Scalar_index_inverted()
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
         await Collection.CreateIndexAsync("varchar", IndexType.Inverted);
         await Collection.WaitForIndexBuildAsync("varchar");
     }
@@ -143,6 +148,11 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Scalar_index_trie()
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
         await Collection.CreateIndexAsync("varchar", IndexType.Trie);
         await Collection.WaitForIndexBuildAsync("varchar");
     }
@@ -150,6 +160,11 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Scalar_index_stl_sort()
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
             CollectionName,
