@@ -58,6 +58,36 @@ public class IndexTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(IndexType.Flat, """{ "nlist": "8" }""")]
+    [InlineData(IndexType.IvfFlat, """{ "nlist": "8" }""")]
+    [InlineData(IndexType.IvfSq8, """{ "nlist": "8" }""")]
+    [InlineData(IndexType.IvfPq, """{ "nlist": "8", "m": "4" }""")]
+    [InlineData(IndexType.Hnsw, """{ "efConstruction": "8", "M": "4" }""")]
+    [InlineData(IndexType.DiskANN, """{ "nlist": "8" }""")]
+    [InlineData(IndexType.AutoIndex, """{ }""")]
+    public async Task Index_types_float16(IndexType indexType, string extraParamsString)
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("varchar", 256),
+                FieldSchema.CreateFloat16Vector("float16_vector", 4),
+            });
+
+        await Collection.CreateIndexAsync("float16_vector", indexType, SimilarityMetricType.L2,
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
+        await Collection.WaitForIndexBuildAsync("float16_vector");
+    }
+
+    [Theory]
     [InlineData(IndexType.GpuCagra, """{ "nlist": "8" }""")]
     [InlineData(IndexType.GpuIvfFlat, """{ "nlist": "8" }""")]
     [InlineData(IndexType.GpuIvfPq, """{ "nlist": "8", "m": "4" }""")]
@@ -131,31 +161,6 @@ public class IndexTests : IAsyncLifetime
 
         await Collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, similarityMetricType);
         await Collection.WaitForIndexBuildAsync("binary_vector");
-    }
-
-    [Theory]
-    [InlineData(IndexType.Flat)]
-    [InlineData(IndexType.IvfFlat)]
-    [InlineData(IndexType.Hnsw)]
-    public async Task Index_types_float16(IndexType indexType)
-    {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
-        await Collection.DropAsync();
-        await Client.CreateCollectionAsync(
-            CollectionName,
-            new[]
-            {
-                FieldSchema.Create<long>("id", isPrimaryKey: true),
-                FieldSchema.CreateVarchar("varchar", 256),
-                FieldSchema.CreateFloat16Vector("float16_vector", 4),
-            });
-
-        await Collection.CreateIndexAsync("float16_vector", indexType, SimilarityMetricType.L2);
-        await Collection.WaitForIndexBuildAsync("float16_vector");
     }
 
 #pragma warning disable CS0618 // Type or member is obsolete
