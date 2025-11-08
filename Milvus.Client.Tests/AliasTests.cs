@@ -47,6 +47,46 @@ public class AliasTests : IAsyncLifetime
         Assert.DoesNotContain(description.Aliases, alias => alias == "a");
     }
 
+    [Fact]
+    public async Task DescribeAlias()
+    {
+        await Client.CreateAliasAsync(CollectionName, "test_alias");
+
+        string collectionName = await Client.DescribeAliasAsync("test_alias");
+
+        Assert.Equal(CollectionName, collectionName);
+    }
+
+    [Fact]
+    public async Task DescribeAlias_unknown()
+    {
+        var exception = await Assert.ThrowsAsync<MilvusException>(() => Client.DescribeAliasAsync("unknown_alias"));
+
+        Assert.Contains("alias not found", exception.Message);
+    }
+
+    [Fact]
+    public async Task ListAliases()
+    {
+        await Client.CreateAliasAsync(CollectionName, "alias1");
+        await Client.CreateAliasAsync(CollectionName, "alias2");
+
+        IList<string> aliases = await Client.ListAliasesAsync();
+
+        Assert.Contains("alias1", aliases);
+        Assert.Contains("alias2", aliases);
+    }
+
+    [Fact]
+    public async Task ListAliases_FilterByCollection()
+    {
+        await Client.CreateAliasAsync(CollectionName, "alias_for_collection");
+
+        IList<string> aliases = await Client.ListAliasesAsync(CollectionName);
+
+        Assert.Contains("alias_for_collection", aliases);
+    }
+
     public string CollectionName = nameof(AliasTests);
 
     private MilvusCollection Collection { get; set; }
