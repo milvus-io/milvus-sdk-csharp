@@ -69,6 +69,22 @@ public class FieldTests
     }
 
     [Fact]
+    public void CreateFloat16VectorTest()
+    {
+        var field = FieldData.CreateFloat16Vector(
+            "vector",
+            new ReadOnlyMemory<Half>[]
+            {
+                new[] { (Half)1f, (Half)2f },
+                new[] { (Half)3f, (Half)4f }
+            });
+
+        Assert.Equal(MilvusDataType.Float16Vector, field.DataType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
+
+    [Fact]
     public void CreateInt8ArrayTest()
     {
         var field = FieldData.CreateArray(

@@ -312,6 +312,102 @@ public class CollectionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Collection_with_multiple_float_vector_fields()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        var collection = await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("text", 512),
+                FieldSchema.CreateFloatVector("embedding_small", 128),
+                FieldSchema.CreateFloatVector("embedding_large", 768),
+            });
+
+        var idData = FieldData.Create("id", new[] { 1L, 2L, 3L });
+        var textData = FieldData.CreateVarChar("text", new[] { "doc1", "doc2", "doc3" });
+
+        var embeddingSmallData = FieldData.CreateFloatVector("embedding_small", new ReadOnlyMemory<float>[]
+        {
+            Enumerable.Range(0, 128).Select(i => i / 128f).ToArray(),
+            Enumerable.Range(0, 128).Select(i => (i + 1) / 128f).ToArray(),
+            Enumerable.Range(0, 128).Select(i => (i + 2) / 128f).ToArray()
+        });
+
+        var embeddingLargeData = FieldData.CreateFloatVector("embedding_large", new ReadOnlyMemory<float>[]
+        {
+            Enumerable.Range(0, 768).Select(i => i / 768f).ToArray(),
+            Enumerable.Range(0, 768).Select(i => (i + 1) / 768f).ToArray(),
+            Enumerable.Range(0, 768).Select(i => (i + 2) / 768f).ToArray()
+        });
+
+        await collection.InsertAsync(new FieldData[] { idData, textData, embeddingSmallData, embeddingLargeData });
+
+        await collection.CreateIndexAsync("embedding_small", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.WaitForIndexBuildAsync("embedding_small");
+
+        await collection.CreateIndexAsync("embedding_large", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.WaitForIndexBuildAsync("embedding_large");
+
+        await collection.LoadAsync();
+
+        long count = await collection.GetEntityCountAsync();
+        Assert.Equal(3, count);
+    }
+
+    [Fact]
+    public async Task Collection_with_float_and_float16_vectors()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        var collection = await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("text", 512),
+                FieldSchema.CreateFloatVector("float_vec", 4),
+                FieldSchema.CreateFloat16Vector("float16_vec", 4),
+            });
+
+        var idData = FieldData.Create("id", new[] { 1L, 2L });
+        var textData = FieldData.CreateVarChar("text", new[] { "doc1", "doc2" });
+
+        var floatVecData = FieldData.CreateFloatVector("float_vec", new ReadOnlyMemory<float>[]
+        {
+            new[] { 1.0f, 2.0f, 3.0f, 4.0f },
+            new[] { 5.0f, 6.0f, 7.0f, 8.0f }
+        });
+
+        var float16VecData = FieldData.CreateFloat16Vector("float16_vec", new ReadOnlyMemory<Half>[]
+        {
+            new[] { (Half)1.0f, (Half)2.0f, (Half)3.0f, (Half)4.0f },
+            new[] { (Half)5.0f, (Half)6.0f, (Half)7.0f, (Half)8.0f }
+        });
+
+        await collection.InsertAsync(new FieldData[] { idData, textData, floatVecData, float16VecData });
+
+        await collection.CreateIndexAsync("float_vec", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.WaitForIndexBuildAsync("float_vec");
+
+        await collection.CreateIndexAsync("float16_vec", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.WaitForIndexBuildAsync("float16_vec");
+
+        await collection.LoadAsync();
+
+        long count = await collection.GetEntityCountAsync();
+        Assert.Equal(2, count);
+    }
+
+    [Fact]
     public async Task Create_in_non_existing_database_fails()
     {
         // using MilvusClient databaseClient = TestEnvironment.CreateClientForDatabase("non_existing_db");

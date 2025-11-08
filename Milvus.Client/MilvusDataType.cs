@@ -77,4 +77,9 @@ public enum MilvusDataType
     /// FloatVector
     /// </summary>
     FloatVector = 101,
+
+    /// <summary>
+    /// Float16Vector
+    /// </summary>
+    Float16Vector = 102,
 }

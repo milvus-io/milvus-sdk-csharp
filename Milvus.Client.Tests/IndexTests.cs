@@ -133,6 +133,31 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("binary_vector");
     }
 
+    [Theory]
+    [InlineData(IndexType.Flat)]
+    [InlineData(IndexType.IvfFlat)]
+    [InlineData(IndexType.Hnsw)]
+    public async Task Index_types_float16(IndexType indexType)
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("varchar", 256),
+                FieldSchema.CreateFloat16Vector("float16_vector", 4),
+            });
+
+        await Collection.CreateIndexAsync("float16_vector", indexType, SimilarityMetricType.L2);
+        await Collection.WaitForIndexBuildAsync("float16_vector");
+    }
+
 #pragma warning disable CS0618 // Type or member is obsolete
     [Fact]
     public async Task GetState()
