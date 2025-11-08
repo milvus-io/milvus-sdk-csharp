@@ -50,9 +50,11 @@ public class AliasTests : IAsyncLifetime
     [Fact]
     public async Task DescribeAlias()
     {
-        await Client.CreateAliasAsync(CollectionName, "test_alias");
+        await Client.CreateAliasAsync(CollectionName, nameof(DescribeAlias));
 
-        string collectionName = await Client.DescribeAliasAsync("test_alias");
+        string collectionName = await Client.DescribeAliasAsync(nameof(DescribeAlias));
+
+        await Client.DropAliasAsync(nameof(DescribeAlias));
 
         Assert.Equal(CollectionName, collectionName);
     }
@@ -68,23 +70,28 @@ public class AliasTests : IAsyncLifetime
     [Fact]
     public async Task ListAliases()
     {
-        await Client.CreateAliasAsync(CollectionName, "alias1");
-        await Client.CreateAliasAsync(CollectionName, "alias2");
+        await Client.CreateAliasAsync(CollectionName, $"{nameof(ListAliases)}1");
+        await Client.CreateAliasAsync(CollectionName, $"{nameof(ListAliases)}2");
 
         IList<string> aliases = await Client.ListAliasesAsync();
 
-        Assert.Contains("alias1", aliases);
-        Assert.Contains("alias2", aliases);
+        await Client.DropAliasAsync($"{nameof(ListAliases)}1");
+        await Client.DropAliasAsync($"{nameof(ListAliases)}2");
+
+        Assert.Contains($"{nameof(ListAliases)}1", aliases);
+        Assert.Contains($"{nameof(ListAliases)}2", aliases);
     }
 
     [Fact]
-    public async Task ListAliases_FilterByCollection()
+    public async Task ListAliases_filter_by_collection()
     {
-        await Client.CreateAliasAsync(CollectionName, "alias_for_collection");
+        await Client.CreateAliasAsync(CollectionName, nameof(ListAliases_filter_by_collection));
 
         IList<string> aliases = await Client.ListAliasesAsync(CollectionName);
 
-        Assert.Contains("alias_for_collection", aliases);
+        await Client.DropAliasAsync(nameof(ListAliases_filter_by_collection));
+
+        Assert.Contains(nameof(ListAliases_filter_by_collection), aliases);
     }
 
     public string CollectionName = nameof(AliasTests);
