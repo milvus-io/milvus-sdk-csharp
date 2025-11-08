@@ -98,6 +98,31 @@ public enum IndexType
     Hnsw,
 
     /// <summary>
+    /// <para>
+    /// SCANN (Scalable Nearest Neighbors) is a quantization-based index similar to <see cref="IvfPq" /> in terms of
+    /// vector clustering and product quantization. SCANN demonstrates a 20% performance improvement compared to HNSW
+    /// and a 7-fold increase compared to IVF-FLAT in multiple benchmark tests.
+    /// </para>
+    /// <para>
+    /// SCANN offers a faster index-building process than <see cref="IvfPq" />. However, using SCANN may result in a
+    /// potential loss of precision and therefore requires refinement using the raw vectors (controlled by the
+    /// <c>with_raw_data</c> parameter).
+    /// </para>
+    /// <para>
+    /// Build parameters: <c>nlist</c> (number of cluster units, range [1, 65536]),
+    /// <c>with_raw_data</c> (whether to include raw data in the index, defaults to true).
+    /// </para>
+    /// <para>
+    /// Search parameters: <c>nprobe</c> (number of units to query), <c>reorder_k</c> (number of candidate units to query).
+    /// </para>
+    /// </summary>
+    /// <remarks>
+    /// Introduced in Milvus v2.3.0. Suitable for scenarios requiring very high-speed queries with the highest possible
+    /// recall rate and large memory resources.
+    /// </remarks>
+    Scann,
+
+    /// <summary>
     /// SCANN (Score-aware quantization loss) is similar to <see cref="IvfPq" /> in terms of vector clustering and
     /// product quantization. What makes them different lies in the implementation details of product quantization and
     /// the use of SIMD (Single-Instruction / Multi-data) for efficient calculation.

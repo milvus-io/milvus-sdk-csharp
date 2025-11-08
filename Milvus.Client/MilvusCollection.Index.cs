@@ -75,6 +75,7 @@ public partial class MilvusCollection
                 IndexType.IvfPq => "IVF_PQ",
                 IndexType.IvfSq8 => "IVF_SQ8",
                 IndexType.Hnsw => "HNSW",
+                IndexType.Scann => "SCANN",
                 IndexType.DiskANN => "DISKANN",
 
                 IndexType.GpuCagra => "GPU_CAGRA",
