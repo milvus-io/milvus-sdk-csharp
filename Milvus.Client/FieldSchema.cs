@@ -88,6 +88,17 @@ public sealed class FieldSchema
     public static FieldSchema CreateBinaryVector(string name, int dimension, string description = "")
         => new(name, MilvusDataType.BinaryVector, description: description) { Dimension = dimension };
 
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// Create a field schema for a float16 vector field.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="dimension">The dimension of the vector. Must be greater than zero.</param>
+    /// <param name="description">An optional description for the field.</param>
+    public static FieldSchema CreateFloat16Vector(string name, int dimension, string description = "")
+        => new(name, MilvusDataType.Float16Vector, description: description) { Dimension = dimension };
+#endif
+
     /// <summary>
     /// Create a field schema for a JSON field.
     /// </summary>
@@ -236,8 +247,9 @@ public sealed class FieldSchema
     public int? MaxCapacity { get; set; }
 
     /// <summary>
-    /// The dimension of the vector. Mandatory for <see cref="MilvusDataType.FloatVector" />
-    /// and <see cref="MilvusDataType.BinaryVector" /> fields, and must be greater than zero.
+    /// The dimension of the vector. Mandatory for <see cref="MilvusDataType.FloatVector" />,
+    /// <see cref="MilvusDataType.BinaryVector" />, and <see cref="MilvusDataType.Float16Vector" /> fields,
+    /// and must be greater than zero.
     /// </summary>
     public int? Dimension { get; set; }
 

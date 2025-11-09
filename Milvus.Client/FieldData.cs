@@ -115,6 +115,13 @@ public abstract class FieldData
                     case Grpc.VectorField.DataOneofCase.BinaryVector:
                         return CreateFromBytes(fieldData.FieldName, fieldData.Vectors.BinaryVector.Span, dim);
 
+                    case Grpc.VectorField.DataOneofCase.Float16Vector:
+#if NET8_0_OR_GREATER
+                        return CreateFloat16VectorFromBytes(fieldData.FieldName, fieldData.Vectors.Float16Vector.Span, dim);
+#else
+                        throw new NotSupportedException("Float16Vector is only supported on .NET 8.0 or greater");
+#endif
+
                     default:
                         throw new NotSupportedException("VectorField.DataOneofCase.None not support");
                 }
@@ -319,6 +326,17 @@ public abstract class FieldData
     public static FloatVectorFieldData CreateFloatVector(string fieldName, IReadOnlyList<ReadOnlyMemory<float>> data)
         => new(fieldName, data);
 
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// Create a float16 vector.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <returns></returns>
+    public static Float16VectorFieldData CreateFloat16Vector(string fieldName, IReadOnlyList<ReadOnlyMemory<Half>> data)
+        => new(fieldName, data);
+#endif
+
     /// <summary>
     /// Create a field from stream
     /// </summary>
@@ -346,6 +364,36 @@ public abstract class FieldData
         Verify.NotNullOrWhiteSpace(fieldName);
         return new FieldData<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
+
+#if NET8_0_OR_GREATER
+    private static Float16VectorFieldData CreateFloat16VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
+        int dimension)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.GreaterThan(dimension, 0);
+
+        int bytesPerVector = dimension * sizeof(ushort);
+        int vectorCount = bytes.Length / bytesPerVector;
+        var vectors = new ReadOnlyMemory<Half>[vectorCount];
+
+        for (int i = 0; i < vectorCount; i++)
+        {
+            Half[] vector = new Half[dimension];
+            ReadOnlySpan<byte> vectorBytes = bytes.Slice(i * bytesPerVector, bytesPerVector);
+
+            for (int j = 0; j < dimension; j++)
+            {
+                ushort halfBits = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(
+                    vectorBytes.Slice(j * sizeof(ushort), sizeof(ushort)));
+                vector[j] = BitConverter.UInt16BitsToHalf(halfBits);
+            }
+
+            vectors[i] = vector;
+        }
+
+        return new Float16VectorFieldData(fieldName, vectors);
+    }
+#endif
 }
 
 /// <summary>

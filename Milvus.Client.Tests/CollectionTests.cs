@@ -312,6 +312,26 @@ public class CollectionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Collection_with_multiple_embedding_fields()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("text", 512),
+                FieldSchema.CreateFloatVector("embedding_small", 128),
+                FieldSchema.CreateFloatVector("embedding_large", 768),
+                FieldSchema.CreateFloat16Vector("float16_vec", 4),
+            });
+    }
+
+    [Fact]
     public async Task Create_in_non_existing_database_fails()
     {
         // using MilvusClient databaseClient = TestEnvironment.CreateClientForDatabase("non_existing_db");
