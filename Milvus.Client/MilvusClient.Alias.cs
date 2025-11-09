@@ -61,4 +61,53 @@ public partial class MilvusClient
         await InvokeAsync(GrpcClient.AlterAliasAsync, request, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Describes an alias and returns the name of the collection it points to.
+    /// </summary>
+    /// <param name="alias">The alias to describe.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>The name of the collection that the alias points to.</returns>
+    public async Task<string> DescribeAliasAsync(string alias, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(alias);
+
+        var request = new DescribeAliasRequest { Alias = alias };
+
+        DescribeAliasResponse response = await InvokeAsync(
+            GrpcClient.DescribeAliasAsync, request, static r => r.Status, cancellationToken)
+            .ConfigureAwait(false);
+
+        return response.Collection;
+    }
+
+    /// <summary>
+    /// Lists all aliases in the current database.
+    /// </summary>
+    /// <param name="collectionName">
+    /// Optional collection name to filter aliases. If specified, only returns aliases for this collection.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>A list of alias names.</returns>
+    public async Task<IList<string>> ListAliasesAsync(
+        string? collectionName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new ListAliasesRequest();
+
+        if (collectionName != null)
+        {
+            request.CollectionName = collectionName;
+        }
+
+        ListAliasesResponse response = await InvokeAsync(
+            GrpcClient.ListAliasesAsync, request, static r => r.Status, cancellationToken)
+            .ConfigureAwait(false);
+
+        return response.Aliases.ToList();
+    }
 }
