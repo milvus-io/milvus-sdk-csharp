@@ -426,6 +426,11 @@ public class SearchQueryTests(
     [InlineData(IndexType.BinIvfFlat, SimilarityMetricType.Hamming)]
     public async Task Search_binary_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
         MilvusCollection binaryVectorCollection = Client.GetCollection(nameof(Search_binary_vector));
         string collectionName = binaryVectorCollection.Name;
 
