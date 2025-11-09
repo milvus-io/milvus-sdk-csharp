@@ -509,9 +509,13 @@ public class SearchQueryTests(
                 FieldSchema.CreateFloat16Vector("float16_vector", 128)
             });
 
+        var indexParams = indexType == IndexType.Hnsw
+            ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" }
+            : new Dictionary<string, string> { ["nlist"] = "128" };
+
         await float16VectorCollection.CreateIndexAsync(
             "float16_vector", indexType, similarityMetricType,
-            "float16_vector_idx", new Dictionary<string, string>() { { "nlist", "128" } });
+            "float16_vector_idx", indexParams);
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
