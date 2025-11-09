@@ -47,6 +47,7 @@ public class IndexTests : IAsyncLifetime
     [InlineData(IndexType.IvfSq8, """{ "nlist": "8" }""")]
     [InlineData(IndexType.IvfPq, """{ "nlist": "8", "m": "4" }""")]
     [InlineData(IndexType.Hnsw, """{ "efConstruction": "8", "M": "4" }""")]
+    [InlineData(IndexType.Scann, """{ "nlist": "8" }""")]
     [InlineData(IndexType.DiskANN, """{ "nlist": "8" }""")]
     [InlineData(IndexType.AutoIndex, """{ }""")]
     public async Task Index_types_float(IndexType indexType, string extraParamsString)
