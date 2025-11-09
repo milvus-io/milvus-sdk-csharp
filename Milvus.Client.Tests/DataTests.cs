@@ -143,7 +143,22 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         MilvusCollectionDescription collectionDes = await Collection.DescribeAsync();
         await InsertDataAsync(7, 8);
         await Collection.WaitForFlushAsync();
-        IEnumerable<PersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
+
+        IEnumerable<PersistentSegmentInfo> segmentInfos = null!;
+        const int retries = 3;
+        for (int i = 0; i < retries; i++)
+        {
+            try
+            {
+                segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
+                break;
+            }
+            catch (MilvusException ex) when ((ex.ErrorCode == MilvusErrorCode.SegmentInfo ||
+                                              ex.Message.Contains("segment not found")) && i < retries - 1)
+            {
+                await Task.Delay(500);
+            }
+        }
 
         PersistentSegmentInfo? segmentInfo = segmentInfos.LastOrDefault();
 

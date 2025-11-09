@@ -12,5 +12,6 @@ public enum MilvusErrorCode
     RateLimit = 8,
     ForceDeny = 9,
     CollectionNotFound = 100,
+    SegmentInfo = 600,
     IndexNotFound = 700
   }
