@@ -133,6 +133,52 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("binary_vector");
     }
 
+    [Fact]
+    public async Task Scalar_index_inverted()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Collection.CreateIndexAsync("varchar", IndexType.Inverted);
+        await Collection.WaitForIndexBuildAsync("varchar");
+    }
+
+    [Fact]
+    public async Task Scalar_index_trie()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Collection.CreateIndexAsync("varchar", IndexType.Trie);
+        await Collection.WaitForIndexBuildAsync("varchar");
+    }
+
+    [Fact]
+    public async Task Scalar_index_stl_sort()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.Create<long>("numeric_field"),
+                FieldSchema.CreateFloatVector("float_vector", 4),
+            });
+
+        await Collection.CreateIndexAsync("numeric_field", IndexType.StlSort);
+        await Collection.WaitForIndexBuildAsync("numeric_field");
+    }
+
 #pragma warning disable CS0618 // Type or member is obsolete
     [Fact]
     public async Task GetState()

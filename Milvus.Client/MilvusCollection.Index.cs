@@ -89,6 +89,9 @@ public partial class MilvusCollection
                 IndexType.BinFlat => "BIN_FLAT",
                 IndexType.BinIvfFlat => "BIN_IVF_FLAT",
                 IndexType.AutoIndex => "AUTOINDEX",
+                IndexType.Trie => "TRIE",
+                IndexType.StlSort => "STL_SORT",
+                IndexType.Inverted => "INVERTED",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
             };

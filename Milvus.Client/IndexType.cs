@@ -179,5 +179,20 @@ public enum IndexType
     RhnswSq,
     BinFlat,
     BinIvfFlat,
-    AutoIndex
+    AutoIndex,
+
+    /// <summary>
+    /// Trie index for scalar fields. A tree-based index for fast prefix matching.
+    /// </summary>
+    Trie,
+
+    /// <summary>
+    /// STL_SORT index for scalar fields. Uses standard library sorting for efficient lookups.
+    /// </summary>
+    StlSort,
+
+    /// <summary>
+    /// Inverted index for scalar fields. Efficient for full-text search and pattern matching on VARCHAR, INT, and FLOAT fields.
+    /// </summary>
+    Inverted,
 }
