@@ -93,13 +93,13 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     {
         DateTime before = DateTime.UtcNow;
 
-        await Task.Delay(100);
+        await Task.Delay(200);
 
         MutationResult mutationResult = await InsertDataAsync(3, 4);
 
         DateTime insertion = MilvusTimestampUtils.ToDateTime(mutationResult.Timestamp);
 
-        await Task.Delay(100);
+        await Task.Delay(200);
 
         DateTime after = DateTime.UtcNow;
 
