@@ -491,6 +491,80 @@ public class SearchQueryTests(
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
+#if NET8_0_OR_GREATER
+    [Theory]
+    [InlineData(IndexType.Flat, SimilarityMetricType.L2)]
+    [InlineData(IndexType.Flat, SimilarityMetricType.Ip)]
+    [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
+    public async Task Search_float16_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        MilvusCollection float16VectorCollection = Client.GetCollection(nameof(Search_float16_vector));
+        string collectionName = float16VectorCollection.Name;
+
+        await float16VectorCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("varchar", 256),
+                FieldSchema.CreateFloat16Vector("float16_vector", 128)
+            });
+
+        var indexParams = indexType == IndexType.Hnsw
+            ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" }
+            : new Dictionary<string, string> { ["nlist"] = "128" };
+
+        await float16VectorCollection.CreateIndexAsync(
+            "float16_vector", indexType, similarityMetricType,
+            "float16_vector_idx", indexParams);
+
+        long[] ids = { 1, 2, 3 };
+        string[] strings = { "one", "two", "three" };
+        ReadOnlyMemory<Half>[] float16Vectors =
+        {
+            Enumerable.Range(0, 128).Select(i => (Half)(i * 1.0f)).ToArray(),
+            Enumerable.Range(0, 128).Select(i => (Half)(i * 10.0f)).ToArray(),
+            Enumerable.Range(0, 128).Select(i => (Half)(i * 1.1f)).ToArray(),
+        };
+
+        await float16VectorCollection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", ids),
+                FieldData.Create("varchar", strings),
+                FieldData.CreateFloat16Vector("float16_vector", float16Vectors)
+            });
+
+        await float16VectorCollection.LoadAsync();
+        await float16VectorCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await float16VectorCollection.SearchAsync(
+            "float16_vector",
+            new[] { float16Vectors[0] },
+            similarityMetricType,
+            limit: 2,
+            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
+
+        Assert.Equal(collectionName, results.CollectionName);
+
+        Assert.Empty(results.FieldsData);
+        Assert.Equal(2, results.Ids.LongIds!.Count);
+        Assert.All(results.Ids.LongIds, id => Assert.InRange(id, 1, 3));
+        Assert.Null(results.Ids.StringIds);
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+#endif
+
     [Fact(Skip = "Milvus returns 'only support to travel back to 0s so far, but got 1s'")]
     public async Task Query_with_time_travel()
     {

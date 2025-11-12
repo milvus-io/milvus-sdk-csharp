@@ -279,8 +279,13 @@ public partial class MilvusCollection
             case IReadOnlyList<ReadOnlyMemory<byte>> binaryVectors:
                 PopulateBinaryVectorData(binaryVectors, placeholderValue);
                 break;
+#if NET8_0_OR_GREATER
+            case IReadOnlyList<ReadOnlyMemory<Half>> float16Vectors:
+                PopulateFloat16VectorData(float16Vectors, placeholderValue);
+                break;
+#endif
             default:
-                throw new ArgumentException("Only vectors of float or byte are supported", nameof(vectors));
+                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
         }
 
         request.PlaceholderGroup = new Grpc.PlaceholderGroup { Placeholders = { placeholderValue } }.ToByteString();
@@ -369,6 +374,29 @@ public partial class MilvusCollection
                 placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
             }
         }
+
+#if NET8_0_OR_GREATER
+        static void PopulateFloat16VectorData(
+            IReadOnlyList<ReadOnlyMemory<Half>> vectors, Grpc.PlaceholderValue placeholderValue)
+        {
+            placeholderValue.Type = Grpc.PlaceholderType.Float16Vector;
+
+            foreach (ReadOnlyMemory<Half> milvusVector in vectors)
+            {
+                int length = milvusVector.Length * sizeof(ushort);
+                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+
+                for (int i = 0; i < milvusVector.Length; i++)
+                {
+                    ushort halfBits = BitConverter.HalfToUInt16Bits(milvusVector.Span[i]);
+                    BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * sizeof(ushort)), halfBits);
+                }
+
+                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+                ArrayPool<byte>.Shared.Return(bytes);
+            }
+        }
+#endif
     }
 
     /// <summary>
