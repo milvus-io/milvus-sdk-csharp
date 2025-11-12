@@ -43,6 +43,17 @@ internal static class Verify
             => throw new ArgumentException("The collection cannot empty", paramName);
     }
 
+    internal static void LessThanOrEqualTo(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = "")
+    {
+        if (value > other)
+        {
+            ThrowLessOrEqualThan(other, paramName);
+        }
+
+        static void ThrowLessOrEqualThan(long other, string paramName) =>
+            throw new ArgumentOutOfRangeException(paramName, $"The value must be bess than or equal to {other}.");
+    }
+
     internal static void GreaterThan(long value, long other, [CallerArgumentExpression(nameof(value))] string paramName = "")
     {
         if (value <= other)
