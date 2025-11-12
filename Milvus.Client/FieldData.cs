@@ -123,7 +123,7 @@ public abstract class FieldData
 #endif
 
                     default:
-                        throw new NotSupportedException("VectorField.DataOneofCase.None not support");
+                        throw new NotSupportedException("VectorField.DataOneofCase.None not supported");
                 }
 
             case Grpc.FieldData.FieldOneofCase.Scalars:
@@ -133,6 +133,8 @@ public abstract class FieldData
                         => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.FloatData }
                         => Create(fieldData.FieldName, fieldData.Scalars.FloatData.Data, fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.DoubleData }
+                        => Create(fieldData.FieldName, fieldData.Scalars.DoubleData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.IntData }
                         => Create(fieldData.FieldName, fieldData.Scalars.IntData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.LongData }
@@ -142,26 +144,26 @@ public abstract class FieldData
                     { DataCase: ScalarField.DataOneofCase.JsonData }
                         => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int8 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int16 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int32 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int64 }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.LongData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.LongData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Float }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.FloatData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.FloatData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Double }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.DoubleData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.DoubleData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.String }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.VarChar }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData.Data).ToArray(), fieldData.IsDynamic),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Json }
-                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.JsonData.Data).ToArray(), fieldData.IsDynamic),
-                    _ => throw new NotSupportedException($"{ fieldData.Scalars.DataCase } not support"),
+                        => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.JsonData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    _ => throw new NotSupportedException($"{fieldData.Scalars.DataCase} not supported"),
                 };
 
             default:
@@ -281,19 +283,25 @@ public abstract class FieldData
     /// </summary>
     /// <param name="fieldName">Field name.</param>
     /// <param name="bytes">Byte array data.</param>
-    /// <param name="dimension">Dimension of data.</param>
+    /// <param name="dimension">Dimension of data in bits.</param>
     /// <returns></returns>
     public static BinaryVectorFieldData CreateFromBytes(string fieldName, ReadOnlySpan<byte> bytes, long dimension)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
         Verify.GreaterThan(dimension, 0);
 
-        List<ReadOnlyMemory<byte>> byteArray = new((int)Math.Ceiling((double)bytes.Length / dimension));
-
-        while (bytes.Length > dimension)
+        int bytesPerVector = (int)(dimension / 8L);
+        if (dimension % 8 != 0)
         {
-            byteArray.Add(bytes.Slice(0, (int)dimension).ToArray());
-            bytes = bytes.Slice((int)dimension);
+            throw new ArgumentException($"Binary vector dimension must be a multiple of 8, but got {dimension}", nameof(dimension));
+        }
+
+        List<ReadOnlyMemory<byte>> byteArray = new((int)Math.Ceiling((double)bytes.Length / bytesPerVector));
+
+        while (bytes.Length > bytesPerVector)
+        {
+            byteArray.Add(bytes.Slice(0, bytesPerVector).ToArray());
+            bytes = bytes.Slice(bytesPerVector);
         }
 
         if (!bytes.IsEmpty)

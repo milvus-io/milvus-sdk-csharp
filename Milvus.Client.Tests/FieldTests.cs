@@ -29,7 +29,7 @@ public class FieldTests
     [Fact]
     public void Create_binary_vector_field()
     {
-        var field = FieldData.CreateFromBytes("byte", new byte[] { 1, 2, 3, 4, 5, 6 }, 2);
+        var field = FieldData.CreateFromBytes("byte", new byte[] { 1, 2, 3, 4, 5, 6 }, dimension: 16);
 
         Assert.Equal(MilvusDataType.BinaryVector, field.DataType);
         Assert.Equal(3, field.RowCount);
