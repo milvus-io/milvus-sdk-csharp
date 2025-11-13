@@ -91,6 +91,7 @@ public partial class MilvusClient
                 IsPrimaryKey = field.IsPrimaryKey,
                 IsPartitionKey = field.IsPartitionKey,
                 AutoID = field.AutoId,
+                Nullable = field.Nullable,
                 Description = field.Description
             };
 
@@ -121,6 +122,11 @@ public partial class MilvusClient
                 });
             }
 
+            if (field.DefaultValue is not null)
+            {
+                grpcField.DefaultValue = ConvertToValueField(field.DefaultValue, field.DataType);
+            }
+
             grpcCollectionSchema.Fields.Add(grpcField);
         }
 
@@ -139,7 +145,7 @@ public partial class MilvusClient
         await InvokeAsync(GrpcClient.CreateCollectionAsync, request, cancellationToken).ConfigureAwait(false);
 
         return new MilvusCollection(this, collectionName);
-    }
+     }
 
     /// <summary>
     /// Checks whether a collection exists.
@@ -241,5 +247,41 @@ public partial class MilvusClient
                 .ConfigureAwait(false);
 
         return FlushResult.From(response);
+    }
+
+    private static Grpc.ValueField ConvertToValueField(object value, MilvusDataType dataType)
+    {
+        Grpc.ValueField valueField = new();
+
+        switch (dataType)
+        {
+            case MilvusDataType.Bool:
+                valueField.BoolData = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Int8:
+            case MilvusDataType.Int16:
+            case MilvusDataType.Int32:
+                valueField.IntData = Convert.ToInt32(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Int64:
+                valueField.LongData = Convert.ToInt64(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Float:
+                valueField.FloatData = Convert.ToSingle(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Double:
+                valueField.DoubleData = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.String:
+            case MilvusDataType.VarChar:
+                valueField.StringData = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
+                break;
+            default:
+                throw new ArgumentException(
+                    $"Default values are not supported for {dataType} fields. Only scalar fields support default values.",
+                    nameof(value));
+        }
+
+        return valueField;
     }
 }

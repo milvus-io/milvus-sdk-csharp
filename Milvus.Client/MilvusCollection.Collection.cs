@@ -49,6 +49,7 @@ public partial class MilvusCollection
                 grpcField.AutoID,
                 grpcField.IsPartitionKey,
                 grpcField.IsDynamic,
+                grpcField.Nullable,
                 grpcField.Description);
 
             foreach (Grpc.KeyValuePair parameter in grpcField.TypeParams)
@@ -67,6 +68,11 @@ public partial class MilvusCollection
                         milvusField.Dimension = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
                 }
+            }
+
+            if (grpcField.DefaultValue is not null)
+            {
+                milvusField.DefaultValue = ConvertFromValueField(grpcField.DefaultValue);
             }
 
             milvusCollectionSchema.Fields.Add(milvusField);
@@ -257,5 +263,20 @@ public partial class MilvusCollection
             static r => r.Status, cancellationToken).ConfigureAwait(false);
 
         return response.CompactionID;
+    }
+
+    private static object? ConvertFromValueField(Grpc.ValueField valueField)
+    {
+        return valueField.DataCase switch
+        {
+            Grpc.ValueField.DataOneofCase.BoolData => valueField.BoolData,
+            Grpc.ValueField.DataOneofCase.IntData => valueField.IntData,
+            Grpc.ValueField.DataOneofCase.LongData => valueField.LongData,
+            Grpc.ValueField.DataOneofCase.FloatData => valueField.FloatData,
+            Grpc.ValueField.DataOneofCase.DoubleData => valueField.DoubleData,
+            Grpc.ValueField.DataOneofCase.StringData => valueField.StringData,
+            Grpc.ValueField.DataOneofCase.BytesData => valueField.BytesData.ToByteArray(),
+            _ => null
+        };
     }
 }
