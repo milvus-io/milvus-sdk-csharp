@@ -1,3 +1,4 @@
+using Grpc.Core;
 using Testcontainers.Milvus;
 using Xunit;
 
@@ -27,6 +28,37 @@ public sealed class MilvusFixture : IAsyncLifetime
     public MilvusClient CreateClient(string database)
         => new(Host, Username, Password, Port, ssl: false, database);
 
-    public Task InitializeAsync() => _container.StartAsync();
+    public async Task InitializeAsync()
+    {
+        await _container.StartAsync();
+        await WaitForReadyAsync();
+    }
+
     public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+
+    private async Task WaitForReadyAsync()
+    {
+        using var client = CreateClient();
+
+        var timeout = TimeSpan.FromSeconds(2);
+        var start = DateTime.UtcNow;
+
+        while (true)
+        {
+            try
+            {
+                await client.GetVersionAsync();
+                return;
+            }
+            catch (RpcException ex) when (ex.StatusCode is StatusCode.Unavailable or StatusCode.Unknown)
+            {
+                if (DateTime.UtcNow - start > timeout)
+                {
+                    throw;
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
+    }
 }
