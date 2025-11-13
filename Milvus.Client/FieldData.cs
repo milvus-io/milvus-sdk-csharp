@@ -177,6 +177,13 @@ public abstract class FieldData
     internal static MilvusDataType EnsureDataType<TDataType>()
     {
         Type type = typeof(TDataType);
+
+        Type? underlyingType = Nullable.GetUnderlyingType(type);
+        if (underlyingType is not null)
+        {
+            type = underlyingType;
+        }
+
         MilvusDataType dataType;
 
         if (type == typeof(bool))
@@ -274,12 +281,12 @@ public abstract class FieldData
     /// Create array of elements.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
-    /// <param name="data">Data in this field</param>
+    /// <param name="data">Data in this field. Individual arrays can be null if the field is nullable.</param>
     /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
     public static ArrayFieldData<TElement> CreateArray<TElement>(
         string fieldName,
-        IReadOnlyList<IReadOnlyList<TElement>> data,
+        IReadOnlyList<IReadOnlyList<TElement>?> data,
         bool isDynamic = false)
     {
         return new(fieldName, data, isDynamic);
@@ -459,7 +466,7 @@ public class FieldData<TData> : FieldData
     /// <param name="data">Data in this field</param>
     /// <param name="milvusDataType">Milvus data type.</param>
     /// <param name="isDynamic">Whether the field is dynamic.</param>
-    public FieldData(string fieldName, IReadOnlyList<TData> data, MilvusDataType milvusDataType, bool isDynamic)
+    public FieldData(string fieldName, IReadOnlyList<TData?> data, MilvusDataType milvusDataType, bool isDynamic)
         : base(fieldName, milvusDataType, isDynamic)
         => Data = data;
 
@@ -470,7 +477,7 @@ public class FieldData<TData> : FieldData
     /// <summary>
     /// Vector data
     /// </summary>
-    public IReadOnlyList<TData> Data { get; set; }
+    public IReadOnlyList<TData?> Data { get; set; }
 
     /// <summary>
     /// Row count
@@ -599,7 +606,7 @@ public class FieldData<TData> : FieldData
     /// </summary>
     /// <returns></returns>
     public override string ToString()
-        => $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data?.Count}, {nameof(RowCount)}: {RowCount}}}";
+        => $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data.Count}, {nameof(RowCount)}: {RowCount}}}";
 
     /// <summary>
     /// Checks data

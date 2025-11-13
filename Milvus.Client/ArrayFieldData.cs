@@ -11,7 +11,7 @@ public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElem
     /// <param name="fieldName"></param>
     /// <param name="data"></param>
     /// <param name="isDynamic"></param>
-    public ArrayFieldData(string fieldName, IReadOnlyList<IReadOnlyList<TElementData>> data, bool isDynamic)
+    public ArrayFieldData(string fieldName, IReadOnlyList<IReadOnlyList<TElementData>?> data, bool isDynamic)
         : base(fieldName, data, MilvusDataType.Array, isDynamic)
     {
         ElementType = EnsureDataType<TElementData>();
@@ -50,6 +50,13 @@ public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElem
 
         foreach (var array in Data)
         {
+            // Handle null arrays (array-level nullability)
+            if (array is null)
+            {
+                arrayArray.Data.Add(new ScalarField());
+                continue;
+            }
+
             switch (ElementType)
             {
                 case MilvusDataType.Bool:
