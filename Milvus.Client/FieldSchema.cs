@@ -77,23 +77,17 @@ public sealed class FieldSchema
         Type type = typeof(TData);
         Type? underlyingType = System.Nullable.GetUnderlyingType(type);
         bool isNullableValueType = underlyingType is not null;
-        bool isReferenceType = !type.IsValueType;
+        bool shouldBeNullable = nullable ?? isNullableValueType;
 
-        // For nullable value types (e.g., int?), default to nullable
-        // For reference types (e.g., string), default to non-nullable since we can't detect nullable reference type annotations
-        // For non-nullable value types (e.g., int), default to non-nullable
-        bool defaultNullable = isNullableValueType;
-        bool shouldBeNullable = nullable ?? defaultNullable;
-
-        // Validate that if nullable is explicitly set to true, the type can actually be null
-        if (nullable == true && !isNullableValueType && !isReferenceType)
+        if (nullable == true && !isNullableValueType && type.IsValueType)
         {
             throw new ArgumentException(
                 $"Type {type.Name} cannot be null. Use a nullable value type (e.g., {type.Name}?) or remove the nullable parameter.",
                 nameof(nullable));
         }
 
-        return new(name, FieldData.EnsureDataType<TData>(), shouldBeNullable, isPrimaryKey, autoId, isPartitionKey, defaultValue, description);
+        return new FieldSchema(name, FieldData.EnsureDataType<TData>(), shouldBeNullable, isPrimaryKey, autoId,
+            isPartitionKey, defaultValue, description);
     }
 
     /// <summary>
