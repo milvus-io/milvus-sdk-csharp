@@ -10,8 +10,8 @@ public static class MilvusTimestampUtils
 {
     /// <summary>
     /// Converts a <see cref="DateTime" /> to a Milvus timestamp, suitable for passing to
-    /// <see cref="MilvusCollection.SearchAsync{T}" /> or <see cref="MilvusCollection.QueryAsync" /> as a <i>guarantee
-    /// timestamp</i> or as a <i>time travel timestamp</i>.
+    /// <see cref="MilvusCollection.SearchAsync{T}(string, IReadOnlyList{ReadOnlyMemory{T}}, SimilarityMetricType, int, SearchParameters, CancellationToken)" />
+    /// or <see cref="MilvusCollection.QueryAsync" /> as a <i>guarantee timestamp</i> or as a <i>time travel timestamp</i>.
     /// </summary>
     /// <param name="dateTime">A UTC <see cref="DateTime" />.</param>
     /// <returns>

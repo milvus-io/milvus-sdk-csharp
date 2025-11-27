@@ -31,8 +31,8 @@ public sealed class MilvusPartition
 
     /// <summary>
     /// An opaque identifier for the point in time in which the partition was created. Can be passed to
-    /// <see cref="MilvusCollection.SearchAsync{T}" /> or <see cref="MilvusCollection.QueryAsync" /> as a <i>guarantee
-    /// timestamp</i> or as a <i>time travel timestamp</i>.
+    /// <see cref="MilvusCollection.SearchAsync{T}(string, IReadOnlyList{ReadOnlyMemory{T}}, SimilarityMetricType, int, SearchParameters, CancellationToken)" />
+    /// or <see cref="MilvusCollection.QueryAsync" /> as a <i>guarantee timestamp</i> or as a <i>time travel timestamp</i>.
     /// </summary>
     /// <remarks>
     /// For more details, see <see href="https://milvus.io/docs/timestamp.md" />.
