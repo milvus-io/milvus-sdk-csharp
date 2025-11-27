@@ -220,4 +220,44 @@ public enum IndexType
     /// Inverted index for scalar fields. Efficient for full-text search and pattern matching on VARCHAR, INT, and FLOAT fields.
     /// </summary>
     Inverted,
+
+    /// <summary>
+    /// Sparse inverted index for sparse float vector fields. Available since Milvus v2.4.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// SPARSE_INVERTED_INDEX uses an inverted index where each dimension maintains a list of vectors
+    /// that have a non-zero value at that dimension. This is particularly effective for sparse vectors
+    /// with low-dimensional non-zero values.
+    /// </para>
+    /// <para>
+    /// Build parameters: <c>drop_ratio_build</c> (the proportion of small vector values excluded during indexing,
+    /// range [0, 1), default 0).
+    /// </para>
+    /// <para>
+    /// Search parameters: <c>drop_ratio_search</c> (the proportion of small vector values excluded during search,
+    /// range [0, 1), default 0).
+    /// </para>
+    /// </remarks>
+    SparseInvertedIndex,
+
+    /// <summary>
+    /// WAND (Weak AND) algorithm-based sparse index. Available since Milvus v2.4.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// SPARSE_WAND uses the Weak-AND algorithm to quickly skip a large number of unlikely candidates
+    /// during search, enabling faster sparse vector searches.
+    /// </para>
+    /// <para>
+    /// Build parameters: <c>drop_ratio_build</c> (the proportion of small vector values excluded during indexing,
+    /// range [0, 1), default 0).
+    /// </para>
+    /// <para>
+    /// Search parameters: <c>drop_ratio_search</c> (the proportion of small vector values excluded during search,
+    /// range [0, 1), default 0).
+    /// </para>
+    /// </remarks>
+    [Obsolete("SPARSE_WAND is obsolete. Use SparseInvertedIndex instead.")]
+    SparseWand,
 }

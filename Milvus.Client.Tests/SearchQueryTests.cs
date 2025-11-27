@@ -799,6 +799,131 @@ public class SearchQueryTests(
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
+    [Fact]
+    public async Task Search_sparse_vector()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        MilvusCollection sparseCollection = Client.GetCollection(nameof(Search_sparse_vector));
+        string collectionName = sparseCollection.Name;
+
+        await sparseCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateSparseFloatVector("sparse_vector"),
+            });
+
+        var sparseVectors = new[]
+        {
+            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [1] = 2.0f }),
+            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 10.0f, [1] = 20.0f }),
+            new MilvusSparseVector<float>(new Dictionary<int, float> { [2] = 5.0f, [3] = 6.0f }),
+        };
+
+        await sparseCollection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new[] { 1L, 2L, 3L }),
+            FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors),
+        });
+
+        await sparseCollection.CreateIndexAsync(
+            "sparse_vector",
+            IndexType.SparseInvertedIndex,
+            SimilarityMetricType.Ip);
+
+        await sparseCollection.LoadAsync();
+        await sparseCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100),
+            timeout: TimeSpan.FromMinutes(1));
+
+        var queryVector = new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [1] = 1.0f });
+
+        var searchResults = await sparseCollection.SearchAsync(
+            "sparse_vector",
+            new[] { queryVector },
+            SimilarityMetricType.Ip,
+            limit: 2,
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+
+        Assert.Equal(collectionName, searchResults.CollectionName);
+        Assert.NotNull(searchResults.Ids.LongIds);
+        Assert.Equal(2, searchResults.Ids.LongIds.Count);
+        Assert.Equal(2L, searchResults.Ids.LongIds[0]);
+        Assert.Equal(1L, searchResults.Ids.LongIds[1]);
+    }
+
+    [Fact]
+    public async Task Query_sparse_vector()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        MilvusCollection sparseCollection = Client.GetCollection(nameof(Query_sparse_vector));
+        string collectionName = sparseCollection.Name;
+
+        await sparseCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateSparseFloatVector("sparse_vector"),
+            });
+
+        var sparseVectors = new[]
+        {
+            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [100] = 2.0f }),
+            new MilvusSparseVector<float>(new Dictionary<int, float> { [50] = 3.0f, [200] = 4.0f }),
+        };
+
+        await sparseCollection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new[] { 1L, 2L }),
+            FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors),
+        });
+
+        await sparseCollection.CreateIndexAsync(
+            "sparse_vector",
+            IndexType.SparseInvertedIndex,
+            SimilarityMetricType.Ip);
+
+        await sparseCollection.LoadAsync();
+        await sparseCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100),
+            timeout: TimeSpan.FromMinutes(1));
+
+        var results = await sparseCollection.QueryAsync(
+            "id > 0",
+            new QueryParameters
+            {
+                OutputFields = { "sparse_vector" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
+
+        Assert.Equal(2, results.Count);
+
+        var idData = (FieldData<long>)results.First(f => f.FieldName == "id");
+        Assert.Equal(2, idData.RowCount);
+
+        var sparseVectorData = (SparseFloatVectorFieldData)results.First(f => f.FieldName == "sparse_vector");
+        Assert.Equal(2, sparseVectorData.RowCount);
+        Assert.Equal(MilvusDataType.SparseFloatVector, sparseVectorData.DataType);
+
+        Assert.Equal(new[] { 0, 100 }, sparseVectorData.Data[0].Indices);
+        Assert.Equal(new[] { 1.0f, 2.0f }, sparseVectorData.Data[0].Values);
+
+        Assert.Equal(new[] { 50, 200 }, sparseVectorData.Data[1].Indices);
+        Assert.Equal(new[] { 3.0f, 4.0f }, sparseVectorData.Data[1].Values);
+    }
+
     public class QueryCollectionFixture : IAsyncLifetime
     {
         public QueryCollectionFixture(MilvusFixture milvusFixture)
