@@ -210,6 +210,39 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("numeric_field");
     }
 
+    [Fact]
+    public async Task Sparse_inverted_index()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        await Collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateSparseFloatVector("sparse_vector"),
+            });
+
+        await Collection.CreateIndexAsync(
+            "sparse_vector",
+            IndexType.SparseInvertedIndex,
+            SimilarityMetricType.Ip,
+            extraParams: new Dictionary<string, string>
+            {
+                ["drop_ratio_build"] = "0.2"
+            });
+
+        await Collection.WaitForIndexBuildAsync("sparse_vector");
+
+        var indexes = await Collection.DescribeIndexAsync("sparse_vector");
+        var index = Assert.Single(indexes);
+        Assert.Contains(index.Params, kv => kv is { Key: "index_type", Value: "SPARSE_INVERTED_INDEX" });
+    }
+
 #pragma warning disable CS0618 // Type or member is obsolete
     [Fact]
     public async Task GetState()
