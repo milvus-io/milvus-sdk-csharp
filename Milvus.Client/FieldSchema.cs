@@ -107,6 +107,18 @@ public sealed class FieldSchema
         => new(name, MilvusDataType.Json);
 
     /// <summary>
+    /// Create a field schema for a sparse float vector field. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="description">An optional description for the field.</param>
+    /// <remarks>
+    /// Sparse float vectors do not have a fixed dimension. The dimension is determined by the
+    /// maximum index of the non-zero elements across all vectors.
+    /// </remarks>
+    public static FieldSchema CreateSparseFloatVector(string name, string description = "")
+        => new(name, MilvusDataType.SparseFloatVector, description: description);
+
+    /// <summary>
     /// Create a field schema for a <c>array</c> of <c>TData</c> field.
     /// </summary>
     /// <typeparam name="TData">Determines the element data type of array stored in the field based.</typeparam>
@@ -249,7 +261,7 @@ public sealed class FieldSchema
     /// <summary>
     /// The dimension of the vector. Mandatory for <see cref="MilvusDataType.FloatVector" />,
     /// <see cref="MilvusDataType.BinaryVector" />, and <see cref="MilvusDataType.Float16Vector" /> fields,
-    /// and must be greater than zero.
+    /// and must be greater than zero. Not applicable for <see cref="MilvusDataType.SparseFloatVector" /> fields.
     /// </summary>
     public int? Dimension { get; set; }
 

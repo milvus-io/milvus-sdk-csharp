@@ -122,6 +122,9 @@ public abstract class FieldData
                         throw new NotSupportedException("Float16Vector is only supported on .NET 8.0 or greater");
 #endif
 
+                    case Grpc.VectorField.DataOneofCase.SparseFloatVector:
+                        return CreateSparseFloatVectorFromGrpc(fieldData.FieldName, fieldData.Vectors.SparseFloatVector);
+
                     default:
                         throw new NotSupportedException("VectorField.DataOneofCase.None not supported");
                 }
@@ -215,6 +218,10 @@ public abstract class FieldData
         else if (type == typeof(ReadOnlyMemory<byte>) || type == typeof(byte[]))
         {
             dataType = MilvusDataType.BinaryVector;
+        }
+        else if (type == typeof(MilvusSparseVector<float>))
+        {
+            dataType = MilvusDataType.SparseFloatVector;
         }
         else
         {
@@ -346,6 +353,15 @@ public abstract class FieldData
 #endif
 
     /// <summary>
+    /// Create a sparse float vector field. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">The sparse vector data.</param>
+    /// <returns></returns>
+    public static SparseFloatVectorFieldData CreateSparseFloatVector(string fieldName, IReadOnlyList<MilvusSparseVector<float>> data)
+        => new(fieldName, data);
+
+    /// <summary>
     /// Create a field from stream
     /// </summary>
     /// <param name="fieldName">Field name</param>
@@ -402,6 +418,22 @@ public abstract class FieldData
         return new Float16VectorFieldData(fieldName, vectors);
     }
 #endif
+
+    private static SparseFloatVectorFieldData CreateSparseFloatVectorFromGrpc(
+        string fieldName,
+        Grpc.SparseFloatArray sparseFloatArray)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+
+        List<MilvusSparseVector<float>> vectors = new(sparseFloatArray.Contents.Count);
+
+        foreach (ByteString content in sparseFloatArray.Contents)
+        {
+            vectors.Add(MilvusSparseVector<float>.FromBytes(content.Span));
+        }
+
+        return new SparseFloatVectorFieldData(fieldName, vectors);
+    }
 }
 
 /// <summary>

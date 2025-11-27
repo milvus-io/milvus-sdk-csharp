@@ -190,6 +190,82 @@ public partial class MilvusCollection
         Verify.NotNullOrWhiteSpace(vectorFieldName);
         Verify.NotNull(vectors);
 
+        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
+
+        switch (vectors)
+        {
+            case IReadOnlyList<ReadOnlyMemory<float>> floatVectors:
+                PopulateFloatVectorData(floatVectors, placeholderValue);
+                break;
+            case IReadOnlyList<ReadOnlyMemory<byte>> binaryVectors:
+                PopulateBinaryVectorData(binaryVectors, placeholderValue);
+                break;
+#if NET8_0_OR_GREATER
+            case IReadOnlyList<ReadOnlyMemory<Half>> float16Vectors:
+                PopulateFloat16VectorData(float16Vectors, placeholderValue);
+                break;
+#endif
+            default:
+                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
+        }
+
+        return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Perform a sparse vector similarity search. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="vectorFieldName">The name of the sparse vector field to search in.</param>
+    /// <param name="vectors">The set of sparse vectors to send as input for the similarity search.</param>
+    /// <param name="metricType">
+    /// Method used to measure the distance between vectors during search. Must correspond to the metric type specified
+    /// when building the index. For sparse vectors, typically <see cref="SimilarityMetricType.Ip" /> is used.
+    /// </param>
+    /// <param name="limit">
+    /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
+    /// </param>
+    /// <param name="parameters">
+    /// Various additional optional parameters to configure the similarity search.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns></returns>
+    public async Task<SearchResults> SearchAsync<T>(
+        string vectorFieldName,
+        IReadOnlyList<MilvusSparseVector<T>> vectors,
+        SimilarityMetricType metricType,
+        int limit,
+        SearchParameters? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(vectorFieldName);
+        Verify.NotNull(vectors);
+
+        Grpc.PlaceholderValue placeholderValue = new()
+        {
+            Tag = Constants.VectorTag,
+            Type = Grpc.PlaceholderType.SparseFloatVector
+        };
+
+        foreach (MilvusSparseVector<T> sparseVector in vectors)
+        {
+            placeholderValue.Values.Add(ByteString.CopyFrom(sparseVector.ToBytes()));
+        }
+
+        return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<SearchResults> SearchInternalAsync(
+        string vectorFieldName,
+        Grpc.PlaceholderValue placeholderValue,
+        SimilarityMetricType metricType,
+        int limit,
+        SearchParameters? parameters,
+        CancellationToken cancellationToken)
+    {
         Grpc.SearchRequest request = new()
         {
             CollectionName = Name,
@@ -264,28 +340,8 @@ public partial class MilvusCollection
         else
         {
             request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
-            request.GuaranteeTimestamp =
-                CalculateGuaranteeTimestamp(Name, parameters.ConsistencyLevel.Value,
-                    parameters.GuaranteeTimestamp);
-        }
-
-        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
-
-        switch (vectors)
-        {
-            case IReadOnlyList<ReadOnlyMemory<float>> floatVectors:
-                PopulateFloatVectorData(floatVectors, placeholderValue);
-                break;
-            case IReadOnlyList<ReadOnlyMemory<byte>> binaryVectors:
-                PopulateBinaryVectorData(binaryVectors, placeholderValue);
-                break;
-#if NET8_0_OR_GREATER
-            case IReadOnlyList<ReadOnlyMemory<Half>> float16Vectors:
-                PopulateFloat16VectorData(float16Vectors, placeholderValue);
-                break;
-#endif
-            default:
-                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
+                Name, parameters.ConsistencyLevel.Value, parameters.GuaranteeTimestamp);
         }
 
         request.PlaceholderGroup = new Grpc.PlaceholderGroup { Placeholders = { placeholderValue } }.ToByteString();
@@ -319,85 +375,85 @@ public partial class MilvusCollection
             Limit = response.Results.TopK,
             Limits = response.Results.Topks,
         };
+    }
 
-        static void PopulateFloatVectorData(
-            IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    private static void PopulateFloatVectorData(
+        IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
+
+        foreach (ReadOnlyMemory<float> milvusVector in vectors)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
-
-            foreach (ReadOnlyMemory<float> milvusVector in vectors)
-            {
 #if NET6_0_OR_GREATER
-                if (BitConverter.IsLittleEndian)
-                {
-                    placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
-                    continue;
-                }
+            if (BitConverter.IsLittleEndian)
+            {
+                placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
+                continue;
+            }
 #endif
 
-                int length = milvusVector.Length * sizeof(float);
+            int length = milvusVector.Length * sizeof(float);
 
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    Span<byte> destination = bytes.AsSpan(i * sizeof(float));
-                    float f = milvusVector.Span[i];
+            for (int i = 0; i < milvusVector.Length; i++)
+            {
+                Span<byte> destination = bytes.AsSpan(i * sizeof(float));
+                float f = milvusVector.Span[i];
 #if NET6_0_OR_GREATER
-                    BinaryPrimitives.WriteSingleLittleEndian(destination, f);
+                BinaryPrimitives.WriteSingleLittleEndian(destination, f);
 #else
-                    if (!BitConverter.IsLittleEndian)
+                if (!BitConverter.IsLittleEndian)
+                {
+                    unsafe
                     {
-                        unsafe
-                        {
-                            int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
-                            f = *(float*)&tmp;
-                        }
+                        int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
+                        f = *(float*)&tmp;
                     }
-                    MemoryMarshal.Write(destination, ref f);
-#endif
                 }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-
-                ArrayPool<byte>.Shared.Return(bytes);
+                MemoryMarshal.Write(destination, ref f);
+#endif
             }
-        }
 
-        static void PopulateBinaryVectorData(
-            IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
+
+    private static void PopulateBinaryVectorData(
+        IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
+
+        foreach (ReadOnlyMemory<byte> milvusVector in vectors)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
-
-            foreach (ReadOnlyMemory<byte> milvusVector in vectors)
-            {
-                placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
-            }
+            placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
         }
+    }
 
 #if NET8_0_OR_GREATER
-        static void PopulateFloat16VectorData(
-            IReadOnlyList<ReadOnlyMemory<Half>> vectors, Grpc.PlaceholderValue placeholderValue)
+    private static void PopulateFloat16VectorData(
+        IReadOnlyList<ReadOnlyMemory<Half>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.Float16Vector;
+
+        foreach (ReadOnlyMemory<Half> milvusVector in vectors)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.Float16Vector;
+            int length = milvusVector.Length * sizeof(ushort);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
-            foreach (ReadOnlyMemory<Half> milvusVector in vectors)
+            for (int i = 0; i < milvusVector.Length; i++)
             {
-                int length = milvusVector.Length * sizeof(ushort);
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
-
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    ushort halfBits = BitConverter.HalfToUInt16Bits(milvusVector.Span[i]);
-                    BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * sizeof(ushort)), halfBits);
-                }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-                ArrayPool<byte>.Shared.Return(bytes);
+                ushort halfBits = BitConverter.HalfToUInt16Bits(milvusVector.Span[i]);
+                BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * sizeof(ushort)), halfBits);
             }
+
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+            ArrayPool<byte>.Shared.Return(bytes);
         }
-#endif
     }
+#endif
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.
