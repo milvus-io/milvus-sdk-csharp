@@ -190,6 +190,82 @@ public partial class MilvusCollection
         Verify.NotNullOrWhiteSpace(vectorFieldName);
         Verify.NotNull(vectors);
 
+        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
+
+        switch (vectors)
+        {
+            case IReadOnlyList<ReadOnlyMemory<float>> floatVectors:
+                PopulateFloatVectorData(floatVectors, placeholderValue);
+                break;
+            case IReadOnlyList<ReadOnlyMemory<byte>> binaryVectors:
+                PopulateBinaryVectorData(binaryVectors, placeholderValue);
+                break;
+#if NET8_0_OR_GREATER
+            case IReadOnlyList<ReadOnlyMemory<Half>> float16Vectors:
+                PopulateFloat16VectorData(float16Vectors, placeholderValue);
+                break;
+#endif
+            default:
+                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
+        }
+
+        return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Perform a sparse vector similarity search. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="vectorFieldName">The name of the sparse vector field to search in.</param>
+    /// <param name="vectors">The set of sparse vectors to send as input for the similarity search.</param>
+    /// <param name="metricType">
+    /// Method used to measure the distance between vectors during search. Must correspond to the metric type specified
+    /// when building the index. For sparse vectors, typically <see cref="SimilarityMetricType.Ip" /> is used.
+    /// </param>
+    /// <param name="limit">
+    /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
+    /// </param>
+    /// <param name="parameters">
+    /// Various additional optional parameters to configure the similarity search.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns></returns>
+    public async Task<SearchResults> SearchAsync<T>(
+        string vectorFieldName,
+        IReadOnlyList<MilvusSparseVector<T>> vectors,
+        SimilarityMetricType metricType,
+        int limit,
+        SearchParameters? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(vectorFieldName);
+        Verify.NotNull(vectors);
+
+        Grpc.PlaceholderValue placeholderValue = new()
+        {
+            Tag = Constants.VectorTag,
+            Type = Grpc.PlaceholderType.SparseFloatVector
+        };
+
+        foreach (MilvusSparseVector<T> sparseVector in vectors)
+        {
+            placeholderValue.Values.Add(ByteString.CopyFrom(sparseVector.ToBytes()));
+        }
+
+        return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<SearchResults> SearchInternalAsync(
+        string vectorFieldName,
+        Grpc.PlaceholderValue placeholderValue,
+        SimilarityMetricType metricType,
+        int limit,
+        SearchParameters? parameters,
+        CancellationToken cancellationToken)
+    {
         Grpc.SearchRequest request = new()
         {
             CollectionName = Name,
@@ -264,28 +340,8 @@ public partial class MilvusCollection
         else
         {
             request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
-            request.GuaranteeTimestamp =
-                CalculateGuaranteeTimestamp(Name, parameters.ConsistencyLevel.Value,
-                    parameters.GuaranteeTimestamp);
-        }
-
-        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
-
-        switch (vectors)
-        {
-            case IReadOnlyList<ReadOnlyMemory<float>> floatVectors:
-                PopulateFloatVectorData(floatVectors, placeholderValue);
-                break;
-            case IReadOnlyList<ReadOnlyMemory<byte>> binaryVectors:
-                PopulateBinaryVectorData(binaryVectors, placeholderValue);
-                break;
-#if NET8_0_OR_GREATER
-            case IReadOnlyList<ReadOnlyMemory<Half>> float16Vectors:
-                PopulateFloat16VectorData(float16Vectors, placeholderValue);
-                break;
-#endif
-            default:
-                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
+                Name, parameters.ConsistencyLevel.Value, parameters.GuaranteeTimestamp);
         }
 
         request.PlaceholderGroup = new Grpc.PlaceholderGroup { Placeholders = { placeholderValue } }.ToByteString();
@@ -319,85 +375,226 @@ public partial class MilvusCollection
             Limit = response.Results.TopK,
             Limits = response.Results.Topks,
         };
+    }
 
-        static void PopulateFloatVectorData(
-            IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    /// <summary>
+    /// Perform a hybrid vector similarity search combining multiple ANN searches with reranking.
+    /// </summary>
+    /// <param name="requests">The ANN search requests to combine.</param>
+    /// <param name="reranker">The reranker to use for combining results.</param>
+    /// <param name="limit">
+    /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
+    /// </param>
+    /// <param name="parameters">Various additional optional parameters to configure the hybrid search.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>The search results.</returns>
+    public async Task<SearchResults> HybridSearchAsync(
+        IReadOnlyList<AnnSearchRequest> requests,
+        IReranker reranker,
+        int limit,
+        HybridSearchParameters? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(requests);
+        Verify.NotNull(reranker);
+
+        if (requests.Count == 0)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
+            throw new ArgumentException("At least one search request must be provided", nameof(requests));
+        }
 
-            foreach (ReadOnlyMemory<float> milvusVector in vectors)
+        if (limit < 1 || limit > 16384)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit), limit, "Limit must be between 1 and 16384");
+        }
+
+        if (reranker is WeightedReranker weightedReranker && weightedReranker.Weights.Count != requests.Count)
+        {
+            throw new ArgumentException(
+                $"WeightedReranker must have the same number of weights ({weightedReranker.Weights.Count}) as search requests ({requests.Count})",
+                nameof(reranker));
+        }
+
+        var request = new Grpc.HybridSearchRequest
+        {
+            CollectionName = Name,
+        };
+
+        foreach (var annRequest in requests)
+        {
+            request.Requests.Add(annRequest.ToGrpcSearchRequest(Name));
+        }
+
+        request.RankParams.AddRange(reranker.ToRankParams());
+        request.RankParams.Add(new Grpc.KeyValuePair
+        {
+            Key = "limit",
+            Value = limit.ToString(CultureInfo.InvariantCulture)
+        });
+
+        if (parameters is not null)
+        {
+            if (parameters.PartitionNamesInternal?.Count > 0)
             {
-#if NET6_0_OR_GREATER
-                if (BitConverter.IsLittleEndian)
+                request.PartitionNames.AddRange(parameters.PartitionNamesInternal);
+            }
+
+            if (parameters.OutputFieldsInternal?.Count > 0)
+            {
+                request.OutputFields.AddRange(parameters.OutputFieldsInternal);
+            }
+
+            if (parameters.TimeTravelTimestamp is not null)
+            {
+                request.TravelTimestamp = parameters.TimeTravelTimestamp.Value;
+            }
+
+            if (parameters.RoundDecimal is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
                 {
-                    placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
-                    continue;
-                }
+                    Key = Constants.RoundDecimal,
+                    Value = parameters.RoundDecimal.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.GroupByField is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.GroupByField,
+                    Value = parameters.GroupByField
+                });
+            }
+
+            if (parameters.GroupSize is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = "group_size",
+                    Value = parameters.GroupSize.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.StrictGroupSize is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = "strict_group_size",
+                    Value = parameters.StrictGroupSize.Value.ToString()
+                });
+            }
+        }
+
+        if (parameters?.ConsistencyLevel is null)
+        {
+            request.UseDefaultConsistency = true;
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(Name, ConsistencyLevel.Session, userProvidedGuaranteeTimestamp: null);
+        }
+        else
+        {
+            request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
+                Name, parameters.ConsistencyLevel.Value, parameters.GuaranteeTimestamp);
+        }
+
+        Grpc.SearchResults response =
+            await _client.InvokeAsync(_client.GrpcClient.HybridSearchAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        List<FieldData> fieldData = ProcessReturnedFieldData(response.Results.FieldsData);
+
+        return new SearchResults
+        {
+            CollectionName = response.CollectionName,
+            FieldsData = fieldData,
+            Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
+            NumQueries = response.Results.NumQueries,
+            Scores = response.Results.Scores,
+            Limit = response.Results.TopK,
+            Limits = response.Results.Topks,
+        };
+    }
+
+    private static void PopulateFloatVectorData(
+        IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.FloatVector;
+
+        foreach (ReadOnlyMemory<float> milvusVector in vectors)
+        {
+#if NET6_0_OR_GREATER
+            if (BitConverter.IsLittleEndian)
+            {
+                placeholderValue.Values.Add(ByteString.CopyFrom(MemoryMarshal.AsBytes(milvusVector.Span)));
+                continue;
+            }
 #endif
 
-                int length = milvusVector.Length * sizeof(float);
+            int length = milvusVector.Length * sizeof(float);
 
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    Span<byte> destination = bytes.AsSpan(i * sizeof(float));
-                    float f = milvusVector.Span[i];
+            for (int i = 0; i < milvusVector.Length; i++)
+            {
+                Span<byte> destination = bytes.AsSpan(i * sizeof(float));
+                float f = milvusVector.Span[i];
 #if NET6_0_OR_GREATER
-                    BinaryPrimitives.WriteSingleLittleEndian(destination, f);
+                BinaryPrimitives.WriteSingleLittleEndian(destination, f);
 #else
-                    if (!BitConverter.IsLittleEndian)
+                if (!BitConverter.IsLittleEndian)
+                {
+                    unsafe
                     {
-                        unsafe
-                        {
-                            int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
-                            f = *(float*)&tmp;
-                        }
+                        int tmp = BinaryPrimitives.ReverseEndianness(*(int*)&f);
+                        f = *(float*)&tmp;
                     }
-                    MemoryMarshal.Write(destination, ref f);
-#endif
                 }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-
-                ArrayPool<byte>.Shared.Return(bytes);
+                MemoryMarshal.Write(destination, ref f);
+#endif
             }
-        }
 
-        static void PopulateBinaryVectorData(
-            IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
+
+    private static void PopulateBinaryVectorData(
+        IReadOnlyList<ReadOnlyMemory<byte>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
+
+        foreach (ReadOnlyMemory<byte> milvusVector in vectors)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.BinaryVector;
-
-            foreach (ReadOnlyMemory<byte> milvusVector in vectors)
-            {
-                placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
-            }
+            placeholderValue.Values.Add(ByteString.CopyFrom(milvusVector.Span));
         }
+    }
 
 #if NET8_0_OR_GREATER
-        static void PopulateFloat16VectorData(
-            IReadOnlyList<ReadOnlyMemory<Half>> vectors, Grpc.PlaceholderValue placeholderValue)
+    private static void PopulateFloat16VectorData(
+        IReadOnlyList<ReadOnlyMemory<Half>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.Float16Vector;
+
+        foreach (ReadOnlyMemory<Half> milvusVector in vectors)
         {
-            placeholderValue.Type = Grpc.PlaceholderType.Float16Vector;
+            int length = milvusVector.Length * sizeof(ushort);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
 
-            foreach (ReadOnlyMemory<Half> milvusVector in vectors)
+            for (int i = 0; i < milvusVector.Length; i++)
             {
-                int length = milvusVector.Length * sizeof(ushort);
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
-
-                for (int i = 0; i < milvusVector.Length; i++)
-                {
-                    ushort halfBits = BitConverter.HalfToUInt16Bits(milvusVector.Span[i]);
-                    BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * sizeof(ushort)), halfBits);
-                }
-
-                placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
-                ArrayPool<byte>.Shared.Return(bytes);
+                ushort halfBits = BitConverter.HalfToUInt16Bits(milvusVector.Span[i]);
+                BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * sizeof(ushort)), halfBits);
             }
+
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+            ArrayPool<byte>.Shared.Return(bytes);
         }
-#endif
     }
+#endif
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.

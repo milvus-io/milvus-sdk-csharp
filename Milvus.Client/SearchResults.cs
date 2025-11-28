@@ -1,7 +1,7 @@
 ﻿namespace Milvus.Client;
 
 /// <summary>
-/// The results from a vector similarity search executed via <see cref="MilvusCollection.SearchAsync{T}" />.
+/// The results from a vector similarity search executed via <see cref="MilvusCollection.SearchAsync{T}(string, IReadOnlyList{ReadOnlyMemory{T}}, SimilarityMetricType, int, SearchParameters, CancellationToken)" />.
 /// </summary>
 public sealed class SearchResults
 {

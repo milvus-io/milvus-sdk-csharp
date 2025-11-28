@@ -220,4 +220,21 @@ public class FieldTests
         Assert.Equal(2, field.RowCount);
         Assert.Equal(2, field.Data.Count);
     }
+
+    [Fact]
+    public void CreateSparseFloatVectorTest()
+    {
+        var sparseVectors = new[]
+        {
+            new MilvusSparseVector<float>([0, 100], [1.0f, 2.0f]),
+            new MilvusSparseVector<float>([50, 200], [3.0f, 4.0f]),
+        };
+
+        var field = FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors);
+
+        Assert.Equal("sparse_vector", field.FieldName);
+        Assert.Equal(MilvusDataType.SparseFloatVector, field.DataType);
+        Assert.Equal(2, field.RowCount);
+        Assert.Equal(2, field.Data.Count);
+    }
 }
