@@ -226,8 +226,8 @@ public class FieldTests
     {
         var sparseVectors = new[]
         {
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [100] = 2.0f }),
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [50] = 3.0f, [200] = 4.0f }),
+            new MilvusSparseVector<float>([0, 100], [1.0f, 2.0f]),
+            new MilvusSparseVector<float>([50, 200], [3.0f, 4.0f]),
         };
 
         var field = FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors);
