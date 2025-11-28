@@ -94,9 +94,6 @@ public partial class MilvusCollection
                 IndexType.StlSort => "STL_SORT",
                 IndexType.Inverted => "INVERTED",
                 IndexType.SparseInvertedIndex => "SPARSE_INVERTED_INDEX",
-#pragma warning disable CS0618 // Type or member is obsolete
-                IndexType.SparseWand => "SPARSE_WAND",
-#pragma warning restore CS0618
 
                 _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
             };

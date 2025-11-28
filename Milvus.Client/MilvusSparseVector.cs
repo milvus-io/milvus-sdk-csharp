@@ -35,55 +35,6 @@ public class MilvusSparseVector<T>
     }
 
     /// <summary>
-    /// Creates a sparse vector from pairs of (index, value).
-    /// </summary>
-    /// <param name="elements">The sparse vector elements as (index, value) pairs.</param>
-    /// <exception cref="ArgumentException">Thrown when an index is negative or a value is NaN.</exception>
-    public MilvusSparseVector(IEnumerable<KeyValuePair<int, T>> elements)
-    {
-        Verify.NotNull(elements);
-
-        var sorted = elements.OrderBy(e => e.Key).ToArray();
-
-        _indices = new int[sorted.Length];
-        _values = new T[sorted.Length];
-
-        for (int i = 0; i < sorted.Length; i++)
-        {
-            if (sorted[i].Key < 0)
-            {
-                throw new ArgumentException($"Sparse vector index must be non-negative: {sorted[i].Key}", nameof(elements));
-            }
-
-            // Check for duplicate indices (since we sorted by key, duplicates will be adjacent)
-            if (i > 0 && sorted[i].Key == sorted[i - 1].Key)
-            {
-                throw new ArgumentException($"Sparse vector indices must be unique: {sorted[i].Key} is duplicated", nameof(elements));
-            }
-
-            _indices[i] = sorted[i].Key;
-            _values[i] = sorted[i].Value;
-        }
-
-        CheckValues(_values);
-    }
-
-    private static void CheckValues(T[] values)
-    {
-        if (typeof(T) == typeof(float))
-        {
-            float[] floatValues = (float[])(object)values;
-            foreach (var floatValue in floatValues)
-            {
-                if (float.IsNaN(floatValue))
-                {
-                    throw new ArgumentException("Sparse vector value must not be NaN");
-                }
-            }
-        }
-    }
-
-    /// <summary>
     /// Gets the number of non-zero elements in the sparse vector.
     /// </summary>
     public int Count => _indices.Length;
