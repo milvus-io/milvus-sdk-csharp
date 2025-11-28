@@ -240,24 +240,4 @@ public enum IndexType
     /// </para>
     /// </remarks>
     SparseInvertedIndex,
-
-    /// <summary>
-    /// WAND (Weak AND) algorithm-based sparse index. Available since Milvus v2.4.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// SPARSE_WAND uses the Weak-AND algorithm to quickly skip a large number of unlikely candidates
-    /// during search, enabling faster sparse vector searches.
-    /// </para>
-    /// <para>
-    /// Build parameters: <c>drop_ratio_build</c> (the proportion of small vector values excluded during indexing,
-    /// range [0, 1), default 0).
-    /// </para>
-    /// <para>
-    /// Search parameters: <c>drop_ratio_search</c> (the proportion of small vector values excluded during search,
-    /// range [0, 1), default 0).
-    /// </para>
-    /// </remarks>
-    [Obsolete("SPARSE_WAND is obsolete. Use SparseInvertedIndex instead.")]
-    SparseWand,
 }

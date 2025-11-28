@@ -821,9 +821,9 @@ public class SearchQueryTests(
 
         var sparseVectors = new[]
         {
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [1] = 2.0f }),
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 10.0f, [1] = 20.0f }),
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [2] = 5.0f, [3] = 6.0f }),
+            new MilvusSparseVector<float>([0, 1], [1.0f, 2.0f]),
+            new MilvusSparseVector<float>([0, 1], [10.0f, 20.0f]),
+            new MilvusSparseVector<float>([2, 3], [5.0f, 6.0f]),
         };
 
         await sparseCollection.InsertAsync(new FieldData[]
@@ -842,7 +842,7 @@ public class SearchQueryTests(
             waitingInterval: TimeSpan.FromMilliseconds(100),
             timeout: TimeSpan.FromMinutes(1));
 
-        var queryVector = new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [1] = 1.0f });
+        var queryVector = new MilvusSparseVector<float>([0, 1], [1.0f, 1.0f]);
 
         var searchResults = await sparseCollection.SearchAsync(
             "sparse_vector",
@@ -880,8 +880,8 @@ public class SearchQueryTests(
 
         var sparseVectors = new[]
         {
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [0] = 1.0f, [100] = 2.0f }),
-            new MilvusSparseVector<float>(new Dictionary<int, float> { [50] = 3.0f, [200] = 4.0f }),
+            new MilvusSparseVector<float>([0, 100], [1.0f, 2.0f]),
+            new MilvusSparseVector<float>([50, 200], [3.0f, 4.0f]),
         };
 
         await sparseCollection.InsertAsync(new FieldData[]
