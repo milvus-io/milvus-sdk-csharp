@@ -800,6 +800,111 @@ public class SearchQueryTests(
     }
 
     [Fact]
+    public async Task Search_with_group_size()
+    {
+        MilvusCollection collection = Client.GetCollection(nameof(Search_with_group_size));
+        await collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.Create<long>("group_id"),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+
+        await collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L, 4L, 5L, 6L }),
+                FieldData.Create("group_id", new[] { 1L, 1L, 1L, 2L, 2L, 2L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 1.1f, 2.1f },
+                    new[] { 1.2f, 2.2f },
+                    new[] { 10f, 20f },
+                    new[] { 10.1f, 20.1f },
+                    new[] { 10.2f, 20.2f }
+                })
+            });
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 1f, 2f } },
+            SimilarityMetricType.L2,
+            limit: 2,
+            new SearchParameters
+            {
+                GroupByField = "group_id",
+                GroupSize = 2,
+                OutputFields = { "group_id" }
+            });
+
+        var groupIdField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "group_id");
+        Assert.True(groupIdField.Data.Count(g => g == 1L) >= 1);
+        Assert.True(groupIdField.Data.Count(g => g == 2L) >= 1);
+        Assert.True(results.Ids.LongIds!.Count > 2);
+    }
+
+    [Fact]
+    public async Task Search_with_strict_group_size()
+    {
+        MilvusCollection collection = Client.GetCollection(nameof(Search_with_strict_group_size));
+        await collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.Create<long>("group_id"),
+                FieldSchema.CreateFloatVector("float_vector", 2)
+            });
+
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+
+        await collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L, 4L }),
+                FieldData.Create("group_id", new[] { 1L, 1L, 1L, 2L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 1.1f, 2.1f },
+                    new[] { 1.2f, 2.2f },
+                    new[] { 10f, 20f }
+                })
+            });
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 1f, 2f } },
+            SimilarityMetricType.L2,
+            limit: 2,
+            new SearchParameters
+            {
+                GroupByField = "group_id",
+                GroupSize = 2,
+                StrictGroupSize = true,
+                OutputFields = { "group_id" }
+            });
+
+        var groupIdField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "group_id");
+        Assert.Equal(2, groupIdField.Data.Count(g => g == 1L));
+    }
+
+    [Fact]
     public async Task Search_sparse_vector()
     {
         if (await Client.GetParsedMilvusVersion() < new Version(2, 4))

@@ -126,6 +126,21 @@ internal static class Constants
     internal const string GroupByField = "group_by_field";
 
     /// <summary>
+    /// Key name.
+    /// </summary>
+    internal const string GroupSize = "group_size";
+
+    /// <summary>
+    /// Key name.
+    /// </summary>
+    internal const string StrictGroupSize = "strict_group_size";
+
+    /// <summary>
+    /// Key name.
+    /// </summary>
+    internal const string GracefulTime = "graceful_time";
+
+    /// <summary>
     /// Default database name.
     /// </summary>
     internal const string DefaultDatabaseName = "default";
