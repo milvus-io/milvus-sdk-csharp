@@ -285,6 +285,15 @@ public partial class MilvusCollection
                 request.OutputFields.AddRange(parameters.OutputFieldsInternal);
             }
 
+            if (parameters.GracefulTime is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.GracefulTime,
+                    Value = parameters.GracefulTime.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
             if (parameters.Expression is not null)
             {
                 request.Dsl = parameters.Expression;
@@ -327,6 +336,24 @@ public partial class MilvusCollection
                 {
                     Key = Constants.GroupByField,
                     Value = parameters.GroupByField
+                });
+            }
+
+            if (parameters.GroupSize is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.GroupSize,
+                    Value = parameters.GroupSize.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.StrictGroupSize is not null)
+            {
+                request.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.StrictGroupSize,
+                    Value = parameters.StrictGroupSize.Value ? "true" : "false"
                 });
             }
         }
