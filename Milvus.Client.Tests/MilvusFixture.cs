@@ -1,3 +1,5 @@
+using Docker.DotNet.Models;
+using DotNet.Testcontainers.Builders;
 using Testcontainers.Milvus;
 using Xunit;
 
@@ -12,8 +14,22 @@ public sealed class MilvusFixture : IAsyncLifetime
 
     private readonly MilvusContainer _container = new MilvusBuilder()
         .WithImage(Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage)
-        .WithEnvironment("DEPLOY_MODE", "STANDALONE")
         .WithEnvironment("QUOTA_AND_LIMITS_FLUSH_RATE_COLLECTION_MAX", "-1")
+        // Remove once https://github.com/testcontainers/testcontainers-dotnet/pull/1569 is available.
+        .WithEnvironment("DEPLOY_MODE", "STANDALONE")
+        // Remove once https://github.com/testcontainers/testcontainers-dotnet/pull/1585 is available.
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilContainerIsHealthy())
+        .WithCreateParameterModifier(parameterModifier =>
+        {
+            parameterModifier.Healthcheck = new HealthcheckConfig
+            {
+                Test = ["CMD-SHELL", $"curl -f http://localhost:{MilvusBuilder.MilvusManagementPort}/healthz"],
+                Interval = TimeSpan.FromSeconds(30),
+                Timeout = TimeSpan.FromSeconds(20),
+                StartPeriod = 90 * 1_000_000_000L,
+                Retries = 3,
+            };
+        })
         .Build();
 
     public string Host => _container.Hostname;
