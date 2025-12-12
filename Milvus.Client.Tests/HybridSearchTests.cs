@@ -11,10 +11,16 @@ public class HybridSearchTests(
     private readonly MilvusClient Client = milvusFixture.CreateClient();
     private MilvusCollection Collection => hybridSearchCollectionFixture.Collection;
     private string CollectionName => Collection.Name;
+    private bool SupportsHybridSearch => hybridSearchCollectionFixture.SupportsHybridSearch;
 
     [Fact]
     public async Task HybridSearch_with_RRF_reranker()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -41,6 +47,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_Rrf_reranker_custom_k()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -67,6 +78,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_weighted_reranker()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -93,6 +109,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_output_fields()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -130,6 +151,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_expression_filter()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var request1 = new VectorAnnSearchRequest<float>(
             "float_vector_1",
             [new[] { 1f, 2f }],
@@ -167,6 +193,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_group_by()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -197,6 +228,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_partition_names()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -227,6 +263,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_with_multiple_query_vectors()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -324,6 +365,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_binary_vectors()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var collection = Client.GetCollection(nameof(HybridSearch_binary_vectors));
         await collection.DropAsync();
 
@@ -487,6 +533,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_throws_for_invalid_limit()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var requests = new AnnSearchRequest[]
         {
             new VectorAnnSearchRequest<float>(
@@ -510,6 +561,11 @@ public class HybridSearchTests(
     [Fact]
     public async Task HybridSearch_throws_for_mismatched_weighted_reranker()
     {
+        if (!SupportsHybridSearch)
+        {
+            return;
+        }
+
         var requests = new AnnSearchRequest[]
         {
             new VectorAnnSearchRequest<float>(
@@ -560,9 +616,16 @@ public class HybridSearchTests(
 
         private readonly MilvusClient Client;
         public readonly MilvusCollection Collection;
+        public bool SupportsHybridSearch { get; private set; }
 
         public async Task InitializeAsync()
         {
+            SupportsHybridSearch = await Client.GetParsedMilvusVersion() >= new Version(2, 4);
+            if (!SupportsHybridSearch)
+            {
+                return;
+            }
+
             await Collection.DropAsync();
             await Client.CreateCollectionAsync(
                 Collection.Name,
