@@ -802,6 +802,11 @@ public class SearchQueryTests(
     [Fact]
     public async Task Search_with_group_size()
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_group_size));
         await collection.DropAsync();
         await Client.CreateCollectionAsync(
@@ -856,6 +861,11 @@ public class SearchQueryTests(
     [Fact]
     public async Task Search_with_strict_group_size()
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_strict_group_size));
         await collection.DropAsync();
         await Client.CreateCollectionAsync(
