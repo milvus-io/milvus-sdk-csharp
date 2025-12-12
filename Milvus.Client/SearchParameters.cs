@@ -2,7 +2,7 @@
 
 /// <summary>
 /// A set of optional parameters for performing a vector similarity search via
-/// <see cref="MilvusCollection.SearchAsync{T}" />.
+/// <see cref="MilvusCollection.SearchAsync{T}(string, IReadOnlyList{ReadOnlyMemory{T}}, SimilarityMetricType, int, SearchParameters, CancellationToken)" />.
 /// </summary>
 public class SearchParameters
 {

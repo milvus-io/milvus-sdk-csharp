@@ -82,4 +82,9 @@ public enum MilvusDataType
     /// Float16Vector
     /// </summary>
     Float16Vector = 102,
+
+    /// <summary>
+    /// SparseFloatVector. Available since Milvus v2.4.
+    /// </summary>
+    SparseFloatVector = 104,
 }
