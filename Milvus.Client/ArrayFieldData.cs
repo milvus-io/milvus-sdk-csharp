@@ -1,7 +1,7 @@
 ﻿namespace Milvus.Client;
 
 /// <summary>
-/// Binary Field
+/// Array Field
 /// </summary>
 public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElementData>>
 {
