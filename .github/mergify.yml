@@ -1,0 +1,69 @@
+misc:
+  - branch: &BRANCHES
+      #  In this pull request, the changes are based on the master branch
+      - &MASTER_BRANCH base=master
+      #  In this pull request, the changes are based on the 2.x branch
+      - &2X_BRANCH base~=2\.\d
+
+pull_request_rules:
+  - name: Add needs-dco label when DCO check failed
+    conditions:
+      # branch condition: in this pull request, the changes are based on any branch referenced by BRANCHES
+      - or: *BRANCHES
+      - -status-success=DCO
+    actions:
+      label:
+        remove:
+          - dco-passed
+        add:
+          - needs-dco
+      comment:
+        message: |
+          @{{author}} Thanks for your contribution. Please submit with DCO, see the contributing guide https://github.com/milvus-io/milvus/blob/master/CONTRIBUTING.md#developer-certificate-of-origin-dco.
+
+  - name: Add dco-passed label when DCO check passed
+    conditions:
+      # branch condition: in this pull request, the changes are based on any branch referenced by BRANCHES
+      - or: *BRANCHES
+      - status-success=DCO
+    actions:
+      label:
+        remove:
+          - needs-dco
+        add:
+          - dco-passed
+
+  - name: Test passed for code changed
+    conditions:
+      - or: *BRANCHES
+      - and:
+        - "check-success=Build and test with Milvus v2.3.22"
+        - "check-success=Build and test with Milvus v2.4.23"
+        - "check-success=Build and test with Milvus v2.5.20"
+        - "check-success=Build and test with Milvus v2.6.4"
+    actions:
+      label:
+        add:
+          - ci-passed
+
+  - name: Remove ci-passed when build failed
+    conditions:
+      - or: *BRANCHES
+      - or:
+        - "check-failure=Build and test with Milvus v2.3.22"
+        - "check-failure=Build and test with Milvus v2.4.23"
+        - "check-failure=Build and test with Milvus v2.5.20"
+        - "check-failure=Build and test with Milvus v2.6.4"
+    actions:
+      label:
+        remove:
+          - ci-passed
+
+  - name: Add ci-passed when no code changes
+    conditions:
+      - or: *BRANCHES
+      - -files~=^(?!.*\.(md)).*$
+    actions:
+      label:
+        add:
+          - ci-passed

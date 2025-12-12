@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Build and test with Milvus ${{ matrix.milvus_version }}
     runs-on: ubuntu-latest
 
     strategy:
