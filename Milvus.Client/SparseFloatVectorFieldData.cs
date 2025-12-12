@@ -3,20 +3,13 @@ namespace Milvus.Client;
 /// <summary>
 /// Sparse float vector field data.
 /// </summary>
-public sealed class SparseFloatVectorFieldData : FieldData<MilvusSparseVector<float>>
+/// <param name="fieldName">Field name.</param>
+/// <param name="data">The sparse vector data.</param>
+public sealed class SparseFloatVectorFieldData(
+    string fieldName,
+    IReadOnlyList<MilvusSparseVector<float>> data)
+    : FieldData<MilvusSparseVector<float>>(fieldName, data, MilvusDataType.SparseFloatVector, isDynamic: false)
 {
-    /// <summary>
-    /// Creates a sparse float vector field.
-    /// </summary>
-    /// <param name="fieldName">Field name.</param>
-    /// <param name="data">The sparse vector data.</param>
-    public SparseFloatVectorFieldData(
-        string fieldName,
-        IReadOnlyList<MilvusSparseVector<float>> data)
-        : base(fieldName, data, MilvusDataType.SparseFloatVector, isDynamic: false)
-    {
-    }
-
     /// <summary>
     /// Row count.
     /// </summary>

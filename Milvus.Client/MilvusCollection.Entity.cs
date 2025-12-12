@@ -239,6 +239,7 @@ public partial class MilvusCollection
         int limit,
         SearchParameters? parameters = null,
         CancellationToken cancellationToken = default)
+        where T : unmanaged, IEquatable<T>
     {
         Verify.NotNullOrWhiteSpace(vectorFieldName);
         Verify.NotNull(vectors);

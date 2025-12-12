@@ -8,10 +8,11 @@ namespace Milvus.Client;
 /// Each element is a pair of (index, value) where index is a non-negative integer.
 /// </summary>
 /// <typeparam name="T">The type of the values in the vector.</typeparam>
-public class MilvusSparseVector<T>
+public readonly struct MilvusSparseVector<T> : IEquatable<MilvusSparseVector<T>>
+    where T : IEquatable<T>
 {
-    private readonly int[] _indices;
-    private readonly T[] _values;
+    private readonly ReadOnlyMemory<int> _indices;
+    private readonly ReadOnlyMemory<T> _values;
 
     /// <summary>
     /// Creates a sparse vector from parallel collections of indices and values. The indices must be positive
@@ -20,11 +21,8 @@ public class MilvusSparseVector<T>
     /// <param name="indices">The indices of non-zero elements, sorted in ascending order.</param>
     /// <param name="values">The values of non-zero elements.</param>
     /// <exception cref="ArgumentException">Thrown when collections have different lengths.</exception>
-    public MilvusSparseVector(int[] indices, T[] values)
+    public MilvusSparseVector(ReadOnlyMemory<int> indices, ReadOnlyMemory<T> values)
     {
-        Verify.NotNull(indices);
-        Verify.NotNull(values);
-
         if (indices.Length != values.Length)
         {
             throw new ArgumentException($"Indices and values must have the same length: {indices.Length} vs {values.Length}");
@@ -42,21 +40,59 @@ public class MilvusSparseVector<T>
     /// <summary>
     /// Gets the indices of non-zero elements in ascending order.
     /// </summary>
-    public IReadOnlyList<int> Indices => _indices;
+    public ReadOnlyMemory<int> Indices => _indices;
 
     /// <summary>
     /// Gets the values of non-zero elements, in the same order as <see cref="Indices"/>.
     /// </summary>
-    public IReadOnlyList<T> Values => _values;
+    public ReadOnlyMemory<T> Values => _values;
 
     /// <summary>
     /// Gets the maximum index in the sparse vector, or -1 if the vector is empty.
     /// </summary>
-    internal int MaxIndex => _indices.Length > 0 ? _indices[_indices.Length - 1] : -1;
+    internal int MaxIndex => _indices.Length > 0 ? _indices.Span[_indices.Length - 1] : -1;
 
     /// <inheritdoc />
     public override string ToString()
         => $"MilvusSparseVector<{typeof(T).Name}>(Count={Count})";
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+        => obj is MilvusSparseVector<T> other && Equals(other);
+
+    /// <inheritdoc/>
+    public bool Equals(MilvusSparseVector<T> other)
+        => _indices.Span.SequenceEqual(other._indices.Span)
+           && _values.Span.SequenceEqual(other._values.Span);
+
+    /// <summary>Indicates whether the two vectors are equal.</summary>
+    /// <param name="left">The first object to compare.</param>
+    /// <param name="right">The second object to compare.</param>
+    /// <returns><c>true</c> if <paramref name="left"/> is equal to <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+    public static bool operator ==(MilvusSparseVector<T> left, MilvusSparseVector<T> right)
+        => left.Equals(right);
+
+    /// <summary>Indicates whether the two vectors are not equal.</summary>
+    /// <param name="left">The first object to compare.</param>
+    /// <param name="right">The second object to compare.</param>
+    /// <returns><c>true</c> if <paramref name="left"/> is not equal <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+    public static bool operator !=(MilvusSparseVector<T> left, MilvusSparseVector<T> right)
+        => !left.Equals(right);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        HashCode h = new();
+        ReadOnlySpan<int> indices = _indices.Span;
+        ReadOnlySpan<T> values = _values.Span;
+        for (int i = 0; i < indices.Length; i += 1)
+        {
+            h.Add(indices[i]);
+            h.Add(values[i]);
+        }
+
+        return h.ToHashCode();
+    }
 
     /// <summary>
     /// Serializes the sparse vector to bytes in the format used by Milvus.
@@ -66,19 +102,21 @@ public class MilvusSparseVector<T>
     {
         if (typeof(T) == typeof(float))
         {
-            float[] values = (float[])(object)_values;
-            byte[] result = new byte[_indices.Length * 8]; // 4 bytes for index + 4 bytes for value
+            ReadOnlySpan<int> indices = _indices.Span;
+            ReadOnlySpan<float> values = ((ReadOnlyMemory<float>)(object)_values).Span;
+            byte[] result = new byte[indices.Length * 8]; // 4 bytes for index + 4 bytes for value
 
-            for (int i = 0; i < _indices.Length; i++)
+            for (int i = 0; i < indices.Length; i++)
             {
                 int offset = i * 8;
-                BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(offset), (uint)_indices[i]);
+                BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(offset), (uint)indices[i]);
 #if NET8_0_OR_GREATER
                 BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(offset + 4), values[i]);
 #else
                 if (BitConverter.IsLittleEndian)
                 {
-                    MemoryMarshal.Write(result.AsSpan(offset + 4), ref values[i]);
+                    float value = values[i];
+                    MemoryMarshal.Write(result.AsSpan(offset + 4), ref value);
                 }
                 else
                 {
