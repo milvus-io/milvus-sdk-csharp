@@ -239,20 +239,19 @@ public partial class MilvusCollection
         int limit,
         SearchParameters? parameters = null,
         CancellationToken cancellationToken = default)
-        where T : unmanaged, IEquatable<T>
     {
         Verify.NotNullOrWhiteSpace(vectorFieldName);
         Verify.NotNull(vectors);
 
-        Grpc.PlaceholderValue placeholderValue = new()
-        {
-            Tag = Constants.VectorTag,
-            Type = Grpc.PlaceholderType.SparseFloatVector
-        };
+        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
 
-        foreach (MilvusSparseVector<T> sparseVector in vectors)
+        switch (vectors)
         {
-            placeholderValue.Values.Add(ByteString.CopyFrom(sparseVector.ToBytes()));
+            case IReadOnlyList<MilvusSparseVector<float>> floatVectors:
+                PopulateFloatSparseVectorData(floatVectors, placeholderValue);
+                break;
+            default:
+                throw new ArgumentException("Only sparse vectors of float are supported", nameof(vectors));
         }
 
         return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
@@ -306,7 +305,7 @@ public partial class MilvusCollection
 
         foreach (var annRequest in requests)
         {
-            request.Requests.Add(annRequest.ToGrpcSearchRequest(Name));
+            request.Requests.Add(CreateSearchRequestFromAnnSearchRequest(annRequest, Name));
         }
 
         request.RankParams.AddRange(reranker.ToRankParams());
@@ -546,6 +545,53 @@ public partial class MilvusCollection
         };
     }
 
+    private static Grpc.SearchRequest CreateSearchRequestFromAnnSearchRequest(AnnSearchRequest annRequest, string collectionName)
+    {
+        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
+
+        switch (annRequest)
+        {
+            case VectorAnnSearchRequest<float> floatRequest:
+                PopulateFloatVectorData(floatRequest.Vectors, placeholderValue);
+                break;
+            case VectorAnnSearchRequest<byte> byteRequest:
+                PopulateBinaryVectorData(byteRequest.Vectors, placeholderValue);
+                break;
+#if NET8_0_OR_GREATER
+            case VectorAnnSearchRequest<Half> halfRequest:
+                PopulateFloat16VectorData(halfRequest.Vectors, placeholderValue);
+                break;
+#endif
+            case SparseVectorAnnSearchRequest<float> sparseRequest:
+                PopulateFloatSparseVectorData(sparseRequest.Vectors, placeholderValue);
+                break;
+            default:
+                throw new ArgumentException($"Unsupported AnnSearchRequest type: {annRequest.GetType()}", nameof(annRequest));
+        }
+
+        var request = new Grpc.SearchRequest
+        {
+            CollectionName = collectionName,
+            DslType = Grpc.DslType.BoolExprV1,
+            PlaceholderGroup = new Grpc.PlaceholderGroup { Placeholders = { placeholderValue } }.ToByteString()
+        };
+
+        if (annRequest.Expression is not null)
+        {
+            request.Dsl = annRequest.Expression;
+        }
+
+        request.SearchParams.AddRange(new[]
+        {
+            new Grpc.KeyValuePair { Key = Constants.VectorField, Value = annRequest.VectorFieldName },
+            new Grpc.KeyValuePair { Key = Constants.TopK, Value = annRequest.Limit.ToString(CultureInfo.InvariantCulture) },
+            new Grpc.KeyValuePair { Key = Constants.MetricType, Value = annRequest.MetricType.ToString().ToUpperInvariant() },
+            new Grpc.KeyValuePair { Key = Constants.Params, Value = Combine(annRequest.ExtraParameters) }
+        });
+
+        return request;
+    }
+
     private static void PopulateFloatVectorData(
         IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
     {
@@ -623,6 +669,17 @@ public partial class MilvusCollection
         }
     }
 #endif
+
+    private static void PopulateFloatSparseVectorData(
+        IReadOnlyList<MilvusSparseVector<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.SparseFloatVector;
+
+        foreach (MilvusSparseVector<float> sparseVector in vectors)
+        {
+            placeholderValue.Values.Add(ByteString.CopyFrom(sparseVector.ToBytes()));
+        }
+    }
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.
