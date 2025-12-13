@@ -9,50 +9,25 @@ public class HybridSearchParameters
     internal List<string>? OutputFieldsInternal { get; private set; }
     internal List<string>? PartitionNamesInternal { get; private set; }
 
-    /// <summary>
-    /// An optional list of partitions to be searched in the collection.
-    /// </summary>
+    /// <inheritdoc cref="SearchParameters.PartitionNames"/>
     public IList<string> PartitionNames => PartitionNamesInternal ??= [];
 
-    /// <summary>
-    /// The names of fields to be returned from the search. Vector fields currently cannot be returned.
-    /// </summary>
+    /// <inheritdoc cref="SearchParameters.OutputFields"/>
     public IList<string> OutputFields => OutputFieldsInternal ??= [];
 
-    /// <summary>
-    /// The consistency level to be used in the search. Defaults to the collection's consistency level.
-    /// </summary>
-    /// <remarks>
-    /// For more details, see <see href="https://milvus.io/docs/consistency.md" />.
-    /// </remarks>
+    /// <inheritdoc cref="SearchParameters.ConsistencyLevel"/>
     public ConsistencyLevel? ConsistencyLevel { get; set; }
 
-    /// <summary>
-    /// If set, guarantee that the search operation will be performed after any updates up to the provided timestamp.
-    /// If a query node isn't yet up to date for the timestamp, it waits until the missing data is received.
-    /// If unset, the server executes the search immediately.
-    /// </summary>
+    /// <inheritdoc cref="SearchParameters.GuaranteeTimestamp"/>
     public ulong? GuaranteeTimestamp { get; set; }
 
-    /// <summary>
-    /// Specifies an optional time travel timestamp; the search will get results based on the data at that point in time.
-    /// </summary>
-    /// <remarks>
-    /// For more details, see <see href="https://milvus.io/docs/v2.1.x/timetravel.md"/>.
-    /// </remarks>
+    /// <inheritdoc cref="SearchParameters.TimeTravelTimestamp"/>
     public ulong? TimeTravelTimestamp { get; set; }
 
-    /// <summary>
-    /// Specifies the decimal place of the returned results.
-    /// </summary>
+    /// <inheritdoc cref="SearchParameters.RoundDecimal"/>
     public long? RoundDecimal { get; set; }
 
-    /// <summary>
-    /// Group search results by the specified field.
-    /// </summary>
-    /// <remarks>
-    /// See <see href="https://milvus.io/docs/grouping-search.md" /> for more information.
-    /// </remarks>
+    /// <inheritdoc cref="SearchParameters.GroupByField"/>
     public string? GroupByField { get; set; }
 
     /// <summary>

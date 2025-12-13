@@ -77,7 +77,7 @@ public class SearchParameters
     /// Group search results by the specified field.
     /// </summary>
     /// <remarks>
-    /// See <see href="https://milvus.io/docs/single-vector-search.md#Grouping-search" /> for more information.
+    /// See <see href="https://milvus.io/docs/grouping-search.md" /> for more information.
     /// </remarks>
     public string? GroupByField { get; set; }
 }
