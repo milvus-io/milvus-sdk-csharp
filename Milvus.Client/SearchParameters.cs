@@ -41,6 +41,15 @@ public class SearchParameters
     public ulong? GuaranteeTimestamp { get; set; }
 
     /// <summary>
+    /// A time period in milliseconds that can be tolerated before certain data become visible.
+    /// This is used in conjunction with <see cref="GuaranteeTimestamp"/> to control data visibility during searches.
+    /// </summary>
+    /// <remarks>
+    /// See <see href="https://milvus.io/docs/consistency.md" /> for more information.
+    /// </remarks>
+    public ulong? GracefulTime { get; set; }
+
+    /// <summary>
     /// Specifies an optional time travel timestamp; the search will get results based on the data at that point in
     /// time.
     /// </summary>
@@ -77,7 +86,27 @@ public class SearchParameters
     /// Group search results by the specified field.
     /// </summary>
     /// <remarks>
-    /// See <see href="https://milvus.io/docs/single-vector-search.md#Grouping-search" /> for more information.
+    /// See <see href="https://milvus.io/docs/grouping-search.md" /> for more information.
     /// </remarks>
     public string? GroupByField { get; set; }
+
+    /// <summary>
+    /// Specifies the desired number of entities to return per group. Used in conjunction with
+    /// <see cref="GroupByField"/>. If not set, the system defaults to returning one result per group.
+    /// </summary>
+    /// <remarks>
+    /// See <see href="https://milvus.io/docs/grouping-search.md" /> for more information.
+    /// </remarks>
+    public int? GroupSize { get; set; }
+
+    /// <summary>
+    /// Controls whether the system should strictly enforce the count set by <see cref="GroupSize"/>.
+    /// When <c>true</c>, the system will attempt to include the exact number of entities specified by
+    /// <see cref="GroupSize"/> in each group. When <c>false</c> (the default), the system prioritizes
+    /// meeting the number of groups specified by the limit parameter.
+    /// </summary>
+    /// <remarks>
+    /// See <see href="https://milvus.io/docs/grouping-search.md" /> for more information.
+    /// </remarks>
+    public bool? StrictGroupSize { get; set; }
 }
