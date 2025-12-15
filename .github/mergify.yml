@@ -1,7 +1,7 @@
 misc:
   - branch: &BRANCHES
-      #  In this pull request, the changes are based on the master branch
-      - &MASTER_BRANCH base=master
+      #  In this pull request, the changes are based on the main branch
+      - &MAIN_BRANCH base=main
       #  In this pull request, the changes are based on the 2.x branch
       - &2X_BRANCH base~=2\.\d
 
