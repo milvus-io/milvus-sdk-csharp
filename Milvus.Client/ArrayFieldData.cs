@@ -48,77 +48,80 @@ public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElem
             ArrayData = arrayArray
         };
 
+        bool hasNullArrays = Data.Contains(null);
         foreach (var array in Data)
         {
-            // Handle null arrays (array-level nullability)
-            if (array is null)
+            // Handle null arrays (array-level nullability) - only populate ValidData if there are nulls
+            if (hasNullArrays)
             {
-                arrayArray.Data.Add(new ScalarField());
-                continue;
+                if (array is null)
+                {
+                    fieldData.ValidData.Add(false);
+                    continue;
+                }
+
+                fieldData.ValidData.Add(true);
             }
 
             switch (ElementType)
             {
                 case MilvusDataType.Bool:
                     BoolArray boolData = new();
-                    boolData.Data.AddRange(array as IEnumerable<bool>);
+                    boolData.Data.AddRange((IEnumerable<bool>)array!);
                     arrayArray.Data.Add(new ScalarField { BoolData = boolData, });
                     break;
 
                 case MilvusDataType.Int8:
                     IntArray int8Data = new();
-                    var sbytes = array as IEnumerable<sbyte> ?? Enumerable.Empty<sbyte>();
-                    int8Data.Data.AddRange(sbytes.Select(x => (int) x));
+                    int8Data.Data.AddRange(((IEnumerable<sbyte>)array!).Select(x => (int) x));
                     arrayArray.Data.Add(new ScalarField { IntData = int8Data, });
                     break;
 
                 case MilvusDataType.Int16:
                     IntArray int16Data = new();
-                    var shorts = array as IEnumerable<short> ?? Enumerable.Empty<short>();
-                    int16Data.Data.AddRange(shorts.Select(x => (int) x));
+                    int16Data.Data.AddRange(((IEnumerable<short>)array!).Select(x => (int) x));
                     arrayArray.Data.Add(new ScalarField { IntData = int16Data, });
                     break;
 
                 case MilvusDataType.Int32:
                     IntArray int32Data = new();
-                    int32Data.Data.AddRange(array as IEnumerable<int>);
+                    int32Data.Data.AddRange((IEnumerable<int>)array!);
                     arrayArray.Data.Add(new ScalarField { IntData = int32Data, });
                     break;
 
                 case MilvusDataType.Int64:
                     LongArray int64Data = new();
-                    int64Data.Data.AddRange(array as IEnumerable<long>);
+                    int64Data.Data.AddRange((IEnumerable<long>)array!);
                     arrayArray.Data.Add(new ScalarField { LongData = int64Data, });
                     break;
 
                 case MilvusDataType.Float:
                     FloatArray floatData = new();
-                    floatData.Data.AddRange(array as IEnumerable<float>);
+                    floatData.Data.AddRange((IEnumerable<float>)array!);
                     arrayArray.Data.Add(new ScalarField { FloatData = floatData, });
                     break;
 
                 case MilvusDataType.Double:
                     DoubleArray doubleData = new();
-                    doubleData.Data.AddRange(array as IEnumerable<double>);
+                    doubleData.Data.AddRange((IEnumerable<double>)array!);
                     arrayArray.Data.Add(new ScalarField { DoubleData = doubleData, });
                     break;
 
                 case MilvusDataType.String:
                     StringArray stringData = new();
-                    stringData.Data.AddRange(array as IEnumerable<string>);
+                    stringData.Data.AddRange((IEnumerable<string>)array!);
                     arrayArray.Data.Add(new ScalarField { StringData = stringData, });
                     break;
 
                 case MilvusDataType.VarChar:
                     StringArray varcharData = new();
-                    varcharData.Data.AddRange(array as IEnumerable<string>);
+                    varcharData.Data.AddRange((IEnumerable<string>)array!);
                     arrayArray.Data.Add(new ScalarField { StringData = varcharData, });
                     break;
 
                 case MilvusDataType.Json:
                     JSONArray jsonData = new();
-                    var enumerable = array as IEnumerable<string> ?? Enumerable.Empty<string>();
-                    jsonData.Data.AddRange(enumerable.Select(ByteString.CopyFromUtf8));
+                    jsonData.Data.AddRange(((IEnumerable<string>)array!).Select(ByteString.CopyFromUtf8));
                     arrayArray.Data.Add(new ScalarField { JsonData = jsonData, });
                     break;
 

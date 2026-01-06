@@ -265,9 +265,8 @@ public partial class MilvusCollection
         return response.CompactionID;
     }
 
-    private static object? ConvertFromValueField(Grpc.ValueField valueField)
-    {
-        return valueField.DataCase switch
+    private static object? ConvertFromValueField(Grpc.ValueField valueField) =>
+        valueField.DataCase switch
         {
             Grpc.ValueField.DataOneofCase.BoolData => valueField.BoolData,
             Grpc.ValueField.DataOneofCase.IntData => valueField.IntData,
@@ -278,5 +277,4 @@ public partial class MilvusCollection
             Grpc.ValueField.DataOneofCase.BytesData => valueField.BytesData.ToByteArray(),
             _ => null
         };
-    }
 }

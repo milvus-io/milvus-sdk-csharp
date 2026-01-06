@@ -51,8 +51,9 @@ public sealed class FieldSchema
     /// <para>When explicitly set:</para>
     /// <list type="bullet">
     /// <item>nullable=true on non-nullable value types → throws ArgumentException</item>
+    /// <item>nullable=false on nullable value types → throws ArgumentException</item>
     /// <item>nullable=true on reference types or nullable value types → allowed</item>
-    /// <item>nullable=false → always allowed (forces non-nullable)</item>
+    /// <item>nullable=false on reference types or non-nullable value types → allowed</item>
     /// </list>
     /// </param>
     /// <param name="isPrimaryKey">Whether the field is a primary key.</param>
@@ -74,15 +75,21 @@ public sealed class FieldSchema
         object? defaultValue = null,
         string description = "")
     {
-        Type type = typeof(TData);
-        Type? underlyingType = System.Nullable.GetUnderlyingType(type);
+        Type? underlyingType = System.Nullable.GetUnderlyingType(typeof(TData));
         bool isNullableValueType = underlyingType is not null;
         bool shouldBeNullable = nullable ?? isNullableValueType;
 
-        if (nullable == true && !isNullableValueType && type.IsValueType)
+        if (nullable == true && typeof(TData).IsValueType && !isNullableValueType)
         {
             throw new ArgumentException(
-                $"Type {type.Name} cannot be null. Use a nullable value type (e.g., {type.Name}?) or remove the nullable parameter.",
+                $"Type {typeof(TData).Name} cannot be null. Use a nullable value type (e.g., {typeof(TData).Name}?) or remove the nullable parameter.",
+                nameof(nullable));
+        }
+
+        if (nullable == false && isNullableValueType)
+        {
+            throw new ArgumentException(
+                $"Type {typeof(TData).Name} is nullable but nullable=false was specified. Use the non-nullable type {underlyingType!.Name} instead.",
                 nameof(nullable));
         }
 

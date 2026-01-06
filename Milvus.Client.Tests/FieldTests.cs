@@ -268,10 +268,11 @@ public class FieldTests
     }
 
     [Fact]
-    public void FieldSchema_Create_with_explicit_nullable_false_on_nullable_type_sets_non_nullable()
+    public void FieldSchema_Create_with_explicit_nullable_false_on_nullable_type_throws()
     {
-        var field = FieldSchema.Create<int?>("nullable_int", nullable: false);
-        Assert.False(field.Nullable);
+        var exception = Assert.Throws<ArgumentException>(() =>
+            FieldSchema.Create<int?>("nullable_int", nullable: false));
+        Assert.Equal("nullable", exception.ParamName);
     }
 
     [Fact]
@@ -284,11 +285,12 @@ public class FieldTests
     }
 
     [Fact]
-    public void FieldSchema_Create_with_explicit_nullable_false_on_nullable_value_type_forces_non_nullable()
+    public void FieldSchema_Create_with_explicit_nullable_false_on_nullable_value_type_throws()
     {
-        // Even though int? is nullable, explicit nullable=false forces it to be non-nullable
-        var field = FieldSchema.Create<int?>("int_field", nullable: false);
-        Assert.False(field.Nullable);
+        var exception = Assert.Throws<ArgumentException>(() =>
+            FieldSchema.Create<int?>("int_field", nullable: false));
+        Assert.Equal("nullable", exception.ParamName);
+        Assert.Contains("nullable but nullable=false was specified", exception.Message);
     }
 
     [Fact]
