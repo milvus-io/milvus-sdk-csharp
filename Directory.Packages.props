@@ -15,7 +15,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageVersion Include="Testcontainers.Milvus" Version="4.8.1" />
+    <PackageVersion Include="Testcontainers.Milvus" Version="4.10.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="2.3.3" />
   </ItemGroup>
 </Project>
