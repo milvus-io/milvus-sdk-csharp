@@ -718,42 +718,340 @@ public class SearchQueryTests(
 
         var boolField = (FieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool");
         Assert.Equal(new[] { false, true }, boolField.Data);
+
         var int8Field = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int8");
         Assert.Equal(new[] { 1, 2 }, int8Field.Data);
+
         var int16Field = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int16");
         Assert.Equal(new[] { 1, 2 }, int16Field.Data);
+
         var int32Field = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int32");
         Assert.Equal(new[] { 1, 2 }, int32Field.Data);
+
         var int64Field = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "int64");
         Assert.Equal(new[] { 1L, 2L }, int64Field.Data);
+
         var floatField = (FieldData<float>)results.FieldsData.Single(f => f.FieldName == "float");
         Assert.Equal(new[] { 1.1f, 2.2f }, floatField.Data);
+
         var doubleField = (FieldData<double>)results.FieldsData.Single(f => f.FieldName == "double");
         Assert.Equal(new[] { 1.1, 2.2 }, doubleField.Data);
+
         var varcharField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar");
         Assert.Equal(new[] { "one", "two" }, varcharField.Data);
+
         var boolArrayField = (ArrayFieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool_array");
         Assert.Equal(new[] { new[] { true }, new bool[] { } }, boolArrayField.Data);
+
         var int8ArrayField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int8_array");
         Assert.Equal(new[] { new[] { 1 }, new int[] { } }, int8ArrayField.Data);
+
         var int16ArrayField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int16_array");
         Assert.Equal(new[] { new[] { 1 }, new int[] { } }, int16ArrayField.Data);
+
         var int32ArrayField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int32_array");
         Assert.Equal(new[] { new[] { 1 }, new int[] { } }, int32ArrayField.Data);
+
         var int64ArrayField = (ArrayFieldData<long>)results.FieldsData.Single(f => f.FieldName == "int64_array");
         Assert.Equal(new[] { new[] { 1L }, new long[] { } }, int64ArrayField.Data);
+
         var floatArrayField = (ArrayFieldData<float>)results.FieldsData.Single(f => f.FieldName == "float_array");
         Assert.Equal(new[] { new[] { 1.1f }, new float[] { } }, floatArrayField.Data);
+
         var doubleArrayField = (ArrayFieldData<double>)results.FieldsData.Single(f => f.FieldName == "double_array");
         Assert.Equal(new[] { new[] { 1.1 }, new double[] { } }, doubleArrayField.Data);
+
         var varcharArrayField = (ArrayFieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar_array");
         Assert.Equal(new[] { new[] { "one" }, new string[] { } }, varcharArrayField.Data);
+
         var jsonField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "json");
         Assert.Equal(new[] { "{}", "{\"a\":1}" }, jsonField.Data);
         var floatVectorField = (FloatVectorFieldData)results.FieldsData.Single(f => f.FieldName == "float_vector");
         Assert.Equal((ReadOnlyMemory<float>)new[] { 1.1f, 2.2f }, floatVectorField.Data[0]);
         Assert.Equal((ReadOnlyMemory<float>)new[] { 3.3f, 4.4f }, floatVectorField.Data[1]);
     }
+
+    [Fact]
+    public async Task Search_with_nullable_types()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            return;
+        }
+
+        var collection = Client.GetCollection("nullable_types");
+        await collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("key", isPrimaryKey: true),
+                FieldSchema.Create<bool?>("bool_nullable"),
+                FieldSchema.Create<sbyte?>("int8_nullable"),
+                FieldSchema.Create<short?>("int16_nullable"),
+                FieldSchema.Create<int?>("int32_nullable"),
+                FieldSchema.Create<long?>("int64_nullable"),
+                FieldSchema.Create<float?>("float_nullable"),
+                FieldSchema.Create<double?>("double_nullable"),
+                FieldSchema.CreateVarchar("varchar_nullable", maxLength: 10, nullable: true),
+                FieldSchema.CreateArray<bool>("bool_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateArray<sbyte>("int8_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateArray<short>("int16_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateArray<int>("int32_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateArray<long>("int64_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateArray<float>("float_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateArray<double>("double_array_nullable", maxCapacity: 3, nullable: true),
+                FieldSchema.CreateVarcharArray("varchar_array_nullable", maxCapacity: 3, maxLength: 10, nullable: true),
+                FieldSchema.CreateFloatVector("float_vector", dimension: 2),
+            });
+
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+
+        await collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("key", new[] { 1L, 2L, 3L }),
+                FieldData.Create("bool_nullable", new bool?[] { true, null, false }),
+                FieldData.Create("int8_nullable", new sbyte?[] { 1, null, 2 }),
+                FieldData.Create("int16_nullable", new short?[] { 1, null, 2 }),
+                FieldData.Create("int32_nullable", new int?[] { 1, null, 2 }),
+                FieldData.Create("int64_nullable", new long?[] { 1L, null, 2L }),
+                FieldData.Create("float_nullable", new float?[] { 1.1f, null, 2.2f }),
+                FieldData.Create("double_nullable", new double?[] { 1.1, null, 2.2 }),
+                FieldData.CreateVarChar("varchar_nullable", new[] { "one", null, "two" }),
+                FieldData.CreateArray("bool_array_nullable", new bool[]?[] { new[] { true, false }, null, [] }),
+                FieldData.CreateArray("int8_array_nullable", new sbyte[]?[] { new sbyte[] { 1, 2 }, null, [] }),
+                FieldData.CreateArray("int16_array_nullable", new short[]?[] { new short[] { 1, 2 }, null, [] }),
+                FieldData.CreateArray("int32_array_nullable", new int[]?[] { new[] { 1, 2 }, null, [] }),
+                FieldData.CreateArray("int64_array_nullable", new long[]?[] { new[] { 1L, 2L }, null, [] }),
+                FieldData.CreateArray("float_array_nullable", new float[]?[] { new[] { 1.1f, 2.2f }, null, [] }),
+                FieldData.CreateArray("double_array_nullable", new double[]?[] { new[] { 1.1, 2.2 }, null, [] }),
+                FieldData.CreateArray("varchar_array_nullable", new string[]?[] { new[] { "a", "b" }, null, [] }),
+                FieldData.CreateFloatVector("float_vector", [(float[])[1.1f, 2.2f], (float[])[3.3f, 4.4f], (float[])[5.5f, 6.6f]]),
+            });
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await collection.SearchAsync(
+            "float_vector",
+            new[] { (ReadOnlyMemory<float>)new[] { 1.1f, 2.2f } },
+            SimilarityMetricType.L2,
+            3,
+            new SearchParameters
+            {
+                OutputFields =
+                {
+                    "bool_nullable",
+                    "int8_nullable",
+                    "int16_nullable",
+                    "int32_nullable",
+                    "int64_nullable",
+                    "float_nullable",
+                    "double_nullable",
+                    "varchar_nullable",
+                    "bool_array_nullable",
+                    "int8_array_nullable",
+                    "int16_array_nullable",
+                    "int32_array_nullable",
+                    "int64_array_nullable",
+                    "float_array_nullable",
+                    "double_array_nullable",
+                    "varchar_array_nullable",
+                    "float_vector",
+                },
+            });
+
+        Assert.Equal(17, results.FieldsData.Count);
+
+        Assert.Equal(new[] { 1L, 2L, 3L }, results.Ids.LongIds);
+
+        var boolNullableField = (FieldData<bool?>)results.FieldsData.Single(f => f.FieldName == "bool_nullable");
+        // Results order: key=1 (bool=true), key=2 (bool=null), key=3 (bool=false)
+        Assert.Equal(new bool?[] { true, null, false }, boolNullableField.Data);
+
+        var int8NullableField = (FieldData<int?>)results.FieldsData.Single(f => f.FieldName == "int8_nullable");
+        Assert.Equal(new int?[] { 1, null, 2 }, int8NullableField.Data);
+
+        var int16NullableField = (FieldData<int?>)results.FieldsData.Single(f => f.FieldName == "int16_nullable");
+        Assert.Equal(new int?[] { 1, null, 2 }, int16NullableField.Data);
+
+        var int32NullableField = (FieldData<int?>)results.FieldsData.Single(f => f.FieldName == "int32_nullable");
+        Assert.Equal(new int?[] { 1, null, 2 }, int32NullableField.Data);
+
+        var int64NullableField = (FieldData<long?>)results.FieldsData.Single(f => f.FieldName == "int64_nullable");
+        Assert.Equal(new long?[] { 1L, null, 2L }, int64NullableField.Data);
+
+        var floatNullableField = (FieldData<float?>)results.FieldsData.Single(f => f.FieldName == "float_nullable");
+        Assert.Equal(new float?[] { 1.1f, null, 2.2f }, floatNullableField.Data);
+
+        var doubleNullableField = (FieldData<double?>)results.FieldsData.Single(f => f.FieldName == "double_nullable");
+        Assert.Equal(new double?[] { 1.1, null, 2.2 }, doubleNullableField.Data);
+
+        var varcharNullableField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar_nullable");
+        Assert.Collection(varcharNullableField.Data,
+            s => Assert.Equal("one", s),
+            s => Assert.Null(s),
+            s => Assert.Equal("two", s));
+
+        var boolArrayNullableField = (ArrayFieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool_array_nullable");
+        Assert.Collection(boolArrayNullableField.Data,
+            arr => Assert.Equal(new[] { true, false }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var int8ArrayNullableField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int8_array_nullable");
+        Assert.Collection(int8ArrayNullableField.Data,
+            arr => Assert.Equal(new[] { 1, 2 }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var int16ArrayNullableField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int16_array_nullable");
+        Assert.Collection(int16ArrayNullableField.Data,
+            arr => Assert.Equal(new[] { 1, 2 }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var int32ArrayNullableField = (ArrayFieldData<int>)results.FieldsData.Single(f => f.FieldName == "int32_array_nullable");
+        Assert.Collection(int32ArrayNullableField.Data,
+            arr => Assert.Equal(new[] { 1, 2 }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var int64ArrayNullableField = (ArrayFieldData<long>)results.FieldsData.Single(f => f.FieldName == "int64_array_nullable");
+        Assert.Collection(int64ArrayNullableField.Data,
+            arr => Assert.Equal(new[] { 1L, 2L }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var floatArrayNullableField = (ArrayFieldData<float>)results.FieldsData.Single(f => f.FieldName == "float_array_nullable");
+        Assert.Collection(floatArrayNullableField.Data,
+            arr => Assert.Equal(new[] { 1.1f, 2.2f }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var doubleArrayNullableField = (ArrayFieldData<double>)results.FieldsData.Single(f => f.FieldName == "double_array_nullable");
+        Assert.Collection(doubleArrayNullableField.Data,
+            arr => Assert.Equal(new[] { 1.1, 2.2 }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var varcharArrayNullableField = (ArrayFieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar_array_nullable");
+        Assert.Collection(varcharArrayNullableField.Data,
+            arr => Assert.Equal(new[] { "a", "b" }, arr),
+            arr => Assert.Null(arr),
+            arr => Assert.Empty(arr!));
+
+        var floatVectorField = (FloatVectorFieldData)results.FieldsData.Single(f => f.FieldName == "float_vector");
+        Assert.Equal((ReadOnlyMemory<float>)new[] { 1.1f, 2.2f }, floatVectorField.Data[0]);
+        Assert.Equal((ReadOnlyMemory<float>)new[] { 3.3f, 4.4f }, floatVectorField.Data[1]);
+        Assert.Equal((ReadOnlyMemory<float>)new[] { 5.5f, 6.6f }, floatVectorField.Data[2]);
+    }
+
+    [Fact]
+    public async Task Search_with_default_values()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            return;
+        }
+
+        var collection = Client.GetCollection("default_values_test");
+        await collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.Create<bool>("bool_with_default", defaultValue: true),
+                FieldSchema.Create<int>("int_with_default", defaultValue: 42),
+                FieldSchema.Create<long>("long_with_default", defaultValue: 100L),
+                FieldSchema.Create<float>("float_with_default", defaultValue: 3.14f),
+                FieldSchema.Create<double>("double_with_default", defaultValue: 2.71),
+                FieldSchema.CreateVarchar("varchar_with_default", maxLength: 50, defaultValue: "default_string"),
+                FieldSchema.Create<bool?>("bool_nullable_with_default", defaultValue: false),
+                FieldSchema.Create<int?>("int_nullable_with_default", defaultValue: 99),
+                FieldSchema.Create<int?>("int_nullable_default_null"),
+                FieldSchema.CreateVarchar("varchar_nullable_default_null", maxLength: 50, nullable: true),
+                FieldSchema.CreateFloatVector("float_vector", dimension: 2),
+            });
+
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+
+        // Insert data WITHOUT specifying the fields with default values
+        await collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L }),
+                FieldData.CreateFloatVector("float_vector", new[]
+                {
+                    (ReadOnlyMemory<float>)new[] { 1f, 2f },
+                    (ReadOnlyMemory<float>)new[] { 3f, 4f },
+                }),
+            });
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await collection.SearchAsync(
+            "float_vector",
+            new[] { (ReadOnlyMemory<float>)new[] { 1f, 2f } },
+            SimilarityMetricType.L2,
+            2,
+            new SearchParameters
+            {
+                OutputFields =
+                {
+                    "bool_with_default",
+                    "int_with_default",
+                    "long_with_default",
+                    "float_with_default",
+                    "double_with_default",
+                    "varchar_with_default",
+                    "bool_nullable_with_default",
+                    "int_nullable_with_default",
+                    "int_nullable_default_null",
+                    "varchar_nullable_default_null",
+                },
+            });
+
+        Assert.Equal(10, results.FieldsData.Count);
+
+        // Verify default values were applied
+        var boolField = (FieldData<bool>)results.FieldsData.Single(f => f.FieldName == "bool_with_default");
+        Assert.Equal(new[] { true, true }, boolField.Data);
+
+        var intField = (FieldData<int>)results.FieldsData.Single(f => f.FieldName == "int_with_default");
+        Assert.Equal(new[] { 42, 42 }, intField.Data);
+
+        var longField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "long_with_default");
+        Assert.Equal(new[] { 100L, 100L }, longField.Data);
+
+        var floatField = (FieldData<float>)results.FieldsData.Single(f => f.FieldName == "float_with_default");
+        Assert.Equal(new[] { 3.14f, 3.14f }, floatField.Data);
+
+        var doubleField = (FieldData<double>)results.FieldsData.Single(f => f.FieldName == "double_with_default");
+        Assert.Equal(new[] { 2.71, 2.71 }, doubleField.Data);
+
+        var varcharField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar_with_default");
+        Assert.Equal(new[] { "default_string", "default_string" }, varcharField.Data);
+
+        var boolNullableField = (FieldData<bool?>)results.FieldsData.Single(f => f.FieldName == "bool_nullable_with_default");
+        Assert.Equal(new bool?[] { false, false }, boolNullableField.Data);
+
+        var intNullableField = (FieldData<int?>)results.FieldsData.Single(f => f.FieldName == "int_nullable_with_default");
+        Assert.Equal(new int?[] { 99, 99 }, intNullableField.Data);
+
+        var intNullableDefaultNullField = (FieldData<int?>)results.FieldsData.Single(f => f.FieldName == "int_nullable_default_null");
+        Assert.Equal(new int?[] { null, null }, intNullableDefaultNullField.Data);
+
+        var varcharNullableDefaultNullField = (FieldData<string>)results.FieldsData.Single(f => f.FieldName == "varchar_nullable_default_null");
+        Assert.Collection(varcharNullableDefaultNullField.Data,
+            s => Assert.Null(s),
+            s => Assert.Null(s));
+        }
 
     [Fact]
     public Task Search_with_wrong_metric_type_throws()

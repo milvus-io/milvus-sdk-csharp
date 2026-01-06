@@ -222,6 +222,99 @@ public class FieldTests
     }
 
     [Fact]
+    public void FieldSchema_Create_with_nullable_value_type_infers_nullable()
+    {
+        var field = FieldSchema.Create<int?>("nullable_int");
+        Assert.True(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_non_nullable_value_type_infers_non_nullable()
+    {
+        var field = FieldSchema.Create<int>("non_nullable_int");
+        Assert.False(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_reference_type_defaults_to_non_nullable()
+    {
+        // In a nullable context, string (without ?) is non-nullable
+        // Create<string> should default to nullable=false
+        var field = FieldSchema.Create<string>("non_nullable_string");
+        Assert.False(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_reference_type_explicit_nullable_false_sets_non_nullable()
+    {
+        var field = FieldSchema.Create<string>("non_nullable_string", nullable: false);
+        Assert.False(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_reference_type_explicit_nullable_true_sets_nullable()
+    {
+        // When explicitly setting nullable: true, the field becomes nullable
+        // This is valid for reference types regardless of compile-time annotation
+        var field = FieldSchema.Create<string>("nullable_string", nullable: true);
+        Assert.True(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_explicit_nullable_true_sets_nullable()
+    {
+        var field = FieldSchema.Create<int?>("nullable_int", nullable: true);
+        Assert.True(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_explicit_nullable_false_on_nullable_type_throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            FieldSchema.Create<int?>("nullable_int", nullable: false));
+        Assert.Equal("nullable", exception.ParamName);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_explicit_nullable_true_on_non_nullable_value_type_throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            FieldSchema.Create<int>("non_nullable_int", nullable: true));
+        Assert.Equal("nullable", exception.ParamName);
+        Assert.Contains("cannot be null", exception.Message);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_explicit_nullable_false_on_nullable_value_type_throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            FieldSchema.Create<int?>("int_field", nullable: false));
+        Assert.Equal("nullable", exception.ParamName);
+        Assert.Contains("nullable but nullable=false was specified", exception.Message);
+    }
+
+    [Fact]
+    public void FieldSchema_Create_with_explicit_nullable_false_on_reference_type_sets_non_nullable()
+    {
+        var field = FieldSchema.Create<string>("string_field", nullable: false);
+        Assert.False(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_CreateVarchar_with_nullable_true_sets_nullable()
+    {
+        var field = FieldSchema.CreateVarchar("nullable_varchar", maxLength: 100, nullable: true);
+        Assert.True(field.Nullable);
+    }
+
+    [Fact]
+    public void FieldSchema_CreateArray_with_nullable_true_sets_nullable()
+    {
+        var field = FieldSchema.CreateArray<int>("nullable_array", maxCapacity: 10, nullable: true);
+        Assert.True(field.Nullable);
+    }
+
+    [Fact]
     public void CreateSparseFloatVectorTest()
     {
         var sparseVectors = new[]
