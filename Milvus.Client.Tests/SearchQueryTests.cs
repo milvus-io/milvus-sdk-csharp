@@ -952,6 +952,11 @@ public class SearchQueryTests(
     [Fact]
     public async Task Search_with_default_values()
     {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            return;
+        }
+
         var collection = Client.GetCollection("default_values_test");
         await collection.DropAsync();
         await Client.CreateCollectionAsync(
