@@ -256,25 +256,25 @@ public partial class MilvusClient
         switch (dataType)
         {
             case MilvusDataType.Bool:
-                valueField.BoolData = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+                valueField.BoolData = (bool)value;
                 break;
             case MilvusDataType.Int8:
             case MilvusDataType.Int16:
             case MilvusDataType.Int32:
-                valueField.IntData = Convert.ToInt32(value, CultureInfo.InvariantCulture);
+                valueField.IntData = (int)value;
                 break;
             case MilvusDataType.Int64:
-                valueField.LongData = Convert.ToInt64(value, CultureInfo.InvariantCulture);
+                valueField.LongData = (long)value;
                 break;
             case MilvusDataType.Float:
-                valueField.FloatData = Convert.ToSingle(value, CultureInfo.InvariantCulture);
+                valueField.FloatData = (float)value;
                 break;
             case MilvusDataType.Double:
-                valueField.DoubleData = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                valueField.DoubleData = (double)value;
                 break;
             case MilvusDataType.String:
             case MilvusDataType.VarChar:
-                valueField.StringData = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
+                valueField.StringData = (string)value;
                 break;
             default:
                 throw new ArgumentException(
