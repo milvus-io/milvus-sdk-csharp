@@ -42,15 +42,16 @@ public partial class MilvusCollection
             FieldSchema milvusField = new(
                 grpcField.FieldID,
                 grpcField.Name,
-                (MilvusDataType) grpcField.DataType,
-                (MilvusDataType) grpcField.ElementType,
-                (FieldState) grpcField.State,
+                (MilvusDataType)grpcField.DataType,
+                (MilvusDataType)grpcField.ElementType,
+                (FieldState)grpcField.State,
                 grpcField.IsPrimaryKey,
                 grpcField.AutoID,
                 grpcField.IsPartitionKey,
                 grpcField.IsDynamic,
+                grpcField.Description,
                 grpcField.Nullable,
-                grpcField.Description);
+                grpcField.DefaultValue is not null ? ConvertFromValueField(grpcField.DefaultValue) : null);
 
             foreach (Grpc.KeyValuePair parameter in grpcField.TypeParams)
             {
@@ -68,11 +69,6 @@ public partial class MilvusCollection
                         milvusField.Dimension = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
                 }
-            }
-
-            if (grpcField.DefaultValue is not null)
-            {
-                milvusField.DefaultValue = ConvertFromValueField(grpcField.DefaultValue);
             }
 
             milvusCollectionSchema.Fields.Add(milvusField);

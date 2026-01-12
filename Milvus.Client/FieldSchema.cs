@@ -247,8 +247,9 @@ public sealed class FieldSchema
         bool autoId,
         bool isPartitionKey,
         bool isDynamic,
+        string description,
         bool nullable,
-        string description)
+        object? defaultValue)
     {
         FieldId = id;
         Name = name;
@@ -259,8 +260,9 @@ public sealed class FieldSchema
         AutoId = autoId;
         IsPartitionKey = isPartitionKey;
         IsDynamic = isDynamic;
-        Nullable = nullable;
         Description = description;
+        Nullable = nullable;
+        DefaultValue = defaultValue;
     }
 
     /// <summary>

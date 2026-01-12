@@ -178,6 +178,32 @@ public class CollectionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Describe_returns_nullable_and_default_value()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            return;
+        }
+
+        var collection = Client.GetCollection(CollectionName);
+        await collection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.Create<int?>("nullable_with_default", nullable: true, defaultValue: 42),
+                FieldSchema.CreateFloatVector("vector", dimension: 2),
+            });
+
+        var description = await collection.DescribeAsync();
+
+        var field = description.Schema.Fields.Single(f => f.Name == "nullable_with_default");
+        Assert.True(field.Nullable);
+        Assert.Equal(42, field.DefaultValue);
+    }
+
+    [Fact]
     public async Task Rename()
     {
         string renamedCollectionName = "RenamedCollection";
