@@ -145,7 +145,7 @@ public partial class MilvusClient
         await InvokeAsync(GrpcClient.CreateCollectionAsync, request, cancellationToken).ConfigureAwait(false);
 
         return new MilvusCollection(this, collectionName);
-     }
+    }
 
     /// <summary>
     /// Checks whether a collection exists.

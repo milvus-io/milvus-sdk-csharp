@@ -3,7 +3,7 @@
 /// <summary>
 /// Array Field
 /// </summary>
-public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElementData>>
+public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElementData>?>
 {
     /// <summary>
     /// Construct an array field
@@ -51,7 +51,7 @@ public sealed class ArrayFieldData<TElementData> : FieldData<IReadOnlyList<TElem
         bool hasNullArrays = Data.Contains(null);
         foreach (var array in Data)
         {
-            // Handle null arrays (array-level nullability) - only populate ValidData if there are nulls
+            // Handle null arrays (array-level nullability), only populate ValidData if there are nulls.
             if (hasNullArrays)
             {
                 if (array is null)
