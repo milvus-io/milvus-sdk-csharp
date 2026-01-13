@@ -342,11 +342,11 @@ public abstract class FieldData
     /// <param name="data">Data in this field. Values can be null if the field is nullable.</param>
     /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
-    public static FieldData<string> CreateVarChar(
+    public static FieldData<string?> CreateVarChar(
         string fieldName,
         IReadOnlyList<string?> data,
         bool isDynamic = false)
-        => new(fieldName, data!, MilvusDataType.VarChar, isDynamic);
+        => new(fieldName, data, MilvusDataType.VarChar, isDynamic);
 
     /// <summary>
     /// Create array of elements.
@@ -355,7 +355,7 @@ public abstract class FieldData
     /// <param name="data">Data in this field. Individual arrays can be null if the field is nullable.</param>
     /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
-    public static ArrayFieldData<TElement> CreateArray<TElement>(
+    public static ArrayFieldData<TElement?> CreateArray<TElement>(
         string fieldName,
         IReadOnlyList<IReadOnlyList<TElement>?> data,
         bool isDynamic = false)

@@ -192,15 +192,20 @@ public class CollectionTests : IAsyncLifetime
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
-                FieldSchema.Create<int?>("nullable_with_default", nullable: true, defaultValue: 42),
+                FieldSchema.Create<int?>("nullable_int_with_default", nullable: true, defaultValue: 42),
+                FieldSchema.Create<float>("normal_float"),
                 FieldSchema.CreateFloatVector("vector", dimension: 2),
             });
 
         var description = await collection.DescribeAsync();
 
-        var field = description.Schema.Fields.Single(f => f.Name == "nullable_with_default");
-        Assert.True(field.Nullable);
-        Assert.Equal(42, field.DefaultValue);
+        var intField = description.Schema.Fields.Single(f => f.Name == "nullable_int_with_default");
+        Assert.True(intField.Nullable);
+        Assert.Equal(42, intField.DefaultValue);
+
+        var floatField = description.Schema.Fields.Single(f => f.Name == "normal_float");
+        Assert.False(floatField.Nullable);
+        Assert.Null(floatField.DefaultValue);
     }
 
     [Fact]
