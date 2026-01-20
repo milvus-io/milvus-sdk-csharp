@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 
 namespace Milvus.Client;
 
@@ -141,7 +142,7 @@ public partial class MilvusClient
                 grpcField.TypeParams.Add(new Grpc.KeyValuePair
                 {
                     Key = Constants.AnalyzerParams,
-                    Value = field.AnalyzerParams
+                    Value = JsonSerializer.Serialize(field.AnalyzerParams)
                 });
             }
 

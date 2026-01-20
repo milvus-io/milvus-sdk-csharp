@@ -116,7 +116,7 @@ public sealed class FieldSchema
     /// Whether to enable the analyzer for this field. Required for BM25 full-text search input fields.
     /// </param>
     /// <param name="analyzerParams">
-    /// Optional analyzer parameters as a JSON string. For example: <c>{"type": "english"}</c>.
+    /// Optional analyzer parameters. For example: <c>new Dictionary&lt;string, object&gt; { ["type"] = "english" }</c>.
     /// </param>
     public static FieldSchema CreateVarchar(
         string name,
@@ -128,7 +128,7 @@ public sealed class FieldSchema
         bool nullable = false,
         string? defaultValue = null,
         bool enableAnalyzer = false,
-        string? analyzerParams = null)
+        IReadOnlyDictionary<string, object>? analyzerParams = null)
         => new(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, description, nullable, defaultValue)
         {
             MaxLength = maxLength,
@@ -382,12 +382,12 @@ public sealed class FieldSchema
     public bool EnableAnalyzer { get; set; }
 
     /// <summary>
-    /// Optional analyzer parameters as a JSON string. For example: <c>{"type": "english"}</c>.
+    /// Optional analyzer parameters. For example: <c>new Dictionary&lt;string, object&gt; { ["type"] = "english" }</c>.
     /// </summary>
     /// <remarks>
     /// This property is only applicable when <see cref="EnableAnalyzer" /> is set to true.
     /// </remarks>
-    public string? AnalyzerParams { get; set; }
+    public IReadOnlyDictionary<string, object>? AnalyzerParams { get; set; }
 
     /// <summary>
     /// Whether this field is the output of a function and should not be provided during insertion.

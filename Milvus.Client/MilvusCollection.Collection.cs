@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 
 namespace Milvus.Client;
 
@@ -66,7 +67,7 @@ public partial class MilvusCollection
                         break;
 
                     case Constants.AnalyzerParams:
-                        milvusField.AnalyzerParams = parameter.Value;
+                        milvusField.AnalyzerParams = JsonSerializer.Deserialize<Dictionary<string, object>>(parameter.Value);
                         break;
                 }
             }

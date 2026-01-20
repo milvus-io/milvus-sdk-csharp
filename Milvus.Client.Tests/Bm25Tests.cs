@@ -400,6 +400,79 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
     }
 
     [Fact]
+    public async Task Bm25_with_english_analyzer()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            return;
+        }
+
+        MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_english_analyzer));
+        await collection.DropAsync();
+
+        var schema = new CollectionSchema
+        {
+            Fields =
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar(
+                    "text",
+                    maxLength: 1000,
+                    enableAnalyzer: true,
+                    analyzerParams: new Dictionary<string, object> { ["type"] = "english" }),
+                FieldSchema.CreateSparseFloatVector("sparse_vector")
+            },
+            Functions =
+            {
+                FunctionSchema.CreateBm25("bm25_fn", "text", "sparse_vector")
+            }
+        };
+
+        await Client.CreateCollectionAsync(collection.Name, schema);
+
+        var description = await collection.DescribeAsync();
+        var textField = description.Schema.Fields.Single(f => f.Name == "text");
+        Assert.True(textField.EnableAnalyzer);
+        Assert.NotNull(textField.AnalyzerParams);
+        Assert.Equal("english", textField.AnalyzerParams["type"]?.ToString());
+
+        await collection.CreateIndexAsync(
+            "sparse_vector",
+            IndexType.SparseInvertedIndex,
+            SimilarityMetricType.Bm25);
+
+        await collection.InsertAsync(
+        [
+            FieldData.Create("id", new[] { 1L, 2L, 3L }),
+            FieldData.CreateVarChar("text", new[]
+            {
+                "The cats are running quickly",
+                "A dog runs in the park",
+                "Hello world"
+            })
+        ]);
+
+        await collection.LoadAsync();
+        await collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100),
+            timeout: TimeSpan.FromMinutes(1));
+
+        // English analyzer stems words, so "running" should match "runs"
+        var results = await collection.SearchAsync(
+            "sparse_vector",
+            new[] { "running" },
+            limit: 3,
+            new SearchParameters
+            {
+                ConsistencyLevel = ConsistencyLevel.Strong,
+                OutputFields = { "text" }
+            });
+
+        Assert.NotNull(results.Ids.LongIds);
+        Assert.True(results.Ids.LongIds.Count >= 2);
+    }
+
+    [Fact]
     public async Task Bm25_with_custom_index_parameters()
     {
         if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
