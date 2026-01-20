@@ -28,15 +28,7 @@ public partial class MilvusCollection
             throw new MilvusException(MilvusErrorCode.CollectionNotFound, response.Status.Reason);
         }
 
-        CollectionSchema milvusCollectionSchema = new()
-        {
-            Name = response.Schema.Name,
-            Description = response.Schema.Description
-
-            // Note that an AutoId previously existed at the schema level, but is not deprecated.
-            // AutoId is now only defined at the field level.
-        };
-
+        List<FieldSchema> fields = new();
         foreach (Grpc.FieldSchema grpcField in response.Schema.Fields)
         {
             FieldSchema milvusField = new(
@@ -68,11 +60,44 @@ public partial class MilvusCollection
                     case Constants.VectorDim:
                         milvusField.Dimension = int.Parse(parameter.Value, CultureInfo.InvariantCulture);
                         break;
+
+                    case Constants.EnableAnalyzer:
+                        milvusField.EnableAnalyzer = parameter.Value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        break;
+
+                    case Constants.AnalyzerParams:
+                        milvusField.AnalyzerParams = parameter.Value;
+                        break;
                 }
             }
 
-            milvusCollectionSchema.Fields.Add(milvusField);
+            milvusField.IsFunctionOutput = grpcField.IsFunctionOutput;
+
+            fields.Add(milvusField);
         }
+
+        List<FunctionSchema> functions = new();
+        foreach (Grpc.FunctionSchema grpcFunction in response.Schema.Functions)
+        {
+            var parameters = grpcFunction.Params.Select(p => new KeyValuePair<string, string>(p.Key, p.Value));
+            functions.Add(new FunctionSchema(
+                grpcFunction.Id,
+                grpcFunction.Name,
+                (FunctionType)(int)grpcFunction.Type,
+                grpcFunction.InputFieldNames,
+                grpcFunction.OutputFieldNames,
+                grpcFunction.Description,
+                parameters));
+        }
+
+        CollectionSchema milvusCollectionSchema = new(fields, functions)
+        {
+            Name = response.Schema.Name,
+            Description = response.Schema.Description
+
+            // Note that an AutoId previously existed at the schema level, but is not deprecated.
+            // AutoId is now only defined at the field level.
+        };
 
         Dictionary<string, IList<int>> startPositions = response.StartPositions.ToDictionary(
             kdp => kdp.Key,

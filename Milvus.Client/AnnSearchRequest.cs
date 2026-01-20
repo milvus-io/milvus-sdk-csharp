@@ -116,3 +116,42 @@ public sealed class SparseVectorAnnSearchRequest<T> : AnnSearchRequest
     /// </summary>
     public IReadOnlyList<MilvusSparseVector<T>> Vectors { get; }
 }
+
+/// <summary>
+/// Represents an ANN search request for full-text search using BM25.
+/// </summary>
+/// <remarks>
+/// This request type is used for hybrid search that combines BM25 full-text search
+/// with dense vector search. The text queries are automatically converted to sparse
+/// vectors by the Milvus server using the BM25 function defined in the collection schema.
+/// </remarks>
+public sealed class TextAnnSearchRequest : AnnSearchRequest
+{
+    /// <summary>
+    /// Creates a new ANN search request for BM25 full-text search.
+    /// </summary>
+    /// <param name="vectorFieldName">
+    /// The name of the sparse vector field (output field of the BM25 function) to search in.
+    /// </param>
+    /// <param name="texts">The text queries to search for.</param>
+    /// <param name="limit">The maximum number of results to return.</param>
+    public TextAnnSearchRequest(
+        string vectorFieldName,
+        IReadOnlyList<string> texts,
+        int limit)
+        : base(vectorFieldName, SimilarityMetricType.Bm25, limit)
+    {
+        Verify.NotNull(texts);
+        if (texts.Count == 0)
+        {
+            throw new ArgumentException("At least one text query must be provided", nameof(texts));
+        }
+
+        Texts = texts;
+    }
+
+    /// <summary>
+    /// The text queries to search for.
+    /// </summary>
+    public IReadOnlyList<string> Texts { get; }
+}
