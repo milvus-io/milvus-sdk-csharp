@@ -9,7 +9,6 @@ namespace Milvus.Client;
 /// </summary>
 /// <typeparam name="T">The type of the values in the vector.</typeparam>
 public readonly struct MilvusSparseVector<T> : IEquatable<MilvusSparseVector<T>>
-    where T : IEquatable<T>
 {
     private readonly ReadOnlyMemory<int> _indices;
     private readonly ReadOnlyMemory<T> _values;
@@ -62,8 +61,34 @@ public readonly struct MilvusSparseVector<T> : IEquatable<MilvusSparseVector<T>>
 
     /// <inheritdoc/>
     public bool Equals(MilvusSparseVector<T> other)
-        => _indices.Span.SequenceEqual(other._indices.Span)
-           && _values.Span.SequenceEqual(other._values.Span);
+    {
+#if NET8_0_OR_GREATER
+        return _indices.Span.SequenceEqual(other._indices.Span)
+            && _values.Span.SequenceEqual(other._values.Span);
+#else // Older versions only have a SequenceEqual with an IEquatable constraint.
+        if (!_indices.Span.SequenceEqual(other._indices.Span))
+        {
+            return false;
+        }
+
+        var values = _values.Span;
+        var otherValues = other._values.Span;
+        if (values.Length != otherValues.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < values.Length; i += 1)
+        {
+            if (!values[i]!.Equals(otherValues[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+#endif
+    }
 
     /// <summary>Indicates whether the two vectors are equal.</summary>
     /// <param name="left">The first object to compare.</param>

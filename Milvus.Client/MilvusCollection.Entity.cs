@@ -239,24 +239,164 @@ public partial class MilvusCollection
         int limit,
         SearchParameters? parameters = null,
         CancellationToken cancellationToken = default)
-        where T : unmanaged, IEquatable<T>
     {
         Verify.NotNullOrWhiteSpace(vectorFieldName);
         Verify.NotNull(vectors);
 
-        Grpc.PlaceholderValue placeholderValue = new()
-        {
-            Tag = Constants.VectorTag,
-            Type = Grpc.PlaceholderType.SparseFloatVector
-        };
+        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
 
-        foreach (MilvusSparseVector<T> sparseVector in vectors)
+        switch (vectors)
         {
-            placeholderValue.Values.Add(ByteString.CopyFrom(sparseVector.ToBytes()));
+            case IReadOnlyList<MilvusSparseVector<float>> floatVectors:
+                PopulateFloatSparseVectorData(floatVectors, placeholderValue);
+                break;
+            default:
+                throw new ArgumentException("Only sparse vectors of float are supported", nameof(vectors));
         }
 
         return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Perform a hybrid vector similarity search combining multiple ANN searches with reranking.
+    /// </summary>
+    /// <param name="requests">The ANN search requests to combine.</param>
+    /// <param name="reranker">The reranker to use for combining results.</param>
+    /// <param name="limit">
+    /// The maximum number of records to return, also known as 'topk'. Must be between 1 and 16384.
+    /// </param>
+    /// <param name="parameters">Various additional optional parameters to configure the hybrid search.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>The search results.</returns>
+    public async Task<SearchResults> HybridSearchAsync(
+        IReadOnlyList<AnnSearchRequest> requests,
+        IReranker reranker,
+        int limit,
+        HybridSearchParameters? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(requests);
+        Verify.NotNull(reranker);
+
+        if (requests.Count == 0)
+        {
+            throw new ArgumentException("At least one search request must be provided", nameof(requests));
+        }
+
+        if (limit < 1 || limit > 16384)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit), limit, "Limit must be between 1 and 16384");
+        }
+
+        if (reranker is WeightedReranker weightedReranker && weightedReranker.Weights.Count != requests.Count)
+        {
+            throw new ArgumentException(
+                $"WeightedReranker must have the same number of weights ({weightedReranker.Weights.Count}) as search requests ({requests.Count})",
+                nameof(reranker));
+        }
+
+        var request = new Grpc.HybridSearchRequest
+        {
+            CollectionName = Name,
+        };
+
+        foreach (var annRequest in requests)
+        {
+            request.Requests.Add(CreateSearchRequestFromAnnSearchRequest(annRequest, Name));
+        }
+
+        request.RankParams.AddRange(reranker.ToRankParams());
+        request.RankParams.Add(new Grpc.KeyValuePair
+        {
+            Key = "limit",
+            Value = limit.ToString(CultureInfo.InvariantCulture)
+        });
+
+        if (parameters is not null)
+        {
+            if (parameters.PartitionNamesInternal?.Count > 0)
+            {
+                request.PartitionNames.AddRange(parameters.PartitionNamesInternal);
+            }
+
+            if (parameters.OutputFieldsInternal?.Count > 0)
+            {
+                request.OutputFields.AddRange(parameters.OutputFieldsInternal);
+            }
+
+            if (parameters.TimeTravelTimestamp is not null)
+            {
+                request.TravelTimestamp = parameters.TimeTravelTimestamp.Value;
+            }
+
+            if (parameters.RoundDecimal is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.RoundDecimal,
+                    Value = parameters.RoundDecimal.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.GroupByField is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.GroupByField,
+                    Value = parameters.GroupByField
+                });
+            }
+
+            if (parameters.GroupSize is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = "group_size",
+                    Value = parameters.GroupSize.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            if (parameters.StrictGroupSize is not null)
+            {
+                request.RankParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = "strict_group_size",
+                    Value = parameters.StrictGroupSize.Value.ToString()
+                });
+            }
+        }
+
+        if (parameters?.ConsistencyLevel is null)
+        {
+            request.UseDefaultConsistency = true;
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(Name, ConsistencyLevel.Session, userProvidedGuaranteeTimestamp: null);
+        }
+        else
+        {
+            request.ConsistencyLevel = (Grpc.ConsistencyLevel)parameters.ConsistencyLevel.Value;
+            request.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
+                Name, parameters.ConsistencyLevel.Value, parameters.GuaranteeTimestamp);
+        }
+
+        Grpc.SearchResults response =
+            await _client.InvokeAsync(_client.GrpcClient.HybridSearchAsync, request, static r => r.Status, cancellationToken)
+                .ConfigureAwait(false);
+
+        List<FieldData> fieldData = ProcessReturnedFieldData(response.Results.FieldsData);
+
+        return new SearchResults
+        {
+            CollectionName = response.CollectionName,
+            FieldsData = fieldData,
+            Ids = response.Results.Ids is null ? default : MilvusIds.FromGrpc(response.Results.Ids),
+            NumQueries = response.Results.NumQueries,
+            Scores = response.Results.Scores,
+            Limit = response.Results.TopK,
+            Limits = response.Results.Topks,
+        };
     }
 
     private async Task<SearchResults> SearchInternalAsync(
@@ -405,6 +545,53 @@ public partial class MilvusCollection
         };
     }
 
+    private static Grpc.SearchRequest CreateSearchRequestFromAnnSearchRequest(AnnSearchRequest annRequest, string collectionName)
+    {
+        Grpc.PlaceholderValue placeholderValue = new() { Tag = Constants.VectorTag };
+
+        switch (annRequest)
+        {
+            case VectorAnnSearchRequest<float> floatRequest:
+                PopulateFloatVectorData(floatRequest.Vectors, placeholderValue);
+                break;
+            case VectorAnnSearchRequest<byte> byteRequest:
+                PopulateBinaryVectorData(byteRequest.Vectors, placeholderValue);
+                break;
+#if NET8_0_OR_GREATER
+            case VectorAnnSearchRequest<Half> halfRequest:
+                PopulateFloat16VectorData(halfRequest.Vectors, placeholderValue);
+                break;
+#endif
+            case SparseVectorAnnSearchRequest<float> sparseRequest:
+                PopulateFloatSparseVectorData(sparseRequest.Vectors, placeholderValue);
+                break;
+            default:
+                throw new ArgumentException($"Unsupported AnnSearchRequest type: {annRequest.GetType()}", nameof(annRequest));
+        }
+
+        var request = new Grpc.SearchRequest
+        {
+            CollectionName = collectionName,
+            DslType = Grpc.DslType.BoolExprV1,
+            PlaceholderGroup = new Grpc.PlaceholderGroup { Placeholders = { placeholderValue } }.ToByteString()
+        };
+
+        if (annRequest.Expression is not null)
+        {
+            request.Dsl = annRequest.Expression;
+        }
+
+        request.SearchParams.AddRange(new[]
+        {
+            new Grpc.KeyValuePair { Key = Constants.VectorField, Value = annRequest.VectorFieldName },
+            new Grpc.KeyValuePair { Key = Constants.TopK, Value = annRequest.Limit.ToString(CultureInfo.InvariantCulture) },
+            new Grpc.KeyValuePair { Key = Constants.MetricType, Value = annRequest.MetricType.ToString().ToUpperInvariant() },
+            new Grpc.KeyValuePair { Key = Constants.Params, Value = Combine(annRequest.ExtraParameters) }
+        });
+
+        return request;
+    }
+
     private static void PopulateFloatVectorData(
         IReadOnlyList<ReadOnlyMemory<float>> vectors, Grpc.PlaceholderValue placeholderValue)
     {
@@ -482,6 +669,17 @@ public partial class MilvusCollection
         }
     }
 #endif
+
+    private static void PopulateFloatSparseVectorData(
+        IReadOnlyList<MilvusSparseVector<float>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.SparseFloatVector;
+
+        foreach (MilvusSparseVector<float> sparseVector in vectors)
+        {
+            placeholderValue.Values.Add(ByteString.CopyFrom(sparseVector.ToBytes()));
+        }
+    }
 
     /// <summary>
     /// Flushes collection data to disk, required only in order to get up-to-date statistics.
