@@ -110,6 +110,7 @@ public partial class MilvusCollection
                 SimilarityMetricType.Hamming => "HAMMING",
                 SimilarityMetricType.Superstructure => "SUPERSTRUCTURE",
                 SimilarityMetricType.Substructure => "SUBSTRUCTURE",
+                SimilarityMetricType.Bm25 => "BM25",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(similarityMetricType), similarityMetricType, null)
             };
