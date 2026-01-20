@@ -129,39 +129,72 @@ public abstract class FieldData
                         throw new NotSupportedException("VectorField.DataOneofCase.None not supported");
                 }
 
+            // Create a FieldData<T> from a Protobuf FieldData. If ValidData is no empty, it means that the field is
+            // nullable, and false ValidData values should be considered as null.
             case Grpc.FieldData.FieldOneofCase.Scalars:
+                bool hasValidData = fieldData.ValidData.Count > 0;
                 return fieldData.Scalars switch
                 {
+                    { DataCase: ScalarField.DataOneofCase.BoolData } when hasValidData
+                        => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.BoolData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.BoolData }
                         => Create(fieldData.FieldName, fieldData.Scalars.BoolData.Data, fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.FloatData } when hasValidData
+                        => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.FloatData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.FloatData }
                         => Create(fieldData.FieldName, fieldData.Scalars.FloatData.Data, fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.DoubleData } when hasValidData
+                        => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.DoubleData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.DoubleData }
                         => Create(fieldData.FieldName, fieldData.Scalars.DoubleData.Data, fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.IntData } when hasValidData
+                        => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.IntData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.IntData }
                         => Create(fieldData.FieldName, fieldData.Scalars.IntData.Data, fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.LongData } when hasValidData
+                        => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.LongData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.LongData }
                         => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data, fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.StringData } when hasValidData
+                        => CreateVarChar(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.StringData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.StringData }
                         => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.JsonData }
                         => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int8 } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int8 }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int16 } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int16 }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int32 } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int32 }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.IntData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int64 } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.LongData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Int64 }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.LongData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Float } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.FloatData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Float }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.FloatData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Double } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.DoubleData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Double }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.DoubleData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.String } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.String }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData?.Data ?? []).ToArray(), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.VarChar } when hasValidData
+                        => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.VarChar }
                         => CreateArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.StringData?.Data ?? []).ToArray(), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Json }
@@ -174,9 +207,54 @@ public abstract class FieldData
         }
     }
 
+    private static T?[] ApplyValidMask<T>(RepeatedField<T> data, RepeatedField<bool> validData)
+        where T : struct
+    {
+        T?[] result = new T?[validData.Count];
+        for (int i = 0; i < validData.Count; i++)
+        {
+            result[i] = validData[i] ? data[i] : null;
+        }
+        return result;
+    }
+
+    private static string?[] ApplyValidMask(RepeatedField<string> data, RepeatedField<bool> validData)
+    {
+        string?[] result = new string?[validData.Count];
+        for (int i = 0; i < validData.Count; i++)
+        {
+            result[i] = validData[i] ? data[i] : null;
+        }
+        return result;
+    }
+
+    private static ArrayFieldData<TElement> CreateNullableArray<TElement>(
+        string fieldName,
+        IReadOnlyList<IReadOnlyList<TElement>?> data,
+        RepeatedField<bool> validData,
+        bool isDynamic)
+    {
+        IReadOnlyList<TElement>?[] result = new IReadOnlyList<TElement>?[validData.Count];
+        for (int i = 0; i < validData.Count; i++)
+        {
+            // The server may send an empty ScalarField for empty arrays (DataCase=None),
+            // which results in null here. Since ValidData[i]=true, treat null as empty array.
+            result[i] = validData[i] ? data[i] ?? [] : null;
+        }
+
+        return new ArrayFieldData<TElement>(fieldName, result, isDynamic);
+    }
+
     internal static MilvusDataType EnsureDataType<TDataType>()
     {
         Type type = typeof(TDataType);
+
+        Type? underlyingType = Nullable.GetUnderlyingType(type);
+        if (underlyingType is not null)
+        {
+            type = underlyingType;
+        }
+
         MilvusDataType dataType;
 
         if (type == typeof(bool))
@@ -261,12 +339,12 @@ public abstract class FieldData
     /// Create a varchar field.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
-    /// <param name="data">Data in this field</param>
+    /// <param name="data">Data in this field. Values can be null if the field is nullable.</param>
     /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
-    public static FieldData<string> CreateVarChar(
+    public static FieldData<string?> CreateVarChar(
         string fieldName,
-        IReadOnlyList<string> data,
+        IReadOnlyList<string?> data,
         bool isDynamic = false)
         => new(fieldName, data, MilvusDataType.VarChar, isDynamic);
 
@@ -274,12 +352,12 @@ public abstract class FieldData
     /// Create array of elements.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
-    /// <param name="data">Data in this field</param>
+    /// <param name="data">Data in this field. Individual arrays can be null if the field is nullable.</param>
     /// <param name="isDynamic">Whether the field is dynamic.</param>
     /// <returns></returns>
-    public static ArrayFieldData<TElement> CreateArray<TElement>(
+    public static ArrayFieldData<TElement?> CreateArray<TElement>(
         string fieldName,
-        IReadOnlyList<IReadOnlyList<TElement>> data,
+        IReadOnlyList<IReadOnlyList<TElement>?> data,
         bool isDynamic = false)
     {
         return new(fieldName, data, isDynamic);
@@ -497,53 +575,181 @@ public class FieldData<TData> : FieldData
             fieldData.FieldName = FieldName;
         }
 
+        bool isNullableValueType = Nullable.GetUnderlyingType(typeof(TData)) is not null;
+
         switch (DataType)
         {
             case MilvusDataType.Bool:
                 Grpc.BoolArray boolData = new();
-                boolData.Data.AddRange(Data as IEnumerable<bool>);
+                if (isNullableValueType)
+                {
+                    foreach (bool? item in (IReadOnlyList<bool?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            boolData.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    boolData.Data.AddRange((IReadOnlyList<bool>)Data);
+                }
                 fieldData.Scalars = new Grpc.ScalarField { BoolData = boolData };
                 break;
 
             case MilvusDataType.Int8:
                 Grpc.IntArray int8Data = new();
-                foreach (sbyte i in (IEnumerable<sbyte>)Data)
+                if (isNullableValueType)
                 {
-                    int8Data.Data.Add(i);
+                    foreach (sbyte? item in (IReadOnlyList<sbyte?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            int8Data.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (sbyte i in (IReadOnlyList<sbyte>)Data)
+                    {
+                        int8Data.Data.Add(i);
+                    }
                 }
                 fieldData.Scalars = new Grpc.ScalarField { IntData = int8Data };
                 break;
 
             case MilvusDataType.Int16:
                 Grpc.IntArray int16Data = new();
-                foreach (short i in (IEnumerable<short>)Data)
+                if (isNullableValueType)
                 {
-                    int16Data.Data.Add(i);
+                    foreach (short? item in (IReadOnlyList<short?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            int16Data.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (short i in (IReadOnlyList<short>)Data)
+                    {
+                        int16Data.Data.Add(i);
+                    }
                 }
                 fieldData.Scalars = new Grpc.ScalarField { IntData = int16Data };
                 break;
 
             case MilvusDataType.Int32:
                 Grpc.IntArray int32Data = new();
-                int32Data.Data.AddRange((IEnumerable<int>)Data);
+                if (isNullableValueType)
+                {
+                    foreach (int? item in (IReadOnlyList<int?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            int32Data.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    int32Data.Data.AddRange((IReadOnlyList<int>)Data);
+                }
                 fieldData.Scalars = new Grpc.ScalarField { IntData = int32Data };
                 break;
 
             case MilvusDataType.Int64:
                 Grpc.LongArray int64Data = new();
-                int64Data.Data.AddRange((IEnumerable<long>)Data);
+                if (isNullableValueType)
+                {
+                    foreach (long? item in (IReadOnlyList<long?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            int64Data.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    int64Data.Data.AddRange((IReadOnlyList<long>)Data);
+                }
                 fieldData.Scalars = new Grpc.ScalarField { LongData = int64Data };
                 break;
 
             case MilvusDataType.Float:
                 Grpc.FloatArray floatData = new();
-                floatData.Data.AddRange((IEnumerable<float>)Data);
+                if (isNullableValueType)
+                {
+                    foreach (float? item in (IReadOnlyList<float?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            floatData.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    floatData.Data.AddRange((IReadOnlyList<float>)Data);
+                }
                 fieldData.Scalars = new Grpc.ScalarField { FloatData = floatData };
                 break;
 
             case MilvusDataType.Double:
                 Grpc.DoubleArray doubleData = new();
-                doubleData.Data.AddRange((IEnumerable<double>)Data);
+                if (isNullableValueType)
+                {
+                    foreach (double? item in (IReadOnlyList<double?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            doubleData.Data.Add(item.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    doubleData.Data.AddRange((IReadOnlyList<double>)Data);
+                }
                 fieldData.Scalars = new Grpc.ScalarField { DoubleData = doubleData };
                 break;
 
@@ -555,7 +761,26 @@ public class FieldData<TData> : FieldData
 
             case MilvusDataType.VarChar:
                 Grpc.StringArray varcharData = new();
-                varcharData.Data.AddRange((IEnumerable<string>)Data);
+                bool hasNullVarchar = Data.Any(item => item is null);
+                if (hasNullVarchar)
+                {
+                    foreach (string? item in (IReadOnlyList<string?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            varcharData.Data.Add(item);
+                        }
+                    }
+                }
+                else
+                {
+                    varcharData.Data.AddRange((IReadOnlyList<string>)Data);
+                }
                 fieldData.Scalars = new Grpc.ScalarField { StringData = varcharData };
                 break;
 
@@ -599,7 +824,7 @@ public class FieldData<TData> : FieldData
     /// </summary>
     /// <returns></returns>
     public override string ToString()
-        => $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data?.Count}, {nameof(RowCount)}: {RowCount}}}";
+        => $"Field: {{{nameof(FieldName)}: {FieldName}, {nameof(DataType)}: {DataType}, {nameof(Data)}: {Data.Count}, {nameof(RowCount)}: {RowCount}}}";
 
     /// <summary>
     /// Checks data

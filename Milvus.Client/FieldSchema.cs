@@ -19,14 +19,21 @@ public sealed class FieldSchema
     /// Whether the field functions as the partition key for the collection. Available since Milvus v2.2.9.
     /// </param>
     /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field can contain null values. Available since Milvus v2.5.</param>
+    /// <param name="defaultValue">
+    /// The default value for the field. Available since Milvus v2.5.
+    /// Only supported for scalar fields. Not supported for arrays, JSON, or vector fields.
+    /// </param>
     public static FieldSchema Create(
         string name,
         MilvusDataType dataType,
         bool isPrimaryKey = false,
         bool autoId = false,
         bool isPartitionKey = false,
-        string description = "")
-        => new(name, dataType, isPrimaryKey, autoId, isPartitionKey, description);
+        string description = "",
+        bool nullable = false,
+        object? defaultValue = null)
+        => new(name, dataType, isPrimaryKey, autoId, isPartitionKey, description, nullable, defaultValue);
 
     /// <summary>
     /// Create a field schema.
@@ -39,13 +46,56 @@ public sealed class FieldSchema
     /// Whether the field functions as the partition key for the collection. Available since Milvus v2.2.9.
     /// </param>
     /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">
+    /// Whether the field can contain null values. Available since Milvus v2.5.
+    /// <para>When null (default):</para>
+    /// <list type="bullet">
+    /// <item>Nullable value types (e.g., int?, bool?) → inferred as nullable=true</item>
+    /// <item>Non-nullable value types (e.g., int, bool) → inferred as nullable=false</item>
+    /// <item>Reference types (e.g., string) → inferred as nullable=false</item>
+    /// </list>
+    /// <para>When explicitly set:</para>
+    /// <list type="bullet">
+    /// <item>nullable=true on non-nullable value types → throws ArgumentException</item>
+    /// <item>nullable=false on nullable value types → throws ArgumentException</item>
+    /// <item>nullable=true on reference types or nullable value types → allowed</item>
+    /// <item>nullable=false on reference types or non-nullable value types → allowed</item>
+    /// </list>
+    /// </param>
+    /// <param name="defaultValue">
+    /// The default value for the field. Available since Milvus v2.5.
+    /// Only supported for scalar fields. Not supported for arrays, JSON, or vector fields.
+    /// </param>
     public static FieldSchema Create<TData>(
         string name,
         bool isPrimaryKey = false,
         bool autoId = false,
         bool isPartitionKey = false,
-        string description = "")
-        => new(name, FieldData.EnsureDataType<TData>(), isPrimaryKey, autoId, isPartitionKey, description);
+        string description = "",
+        bool? nullable = null,
+        object? defaultValue = null)
+    {
+        Type? underlyingType = System.Nullable.GetUnderlyingType(typeof(TData));
+        bool isNullableValueType = underlyingType is not null;
+        bool shouldBeNullable = nullable ?? isNullableValueType;
+
+        if (nullable == true && typeof(TData).IsValueType && !isNullableValueType)
+        {
+            throw new ArgumentException(
+                $"Type {typeof(TData).Name} cannot be null. Use a nullable value type (e.g., {typeof(TData).Name}?) or remove the nullable parameter.",
+                nameof(nullable));
+        }
+
+        if (nullable == false && isNullableValueType)
+        {
+            throw new ArgumentException(
+                $"Type {typeof(TData).Name} is nullable but nullable=false was specified. Use the non-nullable type {underlyingType!.Name} instead.",
+                nameof(nullable));
+        }
+
+        return new FieldSchema(name, FieldData.EnsureDataType<TData>(), isPrimaryKey, autoId,
+            isPartitionKey, description, shouldBeNullable, defaultValue);
+    }
 
     /// <summary>
     /// Create a field schema for a <c>varchar</c> field.
@@ -58,14 +108,20 @@ public sealed class FieldSchema
     /// Whether the field functions as the partition key for the collection. Available since Milvus v2.2.9.
     /// </param>
     /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field can contain null values. Available since Milvus v2.5.</param>
+    /// <param name="defaultValue">
+    /// The default value for the field. Available since Milvus v2.5.
+    /// </param>
     public static FieldSchema CreateVarchar(
         string name,
         int maxLength,
         bool isPrimaryKey = false,
         bool autoId = false,
         bool isPartitionKey = false,
-        string description = "")
-        => new(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, description)
+        string description = "",
+        bool nullable = false,
+        string? defaultValue = null)
+        => new(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, description, nullable, defaultValue)
         {
             MaxLength = maxLength
         };
@@ -125,11 +181,13 @@ public sealed class FieldSchema
     /// <param name="name">The field name.</param>
     /// <param name="maxCapacity">Maximum number of elements that an array field can contain.</param>
     /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field can contain null values. Available since Milvus v2.5.</param>
     public static FieldSchema CreateArray<TData>(
         string name,
         int maxCapacity,
-        string description = "")
-        => new(name, MilvusDataType.Array, description: description)
+        string description = "",
+        bool nullable = false)
+        => new(name, MilvusDataType.Array, description: description, nullable: nullable)
         {
             ElementDataType = FieldData.EnsureDataType<TData>(),
             MaxCapacity = maxCapacity,
@@ -142,12 +200,14 @@ public sealed class FieldSchema
     /// <param name="maxCapacity">Maximum number of elements that an array field can contain.</param>
     /// <param name="maxLength">Maximum length of strings for each <c>varchar</c> element in an array field.</param>
     /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field can contain null values. Available since Milvus v2.5.</param>
     public static FieldSchema CreateVarcharArray(
         string name,
         int maxCapacity,
         int maxLength,
-        string description = "")
-        => new(name, MilvusDataType.Array, description: description)
+        string description = "",
+        bool nullable = false)
+        => new(name, MilvusDataType.Array, description: description, nullable: nullable)
         {
             ElementDataType = MilvusDataType.VarChar,
             MaxCapacity = maxCapacity,
@@ -161,14 +221,18 @@ public sealed class FieldSchema
         bool isPrimaryKey = false,
         bool autoId = false,
         bool isPartitionKey = false,
-        string description = "")
+        string description = "",
+        bool nullable = false,
+        object? defaultValue = null)
     {
         Name = name;
         DataType = dataType;
+        Nullable = nullable;
         State = FieldState.Unknown;
         IsPrimaryKey = isPrimaryKey;
         AutoId = autoId;
         IsPartitionKey = isPartitionKey;
+        DefaultValue = defaultValue;
         Description = description;
     }
 
@@ -183,7 +247,9 @@ public sealed class FieldSchema
         bool autoId,
         bool isPartitionKey,
         bool isDynamic,
-        string description)
+        string description,
+        bool nullable,
+        object? defaultValue)
     {
         FieldId = id;
         Name = name;
@@ -195,6 +261,8 @@ public sealed class FieldSchema
         IsPartitionKey = isPartitionKey;
         IsDynamic = isDynamic;
         Description = description;
+        Nullable = nullable;
+        DefaultValue = defaultValue;
     }
 
     /// <summary>
@@ -238,6 +306,35 @@ public sealed class FieldSchema
     /// An optional description for the field.
     /// </summary>
     public string Description { get; }
+
+    /// <summary>
+    /// Whether the field can contain null values. Available since Milvus v2.5.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For fields marked as nullable, users can omit the field when inserting data or set it directly to a null value.
+    /// The system will treat it as null without throwing an error.
+    /// </para>
+    /// <para>
+    /// Nullable fields cannot be used as partition keys. Primary key fields cannot be nullable.
+    /// </para>
+    /// </remarks>
+    public bool Nullable { get; }
+
+    /// <summary>
+    /// The default value for the field. Available since Milvus v2.5.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When a field has a default value, the system will automatically apply this value if no data is specified for
+    /// the field during insertion.
+    /// </para>
+    /// <para>
+    /// Default values are only supported for scalar fields (bool, int8, int16, int32, int64, float, double, varchar).
+    /// Array and JSON fields do not support default values.
+    /// </para>
+    /// </remarks>
+    public object? DefaultValue { get; set; }
 
     /// <summary>
     /// Whether this field was created dynamically. Available since Milvus v2.2.9.

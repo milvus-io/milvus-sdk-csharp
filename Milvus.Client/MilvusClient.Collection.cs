@@ -91,6 +91,7 @@ public partial class MilvusClient
                 IsPrimaryKey = field.IsPrimaryKey,
                 IsPartitionKey = field.IsPartitionKey,
                 AutoID = field.AutoId,
+                Nullable = field.Nullable,
                 Description = field.Description
             };
 
@@ -119,6 +120,11 @@ public partial class MilvusClient
                     Key = Constants.MaxCapacity,
                     Value = field.MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
                 });
+            }
+
+            if (field.DefaultValue is not null)
+            {
+                grpcField.DefaultValue = ConvertToValueField(field.DefaultValue, field.DataType);
             }
 
             grpcCollectionSchema.Fields.Add(grpcField);
@@ -241,5 +247,41 @@ public partial class MilvusClient
                 .ConfigureAwait(false);
 
         return FlushResult.From(response);
+    }
+
+    private static Grpc.ValueField ConvertToValueField(object value, MilvusDataType dataType)
+    {
+        Grpc.ValueField valueField = new();
+
+        switch (dataType)
+        {
+            case MilvusDataType.Bool:
+                valueField.BoolData = (bool)value;
+                break;
+            case MilvusDataType.Int8:
+            case MilvusDataType.Int16:
+            case MilvusDataType.Int32:
+                valueField.IntData = (int)value;
+                break;
+            case MilvusDataType.Int64:
+                valueField.LongData = (long)value;
+                break;
+            case MilvusDataType.Float:
+                valueField.FloatData = (float)value;
+                break;
+            case MilvusDataType.Double:
+                valueField.DoubleData = (double)value;
+                break;
+            case MilvusDataType.String:
+            case MilvusDataType.VarChar:
+                valueField.StringData = (string)value;
+                break;
+            default:
+                throw new ArgumentException(
+                    $"Default values are not supported for {dataType} fields. Only scalar fields support default values.",
+                    nameof(value));
+        }
+
+        return valueField;
     }
 }

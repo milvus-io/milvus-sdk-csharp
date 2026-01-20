@@ -42,14 +42,16 @@ public partial class MilvusCollection
             FieldSchema milvusField = new(
                 grpcField.FieldID,
                 grpcField.Name,
-                (MilvusDataType) grpcField.DataType,
-                (MilvusDataType) grpcField.ElementType,
-                (FieldState) grpcField.State,
+                (MilvusDataType)grpcField.DataType,
+                (MilvusDataType)grpcField.ElementType,
+                (FieldState)grpcField.State,
                 grpcField.IsPrimaryKey,
                 grpcField.AutoID,
                 grpcField.IsPartitionKey,
                 grpcField.IsDynamic,
-                grpcField.Description);
+                grpcField.Description,
+                grpcField.Nullable,
+                grpcField.DefaultValue is not null ? ConvertFromValueField(grpcField.DefaultValue) : null);
 
             foreach (Grpc.KeyValuePair parameter in grpcField.TypeParams)
             {
@@ -258,4 +260,17 @@ public partial class MilvusCollection
 
         return response.CompactionID;
     }
+
+    private static object? ConvertFromValueField(Grpc.ValueField valueField) =>
+        valueField.DataCase switch
+        {
+            Grpc.ValueField.DataOneofCase.BoolData => valueField.BoolData,
+            Grpc.ValueField.DataOneofCase.IntData => valueField.IntData,
+            Grpc.ValueField.DataOneofCase.LongData => valueField.LongData,
+            Grpc.ValueField.DataOneofCase.FloatData => valueField.FloatData,
+            Grpc.ValueField.DataOneofCase.DoubleData => valueField.DoubleData,
+            Grpc.ValueField.DataOneofCase.StringData => valueField.StringData,
+            Grpc.ValueField.DataOneofCase.BytesData => valueField.BytesData.ToByteArray(),
+            _ => null
+        };
 }
