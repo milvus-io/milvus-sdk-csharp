@@ -1,4 +1,7 @@
 ﻿using System.Diagnostics;
+#if NET5_0_OR_GREATER
+using System.Net.Http;
+#endif
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -109,7 +112,7 @@ public sealed partial class MilvusClient : IDisposable
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
         : this(
-            GrpcChannel.ForAddress(endpoint, new GrpcChannelOptions { LoggerFactory = loggerFactory }),
+            GrpcChannel.ForAddress(endpoint, CreateDefaultChannelOptions(loggerFactory)),
             ownsGrpcChannel: true,
             username: null,
             password: null,
@@ -143,7 +146,7 @@ public sealed partial class MilvusClient : IDisposable
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
         : this(
-            GrpcChannel.ForAddress(endpoint, new GrpcChannelOptions { LoggerFactory = loggerFactory }),
+            GrpcChannel.ForAddress(endpoint, CreateDefaultChannelOptions(loggerFactory)),
             ownsGrpcChannel: true,
             username,
             password,
@@ -175,7 +178,7 @@ public sealed partial class MilvusClient : IDisposable
         CallOptions callOptions = default,
         ILoggerFactory? loggerFactory = null)
         : this(
-            GrpcChannel.ForAddress(endpoint, new GrpcChannelOptions { LoggerFactory = loggerFactory }),
+            GrpcChannel.ForAddress(endpoint, CreateDefaultChannelOptions(loggerFactory)),
             ownsGrpcChannel: true,
             username: null,
             password: null,
@@ -347,6 +350,22 @@ public sealed partial class MilvusClient : IDisposable
         {
             _grpcChannel.Dispose();
         }
+    }
+
+    private static GrpcChannelOptions CreateDefaultChannelOptions(ILoggerFactory? loggerFactory)
+    {
+        var options = new GrpcChannelOptions { LoggerFactory = loggerFactory };
+
+#if NET5_0_OR_GREATER
+        options.HttpHandler = new SocketsHttpHandler
+        {
+            KeepAlivePingDelay = TimeSpan.FromSeconds(10),
+            KeepAlivePingTimeout = TimeSpan.FromSeconds(5),
+            KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
+        };
+#endif
+
+        return options;
     }
 
     private readonly ILogger _log;
