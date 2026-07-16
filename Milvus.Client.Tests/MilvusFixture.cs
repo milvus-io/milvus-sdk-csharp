@@ -26,6 +26,6 @@ public sealed class MilvusFixture : IAsyncLifetime
     public MilvusClient CreateClient(string database)
         => new(Host, Username, Password, Port, ssl: false, database);
 
-    public Task InitializeAsync() => _container.StartAsync();
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public ValueTask InitializeAsync() => new(_container.StartAsync());
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 }

@@ -1348,7 +1348,7 @@ public class SearchQueryTests(
         private readonly MilvusClient Client;
         public readonly MilvusCollection Collection;
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await Collection.DropAsync();
             await Client.CreateCollectionAsync(
@@ -1393,10 +1393,10 @@ public class SearchQueryTests(
                 waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

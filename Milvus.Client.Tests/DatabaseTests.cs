@@ -112,7 +112,7 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         if ((await DefaultClient.ListDatabasesAsync()).Contains(DatabaseName))
         {
@@ -126,11 +126,11 @@ public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
         }
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         DefaultClient.Dispose();
         DatabaseClient.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private readonly MilvusClient DefaultClient = milvusFixture.CreateClient();

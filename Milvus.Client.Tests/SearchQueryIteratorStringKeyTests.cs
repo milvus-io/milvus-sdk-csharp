@@ -17,12 +17,12 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
         _dataCollectionFixture = dataCollectionFixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private MilvusCollection Collection => _dataCollectionFixture.Collection;
@@ -162,7 +162,7 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
             Collection = Client.GetCollection(CollectionName);
         }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await Collection.DropAsync();
 
@@ -180,10 +180,10 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
             await Collection.WaitForCollectionLoadAsync();
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

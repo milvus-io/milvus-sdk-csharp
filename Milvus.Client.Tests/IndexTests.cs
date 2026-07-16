@@ -318,7 +318,7 @@ public class IndexTests : IAsyncLifetime
         Assert.Equal(MilvusErrorCode.IndexNotFound, exception.ErrorCode);
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
@@ -331,10 +331,10 @@ public class IndexTests : IAsyncLifetime
             });
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private const string CollectionName = nameof(IndexTests);

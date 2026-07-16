@@ -14,17 +14,17 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("vector", dimension: 2)
-            });
-        Assert.True(await Client.HasCollectionAsync(CollectionName));
+            },cancellationToken:TestContext.Current.CancellationToken);
+        Assert.True(await Client.HasCollectionAsync(CollectionName,cancellationToken:TestContext.Current.CancellationToken));
 
-        await collection.DropAsync();
-        Assert.False(await Client.HasCollectionAsync(CollectionName));
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+        Assert.False(await Client.HasCollectionAsync(CollectionName,cancellationToken:TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Describe()
     {
-        await Assert.ThrowsAsync<MilvusException>(() => Client.GetCollection(CollectionName).DescribeAsync());
+        await Assert.ThrowsAsync<MilvusException>(() => Client.GetCollection(CollectionName).DescribeAsync(TestContext.Current.CancellationToken));
 
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
@@ -43,9 +43,10 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateJson("some_json")
             },
             shardsNum: 2,
-            consistencyLevel: ConsistencyLevel.Eventually);
+            consistencyLevel: ConsistencyLevel.Eventually,
+            cancellationToken:TestContext.Current.CancellationToken);
 
-        var collectionDescription = await collection.DescribeAsync();
+        var collectionDescription = await collection.DescribeAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, collectionDescription.CollectionName);
         Assert.Equal(2, collectionDescription.ShardsNum);
@@ -387,13 +388,13 @@ public class CollectionTests : IAsyncLifetime
         Client = milvusFixture.CreateClient();
     }
 
-    public Task InitializeAsync()
-        => Client.GetCollection(CollectionName).DropAsync();
+    public ValueTask InitializeAsync()
+        => new(Client.GetCollection(CollectionName).DropAsync());
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private const string CollectionName = nameof(CollectionTests);

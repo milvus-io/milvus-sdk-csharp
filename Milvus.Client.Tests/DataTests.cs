@@ -242,7 +242,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
         public MilvusCollection Collection;
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await Collection.DropAsync();
 
@@ -260,10 +260,10 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
             await Collection.WaitForCollectionLoadAsync();
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 
@@ -278,11 +278,11 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         _dataCollectionFixture = dataCollectionFixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

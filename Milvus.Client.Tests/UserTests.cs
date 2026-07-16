@@ -127,7 +127,7 @@ public class UserTests(MilvusFixture milvusFixture) : IAsyncLifetime
         Assert.Empty(await Client.ListGrantsForRoleAsync(RoleName));
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         RoleResult? roleResult = await Client.SelectRoleAsync(RoleName, includeUserInfo: true);
         if (roleResult is not null)
@@ -154,9 +154,9 @@ public class UserTests(MilvusFixture milvusFixture) : IAsyncLifetime
 
     private readonly MilvusClient Client = milvusFixture.CreateClient();
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

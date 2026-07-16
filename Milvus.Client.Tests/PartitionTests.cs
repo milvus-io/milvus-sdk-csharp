@@ -55,7 +55,7 @@ public class PartitionTests : IAsyncLifetime
         Collection = Client.GetCollection(CollectionName);
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await Collection.DropAsync();
         await Client.CreateCollectionAsync(
@@ -68,10 +68,10 @@ public class PartitionTests : IAsyncLifetime
             });
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private const string CollectionName = nameof(PartitionTests);

@@ -775,7 +775,7 @@ public class HybridSearchTests(
         public readonly MilvusCollection Collection;
         public bool SupportsHybridSearch { get; private set; }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             SupportsHybridSearch = await Client.GetParsedMilvusVersion() >= new Version(2, 4);
             if (!SupportsHybridSearch)
@@ -831,10 +831,10 @@ public class HybridSearchTests(
                 waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 
