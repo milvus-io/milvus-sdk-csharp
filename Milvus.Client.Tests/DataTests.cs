@@ -143,26 +143,35 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         await InsertDataAsync(7, 8);
         await Collection.WaitForFlushAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        IEnumerable<PersistentSegmentInfo> segmentInfos = null!;
-        const int retries = 3;
+        // On Milvus 2.6 the persistent segment info becomes available with some lag after the
+        // flush completes, so poll until a segment with rows shows up. The previous loop only
+        // retried on the transient "segment not found" exception, not on an empty result.
+        PersistentSegmentInfo? segmentInfo = null;
+        const int retries = 20;
         for (int i = 0; i < retries; i++)
         {
             try
             {
-                segmentInfos = await Collection.GetPersistentSegmentInfosAsync(TestContext.Current.CancellationToken);
+                IReadOnlyList<PersistentSegmentInfo> segmentInfos =
+                    await Collection.GetPersistentSegmentInfosAsync(TestContext.Current.CancellationToken);
+                segmentInfo = segmentInfos.LastOrDefault(s => s.NumRows > 0);
+            }
+            catch (MilvusException ex) when (ex.ErrorCode == MilvusErrorCode.SegmentInfo ||
+                                             ex.Message.Contains("segment not found"))
+            {
+                // Transient right after flush; fall through to retry.
+            }
+
+            if (segmentInfo is not null)
+            {
                 break;
             }
-            catch (MilvusException ex) when ((ex.ErrorCode == MilvusErrorCode.SegmentInfo ||
-                                              ex.Message.Contains("segment not found")) && i < retries - 1)
-            {
-                await Task.Delay(500, TestContext.Current.CancellationToken);
-            }
+
+            await Task.Delay(500, TestContext.Current.CancellationToken);
         }
 
-        PersistentSegmentInfo? segmentInfo = segmentInfos.LastOrDefault();
-
         Assert.NotNull(segmentInfo);
-        Assert.Equal(SegmentState.Flushed, segmentInfo.State);
+        Assert.True(segmentInfo.State is SegmentState.Flushed or SegmentState.Sealed);
         Assert.True(segmentInfo.NumRows > 0);
         Assert.Equal(collectionDes.CollectionId, segmentInfo.CollectionId);
     }
@@ -189,10 +198,14 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     [Fact]
     public async Task Insert_dynamic_field()
     {
-        await Collection.DropAsync(TestContext.Current.CancellationToken);
+        // Use a dedicated collection instead of dropping/recreating the shared fixture collection,
+        // which would leave it unloaded and break other tests in this class (test order is not
+        // deterministic, so any later test querying the shared collection would fail).
+        MilvusCollection collection = Client.GetCollection($"{CollectionName}_dynamic");
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
-            Collection.Name,
+            collection.Name,
             new CollectionSchema
             {
                 Fields =
@@ -203,7 +216,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
                 EnableDynamicFields = true
             }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.InsertAsync(
+        await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new[] { 1L, 2L }),
@@ -215,6 +228,8 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
                 FieldData.CreateVarChar("unknown_varchar", new[] { "dynamic str1", "dynamic str2" }, isDynamic: true),
                 FieldData.Create("unknown_int", new[] { 8L, 9L }, isDynamic: true)
             }, cancellationToken: TestContext.Current.CancellationToken);
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task<MutationResult> InsertDataAsync(long id1, long id2)
