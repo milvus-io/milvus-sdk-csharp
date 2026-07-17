@@ -85,10 +85,13 @@ public class SearchQueryTests(
     [Fact]
     public async Task Query_dynamic_field()
     {
-        await Collection.DropAsync(TestContext.Current.CancellationToken);
+        // Use a dedicated collection instead of dropping/recreating the shared fixture collection,
+        // which would poison the fixture data for the other (order-independent) tests in this class.
+        MilvusCollection collection = Client.GetCollection(nameof(Query_dynamic_field));
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
-            Collection.Name,
+            collection.Name,
             new CollectionSchema
             {
                 Fields =
@@ -99,10 +102,10 @@ public class SearchQueryTests(
                 EnableDynamicFields = true
             }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.CreateIndexAsync(
+        await collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>(), TestContext.Current.CancellationToken);
 
-        await Collection.InsertAsync(
+        await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new[] { 1L, 2L, 3L }),
@@ -117,11 +120,11 @@ public class SearchQueryTests(
                 FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
             }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
-        await Collection.WaitForCollectionLoadAsync(
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
-        IReadOnlyList<FieldData> fields = await Collection.QueryAsync(
+        IReadOnlyList<FieldData> fields = await collection.QueryAsync(
             "dynamic_long > 8",
             new QueryParameters { OutputFields = { "*" } }, TestContext.Current.CancellationToken);
 
@@ -337,10 +340,13 @@ public class SearchQueryTests(
     [Fact]
     public async Task Search_with_dynamic_field_filter()
     {
-        await Collection.DropAsync(TestContext.Current.CancellationToken);
+        // Use a dedicated collection instead of dropping/recreating the shared fixture collection,
+        // which would poison the fixture data for the other (order-independent) tests in this class.
+        MilvusCollection collection = Client.GetCollection(nameof(Search_with_dynamic_field_filter));
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
-            Collection.Name,
+            collection.Name,
             new CollectionSchema
             {
                 Fields =
@@ -351,10 +357,10 @@ public class SearchQueryTests(
                 EnableDynamicFields = true
             }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.CreateIndexAsync(
+        await collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>(), TestContext.Current.CancellationToken);
 
-        await Collection.InsertAsync(
+        await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new[] { 1L, 2L, 3L }),
@@ -369,11 +375,11 @@ public class SearchQueryTests(
                 FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
             }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
-        await Collection.WaitForCollectionLoadAsync(
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
-        var results = await Collection.SearchAsync(
+        var results = await collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 3f, 4f } },
             SimilarityMetricType.L2,
