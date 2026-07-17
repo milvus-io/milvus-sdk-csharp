@@ -1,10 +1,9 @@
 using Testcontainers.Milvus;
 using Xunit;
 
-namespace Milvus.Client.Tests;
+[assembly: AssemblyFixture(typeof(Milvus.Client.Tests.MilvusFixture))]
 
-[CollectionDefinition("Milvus")]
-public sealed class MilvusTestCollection : ICollectionFixture<MilvusFixture>;
+namespace Milvus.Client.Tests;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {

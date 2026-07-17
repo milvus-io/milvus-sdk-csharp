@@ -2,7 +2,6 @@
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class UserTests(MilvusFixture milvusFixture) : IAsyncLifetime
 {
     [Fact]

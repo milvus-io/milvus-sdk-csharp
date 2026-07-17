@@ -3,7 +3,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class IndexTests : IAsyncLifetime
 {
     [Fact]

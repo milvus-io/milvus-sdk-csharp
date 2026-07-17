@@ -3,7 +3,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class SearchQueryTests(
     MilvusFixture milvusFixture,
     SearchQueryTests.QueryCollectionFixture queryCollectionFixture)

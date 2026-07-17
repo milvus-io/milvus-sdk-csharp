@@ -3,7 +3,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class MiscTests(MilvusFixture milvusFixture) : IDisposable
 {
     // If this test is failing for you, that means you haven't enabled authorization in Milvus; follow the instructions

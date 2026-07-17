@@ -2,7 +2,6 @@
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIteratorStringKeyTests.DataCollectionFixture>,
                                                  IAsyncLifetime
 {

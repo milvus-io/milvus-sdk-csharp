@@ -2,7 +2,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class DatabaseTests(MilvusFixture milvusFixture) : IAsyncLifetime
 {
     [Fact]
