@@ -40,9 +40,9 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         [
             FieldData.Create("id", items.Select(x => x.Id).ToArray()),
             FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        var iterator = Collection.QueryWithIteratorAsync();
+        var iterator = Collection.QueryWithIteratorAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         List<IReadOnlyList<FieldData>> results = new();
         await foreach (var result in iterator)
@@ -62,9 +62,9 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
             Offset = 1
         };
 
-        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters);
+        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
-        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator().MoveNextAsync());
+        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator(TestContext.Current.CancellationToken).MoveNextAsync());
         Assert.NotNull(exception);
     }
 
@@ -76,9 +76,9 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
             Limit = 0
         };
 
-        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters);
+        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
-        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator().MoveNextAsync());
+        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator(TestContext.Current.CancellationToken).MoveNextAsync());
         Assert.NotNull(exception);
     }
 
@@ -108,7 +108,7 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         [
             FieldData.Create("id", items.Select(x => x.Id).ToArray()),
             FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
         var queryParameters = new QueryParameters
         {
@@ -119,7 +119,7 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         var iterator = Collection.QueryWithIteratorAsync(
             expression: expression,
             batchSize: batchSize,
-            parameters: queryParameters);
+            parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
         List<IReadOnlyList<FieldData>> results = new();
         await foreach (var result in iterator)

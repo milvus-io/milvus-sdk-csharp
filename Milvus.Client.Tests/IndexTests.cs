@@ -9,16 +9,16 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Create_vector_index()
     {
-        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await Collection.WaitForIndexBuildAsync("float_vector");
+        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task Create_vector_index_with_name()
     {
         await Collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx");
-        await Collection.WaitForIndexBuildAsync("float_vector", "float_vector_idx");
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", "float_vector_idx", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -29,16 +29,16 @@ public class IndexTests : IAsyncLifetime
             extraParams: new Dictionary<string, string>
             {
                 ["nlist"] = "1024"
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.WaitForIndexBuildAsync("float_vector");
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task Create_scalar_index()
     {
-        await Collection.CreateIndexAsync("varchar");
-        await Collection.WaitForIndexBuildAsync("varchar");
+        await Collection.CreateIndexAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -54,8 +54,8 @@ public class IndexTests : IAsyncLifetime
     {
         await Collection.CreateIndexAsync(
             "float_vector", indexType, SimilarityMetricType.L2,
-            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
-        await Collection.WaitForIndexBuildAsync("float_vector");
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString), cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -73,7 +73,7 @@ public class IndexTests : IAsyncLifetime
             return;
         }
 
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,
             new[]
@@ -81,11 +81,11 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateFloat16Vector("float16_vector", 4),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.CreateIndexAsync("float16_vector", indexType, SimilarityMetricType.L2,
-            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
-        await Collection.WaitForIndexBuildAsync("float16_vector");
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString), cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float16_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -105,8 +105,8 @@ public class IndexTests : IAsyncLifetime
         {
             await Collection.CreateIndexAsync(
                 "float_vector", indexType, SimilarityMetricType.L2,
-                extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
-            await Collection.WaitForIndexBuildAsync("float_vector");
+                extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString), cancellationToken: TestContext.Current.CancellationToken);
+            await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
         }
         catch (MilvusException ex) when (ex.Message.Contains("invalid index type", StringComparison.Ordinal))
         {
@@ -119,7 +119,7 @@ public class IndexTests : IAsyncLifetime
     [InlineData(IndexType.BinIvfFlat, """{ "n_trees": "8", "nlist": "8" }""")]
     public async Task Index_types_binary(IndexType indexType, string extraParamsString)
     {
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             nameof(IndexTests),
             new[]
@@ -127,12 +127,12 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.CreateIndexAsync(
             "binary_vector", indexType, SimilarityMetricType.Jaccard,
-            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString));
-        await Collection.WaitForIndexBuildAsync("binary_vector");
+            extraParams: JsonSerializer.Deserialize<Dictionary<string, string>>(extraParamsString), cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("binary_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -141,8 +141,8 @@ public class IndexTests : IAsyncLifetime
     [InlineData(SimilarityMetricType.Cosine)]
     public async Task Similarity_metric_types(SimilarityMetricType similarityMetricType)
     {
-        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, similarityMetricType);
-        await Collection.WaitForIndexBuildAsync("float_vector");
+        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, similarityMetricType, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -150,7 +150,7 @@ public class IndexTests : IAsyncLifetime
     [InlineData(SimilarityMetricType.Hamming)]
     public async Task Similarity_metric_types_binary(SimilarityMetricType similarityMetricType)
     {
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             nameof(IndexTests),
             new[]
@@ -158,10 +158,10 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateBinaryVector("binary_vector", 8),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, similarityMetricType);
-        await Collection.WaitForIndexBuildAsync("binary_vector");
+        await Collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, similarityMetricType, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("binary_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -172,8 +172,8 @@ public class IndexTests : IAsyncLifetime
             return;
         }
 
-        await Collection.CreateIndexAsync("varchar", IndexType.Inverted);
-        await Collection.WaitForIndexBuildAsync("varchar");
+        await Collection.CreateIndexAsync("varchar", IndexType.Inverted, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -184,8 +184,8 @@ public class IndexTests : IAsyncLifetime
             return;
         }
 
-        await Collection.CreateIndexAsync("varchar", IndexType.Trie);
-        await Collection.WaitForIndexBuildAsync("varchar");
+        await Collection.CreateIndexAsync("varchar", IndexType.Trie, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class IndexTests : IAsyncLifetime
             return;
         }
 
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,
             new[]
@@ -204,10 +204,10 @@ public class IndexTests : IAsyncLifetime
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.Create<long>("numeric_field"),
                 FieldSchema.CreateFloatVector("float_vector", 4),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.CreateIndexAsync("numeric_field", IndexType.StlSort);
-        await Collection.WaitForIndexBuildAsync("numeric_field");
+        await Collection.CreateIndexAsync("numeric_field", IndexType.StlSort, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("numeric_field", cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -218,14 +218,14 @@ public class IndexTests : IAsyncLifetime
             return;
         }
 
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateSparseFloatVector("sparse_vector"),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.CreateIndexAsync(
             "sparse_vector",
@@ -234,11 +234,11 @@ public class IndexTests : IAsyncLifetime
             extraParams: new Dictionary<string, string>
             {
                 ["drop_ratio_build"] = "0.2"
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.WaitForIndexBuildAsync("sparse_vector");
+        await Collection.WaitForIndexBuildAsync("sparse_vector", cancellationToken: TestContext.Current.CancellationToken);
 
-        var indexes = await Collection.DescribeIndexAsync("sparse_vector");
+        var indexes = await Collection.DescribeIndexAsync("sparse_vector", cancellationToken: TestContext.Current.CancellationToken);
         var index = Assert.Single(indexes);
         Assert.Contains(index.Params, kv => kv is { Key: "index_type", Value: "SPARSE_INVERTED_INDEX" });
     }
@@ -249,30 +249,30 @@ public class IndexTests : IAsyncLifetime
     {
         try
         {
-            Assert.Equal(IndexState.None, await Collection.GetIndexStateAsync("float_vector"));
+            Assert.Equal(IndexState.None, await Collection.GetIndexStateAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken));
         }
         catch (MilvusException e) when (e.Message.Contains("IndexNotFound", StringComparison.Ordinal))
         {
             // In recent versions of Milvus, querying state of non-existent index throws an error.
         }
 
-        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await Collection.WaitForIndexBuildAsync("float_vector");
+        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(IndexState.Finished, await Collection.GetIndexStateAsync("float_vector"));
+        Assert.Equal(IndexState.Finished, await Collection.GetIndexStateAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task GetBuildProgress_with_name()
     {
         await Assert.ThrowsAsync<MilvusException>(() =>
-            Collection.GetIndexBuildProgressAsync("float_vector", indexName: "float_vector_idx"));
+            Collection.GetIndexBuildProgressAsync("float_vector", indexName: "float_vector_idx", cancellationToken: TestContext.Current.CancellationToken));
 
         await Collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx");
-        await Collection.WaitForIndexBuildAsync("float_vector", "float_vector_idx");
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", "float_vector_idx", cancellationToken: TestContext.Current.CancellationToken);
 
-        var progress = await Collection.GetIndexBuildProgressAsync("float_vector", "float_vector_idx");
+        var progress = await Collection.GetIndexBuildProgressAsync("float_vector", "float_vector_idx", TestContext.Current.CancellationToken);
         Assert.Equal(progress.TotalRows, progress.IndexedRows);
     }
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -280,17 +280,17 @@ public class IndexTests : IAsyncLifetime
     [Fact]
     public async Task Describe()
     {
-        await Assert.ThrowsAsync<MilvusException>(() => Collection.DescribeIndexAsync("float_vector"));
+        await Assert.ThrowsAsync<MilvusException>(() => Collection.DescribeIndexAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken));
 
         await Collection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2,
             indexName: "float_vector_idx", extraParams: new Dictionary<string, string>
             {
                 ["nlist"] = "1024"
-            });
-        await Collection.WaitForIndexBuildAsync("float_vector");
+            }, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
 
-        var indexes = await Collection.DescribeIndexAsync("float_vector");
+        var indexes = await Collection.DescribeIndexAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
         var index = Assert.Single(indexes);
 
         Assert.Equal("float_vector_idx", index.IndexName);
@@ -308,13 +308,13 @@ public class IndexTests : IAsyncLifetime
     public async Task Drop()
     {
         await Collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx");
-        await Collection.WaitForIndexBuildAsync("float_vector");
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, indexName: "float_vector_idx", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.DropIndexAsync("float_vector", "float_vector_idx");
+        await Collection.DropIndexAsync("float_vector", "float_vector_idx", TestContext.Current.CancellationToken);
 
         MilvusException exception = await Assert.ThrowsAsync<MilvusException>(
-            () => Collection.DescribeIndexAsync("float_vector"));
+            () => Collection.DescribeIndexAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken));
         Assert.Equal(MilvusErrorCode.IndexNotFound, exception.ErrorCode);
     }
 

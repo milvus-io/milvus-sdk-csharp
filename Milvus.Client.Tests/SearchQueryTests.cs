@@ -18,7 +18,7 @@ public class SearchQueryTests(
             {
                 OutputFields = { "float_vector" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, fields.Count);
 
@@ -59,7 +59,7 @@ public class SearchQueryTests(
                 Limit = 2,
                 Offset = 1,
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
@@ -76,7 +76,7 @@ public class SearchQueryTests(
                 OutputFields = { "float_vector" },
                 Limit = 1,
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Equal(1, idData.RowCount);
@@ -86,7 +86,7 @@ public class SearchQueryTests(
     [Fact]
     public async Task Query_dynamic_field()
     {
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
             Collection.Name,
@@ -98,10 +98,10 @@ public class SearchQueryTests(
                     FieldSchema.CreateFloatVector("float_vector", 2)
                 },
                 EnableDynamicFields = true
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>(), TestContext.Current.CancellationToken);
 
         await Collection.InsertAsync(
             new FieldData[]
@@ -116,15 +116,15 @@ public class SearchQueryTests(
                 FieldData.CreateVarChar("dynamic_varchar", new[] { "str1", "str2", "str3" }, isDynamic: true),
                 FieldData.Create("dynamic_long", new[] { 8L, 9L, 10L }, isDynamic: true),
                 FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.LoadAsync();
+        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         IReadOnlyList<FieldData> fields = await Collection.QueryAsync(
             "dynamic_long > 8",
-            new QueryParameters { OutputFields = { "*" } });
+            new QueryParameters { OutputFields = { "*" } }, TestContext.Current.CancellationToken);
 
         var idData = (FieldData<long>)Assert.Single(fields, d => d.FieldName == "id");
         Assert.Equal(MilvusDataType.Int64, idData.DataType);
@@ -166,7 +166,7 @@ public class SearchQueryTests(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             SimilarityMetricType.L2,
-            limit: 2);
+            limit: 2, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.Empty(results.FieldsData);
@@ -192,7 +192,7 @@ public class SearchQueryTests(
             {
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 OutputFields = { "id", "varchar" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Collection(results.FieldsData.OrderBy(f => f.FieldName),
             field =>
@@ -227,7 +227,7 @@ public class SearchQueryTests(
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             SimilarityMetricType.L2,
             limit: 2,
-            new() { Offset = 1 });
+            new() { Offset = 1 }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.Empty(results.FieldsData);
@@ -256,7 +256,7 @@ public class SearchQueryTests(
                     { "radius", "60" },
                     { "range_filter", "10" }
                 }
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Collection(
             results.Ids.LongIds!.Order(),
@@ -271,27 +271,27 @@ public class SearchQueryTests(
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_no_results));
         string collectionName = collection.Name;
 
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         collection = await Client.CreateCollectionAsync(
             collectionName,
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             SimilarityMetricType.L2,
             limit: 2,
-            new() { OutputFields = { "id" } });
+            new() { OutputFields = { "id" } }, TestContext.Current.CancellationToken);
 
         Assert.Equal(collectionName, results.CollectionName);
 
@@ -321,7 +321,7 @@ public class SearchQueryTests(
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             SimilarityMetricType.L2,
             limit: 2,
-            new() { Expression = """json_thing["Number"] > 2""" });
+            new() { Expression = """json_thing["Number"] > 2""" }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.Empty(results.FieldsData);
@@ -338,7 +338,7 @@ public class SearchQueryTests(
     [Fact]
     public async Task Search_with_dynamic_field_filter()
     {
-        await Collection.DropAsync();
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
             Collection.Name,
@@ -350,10 +350,10 @@ public class SearchQueryTests(
                     FieldSchema.CreateFloatVector("float_vector", 2)
                 },
                 EnableDynamicFields = true
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>(), TestContext.Current.CancellationToken);
 
         await Collection.InsertAsync(
             new FieldData[]
@@ -368,11 +368,11 @@ public class SearchQueryTests(
                 FieldData.CreateVarChar("dynamic_varchar", new[] { "str1", "str2", "str3" }, isDynamic: true),
                 FieldData.Create("dynamic_long", new[] { 8L, 9L, 10L }, isDynamic: true),
                 FieldData.Create("dynamic_bool", new[] { true, false, true }, isDynamic: true)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.LoadAsync();
+        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await Collection.SearchAsync(
             "float_vector",
@@ -383,7 +383,7 @@ public class SearchQueryTests(
             {
                 Expression = """dynamic_long > 8""",
                 OutputFields = { "*" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         var fields = results.FieldsData;
 
@@ -429,7 +429,7 @@ public class SearchQueryTests(
         MilvusCollection binaryVectorCollection = Client.GetCollection(nameof(Search_binary_vector));
         string collectionName = binaryVectorCollection.Name;
 
-        await binaryVectorCollection.DropAsync();
+        await binaryVectorCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
@@ -437,11 +437,11 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateBinaryVector("binary_vector", 128)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await binaryVectorCollection.CreateIndexAsync(
             "binary_vector", indexType, similarityMetricType,
-            "float_vector_idx", new Dictionary<string, string>() { { "nlist", "128" } });
+            "float_vector_idx", new Dictionary<string, string>() { { "nlist", "128" } }, TestContext.Current.CancellationToken);
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
@@ -458,11 +458,11 @@ public class SearchQueryTests(
                 FieldData.Create("id", ids),
                 FieldData.Create("varchar", strings),
                 FieldData.CreateBinaryVectors("binary_vector", binaryVectors)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await binaryVectorCollection.LoadAsync();
+        await binaryVectorCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await binaryVectorCollection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await binaryVectorCollection.SearchAsync(
             "binary_vector",
@@ -473,7 +473,7 @@ public class SearchQueryTests(
             {
                 OutputFields = { "binary_vector" },
                 ConsistencyLevel = ConsistencyLevel.Strong,
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(collectionName, results.CollectionName);
 
@@ -506,7 +506,7 @@ public class SearchQueryTests(
         MilvusCollection float16VectorCollection = Client.GetCollection(nameof(Search_float16_vector));
         string collectionName = float16VectorCollection.Name;
 
-        await float16VectorCollection.DropAsync();
+        await float16VectorCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
@@ -514,7 +514,7 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateFloat16Vector("float16_vector", 128)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         var indexParams = indexType == IndexType.Hnsw
             ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" }
@@ -522,7 +522,7 @@ public class SearchQueryTests(
 
         await float16VectorCollection.CreateIndexAsync(
             "float16_vector", indexType, similarityMetricType,
-            "float16_vector_idx", indexParams);
+            "float16_vector_idx", indexParams, TestContext.Current.CancellationToken);
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
@@ -539,18 +539,18 @@ public class SearchQueryTests(
                 FieldData.Create("id", ids),
                 FieldData.Create("varchar", strings),
                 FieldData.CreateFloat16Vector("float16_vector", float16Vectors)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await float16VectorCollection.LoadAsync();
+        await float16VectorCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await float16VectorCollection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await float16VectorCollection.SearchAsync(
             "float16_vector",
             new[] { float16Vectors[0] },
             similarityMetricType,
             limit: 2,
-            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(collectionName, results.CollectionName);
 
@@ -574,23 +574,23 @@ public class SearchQueryTests(
         MilvusCollection collection = Client.GetCollection(nameof(Query_with_time_travel));
         string collectionName = collection.Name;
 
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         collection = await Client.CreateCollectionAsync(
             collectionName,
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new long[] { 1 }),
                 FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 1f, 2f } })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         var timestamp = DateTime.UtcNow;
 
@@ -599,14 +599,14 @@ public class SearchQueryTests(
             {
                 FieldData.Create("id", new long[] { 2 }),
                 FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 3f, 4f } })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         // Query without time travel
-        var results = await collection.QueryAsync("id > 0");
+        var results = await collection.QueryAsync("id > 0", cancellationToken: TestContext.Current.CancellationToken);
         var idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Collection(idData.Data,
             id => Assert.Equal(1, id),
@@ -615,7 +615,7 @@ public class SearchQueryTests(
         // Query with time travel
         results = await collection.QueryAsync(
             "id > 0",
-            new() { TimeTravelTimestamp = MilvusTimestampUtils.FromDateTime(timestamp) });
+            new() { TimeTravelTimestamp = MilvusTimestampUtils.FromDateTime(timestamp) }, TestContext.Current.CancellationToken);
         idData = (FieldData<long>)Assert.Single(results, d => d.FieldName == "id");
         Assert.Collection(idData.Data, id => Assert.Equal(1, id));
     }
@@ -624,7 +624,7 @@ public class SearchQueryTests(
     public async Task Search_with_all_supported_types()
     {
         var collection = Client.GetCollection("all_types");
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -648,9 +648,9 @@ public class SearchQueryTests(
                 FieldSchema.CreateVarcharArray("varchar_array", maxCapacity: 2, maxLength: 10),
                 FieldSchema.CreateJson("json"),
                 FieldSchema.CreateFloatVector("float_vector", dimension: 2),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new[]
@@ -678,11 +678,11 @@ public class SearchQueryTests(
                     (ReadOnlyMemory<float>)new[] { 1.1f, 2.2f },
                     (ReadOnlyMemory<float>)new[] { 3.3f, 4.4f },
                 }),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "float_vector",
@@ -712,7 +712,7 @@ public class SearchQueryTests(
                     "json",
                     "float_vector",
                 },
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(18, results.FieldsData.Count);
 
@@ -780,7 +780,7 @@ public class SearchQueryTests(
         }
 
         var collection = Client.GetCollection("nullable_types");
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -803,9 +803,9 @@ public class SearchQueryTests(
                 FieldSchema.CreateArray<double>("double_array_nullable", maxCapacity: 3, nullable: true),
                 FieldSchema.CreateVarcharArray("varchar_array_nullable", maxCapacity: 3, maxLength: 10, nullable: true),
                 FieldSchema.CreateFloatVector("float_vector", dimension: 2),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new FieldData[]
@@ -828,11 +828,11 @@ public class SearchQueryTests(
                 FieldData.CreateArray("double_array_nullable", new double[]?[] { new[] { 1.1, 2.2 }, null, [] }),
                 FieldData.CreateArray("varchar_array_nullable", new string[]?[] { new[] { "a", "b" }, null, [] }),
                 FieldData.CreateFloatVector("float_vector", [(float[])[1.1f, 2.2f], (float[])[3.3f, 4.4f], (float[])[5.5f, 6.6f]]),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "float_vector",
@@ -861,7 +861,7 @@ public class SearchQueryTests(
                     "varchar_array_nullable",
                     "float_vector",
                 },
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(17, results.FieldsData.Count);
 
@@ -958,7 +958,7 @@ public class SearchQueryTests(
         }
 
         var collection = Client.GetCollection("default_values_test");
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -975,9 +975,9 @@ public class SearchQueryTests(
                 FieldSchema.Create<int?>("int_nullable_default_null"),
                 FieldSchema.CreateVarchar("varchar_nullable_default_null", maxLength: 50, nullable: true),
                 FieldSchema.CreateFloatVector("float_vector", dimension: 2),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         // Insert data WITHOUT specifying the fields with default values
         await collection.InsertAsync(
@@ -989,11 +989,11 @@ public class SearchQueryTests(
                     (ReadOnlyMemory<float>)new[] { 1f, 2f },
                     (ReadOnlyMemory<float>)new[] { 3f, 4f },
                 }),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "float_vector",
@@ -1015,7 +1015,7 @@ public class SearchQueryTests(
                     "int_nullable_default_null",
                     "varchar_nullable_default_null",
                 },
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(10, results.FieldsData.Count);
 
@@ -1059,7 +1059,7 @@ public class SearchQueryTests(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             SimilarityMetricType.Ip,
-            limit: 2));
+            limit: 2, cancellationToken: TestContext.Current.CancellationToken));
 
     [Fact]
     public async Task Search_with_unsupported_vector_type_throws()
@@ -1068,7 +1068,7 @@ public class SearchQueryTests(
             "float_vector",
             new ReadOnlyMemory<string>[] { new[] { "foo", "bar" } },
             SimilarityMetricType.Ip,
-            limit: 2));
+            limit: 2, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Equal("vectors", exception.ParamName);
     }
@@ -1083,7 +1083,7 @@ public class SearchQueryTests(
             new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
             SimilarityMetricType.L2,
             parameters: parameters,
-            limit: 2);
+            limit: 2, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.Empty(results.FieldsData);
@@ -1106,7 +1106,7 @@ public class SearchQueryTests(
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_group_size));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -1114,9 +1114,9 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.Create<long>("group_id"),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new FieldData[]
@@ -1132,11 +1132,11 @@ public class SearchQueryTests(
                     new[] { 10.1f, 20.1f },
                     new[] { 10.2f, 20.2f }
                 })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "float_vector",
@@ -1148,7 +1148,7 @@ public class SearchQueryTests(
                 GroupByField = "group_id",
                 GroupSize = 2,
                 OutputFields = { "group_id" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         var groupIdField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "group_id");
         Assert.True(groupIdField.Data.Count(g => g == 1L) >= 1);
@@ -1165,7 +1165,7 @@ public class SearchQueryTests(
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_strict_group_size));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -1173,9 +1173,9 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.Create<long>("group_id"),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new FieldData[]
@@ -1189,11 +1189,11 @@ public class SearchQueryTests(
                     new[] { 1.2f, 2.2f },
                     new[] { 10f, 20f }
                 })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "float_vector",
@@ -1206,7 +1206,7 @@ public class SearchQueryTests(
                 GroupSize = 2,
                 StrictGroupSize = true,
                 OutputFields = { "group_id" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         var groupIdField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "group_id");
         Assert.Equal(2, groupIdField.Data.Count(g => g == 1L));
@@ -1223,14 +1223,14 @@ public class SearchQueryTests(
         MilvusCollection sparseCollection = Client.GetCollection(nameof(Search_sparse_vector));
         string collectionName = sparseCollection.Name;
 
-        await sparseCollection.DropAsync();
+        await sparseCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateSparseFloatVector("sparse_vector"),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         var sparseVectors = new[]
         {
@@ -1243,17 +1243,17 @@ public class SearchQueryTests(
         {
             FieldData.Create("id", new[] { 1L, 2L, 3L }),
             FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors),
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         await sparseCollection.CreateIndexAsync(
             "sparse_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Ip);
+            SimilarityMetricType.Ip, cancellationToken: TestContext.Current.CancellationToken);
 
-        await sparseCollection.LoadAsync();
+        await sparseCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await sparseCollection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var queryVector = new MilvusSparseVector<float>((int[])[0, 1], (float[])[1.0f, 1.0f]);
 
@@ -1262,7 +1262,7 @@ public class SearchQueryTests(
             new[] { queryVector },
             SimilarityMetricType.Ip,
             limit: 2,
-            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(collectionName, searchResults.CollectionName);
         Assert.NotNull(searchResults.Ids.LongIds);
@@ -1282,14 +1282,14 @@ public class SearchQueryTests(
         MilvusCollection sparseCollection = Client.GetCollection(nameof(Query_sparse_vector));
         string collectionName = sparseCollection.Name;
 
-        await sparseCollection.DropAsync();
+        await sparseCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateSparseFloatVector("sparse_vector"),
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         var sparseVectors = new[]
         {
@@ -1301,17 +1301,17 @@ public class SearchQueryTests(
         {
             FieldData.Create("id", new[] { 1L, 2L }),
             FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors),
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         await sparseCollection.CreateIndexAsync(
             "sparse_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Ip);
+            SimilarityMetricType.Ip, cancellationToken: TestContext.Current.CancellationToken);
 
-        await sparseCollection.LoadAsync();
+        await sparseCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await sparseCollection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await sparseCollection.QueryAsync(
             "id > 0",
@@ -1319,7 +1319,7 @@ public class SearchQueryTests(
             {
                 OutputFields = { "sparse_vector" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, results.Count);
 

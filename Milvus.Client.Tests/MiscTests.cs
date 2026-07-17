@@ -16,7 +16,7 @@ public class MiscTests(MilvusFixture milvusFixture) : IDisposable
 
         try
         {
-            await badClient.GetCollection("foo").DropAsync();
+            await badClient.GetCollection("foo").DropAsync(TestContext.Current.CancellationToken);
 
             if (Environment.GetEnvironmentVariable("CI") != null)
             {
@@ -32,14 +32,14 @@ public class MiscTests(MilvusFixture milvusFixture) : IDisposable
     [Fact]
     public async Task HealthTest()
     {
-        MilvusHealthState result = await Client.HealthAsync();
+        MilvusHealthState result = await Client.HealthAsync(TestContext.Current.CancellationToken);
         Assert.True(result.IsHealthy, result.ToString());
     }
 
     [Fact]
     public async Task GetVersion()
     {
-        string version =  await Client.GetVersionAsync();
+        string version =  await Client.GetVersionAsync(TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(version);
     }
@@ -47,12 +47,12 @@ public class MiscTests(MilvusFixture milvusFixture) : IDisposable
     [Fact]
     public async Task Dispose_client()
     {
-        MilvusHealthState state = await Client.HealthAsync();
+        MilvusHealthState state = await Client.HealthAsync(TestContext.Current.CancellationToken);
         Assert.True(state.IsHealthy);
 
         Client.Dispose();
 
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => Client.HealthAsync());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => Client.HealthAsync(TestContext.Current.CancellationToken));
       }
 
     private readonly MilvusClient Client = milvusFixture.CreateClient();
