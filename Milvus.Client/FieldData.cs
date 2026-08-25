@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using Google.Protobuf.Collections;
 
 namespace Milvus.Client;
@@ -156,6 +157,15 @@ public abstract class FieldData
                         => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.LongData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.LongData }
                         => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data, fieldData.IsDynamic),
+                    // Timestamptz shares the string_data slot with VarChar (it travels as an ISO 8601
+                    // string, matching the official Go SDK), so it must be discriminated on the
+                    // field's declared type before the VarChar cases below.
+                    { DataCase: ScalarField.DataOneofCase.StringData }
+                        when fieldData.Type == Grpc.DataType.Timestamptz && hasValidData
+                        => CreateTimestamptz(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.StringData.Data, fieldData.ValidData), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.StringData }
+                        when fieldData.Type == Grpc.DataType.Timestamptz
+                        => CreateTimestamptz(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.StringData } when hasValidData
                         => CreateVarChar(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.StringData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.StringData }
@@ -497,6 +507,47 @@ public abstract class FieldData
         IReadOnlyList<string?> wkt,
         bool isDynamic = false)
         => new(fieldName, wkt, MilvusDataType.Geometry, isDynamic);
+
+    /// <summary>
+    /// Create a timezone-aware timestamp field from ISO 8601 strings, e.g.
+    /// <c>2025-01-01T00:00:00Z</c>. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="timestamps">
+    /// The ISO 8601 representation of each timestamp. Values can be null if the field is nullable.
+    /// </param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    public static FieldData<string?> CreateTimestamptz(
+        string fieldName,
+        IReadOnlyList<string?> timestamps,
+        bool isDynamic = false)
+        => new(fieldName, timestamps, MilvusDataType.Timestamptz, isDynamic);
+
+    /// <summary>
+    /// Create a timezone-aware timestamp field from <see cref="DateTimeOffset" /> values.
+    /// Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="timestamps">
+    /// The timestamps to insert. Values can be null if the field is nullable. Each value is
+    /// formatted as a round-trippable ISO 8601 string, preserving its UTC offset.
+    /// </param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    public static FieldData<string?> CreateTimestamptz(
+        string fieldName,
+        IReadOnlyList<DateTimeOffset?> timestamps,
+        bool isDynamic = false)
+    {
+        Verify.NotNull(timestamps);
+
+        string?[] formatted = new string?[timestamps.Count];
+        for (int i = 0; i < timestamps.Count; i++)
+        {
+            formatted[i] = timestamps[i]?.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        return new FieldData<string?>(fieldName, formatted, MilvusDataType.Timestamptz, isDynamic);
+    }
 
 #if NET8_0_OR_GREATER
     private static Float16VectorFieldData CreateFloat16VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
@@ -850,6 +901,33 @@ public class FieldData<TData> : FieldData
                 fieldData.Scalars = new Grpc.ScalarField { JsonData = jsonData, };
                 break;
 
+            // Timestamptz travels as ISO 8601 text in string_data (same slot as VarChar), matching
+            // the official Go SDK -- not the int64 timestamptz_data slot.
+            case MilvusDataType.Timestamptz:
+                Grpc.StringArray timestamptzData = new();
+                bool hasNullTimestamptz = Data.Any(item => item is null);
+                if (hasNullTimestamptz)
+                {
+                    foreach (string? item in (IReadOnlyList<string?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            timestamptzData.Data.Add(item);
+                        }
+                    }
+                }
+                else
+                {
+                    timestamptzData.Data.AddRange((IReadOnlyList<string>)Data);
+                }
+                fieldData.Scalars = new Grpc.ScalarField { StringData = timestamptzData };
+                break;
+
             case MilvusDataType.Geometry:
                 Grpc.GeometryWktArray geometryData = new();
                 bool hasNullGeometry = Data.Any(item => item is null);
@@ -897,6 +975,7 @@ public class FieldData<TData> : FieldData
             MilvusDataType.VarChar => ((IReadOnlyList<string>)Data)[index],
             MilvusDataType.Json => ((IReadOnlyList<string>)Data)[index],
             MilvusDataType.Geometry => ((IReadOnlyList<string>)Data)[index],
+            MilvusDataType.Timestamptz => ((IReadOnlyList<string>)Data)[index],
 
             MilvusDataType.None => throw new MilvusException($"DataType Error:{DataType}"),
             _ => throw new MilvusException($"DataType Error:{DataType}, not supported")

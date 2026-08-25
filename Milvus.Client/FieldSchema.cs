@@ -195,6 +195,20 @@ public sealed class FieldSchema
         => new(name, MilvusDataType.Geometry, description: description, nullable: nullable);
 
     /// <summary>
+    /// Create a field schema for a timezone-aware timestamp field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field accepts null values.</param>
+    /// <remarks>
+    /// Values are exchanged as ISO 8601 strings, e.g. <c>2025-01-01T00:00:00Z</c>. The output
+    /// timezone can be controlled by setting a <c>timezone</c> property (an IANA name such as
+    /// <c>America/New_York</c>) on the database or collection.
+    /// </remarks>
+    public static FieldSchema CreateTimestamptz(string name, string description = "", bool nullable = false)
+        => new(name, MilvusDataType.Timestamptz, description: description, nullable: nullable);
+
+    /// <summary>
     /// Create a field schema for a sparse float vector field. Available since Milvus v2.4.
     /// </summary>
     /// <param name="name">The field name.</param>

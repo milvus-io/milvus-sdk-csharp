@@ -74,6 +74,11 @@ public enum MilvusDataType
     Geometry = 24,
 
     /// <summary>
+    /// Timezone-aware timestamp, carried as an ISO 8601 string. Available since Milvus v2.6.
+    /// </summary>
+    Timestamptz = 26,
+
+    /// <summary>
     /// BinaryVector
     /// </summary>
     BinaryVector = 100,
