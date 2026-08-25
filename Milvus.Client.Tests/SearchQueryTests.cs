@@ -570,6 +570,80 @@ public class SearchQueryTests(
     }
 #endif
 
+    // Milvus 2.6 only accepts HNSW (and AutoIndex) for Int8Vector fields; FLAT, IVF_*, DISKANN and
+    // SCANN are all rejected with "data type Int8Vector can't build with this index".
+    [Theory]
+    [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
+    [InlineData(IndexType.Hnsw, SimilarityMetricType.Ip)]
+    [InlineData(IndexType.AutoIndex, SimilarityMetricType.L2)]
+    public async Task Search_int8_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        MilvusCollection int8VectorCollection = Client.GetCollection(nameof(Search_int8_vector));
+        string collectionName = int8VectorCollection.Name;
+
+        await int8VectorCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateVarchar("varchar", 256),
+                FieldSchema.CreateInt8Vector("int8_vector", 128)
+            });
+
+        var indexParams = indexType == IndexType.Hnsw
+            ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" }
+            : new Dictionary<string, string>();
+
+        await int8VectorCollection.CreateIndexAsync(
+            "int8_vector", indexType, similarityMetricType,
+            "int8_vector_idx", indexParams);
+
+        long[] ids = { 1, 2, 3 };
+        string[] strings = { "one", "two", "three" };
+        ReadOnlyMemory<sbyte>[] int8Vectors =
+        {
+            Enumerable.Range(0, 128).Select(i => (sbyte)(i - 64)).ToArray(),
+            Enumerable.Range(0, 128).Select(i => (sbyte)(i - 20)).ToArray(),
+            Enumerable.Range(0, 128).Select(i => (sbyte)(i - 60)).ToArray(),
+        };
+
+        await int8VectorCollection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", ids),
+                FieldData.Create("varchar", strings),
+                FieldData.CreateInt8Vector("int8_vector", int8Vectors)
+            });
+
+        await int8VectorCollection.LoadAsync();
+        await int8VectorCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        var results = await int8VectorCollection.SearchAsync(
+            "int8_vector",
+            new[] { int8Vectors[0] },
+            similarityMetricType,
+            limit: 2,
+            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
+
+        Assert.Equal(collectionName, results.CollectionName);
+
+        Assert.Empty(results.FieldsData);
+        Assert.Equal(2, results.Ids.LongIds!.Count);
+        Assert.All(results.Ids.LongIds, id => Assert.InRange(id, 1, 3));
+        Assert.Null(results.Ids.StringIds);
+        Assert.Equal(1, results.NumQueries);
+        Assert.Equal(2, results.Scores.Count);
+        Assert.Equal(2, results.Limit);
+        Assert.Collection(results.Limits, l => Assert.Equal(2, l));
+    }
+
     [Fact(Skip = "Milvus returns 'only support to travel back to 0s so far, but got 1s'")]
     public async Task Query_with_time_travel()
     {
