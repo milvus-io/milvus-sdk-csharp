@@ -166,6 +166,15 @@ public sealed class FieldSchema
 #endif
 
     /// <summary>
+    /// Create a field schema for an int8 vector field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="dimension">The dimension of the vector. Must be greater than zero.</param>
+    /// <param name="description">An optional description for the field.</param>
+    public static FieldSchema CreateInt8Vector(string name, int dimension, string description = "")
+        => new(name, MilvusDataType.Int8Vector, description: description) { Dimension = dimension };
+
+    /// <summary>
     /// Create a field schema for a JSON field.
     /// </summary>
     /// <param name="name">The field name.</param>

@@ -205,8 +205,11 @@ public partial class MilvusCollection
                 PopulateFloat16VectorData(float16Vectors, placeholderValue);
                 break;
 #endif
+            case IReadOnlyList<ReadOnlyMemory<sbyte>> int8Vectors:
+                PopulateInt8VectorData(int8Vectors, placeholderValue);
+                break;
             default:
-                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
+                throw new ArgumentException("Only vectors of float, byte, Half, or sbyte are supported", nameof(vectors));
         }
 
         return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
@@ -606,6 +609,9 @@ public partial class MilvusCollection
                 PopulateFloat16VectorData(halfRequest.Vectors, placeholderValue);
                 break;
 #endif
+            case VectorAnnSearchRequest<sbyte> int8Request:
+                PopulateInt8VectorData(int8Request.Vectors, placeholderValue);
+                break;
             case SparseVectorAnnSearchRequest<float> sparseRequest:
                 PopulateFloatSparseVectorData(sparseRequest.Vectors, placeholderValue);
                 break;
@@ -716,6 +722,26 @@ public partial class MilvusCollection
         }
     }
 #endif
+
+    private static void PopulateInt8VectorData(
+        IReadOnlyList<ReadOnlyMemory<sbyte>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.Int8Vector;
+
+        foreach (ReadOnlyMemory<sbyte> milvusVector in vectors)
+        {
+            ReadOnlySpan<sbyte> span = milvusVector.Span;
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(span.Length);
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                bytes[i] = unchecked((byte)span[i]);
+            }
+
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, span.Length)));
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
 
     private static void PopulateFloatSparseVectorData(
         IReadOnlyList<MilvusSparseVector<float>> vectors, Grpc.PlaceholderValue placeholderValue)

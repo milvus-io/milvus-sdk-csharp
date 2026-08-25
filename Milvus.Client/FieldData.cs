@@ -121,10 +121,11 @@ public abstract class FieldData
 #else
                         throw new NotSupportedException("Float16Vector is only supported on .NET 8.0 or greater");
 #endif
-
+                    case Grpc.VectorField.DataOneofCase.Int8Vector:
+                        return CreateInt8VectorFromBytes(fieldData.FieldName, fieldData.Vectors.Int8Vector.Span, dim);
                     case Grpc.VectorField.DataOneofCase.SparseFloatVector:
                         return CreateSparseFloatVectorFromGrpc(fieldData.FieldName, fieldData.Vectors.SparseFloatVector);
-
+                    
                     default:
                         throw new NotSupportedException("VectorField.DataOneofCase.None not supported");
                 }
@@ -431,6 +432,15 @@ public abstract class FieldData
 #endif
 
     /// <summary>
+    /// Create an int8 vector. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <returns></returns>
+    public static Int8VectorFieldData CreateInt8Vector(string fieldName, IReadOnlyList<ReadOnlyMemory<sbyte>> data)
+        => new(fieldName, data);
+
+    /// <summary>
     /// Create a sparse float vector field. Available since Milvus v2.4.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
@@ -496,6 +506,32 @@ public abstract class FieldData
         return new Float16VectorFieldData(fieldName, vectors);
     }
 #endif
+
+    private static Int8VectorFieldData CreateInt8VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
+        int dimension)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.GreaterThan(dimension, 0);
+
+        int bytesPerVector = dimension;
+        int vectorCount = bytes.Length / bytesPerVector;
+        var vectors = new ReadOnlyMemory<sbyte>[vectorCount];
+
+        for (int i = 0; i < vectorCount; i++)
+        {
+            sbyte[] vector = new sbyte[dimension];
+            ReadOnlySpan<byte> vectorBytes = bytes.Slice(i * bytesPerVector, bytesPerVector);
+
+            for (int j = 0; j < dimension; j++)
+            {
+                vector[j] = unchecked((sbyte)vectorBytes[j]);
+            }
+
+            vectors[i] = vector;
+        }
+
+        return new Int8VectorFieldData(fieldName, vectors);
+    }
 
     private static SparseFloatVectorFieldData CreateSparseFloatVectorFromGrpc(
         string fieldName,
