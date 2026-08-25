@@ -721,6 +721,140 @@ public class SearchQueryTests(
         await geometryCollection.DropAsync();
     }
 
+    [Fact]
+    public async Task Query_timestamptz()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        MilvusCollection tsCollection = Client.GetCollection(nameof(Query_timestamptz));
+
+        await tsCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            tsCollection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2),
+                FieldSchema.CreateTimestamptz("ts")
+            });
+
+        await tsCollection.CreateIndexAsync(
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx",
+            new Dictionary<string, string>());
+
+        await tsCollection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f },
+                    new[] { 5f, 6f }
+                }),
+                FieldData.CreateTimestamptz("ts", new string?[]
+                {
+                    "2024-01-01T00:00:00Z",
+                    "2025-06-15T12:30:00Z",
+                    "2026-12-31T23:59:59Z"
+                })
+            });
+
+        await tsCollection.LoadAsync();
+        await tsCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        // Round-trip: the timestamp comes back typed as Timestamptz, not VarChar.
+        IReadOnlyList<FieldData> fields = await tsCollection.QueryAsync(
+            "id == 1",
+            new QueryParameters
+            {
+                OutputFields = { "ts" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
+
+        FieldData tsField = Assert.Single(fields, f => f.FieldName == "ts");
+        Assert.Equal(MilvusDataType.Timestamptz, tsField.DataType);
+        string returned = Assert.Single(Assert.IsType<FieldData<string?>>(tsField).Data)!;
+        Assert.Contains("2024", returned);
+
+        // Range filtering. Timestamptz literals require the ISO prefix -- comparing against a
+        // plain quoted string fails with "comparisons between Timestamptz and VarChar are not
+        // supported".
+        IReadOnlyList<FieldData> after = await tsCollection.QueryAsync(
+            "ts > ISO '2025-01-01T00:00:00Z'",
+            new QueryParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+
+        var afterIds = (FieldData<long>)Assert.Single(after, f => f.FieldName == "id");
+        Assert.Equal(new[] { 2L, 3L }, afterIds.Data.OrderBy(id => id));
+
+        await tsCollection.DropAsync();
+    }
+
+    [Fact]
+    public async Task Insert_timestamptz_from_DateTimeOffset()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        MilvusCollection tsCollection = Client.GetCollection(nameof(Insert_timestamptz_from_DateTimeOffset));
+
+        await tsCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            tsCollection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2),
+                FieldSchema.CreateTimestamptz("ts")
+            });
+
+        await tsCollection.CreateIndexAsync(
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx",
+            new Dictionary<string, string>());
+
+        DateTimeOffset utc = new(2025, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        DateTimeOffset offset = new(2025, 3, 4, 5, 6, 7, TimeSpan.FromHours(5.5));
+
+        await tsCollection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f }
+                }),
+                FieldData.CreateTimestamptz("ts", new DateTimeOffset?[] { utc, offset })
+            });
+
+        await tsCollection.LoadAsync();
+        await tsCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        IReadOnlyList<FieldData> fields = await tsCollection.QueryAsync(
+            "id in [1, 2]",
+            new QueryParameters
+            {
+                OutputFields = { "ts" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
+
+        var tsData = Assert.IsType<FieldData<string?>>(Assert.Single(fields, f => f.FieldName == "ts"));
+        Assert.Equal(2, tsData.Data.Count);
+        Assert.All(tsData.Data, value => Assert.False(string.IsNullOrWhiteSpace(value)));
+
+        // The non-UTC value carried a +05:30 offset, so it is the earlier instant of the two.
+        Assert.All(tsData.Data, value => Assert.Contains("2025", value!));
+
+        await tsCollection.DropAsync();
+    }
+
     [Fact(Skip = "Milvus returns 'only support to travel back to 0s so far, but got 1s'")]
     public async Task Query_with_time_travel()
     {
