@@ -69,6 +69,11 @@ public enum MilvusDataType
     Json = 23,
 
     /// <summary>
+    /// Geometry, carried as WKT (well-known text). Available since Milvus v2.6.
+    /// </summary>
+    Geometry = 24,
+
+    /// <summary>
     /// BinaryVector
     /// </summary>
     BinaryVector = 100,

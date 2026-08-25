@@ -94,6 +94,7 @@ public partial class MilvusCollection
                 IndexType.StlSort => "STL_SORT",
                 IndexType.Inverted => "INVERTED",
                 IndexType.SparseInvertedIndex => "SPARSE_INVERTED_INDEX",
+                IndexType.RTree => "RTREE",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
             };

@@ -162,6 +162,12 @@ public abstract class FieldData
                         => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.JsonData }
                         => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
+                    // Geometry travels as WKT text in geometry_wkt_data, matching the official Go
+                    // SDK; the binary geometry_data (WKB) slot is not what the server returns.
+                    { DataCase: ScalarField.DataOneofCase.GeometryWktData } when hasValidData
+                        => CreateGeometry(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.GeometryWktData.Data, fieldData.ValidData), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.GeometryWktData }
+                        => CreateGeometry(fieldData.FieldName, fieldData.Scalars.GeometryWktData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool } when hasValidData
                         => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool }
@@ -476,6 +482,21 @@ public abstract class FieldData
         Verify.NotNullOrWhiteSpace(fieldName);
         return new FieldData<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
+
+    /// <summary>
+    /// Create a geometry field from WKT (well-known text) values, e.g. <c>POINT (30 10)</c>.
+    /// Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="wkt">
+    /// The WKT representation of each geometry value. Values can be null if the field is nullable.
+    /// </param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    public static FieldData<string?> CreateGeometry(
+        string fieldName,
+        IReadOnlyList<string?> wkt,
+        bool isDynamic = false)
+        => new(fieldName, wkt, MilvusDataType.Geometry, isDynamic);
 
 #if NET8_0_OR_GREATER
     private static Float16VectorFieldData CreateFloat16VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
@@ -828,6 +849,31 @@ public class FieldData<TData> : FieldData
                 }
                 fieldData.Scalars = new Grpc.ScalarField { JsonData = jsonData, };
                 break;
+
+            case MilvusDataType.Geometry:
+                Grpc.GeometryWktArray geometryData = new();
+                bool hasNullGeometry = Data.Any(item => item is null);
+                if (hasNullGeometry)
+                {
+                    foreach (string? item in (IReadOnlyList<string?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            geometryData.Data.Add(item);
+                        }
+                    }
+                }
+                else
+                {
+                    geometryData.Data.AddRange((IReadOnlyList<string>)Data);
+                }
+                fieldData.Scalars = new Grpc.ScalarField { GeometryWktData = geometryData };
+                break;
             case MilvusDataType.None:
                 throw new MilvusException($"DataType Error:{DataType}");
             default:
@@ -850,6 +896,7 @@ public class FieldData<TData> : FieldData
             MilvusDataType.String => ((IReadOnlyList<string>)Data)[index],
             MilvusDataType.VarChar => ((IReadOnlyList<string>)Data)[index],
             MilvusDataType.Json => ((IReadOnlyList<string>)Data)[index],
+            MilvusDataType.Geometry => ((IReadOnlyList<string>)Data)[index],
 
             MilvusDataType.None => throw new MilvusException($"DataType Error:{DataType}"),
             _ => throw new MilvusException($"DataType Error:{DataType}, not supported")

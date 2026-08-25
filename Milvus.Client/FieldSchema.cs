@@ -182,6 +182,19 @@ public sealed class FieldSchema
         => new(name, MilvusDataType.Json);
 
     /// <summary>
+    /// Create a field schema for a geometry field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field accepts null values.</param>
+    /// <remarks>
+    /// Values are exchanged as WKT (well-known text), e.g. <c>POINT (30 10)</c>. Use
+    /// <see cref="IndexType.RTree" /> to accelerate spatial predicates on this field.
+    /// </remarks>
+    public static FieldSchema CreateGeometry(string name, string description = "", bool nullable = false)
+        => new(name, MilvusDataType.Geometry, description: description, nullable: nullable);
+
+    /// <summary>
     /// Create a field schema for a sparse float vector field. Available since Milvus v2.4.
     /// </summary>
     /// <param name="name">The field name.</param>

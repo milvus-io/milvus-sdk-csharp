@@ -254,4 +254,13 @@ public enum IndexType
     /// </para>
     /// </remarks>
     SparseInvertedIndex,
+
+    /// <summary>
+    /// RTREE spatial index for geometry fields. Available since Milvus v2.6.
+    /// </summary>
+    /// <remarks>
+    /// Accelerates spatial predicates (<c>st_contains</c>, <c>st_within</c>, <c>st_intersects</c>,
+    /// <c>st_dwithin</c>, ...) on <see cref="MilvusDataType.Geometry" /> fields.
+    /// </remarks>
+    RTree,
 }
