@@ -87,4 +87,25 @@ public enum MilvusDataType
     /// SparseFloatVector. Available since Milvus v2.4.
     /// </summary>
     SparseFloatVector = 104,
+
+    /// <summary>
+    /// Int8Vector.
+    /// </summary>
+    Int8Vector = 105,
+
+    /// <summary>
+    /// Array of Vector.
+    /// </summary>
+    ArrayOfVector = 106,
+
+    /// <summary>
+    /// Array of Structure
+    /// </summary>
+    ArrayOfStruct = 200,
+
+    /// <summary>
+    /// Structure
+    /// </summary>
+    Struct = 201 
+
 }
