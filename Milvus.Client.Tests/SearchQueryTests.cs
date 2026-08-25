@@ -644,6 +644,83 @@ public class SearchQueryTests(
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
+    [Fact]
+    public async Task Query_geometry()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        MilvusCollection geometryCollection = Client.GetCollection(nameof(Query_geometry));
+
+        await geometryCollection.DropAsync();
+        await Client.CreateCollectionAsync(
+            geometryCollection.Name,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateFloatVector("float_vector", 2),
+                FieldSchema.CreateGeometry("geo")
+            });
+
+        await geometryCollection.CreateIndexAsync(
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx",
+            new Dictionary<string, string>());
+        await geometryCollection.CreateIndexAsync("geo", IndexType.RTree, indexName: "geo_idx");
+
+        string[] wkts =
+        {
+            "POINT (1 1)",
+            "POINT (5 5)",
+            "LINESTRING (0 0, 2 2)",
+            "POLYGON ((10 10, 12 10, 12 12, 10 12, 10 10))"
+        };
+
+        await geometryCollection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L, 4L }),
+                FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+                {
+                    new[] { 1f, 2f },
+                    new[] { 3f, 4f },
+                    new[] { 5f, 6f },
+                    new[] { 7f, 8f }
+                }),
+                FieldData.CreateGeometry("geo", wkts)
+            });
+
+        await geometryCollection.LoadAsync();
+        await geometryCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+
+        // Round-trip: the WKT we inserted comes back as a geometry field.
+        IReadOnlyList<FieldData> fields = await geometryCollection.QueryAsync(
+            "id == 1",
+            new QueryParameters
+            {
+                OutputFields = { "geo" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            });
+
+        FieldData geoField = Assert.Single(fields, f => f.FieldName == "geo");
+        Assert.Equal(MilvusDataType.Geometry, geoField.DataType);
+        string returned = Assert.Single(Assert.IsType<FieldData<string?>>(geoField).Data)!;
+        Assert.Contains("POINT", returned, StringComparison.OrdinalIgnoreCase);
+
+        // Spatial predicate: the two points and the linestring are all fully inside this box;
+        // the polygon at (10 10)-(12 12) is outside it.
+        IReadOnlyList<FieldData> within = await geometryCollection.QueryAsync(
+            "st_within(geo, 'POLYGON ((0 0, 6 0, 6 6, 0 6, 0 0))')",
+            new QueryParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+
+        var withinIds = (FieldData<long>)Assert.Single(within, f => f.FieldName == "id");
+        Assert.Equal(new[] { 1L, 2L, 3L }, withinIds.Data.OrderBy(id => id));
+
+        await geometryCollection.DropAsync();
+    }
+
     [Fact(Skip = "Milvus returns 'only support to travel back to 0s so far, but got 1s'")]
     public async Task Query_with_time_travel()
     {
