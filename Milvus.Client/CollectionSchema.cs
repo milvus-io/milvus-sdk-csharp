@@ -10,6 +10,7 @@ using System.Collections.Generic;
 public sealed class CollectionSchema
 {
     private readonly List<FieldSchema> _fields = new();
+    private readonly List<FunctionSchema> _functions = new();
 
     /// <summary>
     /// Instantiates a new <see cref="CollectionSchema" />.
@@ -19,7 +20,15 @@ public sealed class CollectionSchema
     }
 
     internal CollectionSchema(IReadOnlyList<FieldSchema> fields)
-        => _fields.AddRange(fields);
+        : this(fields, Array.Empty<FunctionSchema>())
+    {
+    }
+
+    internal CollectionSchema(IReadOnlyList<FieldSchema> fields, IReadOnlyList<FunctionSchema> functions)
+    {
+        _fields.AddRange(fields);
+        _functions.AddRange(functions);
+    }
 
     /// <summary>
     /// The name of the collection.
@@ -35,6 +44,15 @@ public sealed class CollectionSchema
     /// The fields which make up the schema of the collection.
     /// </summary>
     public IList<FieldSchema> Fields => _fields;
+
+    /// <summary>
+    /// The functions defined in the schema for automatic data transformation.
+    /// </summary>
+    /// <remarks>
+    /// Functions enable automatic data transformations during insertion, such as BM25 full-text
+    /// search indexing where text fields are automatically converted to sparse vectors.
+    /// </remarks>
+    public IList<FunctionSchema> Functions => _functions;
 
     /// <summary>
     /// Whether to enable dynamic fields for this schema. Defaults to <c>false</c>.

@@ -231,9 +231,23 @@ public enum IndexType
     /// with low-dimensional non-zero values.
     /// </para>
     /// <para>
-    /// Build parameters: <c>drop_ratio_build</c> (the proportion of small vector values excluded during indexing,
-    /// range [0, 1), default 0).
+    /// Build parameters (passed via <c>extraParams</c>):
     /// </para>
+    /// <list type="bullet">
+    /// <item>
+    /// <c>inverted_index_algo</c>: The query algorithm. Values: <c>"DAAT_MAXSCORE"</c> (default, best for high k
+    /// or many terms), <c>"DAAT_WAND"</c> (best for small k or short queries), <c>"TAAT_NAIVE"</c> (adapts to
+    /// collection changes). String values must be quoted in JSON, e.g. <c>"\"DAAT_WAND\""</c>.
+    /// </item>
+    /// <item>
+    /// <c>bm25_k1</c>: Controls term frequency saturation for BM25 scoring. Range [1.2, 2.0].
+    /// Only applicable when metric type is <see cref="SimilarityMetricType.Bm25" />.
+    /// </item>
+    /// <item>
+    /// <c>bm25_b</c>: Controls document length normalization for BM25 scoring. Range [0, 1], default 0.75.
+    /// Only applicable when metric type is <see cref="SimilarityMetricType.Bm25" />.
+    /// </item>
+    /// </list>
     /// <para>
     /// Search parameters: <c>drop_ratio_search</c> (the proportion of small vector values excluded during search,
     /// range [0, 1), default 0).

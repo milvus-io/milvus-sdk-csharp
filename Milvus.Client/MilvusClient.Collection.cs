@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 
 namespace Milvus.Client;
 
@@ -127,7 +128,49 @@ public partial class MilvusClient
                 grpcField.DefaultValue = ConvertToValueField(field.DefaultValue, field.DataType);
             }
 
+            if (field.EnableAnalyzer)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.EnableAnalyzer,
+                    Value = "true"
+                });
+            }
+
+            if (field.AnalyzerParams is not null)
+            {
+                grpcField.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.AnalyzerParams,
+                    Value = JsonSerializer.Serialize(field.AnalyzerParams)
+                });
+            }
+
             grpcCollectionSchema.Fields.Add(grpcField);
+        }
+
+        foreach (FunctionSchema function in schema.Functions)
+        {
+            Grpc.FunctionSchema grpcFunction = new()
+            {
+                Name = function.Name,
+                Description = function.Description,
+                Type = (Grpc.FunctionType)(int)function.Type
+            };
+
+            grpcFunction.InputFieldNames.AddRange(function.InputFieldNames);
+            grpcFunction.OutputFieldNames.AddRange(function.OutputFieldNames);
+
+            foreach (var param in function.Params)
+            {
+                grpcFunction.Params.Add(new Grpc.KeyValuePair
+                {
+                    Key = param.Key,
+                    Value = param.Value
+                });
+            }
+
+            grpcCollectionSchema.Functions.Add(grpcFunction);
         }
 
 #pragma warning disable CS0612 // Schema-level AutoID is obsolete, but still there in pymilvus

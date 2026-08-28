@@ -112,6 +112,12 @@ public sealed class FieldSchema
     /// <param name="defaultValue">
     /// The default value for the field. Available since Milvus v2.5.
     /// </param>
+    /// <param name="enableAnalyzer">
+    /// Whether to enable the analyzer for this field. Required for BM25 full-text search input fields.
+    /// </param>
+    /// <param name="analyzerParams">
+    /// Optional analyzer parameters. For example: <c>new Dictionary&lt;string, object&gt; { ["type"] = "english" }</c>.
+    /// </param>
     public static FieldSchema CreateVarchar(
         string name,
         int maxLength,
@@ -120,10 +126,14 @@ public sealed class FieldSchema
         bool isPartitionKey = false,
         string description = "",
         bool nullable = false,
-        string? defaultValue = null)
+        string? defaultValue = null,
+        bool enableAnalyzer = false,
+        IReadOnlyDictionary<string, object>? analyzerParams = null)
         => new(name, MilvusDataType.VarChar, isPrimaryKey, autoId, isPartitionKey, description, nullable, defaultValue)
         {
-            MaxLength = maxLength
+            MaxLength = maxLength,
+            EnableAnalyzer = enableAnalyzer,
+            AnalyzerParams = analyzerParams
         };
 
     /// <summary>
@@ -361,6 +371,28 @@ public sealed class FieldSchema
     /// and must be greater than zero. Not applicable for <see cref="MilvusDataType.SparseFloatVector" /> fields.
     /// </summary>
     public int? Dimension { get; set; }
+
+    /// <summary>
+    /// Whether to enable the analyzer for this field. Required for BM25 full-text search input fields.
+    /// </summary>
+    /// <remarks>
+    /// When enabled, the field can be used as an input to a BM25 function for full-text search.
+    /// This property is only applicable for <see cref="MilvusDataType.VarChar" /> fields.
+    /// </remarks>
+    public bool EnableAnalyzer { get; set; }
+
+    /// <summary>
+    /// Optional analyzer parameters. For example: <c>new Dictionary&lt;string, object&gt; { ["type"] = "english" }</c>.
+    /// </summary>
+    /// <remarks>
+    /// This property is only applicable when <see cref="EnableAnalyzer" /> is set to true.
+    /// </remarks>
+    public IReadOnlyDictionary<string, object>? AnalyzerParams { get; set; }
+
+    /// <summary>
+    /// Whether this field is the output of a function and should not be provided during insertion.
+    /// </summary>
+    public bool IsFunctionOutput { get; internal set; }
 
     /// <summary>
     /// The state of the field.

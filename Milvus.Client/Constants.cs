@@ -181,4 +181,14 @@ internal static class Constants
     /// to instruct server execute query/search after all DML operations finished.
     /// </summary>
     internal const long GuaranteeStrongTs = 0L;
+
+    /// <summary>
+    /// Key name in type_params. Indicates whether analyzer is enabled for a varchar field.
+    /// </summary>
+    internal const string EnableAnalyzer = "enable_analyzer";
+
+    /// <summary>
+    /// Key name in type_params. Contains analyzer parameters as JSON.
+    /// </summary>
+    internal const string AnalyzerParams = "analyzer_params";
 }
