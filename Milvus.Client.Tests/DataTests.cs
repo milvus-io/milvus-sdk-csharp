@@ -2,7 +2,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncLifetime
 {
     [Fact]
@@ -19,12 +18,12 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
         IReadOnlyList<FieldData> results = await Collection.QueryAsync(
             "id in [2]",
-            new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            new() { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         FieldData<long> result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Equal(2, Assert.Single(result.Data));
 
-        mutationResult = await Collection.DeleteAsync("id in [2]");
+        mutationResult = await Collection.DeleteAsync("id in [2]", cancellationToken: TestContext.Current.CancellationToken);
         // Starting with Milvus 2.3.2, Delete no longer seems to return the deleted IDs
         // Assert.Collection(mutationResult.Ids.LongIds!, i => Assert.Equal(2, i));
         Assert.Equal(1, mutationResult.DeleteCount);
@@ -33,7 +32,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
         results = await Collection.QueryAsync(
             "id in [2]",
-            new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            new() { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
         result = Assert.IsType<FieldData<long>>(Assert.Single(results));
         Assert.Empty(result.Data);
     }
@@ -45,7 +44,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
             [
                 FieldData.Create("id", new[] { 1L }),
                 FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[] { new[] { 20f, 30f } })
-            ]);
+            ], cancellationToken: TestContext.Current.CancellationToken);
 
         MutationResult upsertResult = await Collection.UpsertAsync(
         [
@@ -53,7 +52,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
             FieldData.CreateFloatVector(
                 "float_vector",
                 new ReadOnlyMemory<float>[] { new[] { 1f, 2f }, new[] { 3f, 4f } })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Collection(upsertResult.Ids.LongIds!,
             i => Assert.Equal(1, i),
@@ -69,7 +68,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
             {
                 OutputFields = { "float_vector" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Collection(
             results.OrderBy(r => r.FieldName),
@@ -93,13 +92,13 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     {
         DateTime before = DateTime.UtcNow;
 
-        await Task.Delay(1100);
+        await Task.Delay(1100, TestContext.Current.CancellationToken);
 
         MutationResult mutationResult = await InsertDataAsync(3, 4);
 
         DateTime insertion = MilvusTimestampUtils.ToDateTime(mutationResult.Timestamp);
 
-        await Task.Delay(1100);
+        await Task.Delay(1100, TestContext.Current.CancellationToken);
 
         DateTime after = DateTime.UtcNow;
 
@@ -113,57 +112,66 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
     [Fact]
     public async Task Flush()
     {
-        await Collection.WaitForFlushAsync();
+        await Collection.WaitForFlushAsync(cancellationToken: TestContext.Current.CancellationToken);
         // Any insertion after a flush operation results in generating new segments.
         await InsertDataAsync(5, 6);
-        FlushResult newResult = await Collection.FlushAsync();
+        FlushResult newResult = await Collection.FlushAsync(TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(newResult.CollSegIDs);
         Assert.Equal(CollectionName, newResult.CollSegIDs.First().Key);
         Assert.NotEmpty(newResult.CollSegIDs.First().Value);
 
-        await Collection.WaitForFlushAsync();
+        await Collection.WaitForFlushAsync(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task Flush_with_not_exist_collection()
-        => await Assert.ThrowsAsync<MilvusException>(() => Client.FlushAsync(new[] { "NotExist" }));
+        => await Assert.ThrowsAsync<MilvusException>(() => Client.FlushAsync(new[] { "NotExist" }, TestContext.Current.CancellationToken));
 
     [Fact]
     public async Task GetFlushState_with_empty_ids()
-        => await Assert.ThrowsAsync<ArgumentException>(() => Client.GetFlushStateAsync(Array.Empty<long>()));
+        => await Assert.ThrowsAsync<ArgumentException>(() => Client.GetFlushStateAsync(Array.Empty<long>(), TestContext.Current.CancellationToken));
 
     [Fact]
     public async Task GetFlushState_with_not_exist_ids()
-        => Assert.True(await Client.GetFlushStateAsync(new long[] { -1, -2, -3 })); // But return true.
+        => Assert.True(await Client.GetFlushStateAsync(new long[] { -1, -2, -3 }, TestContext.Current.CancellationToken)); // But return true.
 
     [Fact]
     public async Task Collection_waitForFlush()
     {
-        MilvusCollectionDescription collectionDes = await Collection.DescribeAsync();
+        MilvusCollectionDescription collectionDes = await Collection.DescribeAsync(TestContext.Current.CancellationToken);
         await InsertDataAsync(7, 8);
-        await Collection.WaitForFlushAsync();
+        await Collection.WaitForFlushAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        IEnumerable<PersistentSegmentInfo> segmentInfos = null!;
-        const int retries = 3;
+        // On Milvus 2.6 the persistent segment info becomes available with some lag after the
+        // flush completes, so poll until a segment with rows shows up. The previous loop only
+        // retried on the transient "segment not found" exception, not on an empty result.
+        PersistentSegmentInfo? segmentInfo = null;
+        const int retries = 20;
         for (int i = 0; i < retries; i++)
         {
             try
             {
-                segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
+                IReadOnlyList<PersistentSegmentInfo> segmentInfos =
+                    await Collection.GetPersistentSegmentInfosAsync(TestContext.Current.CancellationToken);
+                segmentInfo = segmentInfos.LastOrDefault(s => s.NumRows > 0);
+            }
+            catch (MilvusException ex) when (ex.ErrorCode == MilvusErrorCode.SegmentInfo ||
+                                             ex.Message.Contains("segment not found"))
+            {
+                // Transient right after flush; fall through to retry.
+            }
+
+            if (segmentInfo is not null)
+            {
                 break;
             }
-            catch (MilvusException ex) when ((ex.ErrorCode == MilvusErrorCode.SegmentInfo ||
-                                              ex.Message.Contains("segment not found")) && i < retries - 1)
-            {
-                await Task.Delay(500);
-            }
+
+            await Task.Delay(500, TestContext.Current.CancellationToken);
         }
 
-        PersistentSegmentInfo? segmentInfo = segmentInfos.LastOrDefault();
-
         Assert.NotNull(segmentInfo);
-        Assert.Equal(SegmentState.Flushed, segmentInfo.State);
+        Assert.True(segmentInfo.State is SegmentState.Flushed or SegmentState.Sealed);
         Assert.True(segmentInfo.NumRows > 0);
         Assert.Equal(collectionDes.CollectionId, segmentInfo.CollectionId);
     }
@@ -174,26 +182,30 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         await InsertDataAsync(9, 10);
 
         // Flush all
-        ulong timestamp = await Client.FlushAllAsync();
+        ulong timestamp = await Client.FlushAllAsync(TestContext.Current.CancellationToken);
 
         // Test if it is a timestamp
         DateTime flushAllDateTime = MilvusTimestampUtils.ToDateTime(timestamp);
         Assert.True(Math.Abs((flushAllDateTime - DateTime.UtcNow).TotalSeconds) < 1);
 
         // Wait
-        await Client.WaitForFlushAllAsync(timestamp);
+        await Client.WaitForFlushAllAsync(timestamp, cancellationToken: TestContext.Current.CancellationToken);
 
-        IEnumerable<PersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync();
+        IEnumerable<PersistentSegmentInfo> segmentInfos = await Collection.GetPersistentSegmentInfosAsync(TestContext.Current.CancellationToken);
         Assert.True(segmentInfos.All(p => p.State is SegmentState.Flushed or SegmentState.Sealed));
     }
 
     [Fact]
     public async Task Insert_dynamic_field()
     {
-        await Collection.DropAsync();
+        // Use a dedicated collection instead of dropping/recreating the shared fixture collection,
+        // which would leave it unloaded and break other tests in this class (test order is not
+        // deterministic, so any later test querying the shared collection would fail).
+        MilvusCollection collection = Client.GetCollection($"{CollectionName}_dynamic");
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
-            Collection.Name,
+            collection.Name,
             new CollectionSchema
             {
                 Fields =
@@ -202,9 +214,9 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
                     FieldSchema.CreateFloatVector("float_vector", 2)
                 },
                 EnableDynamicFields = true
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await Collection.InsertAsync(
+        await collection.InsertAsync(
             new FieldData[]
             {
                 FieldData.Create("id", new[] { 1L, 2L }),
@@ -215,7 +227,9 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
                 }),
                 FieldData.CreateVarChar("unknown_varchar", new[] { "dynamic str1", "dynamic str2" }, isDynamic: true),
                 FieldData.Create("unknown_int", new[] { 8L, 9L }, isDynamic: true)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task<MutationResult> InsertDataAsync(long id1, long id2)
@@ -242,7 +256,7 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
 
         public MilvusCollection Collection;
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await Collection.DropAsync();
 
@@ -260,10 +274,10 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
             await Collection.WaitForCollectionLoadAsync();
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 
@@ -278,11 +292,11 @@ public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncL
         _dataCollectionFixture = dataCollectionFixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

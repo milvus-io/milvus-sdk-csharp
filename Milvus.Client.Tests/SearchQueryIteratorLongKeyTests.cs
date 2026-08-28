@@ -2,7 +2,6 @@
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIteratorLongKeyTests.DataCollectionFixture>,
                                                IAsyncLifetime
 {
@@ -16,12 +15,12 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         _dataCollectionFixture = dataCollectionFixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private MilvusCollection Collection => _dataCollectionFixture.Collection;
@@ -40,9 +39,9 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         [
             FieldData.Create("id", items.Select(x => x.Id).ToArray()),
             FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        var iterator = Collection.QueryWithIteratorAsync();
+        var iterator = Collection.QueryWithIteratorAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         List<IReadOnlyList<FieldData>> results = new();
         await foreach (var result in iterator)
@@ -62,9 +61,9 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
             Offset = 1
         };
 
-        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters);
+        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
-        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator().MoveNextAsync());
+        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator(TestContext.Current.CancellationToken).MoveNextAsync());
         Assert.NotNull(exception);
     }
 
@@ -76,9 +75,9 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
             Limit = 0
         };
 
-        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters);
+        var iterator = Collection.QueryWithIteratorAsync(parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
-        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator().MoveNextAsync());
+        var exception = Assert.ThrowsAsync<MilvusException>(async () => await iterator.GetAsyncEnumerator(TestContext.Current.CancellationToken).MoveNextAsync());
         Assert.NotNull(exception);
     }
 
@@ -108,7 +107,7 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         [
             FieldData.Create("id", items.Select(x => x.Id).ToArray()),
             FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
         var queryParameters = new QueryParameters
         {
@@ -119,7 +118,7 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
         var iterator = Collection.QueryWithIteratorAsync(
             expression: expression,
             batchSize: batchSize,
-            parameters: queryParameters);
+            parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
         List<IReadOnlyList<FieldData>> results = new();
         await foreach (var result in iterator)
@@ -189,7 +188,7 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
             Collection = Client.GetCollection(CollectionName);
         }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await Collection.DropAsync();
 
@@ -207,10 +206,10 @@ public class SearchQueryIteratorLongKeyTests : IClassFixture<SearchQueryIterator
             await Collection.WaitForCollectionLoadAsync();
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

@@ -2,7 +2,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class HybridSearchTests(
     MilvusFixture milvusFixture,
     HybridSearchTests.HybridSearchCollectionFixture hybridSearchCollectionFixture)
@@ -36,7 +35,7 @@ public class HybridSearchTests(
             ],
             new RrfReranker(),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -67,7 +66,7 @@ public class HybridSearchTests(
             ],
             new RrfReranker(k: 100),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -98,7 +97,7 @@ public class HybridSearchTests(
             ],
             new WeightedReranker(0.7f, 0.3f),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -133,7 +132,7 @@ public class HybridSearchTests(
             {
                 OutputFields = { "id", "varchar" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -181,7 +180,7 @@ public class HybridSearchTests(
             new HybridSearchParameters
             {
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -217,7 +216,7 @@ public class HybridSearchTests(
             {
                 GroupByField = "id",
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -234,7 +233,7 @@ public class HybridSearchTests(
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(HybridSearch_with_group_size));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -243,10 +242,10 @@ public class HybridSearchTests(
                 FieldSchema.Create<long>("group_id"),
                 FieldSchema.CreateFloatVector("float_vector_1", 2),
                 FieldSchema.CreateFloatVector("float_vector_2", 2)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector_1", IndexType.Flat, SimilarityMetricType.L2);
-        await collection.CreateIndexAsync("float_vector_2", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector_1", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("float_vector_2", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new FieldData[]
@@ -271,11 +270,11 @@ public class HybridSearchTests(
                     new[] { 1.1f, 2.1f },
                     new[] { 1.2f, 2.2f }
                 })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -298,7 +297,7 @@ public class HybridSearchTests(
                 GroupSize = 2,
                 OutputFields = { "group_id" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         var groupIdField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "group_id");
         Assert.True(groupIdField.Data.Count(g => g == 1L) >= 1);
@@ -315,7 +314,7 @@ public class HybridSearchTests(
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(HybridSearch_with_strict_group_size));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -324,10 +323,10 @@ public class HybridSearchTests(
                 FieldSchema.Create<long>("group_id"),
                 FieldSchema.CreateFloatVector("float_vector_1", 2),
                 FieldSchema.CreateFloatVector("float_vector_2", 2)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector_1", IndexType.Flat, SimilarityMetricType.L2);
-        await collection.CreateIndexAsync("float_vector_2", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector_1", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("float_vector_2", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
             new FieldData[]
@@ -348,11 +347,11 @@ public class HybridSearchTests(
                     new[] { 0.12f, 0.22f },
                     new[] { 1f, 2f }
                 })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -376,7 +375,7 @@ public class HybridSearchTests(
                 StrictGroupSize = true,
                 OutputFields = { "group_id" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         var groupIdField = (FieldData<long>)results.FieldsData.Single(f => f.FieldName == "group_id");
         Assert.Equal(2, groupIdField.Data.Count(g => g == 1L));
@@ -409,7 +408,7 @@ public class HybridSearchTests(
             {
                 PartitionNames = { "_default" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -446,7 +445,7 @@ public class HybridSearchTests(
             ],
             new RrfReranker(),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -462,7 +461,7 @@ public class HybridSearchTests(
         }
 
         var collection = Client.GetCollection(nameof(HybridSearch_sparse_vectors));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
             collection.Name,
@@ -470,7 +469,7 @@ public class HybridSearchTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2),
                 FieldSchema.CreateSparseFloatVector("sparse_vector")
-            ]);
+            ], cancellationToken: TestContext.Current.CancellationToken);
 
         var sparseVectors = new[]
         {
@@ -487,15 +486,15 @@ public class HybridSearchTests(
                 new[] { 5f, 6f }
             ]),
             FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors)
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await collection.CreateIndexAsync("sparse_vector", IndexType.SparseInvertedIndex, SimilarityMetricType.Ip);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("sparse_vector", IndexType.SparseInvertedIndex, SimilarityMetricType.Ip, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -512,7 +511,7 @@ public class HybridSearchTests(
             ],
             new RrfReranker(),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(collection.Name, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -528,7 +527,7 @@ public class HybridSearchTests(
         }
 
         var collection = Client.GetCollection(nameof(HybridSearch_binary_vectors));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
             collection.Name,
@@ -536,7 +535,7 @@ public class HybridSearchTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2),
                 FieldSchema.CreateBinaryVector("binary_vector", 16)
-            ]);
+            ], cancellationToken: TestContext.Current.CancellationToken);
 
         ReadOnlyMemory<byte>[] binaryVectors =
         [
@@ -553,15 +552,15 @@ public class HybridSearchTests(
                 new[] { 5f, 6f }
             ]),
             FieldData.CreateBinaryVectors("binary_vector", binaryVectors)
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, SimilarityMetricType.Jaccard);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("binary_vector", IndexType.BinFlat, SimilarityMetricType.Jaccard, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -578,7 +577,7 @@ public class HybridSearchTests(
             ],
             new RrfReranker(),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(collection.Name, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -595,7 +594,7 @@ public class HybridSearchTests(
         }
 
         var collection = Client.GetCollection(nameof(HybridSearch_float16_vectors));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         await Client.CreateCollectionAsync(
             collection.Name,
@@ -603,7 +602,7 @@ public class HybridSearchTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2),
                 FieldSchema.CreateFloat16Vector("float16_vector", 2)
-            ]);
+            ], cancellationToken: TestContext.Current.CancellationToken);
 
         ReadOnlyMemory<Half>[] float16Vectors =
         [
@@ -620,15 +619,15 @@ public class HybridSearchTests(
                 new[] { 5f, 6f }
             ]),
             FieldData.CreateFloat16Vector("float16_vector", float16Vectors)
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2);
-        await collection.CreateIndexAsync("float16_vector", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("float16_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -645,7 +644,7 @@ public class HybridSearchTests(
             ],
             new RrfReranker(),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.Equal(collection.Name, results.CollectionName);
         Assert.NotNull(results.Ids.LongIds);
@@ -707,12 +706,12 @@ public class HybridSearchTests(
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Collection.HybridSearchAsync(
             requests,
             new RrfReranker(),
-            limit: 0));
+            limit: 0, cancellationToken: TestContext.Current.CancellationToken));
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Collection.HybridSearchAsync(
             requests,
             new RrfReranker(),
-            limit: 16385));
+            limit: 16385, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -740,7 +739,7 @@ public class HybridSearchTests(
         await Assert.ThrowsAsync<ArgumentException>(() => Collection.HybridSearchAsync(
             requests,
             new WeightedReranker(0.5f),
-            limit: 3));
+            limit: 3, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -775,7 +774,7 @@ public class HybridSearchTests(
         public readonly MilvusCollection Collection;
         public bool SupportsHybridSearch { get; private set; }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             SupportsHybridSearch = await Client.GetParsedMilvusVersion() >= new Version(2, 4);
             if (!SupportsHybridSearch)
@@ -831,10 +830,10 @@ public class HybridSearchTests(
                 waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

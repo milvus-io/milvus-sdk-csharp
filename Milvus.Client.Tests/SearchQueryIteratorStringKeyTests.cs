@@ -2,7 +2,6 @@
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIteratorStringKeyTests.DataCollectionFixture>,
                                                  IAsyncLifetime
 {
@@ -17,12 +16,12 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
         _dataCollectionFixture = dataCollectionFixture;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private MilvusCollection Collection => _dataCollectionFixture.Collection;
@@ -41,9 +40,9 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
         [
             FieldData.Create("id", items.Select(x => x.Id).ToArray()),
             FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        var iterator = Collection.QueryWithIteratorAsync();
+        var iterator = Collection.QueryWithIteratorAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         List<IReadOnlyList<FieldData>> results = new();
         await foreach (var result in iterator)
@@ -81,7 +80,7 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
         [
             FieldData.Create("id", items.Select(x => x.Id).ToArray()),
             FieldData.CreateFloatVector("float_vector", items.Select(x => x.Vector).ToArray())
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
         var queryParameters = new QueryParameters
         {
@@ -92,7 +91,7 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
         var iterator = Collection.QueryWithIteratorAsync(
             expression: expression,
             batchSize: batchSize,
-            parameters: queryParameters);
+            parameters: queryParameters, cancellationToken: TestContext.Current.CancellationToken);
 
         List<IReadOnlyList<FieldData>> results = new();
         await foreach (var result in iterator)
@@ -162,7 +161,7 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
             Collection = Client.GetCollection(CollectionName);
         }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await Collection.DropAsync();
 
@@ -180,10 +179,10 @@ public class SearchQueryIteratorStringKeyTests : IClassFixture<SearchQueryIterat
             await Collection.WaitForCollectionLoadAsync();
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

@@ -1,10 +1,9 @@
 using Testcontainers.Milvus;
 using Xunit;
 
-namespace Milvus.Client.Tests;
+[assembly: AssemblyFixture(typeof(Milvus.Client.Tests.MilvusFixture))]
 
-[CollectionDefinition("Milvus")]
-public sealed class MilvusTestCollection : ICollectionFixture<MilvusFixture>;
+namespace Milvus.Client.Tests;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {
@@ -26,6 +25,6 @@ public sealed class MilvusFixture : IAsyncLifetime
     public MilvusClient CreateClient(string database)
         => new(Host, Username, Password, Port, ssl: false, database);
 
-    public Task InitializeAsync() => _container.StartAsync();
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public ValueTask InitializeAsync() => new(_container.StartAsync());
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 }

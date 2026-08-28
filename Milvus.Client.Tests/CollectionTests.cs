@@ -2,7 +2,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class CollectionTests : IAsyncLifetime
 {
     [Fact]
@@ -14,17 +13,17 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("vector", dimension: 2)
-            });
-        Assert.True(await Client.HasCollectionAsync(CollectionName));
+            },cancellationToken:TestContext.Current.CancellationToken);
+        Assert.True(await Client.HasCollectionAsync(CollectionName,cancellationToken:TestContext.Current.CancellationToken));
 
-        await collection.DropAsync();
-        Assert.False(await Client.HasCollectionAsync(CollectionName));
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+        Assert.False(await Client.HasCollectionAsync(CollectionName,cancellationToken:TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Describe()
     {
-        await Assert.ThrowsAsync<MilvusException>(() => Client.GetCollection(CollectionName).DescribeAsync());
+        await Assert.ThrowsAsync<MilvusException>(() => Client.GetCollection(CollectionName).DescribeAsync(TestContext.Current.CancellationToken));
 
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
@@ -43,9 +42,10 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateJson("some_json")
             },
             shardsNum: 2,
-            consistencyLevel: ConsistencyLevel.Eventually);
+            consistencyLevel: ConsistencyLevel.Eventually,
+            cancellationToken:TestContext.Current.CancellationToken);
 
-        var collectionDescription = await collection.DescribeAsync();
+        var collectionDescription = await collection.DescribeAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(CollectionName, collectionDescription.CollectionName);
         Assert.Equal(2, collectionDescription.ShardsNum);
@@ -186,7 +186,7 @@ public class CollectionTests : IAsyncLifetime
         }
 
         var collection = Client.GetCollection(CollectionName);
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collection.Name,
             new[]
@@ -195,9 +195,9 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.Create<int?>("nullable_int_with_default", nullable: true, defaultValue: 42),
                 FieldSchema.Create<float>("normal_float"),
                 FieldSchema.CreateFloatVector("vector", dimension: 2),
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
-        var description = await collection.DescribeAsync();
+        var description = await collection.DescribeAsync(TestContext.Current.CancellationToken);
 
         var intField = description.Schema.Fields.Single(f => f.Name == "nullable_int_with_default");
         Assert.True(intField.Nullable);
@@ -213,7 +213,7 @@ public class CollectionTests : IAsyncLifetime
     {
         string renamedCollectionName = "RenamedCollection";
 
-        await Client.GetCollection(renamedCollectionName).DropAsync();
+        await Client.GetCollection(renamedCollectionName).DropAsync(TestContext.Current.CancellationToken);
 
         var collection = await Client.CreateCollectionAsync(
             CollectionName,
@@ -221,14 +221,14 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("vector", dimension: 2)
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
-        await collection.RenameAsync(renamedCollectionName);
+        await collection.RenameAsync(renamedCollectionName,TestContext.Current.CancellationToken);
 
-        Assert.False(await Client.HasCollectionAsync(CollectionName));
-        Assert.True(await Client.HasCollectionAsync(renamedCollectionName));
+        Assert.False(await Client.HasCollectionAsync(CollectionName,cancellationToken:TestContext.Current.CancellationToken));
+        Assert.True(await Client.HasCollectionAsync(renamedCollectionName,cancellationToken:TestContext.Current.CancellationToken));
 
-        Assert.Equal(renamedCollectionName, (await collection.DescribeAsync()).CollectionName);
+        Assert.Equal(renamedCollectionName, (await collection.DescribeAsync(TestContext.Current.CancellationToken)).CollectionName);
     }
 
     [Fact]
@@ -240,21 +240,21 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>(),TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken:TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),cancellationToken:TestContext.Current.CancellationToken);
 
-        _ = await collection.QueryAsync("id in [2, 3]", new() { OutputFields = { "float_vector" } });
+        _ = await collection.QueryAsync("id in [2, 3]", new() { OutputFields = { "float_vector" } },TestContext.Current.CancellationToken);
 
-        await collection.ReleaseAsync();
+        await collection.ReleaseAsync(TestContext.Current.CancellationToken);
 
         await Assert.ThrowsAsync<MilvusException>(() =>
-            collection.QueryAsync("id in [2, 3]", new() { OutputFields = { "float_vector" } }));
+            collection.QueryAsync("id in [2, 3]", new() { OutputFields = { "float_vector" } },TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -266,21 +266,21 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
-            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>());
+            "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx", new Dictionary<string, string>(),TestContext.Current.CancellationToken);
 
-        Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
-        Assert.DoesNotContain(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory),
+        Assert.Single(await Client.ListCollectionsAsync(cancellationToken:TestContext.Current.CancellationToken), c => c.Name == CollectionName);
+        Assert.DoesNotContain(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory,cancellationToken:TestContext.Current.CancellationToken),
             c => c.Name == CollectionName);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken:TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),cancellationToken:TestContext.Current.CancellationToken);
 
-        Assert.Single(await Client.ListCollectionsAsync(), c => c.Name == CollectionName);
-        Assert.Single(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory),
+        Assert.Single(await Client.ListCollectionsAsync(cancellationToken:TestContext.Current.CancellationToken), c => c.Name == CollectionName);
+        Assert.Single(await Client.ListCollectionsAsync(filter: CollectionFilter.InMemory,cancellationToken:TestContext.Current.CancellationToken),
             c => c.Name == CollectionName);
     }
 
@@ -293,9 +293,9 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
-        Assert.Equal(0, await collection.GetEntityCountAsync());
+        Assert.Equal(0, await collection.GetEntityCountAsync(TestContext.Current.CancellationToken));
 
         await collection.InsertAsync(
             new FieldData[]
@@ -306,12 +306,12 @@ public class CollectionTests : IAsyncLifetime
                     new[] { 1f, 2f },
                     new[] { 3f, 4f }
                 })
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
-        await collection.FlushAsync();
+        await collection.FlushAsync(TestContext.Current.CancellationToken);
 
         // There's some delay in updating the statistics so we only assert the existence of row_count for now
-        _ = await collection.GetEntityCountAsync();
+        _ = await collection.GetEntityCountAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -323,9 +323,9 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2)
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
 
-        long compactionId = await collection.CompactAsync();
+        long compactionId = await collection.CompactAsync(TestContext.Current.CancellationToken);
         if (await Client.GetParsedMilvusVersion() >= new Version(2, 4))
         {
             // Milvus 2.4 returns -1 here as the compaction ID
@@ -333,12 +333,12 @@ public class CollectionTests : IAsyncLifetime
         }
 
         Assert.NotEqual(0, compactionId);
-        await Client.WaitForCompactionAsync(compactionId);
+        await Client.WaitForCompactionAsync(compactionId,cancellationToken:TestContext.Current.CancellationToken);
 
-        CompactionState state = await Client.GetCompactionStateAsync(compactionId);
+        CompactionState state = await Client.GetCompactionStateAsync(compactionId,TestContext.Current.CancellationToken);
         Assert.Equal(CompactionState.Completed, state);
 
-        CompactionPlans compactionPlans = await Client.GetCompactionPlansAsync(compactionId);
+        CompactionPlans compactionPlans = await Client.GetCompactionPlansAsync(compactionId,TestContext.Current.CancellationToken);
         Assert.Equal(CompactionState.Completed, compactionPlans.State);
     }
 
@@ -359,7 +359,7 @@ public class CollectionTests : IAsyncLifetime
                 FieldSchema.CreateFloatVector("embedding_small", 128),
                 FieldSchema.CreateFloatVector("embedding_large", 768),
                 FieldSchema.CreateFloat16Vector("float16_vec", 4),
-            });
+            },cancellationToken:TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -374,7 +374,7 @@ public class CollectionTests : IAsyncLifetime
             {
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("vector", dimension: 2)
-            }));
+            },cancellationToken:TestContext.Current.CancellationToken));
 
         Assert.Contains("not found", exception.Message);
         Assert.Contains("non_existing_db", exception.Message);
@@ -387,13 +387,13 @@ public class CollectionTests : IAsyncLifetime
         Client = milvusFixture.CreateClient();
     }
 
-    public Task InitializeAsync()
-        => Client.GetCollection(CollectionName).DropAsync();
+    public ValueTask InitializeAsync()
+        => new(Client.GetCollection(CollectionName).DropAsync());
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         Client.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private const string CollectionName = nameof(CollectionTests);
