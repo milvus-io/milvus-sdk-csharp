@@ -69,6 +69,42 @@ public class SearchParameters
     public long? RoundDecimal { get; set; }
 
     /// <summary>
+    /// The outer boundary of a range search: only entities whose distance from the query vector falls
+    /// within <see cref="Radius" /> are returned. Available since Milvus v2.3.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The meaning of "within" depends on the metric type. For distance metrics where smaller is more
+    /// similar (<see cref="SimilarityMetricType.L2" />), results satisfy
+    /// <c>range_filter &lt; distance &lt;= radius</c>, so <see cref="Radius" /> must be the larger value.
+    /// For similarity metrics where larger is more similar (<see cref="SimilarityMetricType.Ip" />,
+    /// <see cref="SimilarityMetricType.Cosine" />), results satisfy
+    /// <c>radius &lt;= distance &lt; range_filter</c>, so <see cref="Radius" /> must be the smaller value.
+    /// </para>
+    /// <para>
+    /// Setting this is equivalent to adding a <c>radius</c> entry to <see cref="ExtraParameters" />; if
+    /// both are set, this property wins.
+    /// </para>
+    /// <para>See <see href="https://milvus.io/docs/range-search.md" /> for more information.</para>
+    /// </remarks>
+    public float? Radius { get; set; }
+
+    /// <summary>
+    /// The inner boundary of a range search, used together with <see cref="Radius" /> to exclude
+    /// entities that are too similar to the query vector. Available since Milvus v2.3.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See <see cref="Radius" /> for how the two boundaries relate for a given metric type.
+    /// </para>
+    /// <para>
+    /// Setting this is equivalent to adding a <c>range_filter</c> entry to
+    /// <see cref="ExtraParameters" />; if both are set, this property wins.
+    /// </para>
+    /// </remarks>
+    public float? RangeFilter { get; set; }
+
+    /// <summary>
     /// Search parameter(s) specific to the specified index type.
     /// </summary>
     /// <remarks>

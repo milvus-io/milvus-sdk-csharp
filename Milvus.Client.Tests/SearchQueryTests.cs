@@ -267,6 +267,51 @@ public class SearchQueryTests(
     }
 
     [Fact]
+    public async Task Search_with_typed_range_search()
+    {
+        // Same query as Search_with_range_search, but via the typed Radius/RangeFilter properties
+        // instead of raw ExtraParameters -- the results must be identical.
+        var results = await Collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            SimilarityMetricType.L2,
+            limit: 5,
+            new()
+            {
+                Radius = 60f,
+                RangeFilter = 10f
+            }, TestContext.Current.CancellationToken);
+
+        Assert.Collection(
+            results.Ids.LongIds!.Order(),
+            id => Assert.Equal(2, id),
+            id => Assert.Equal(3, id));
+    }
+
+    [Fact]
+    public async Task Search_with_typed_range_search_overrides_extra_parameters()
+    {
+        // The typed properties win over a same-named ExtraParameters entry. The dictionary asks for a
+        // radius that would match nothing; the typed value is the one that must reach the server.
+        var results = await Collection.SearchAsync(
+            "float_vector",
+            new ReadOnlyMemory<float>[] { new[] { 0.1f, 0.2f } },
+            SimilarityMetricType.L2,
+            limit: 5,
+            new()
+            {
+                Radius = 60f,
+                RangeFilter = 10f,
+                ExtraParameters = { { "radius", "0.0001" } }
+            }, TestContext.Current.CancellationToken);
+
+        Assert.Collection(
+            results.Ids.LongIds!.Order(),
+            id => Assert.Equal(2, id),
+            id => Assert.Equal(3, id));
+    }
+
+    [Fact]
     public async Task Search_with_no_results()
     {
         // Create and load an empty collection
@@ -1564,6 +1609,69 @@ public class SearchQueryTests(
         Assert.Equal(2, searchResults.Ids.LongIds.Count);
         Assert.Equal(2L, searchResults.Ids.LongIds[0]);
         Assert.Equal(1L, searchResults.Ids.LongIds[1]);
+    }
+
+    [Fact]
+    public async Task Search_sparse_vector_with_wand_index()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        MilvusCollection sparseCollection = Client.GetCollection(nameof(Search_sparse_vector_with_wand_index));
+        string collectionName = sparseCollection.Name;
+
+        await sparseCollection.DropAsync(TestContext.Current.CancellationToken);
+        await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateSparseFloatVector("sparse_vector"),
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        var sparseVectors = new[]
+        {
+            new MilvusSparseVector<float>((int[])[0, 1], (float[])[1.0f, 2.0f]),
+            new MilvusSparseVector<float>((int[])[0, 1], (float[])[10.0f, 20.0f]),
+            new MilvusSparseVector<float>((int[])[2, 3], (float[])[5.0f, 6.0f]),
+        };
+
+        await sparseCollection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new[] { 1L, 2L, 3L }),
+            FieldData.CreateSparseFloatVector("sparse_vector", sparseVectors),
+        }, cancellationToken: TestContext.Current.CancellationToken);
+
+        // SPARSE_WAND is the Weak-AND variant of the sparse inverted index.
+        await sparseCollection.CreateIndexAsync(
+            "sparse_vector",
+            IndexType.SparseWand,
+            SimilarityMetricType.Ip, cancellationToken: TestContext.Current.CancellationToken);
+
+        await sparseCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await sparseCollection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100),
+            timeout: TimeSpan.FromMinutes(1), cancellationToken: TestContext.Current.CancellationToken);
+
+        var queryVector = new MilvusSparseVector<float>((int[])[0, 1], (float[])[1.0f, 1.0f]);
+
+        var searchResults = await sparseCollection.SearchAsync(
+            "sparse_vector",
+            new[] { queryVector },
+            SimilarityMetricType.Ip,
+            limit: 2,
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
+
+        // Same ranking as the SPARSE_INVERTED_INDEX case: id 2 outweighs id 1 on the shared dimensions.
+        Assert.Equal(collectionName, searchResults.CollectionName);
+        Assert.NotNull(searchResults.Ids.LongIds);
+        Assert.Equal(2, searchResults.Ids.LongIds.Count);
+        Assert.Equal(2L, searchResults.Ids.LongIds[0]);
+        Assert.Equal(1L, searchResults.Ids.LongIds[1]);
+
+        await sparseCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

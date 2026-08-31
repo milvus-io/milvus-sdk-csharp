@@ -570,7 +570,7 @@ public partial class MilvusCollection
                 new Grpc.KeyValuePair
                 {
                     Key = Constants.Params,
-                    Value = parameters is null ? "{}" : Combine(parameters.ExtraParameters)
+                    Value = parameters is null ? "{}" : CombineSearchParams(parameters)
                 }
             });
 
