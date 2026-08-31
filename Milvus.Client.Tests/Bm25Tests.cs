@@ -16,7 +16,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_full_text_search));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -32,12 +32,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
             "sparse_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Bm25);
+            SimilarityMetricType.Bm25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -48,12 +49,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 "A fast orange cat leaps across the sleepy hound",
                 "Hello world, this is a test document"
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "sparse_vector",
@@ -63,7 +65,8 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             {
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 OutputFields = { "text" }
-            });
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count > 0);
@@ -83,7 +86,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_search_returns_correct_scores));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -99,12 +102,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
             "bm25_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Bm25);
+            SimilarityMetricType.Bm25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -116,18 +120,20 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 "natural language processing and text classification",
                 "the weather today is sunny and warm"
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "bm25_vector",
             new[] { "learning" },
             limit: 4,
-            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count >= 2);
@@ -147,7 +153,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_multiple_queries));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -163,12 +169,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
             "doc_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Bm25);
+            SimilarityMetricType.Bm25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -179,18 +186,20 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 "car truck motorcycle vehicle transportation",
                 "computer laptop smartphone technology gadget"
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "doc_vector",
             new[] { "fruit", "vehicle" },
             limit: 2,
-            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.Equal(2, results.NumQueries);
@@ -205,7 +214,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Describe_collection_with_bm25_function));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -226,9 +235,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
-        var description = await collection.DescribeAsync();
+        var description = await collection.DescribeAsync(TestContext.Current.CancellationToken);
 
         Assert.Single(description.Schema.Functions);
         var function = description.Schema.Functions[0];
@@ -258,7 +267,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_filter_expression));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -275,12 +284,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
             "title_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Bm25);
+            SimilarityMetricType.Bm25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -293,12 +303,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 "introduction to cooking",
                 "advanced cooking recipes"
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "title_vector",
@@ -309,7 +320,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 Expression = "category == 1",
                 OutputFields = { "title", "category" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.Equal(2, results.Ids.LongIds.Count);
@@ -327,7 +338,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_hybrid_search_with_dense_vector));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -344,10 +355,10 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("title_sparse", IndexType.SparseInvertedIndex, SimilarityMetricType.Bm25);
-        await collection.CreateIndexAsync("embedding", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("title_sparse", IndexType.SparseInvertedIndex, SimilarityMetricType.Bm25, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("embedding", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -366,12 +377,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 new[] { 0.0f, 0.0f, 1.0f, 0.0f },
                 new[] { 0.5f, 0.0f, 0.5f, 0.0f }
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -388,7 +400,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             {
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 OutputFields = { "title" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count > 0);
@@ -408,7 +420,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_english_analyzer));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -428,9 +440,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
-        var description = await collection.DescribeAsync();
+        var description = await collection.DescribeAsync(TestContext.Current.CancellationToken);
         var textField = description.Schema.Fields.Single(f => f.Name == "text");
         Assert.True(textField.EnableAnalyzer);
         Assert.NotNull(textField.AnalyzerParams);
@@ -439,7 +451,8 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         await collection.CreateIndexAsync(
             "sparse_vector",
             IndexType.SparseInvertedIndex,
-            SimilarityMetricType.Bm25);
+            SimilarityMetricType.Bm25,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -450,12 +463,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 "A dog runs in the park",
                 "Hello world"
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // English analyzer stems words, so "running" should match "runs"
         var results = await collection.SearchAsync(
@@ -466,7 +480,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             {
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 OutputFields = { "text" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count >= 2);
@@ -481,7 +495,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_custom_index_parameters));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -497,7 +511,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.CreateIndexAsync(
             "sparse_vector",
@@ -508,7 +522,8 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 ["inverted_index_algo"] = "\"DAAT_WAND\"",
                 ["bm25_k1"] = "1.5",
                 ["bm25_b"] = "0.75"
-            });
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -519,12 +534,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 "A fast orange cat leaps across the sleepy hound",
                 "Hello world, this is a test document"
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.SearchAsync(
             "sparse_vector",
@@ -534,7 +550,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             {
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 OutputFields = { "text" }
-            });
+            }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count > 0);
@@ -550,7 +566,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         }
 
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_hybrid_search_with_weighted_reranker));
-        await collection.DropAsync();
+        await collection.DropAsync(TestContext.Current.CancellationToken);
 
         var schema = new CollectionSchema
         {
@@ -567,10 +583,10 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             }
         };
 
-        await Client.CreateCollectionAsync(collection.Name, schema);
+        await Client.CreateCollectionAsync(collection.Name, schema, cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.CreateIndexAsync("content_sparse", IndexType.SparseInvertedIndex, SimilarityMetricType.Bm25);
-        await collection.CreateIndexAsync("content_embedding", IndexType.Flat, SimilarityMetricType.L2);
+        await collection.CreateIndexAsync("content_sparse", IndexType.SparseInvertedIndex, SimilarityMetricType.Bm25, cancellationToken: TestContext.Current.CancellationToken);
+        await collection.CreateIndexAsync("content_embedding", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
 
         await collection.InsertAsync(
         [
@@ -587,12 +603,13 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
                 new[] { 0.0f, 1.0f },
                 new[] { 0.8f, 0.2f }
             })
-        ]);
+        ], cancellationToken: TestContext.Current.CancellationToken);
 
-        await collection.LoadAsync();
+        await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(
             waitingInterval: TimeSpan.FromMilliseconds(100),
-            timeout: TimeSpan.FromMinutes(1));
+            timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await collection.HybridSearchAsync(
             [
@@ -605,7 +622,8 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             ],
             new WeightedReranker(0.7f, 0.3f),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count > 0);
