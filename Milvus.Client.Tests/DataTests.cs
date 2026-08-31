@@ -2,6 +2,14 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
+// FlushAllAsync_and_wait calls the cluster-wide FlushAll, which enumerates and flushes every
+// collection in the instance. All the other test classes create and drop collections, so if any of
+// them runs concurrently the flush fails with "collection not found". Keep this class out of the
+// parallel pool so the global flush sees a stable set of collections.
+[CollectionDefinition(nameof(DataTests), DisableParallelization = true)]
+public sealed class DataTestsCollection;
+
+[Collection(nameof(DataTests))]
 public class DataTests : IClassFixture<DataTests.DataCollectionFixture>, IAsyncLifetime
 {
     [Fact]
