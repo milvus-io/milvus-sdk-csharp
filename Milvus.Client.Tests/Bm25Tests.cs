@@ -2,7 +2,6 @@ using Xunit;
 
 namespace Milvus.Client.Tests;
 
-[Collection("Milvus")]
 public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
 {
     private readonly MilvusClient Client = milvusFixture.CreateClient();
