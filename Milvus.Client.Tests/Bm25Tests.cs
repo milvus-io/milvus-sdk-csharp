@@ -64,8 +64,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             {
                 ConsistencyLevel = ConsistencyLevel.Strong,
                 OutputFields = { "text" }
-            },
-            cancellationToken: TestContext.Current.CancellationToken);
+            }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count > 0);
@@ -131,8 +130,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             "bm25_vector",
             new[] { "learning" },
             limit: 4,
-            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong },
-            cancellationToken: TestContext.Current.CancellationToken);
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count >= 2);
@@ -197,8 +195,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             "doc_vector",
             new[] { "fruit", "vehicle" },
             limit: 2,
-            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong },
-            cancellationToken: TestContext.Current.CancellationToken);
+            new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.Equal(2, results.NumQueries);
@@ -621,8 +618,7 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
             ],
             new WeightedReranker(0.7f, 0.3f),
             limit: 3,
-            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong },
-            cancellationToken: TestContext.Current.CancellationToken);
+            new HybridSearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         Assert.NotNull(results.Ids.LongIds);
         Assert.True(results.Ids.LongIds.Count > 0);
