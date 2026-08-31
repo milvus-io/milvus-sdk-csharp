@@ -586,7 +586,7 @@ public class SearchQueryTests(
         MilvusCollection int8VectorCollection = Client.GetCollection(nameof(Search_int8_vector));
         string collectionName = int8VectorCollection.Name;
 
-        await int8VectorCollection.DropAsync();
+        await int8VectorCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             collectionName,
             new[]
@@ -594,7 +594,7 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateVarchar("varchar", 256),
                 FieldSchema.CreateInt8Vector("int8_vector", 128)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         var indexParams = indexType == IndexType.Hnsw
             ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" }
@@ -602,7 +602,7 @@ public class SearchQueryTests(
 
         await int8VectorCollection.CreateIndexAsync(
             "int8_vector", indexType, similarityMetricType,
-            "int8_vector_idx", indexParams);
+            "int8_vector_idx", indexParams, TestContext.Current.CancellationToken);
 
         long[] ids = { 1, 2, 3 };
         string[] strings = { "one", "two", "three" };
@@ -619,18 +619,20 @@ public class SearchQueryTests(
                 FieldData.Create("id", ids),
                 FieldData.Create("varchar", strings),
                 FieldData.CreateInt8Vector("int8_vector", int8Vectors)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await int8VectorCollection.LoadAsync();
+        await int8VectorCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await int8VectorCollection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await int8VectorCollection.SearchAsync(
             "int8_vector",
             new[] { int8Vectors[0] },
             similarityMetricType,
             limit: 2,
-            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong });
+            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(collectionName, results.CollectionName);
 
@@ -654,7 +656,7 @@ public class SearchQueryTests(
 
         MilvusCollection geometryCollection = Client.GetCollection(nameof(Query_geometry));
 
-        await geometryCollection.DropAsync();
+        await geometryCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             geometryCollection.Name,
             new[]
@@ -662,12 +664,12 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2),
                 FieldSchema.CreateGeometry("geo")
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await geometryCollection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx",
-            new Dictionary<string, string>());
-        await geometryCollection.CreateIndexAsync("geo", IndexType.RTree, indexName: "geo_idx");
+            new Dictionary<string, string>(), TestContext.Current.CancellationToken);
+        await geometryCollection.CreateIndexAsync("geo", IndexType.RTree, indexName: "geo_idx", cancellationToken: TestContext.Current.CancellationToken);
 
         string[] wkts =
         {
@@ -689,11 +691,12 @@ public class SearchQueryTests(
                     new[] { 7f, 8f }
                 }),
                 FieldData.CreateGeometry("geo", wkts)
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await geometryCollection.LoadAsync();
+        await geometryCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await geometryCollection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Round-trip: the WKT we inserted comes back as a geometry field.
         IReadOnlyList<FieldData> fields = await geometryCollection.QueryAsync(
@@ -702,7 +705,7 @@ public class SearchQueryTests(
             {
                 OutputFields = { "geo" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         FieldData geoField = Assert.Single(fields, f => f.FieldName == "geo");
         Assert.Equal(MilvusDataType.Geometry, geoField.DataType);
@@ -713,12 +716,12 @@ public class SearchQueryTests(
         // the polygon at (10 10)-(12 12) is outside it.
         IReadOnlyList<FieldData> within = await geometryCollection.QueryAsync(
             "st_within(geo, 'POLYGON ((0 0, 6 0, 6 6, 0 6, 0 0))')",
-            new QueryParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new QueryParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         var withinIds = (FieldData<long>)Assert.Single(within, f => f.FieldName == "id");
         Assert.Equal(new[] { 1L, 2L, 3L }, withinIds.Data.OrderBy(id => id));
 
-        await geometryCollection.DropAsync();
+        await geometryCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -731,7 +734,7 @@ public class SearchQueryTests(
 
         MilvusCollection tsCollection = Client.GetCollection(nameof(Query_timestamptz));
 
-        await tsCollection.DropAsync();
+        await tsCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             tsCollection.Name,
             new[]
@@ -739,11 +742,11 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2),
                 FieldSchema.CreateTimestamptz("ts")
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await tsCollection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx",
-            new Dictionary<string, string>());
+            new Dictionary<string, string>(), TestContext.Current.CancellationToken);
 
         await tsCollection.InsertAsync(
             new FieldData[]
@@ -761,11 +764,12 @@ public class SearchQueryTests(
                     "2025-06-15T12:30:00Z",
                     "2026-12-31T23:59:59Z"
                 })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await tsCollection.LoadAsync();
+        await tsCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await tsCollection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Round-trip: the timestamp comes back typed as Timestamptz, not VarChar.
         IReadOnlyList<FieldData> fields = await tsCollection.QueryAsync(
@@ -774,7 +778,7 @@ public class SearchQueryTests(
             {
                 OutputFields = { "ts" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         FieldData tsField = Assert.Single(fields, f => f.FieldName == "ts");
         Assert.Equal(MilvusDataType.Timestamptz, tsField.DataType);
@@ -786,12 +790,12 @@ public class SearchQueryTests(
         // supported".
         IReadOnlyList<FieldData> after = await tsCollection.QueryAsync(
             "ts > ISO '2025-01-01T00:00:00Z'",
-            new QueryParameters { ConsistencyLevel = ConsistencyLevel.Strong });
+            new QueryParameters { ConsistencyLevel = ConsistencyLevel.Strong }, TestContext.Current.CancellationToken);
 
         var afterIds = (FieldData<long>)Assert.Single(after, f => f.FieldName == "id");
         Assert.Equal(new[] { 2L, 3L }, afterIds.Data.OrderBy(id => id));
 
-        await tsCollection.DropAsync();
+        await tsCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -804,7 +808,7 @@ public class SearchQueryTests(
 
         MilvusCollection tsCollection = Client.GetCollection(nameof(Insert_timestamptz_from_DateTimeOffset));
 
-        await tsCollection.DropAsync();
+        await tsCollection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             tsCollection.Name,
             new[]
@@ -812,11 +816,11 @@ public class SearchQueryTests(
                 FieldSchema.Create<long>("id", isPrimaryKey: true),
                 FieldSchema.CreateFloatVector("float_vector", 2),
                 FieldSchema.CreateTimestamptz("ts")
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         await tsCollection.CreateIndexAsync(
             "float_vector", IndexType.Flat, SimilarityMetricType.L2, "float_vector_idx",
-            new Dictionary<string, string>());
+            new Dictionary<string, string>(), TestContext.Current.CancellationToken);
 
         DateTimeOffset utc = new(2025, 3, 4, 5, 6, 7, TimeSpan.Zero);
         DateTimeOffset offset = new(2025, 3, 4, 5, 6, 7, TimeSpan.FromHours(5.5));
@@ -831,11 +835,12 @@ public class SearchQueryTests(
                     new[] { 3f, 4f }
                 }),
                 FieldData.CreateTimestamptz("ts", new DateTimeOffset?[] { utc, offset })
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
-        await tsCollection.LoadAsync();
+        await tsCollection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await tsCollection.WaitForCollectionLoadAsync(
-            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
 
         IReadOnlyList<FieldData> fields = await tsCollection.QueryAsync(
             "id in [1, 2]",
@@ -843,7 +848,7 @@ public class SearchQueryTests(
             {
                 OutputFields = { "ts" },
                 ConsistencyLevel = ConsistencyLevel.Strong
-            });
+            }, cancellationToken: TestContext.Current.CancellationToken);
 
         var tsData = Assert.IsType<FieldData<string?>>(Assert.Single(fields, f => f.FieldName == "ts"));
         Assert.Equal(2, tsData.Data.Count);
@@ -852,7 +857,7 @@ public class SearchQueryTests(
         // The non-UTC value carried a +05:30 offset, so it is the earlier instant of the two.
         Assert.All(tsData.Data, value => Assert.Contains("2025", value!));
 
-        await tsCollection.DropAsync();
+        await tsCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact(Skip = "Milvus returns 'only support to travel back to 0s so far, but got 1s'")]
@@ -1680,7 +1685,8 @@ public class SearchQueryTests(
 
             await Collection.LoadAsync();
             await Collection.WaitForCollectionLoadAsync(
-                waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1));
+                waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
         }
 
         public ValueTask DisposeAsync()
