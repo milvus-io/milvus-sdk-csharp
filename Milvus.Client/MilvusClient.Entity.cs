@@ -56,7 +56,12 @@ public partial class MilvusClient
             await InvokeAsync(GrpcClient.FlushAllAsync, new FlushAllRequest(), static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
+#pragma warning disable CS0612 // FlushAllTs is deprecated in favor of a per-pchannel model
+                                // (flush_all_msgs/flush_all_tss) with no public client-side
+                                // decode path yet -- see milvus-proto 5c35e9d/874a110. No
+                                // released SDK (pymilvus checked) has migrated either.
         return response.FlushAllTs;
+#pragma warning restore CS0612
     }
 
     /// <summary>
@@ -71,7 +76,9 @@ public partial class MilvusClient
         ulong timestamp,
         CancellationToken cancellationToken = default)
     {
+#pragma warning disable CS0612 // see suppression note on FlushAllAsync above
         GetFlushAllStateRequest request = new() { FlushAllTs = timestamp };
+#pragma warning restore CS0612
 
         GetFlushAllStateResponse response =
             await InvokeAsync(GrpcClient.GetFlushAllStateAsync, request, static r => r.Status, cancellationToken)
