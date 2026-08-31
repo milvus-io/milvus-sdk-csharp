@@ -617,6 +617,109 @@ public class SearchQueryTests(
 
     // Milvus 2.6 only accepts HNSW (and AutoIndex) for Int8Vector fields; FLAT, IVF_*, DISKANN and
     // SCANN are all rejected with "data type Int8Vector can't build with this index".
+    [Fact]
+    public void BFloat16_conversion_round_trips()
+    {
+        // Values exactly representable in bfloat16 (7-bit mantissa) must survive the round trip.
+        foreach (float exact in new[] { 0f, 1f, -1f, 2f, 0.5f, -0.5f, 256f, -3.5f })
+        {
+            Assert.Equal(exact, ((BFloat16)exact).ToSingle());
+        }
+
+        // bfloat16 keeps float's 8-bit exponent, so the range is preserved even though precision is not.
+        Assert.True(float.IsPositiveInfinity(((BFloat16)float.PositiveInfinity).ToSingle()));
+        Assert.True(float.IsNegativeInfinity(((BFloat16)float.NegativeInfinity).ToSingle()));
+        Assert.True(float.IsNaN(((BFloat16)float.NaN).ToSingle()));
+
+        // Values needing more than 7 mantissa bits are rounded, not mangled.
+        Assert.Equal(1.0f, ((BFloat16)1.001f).ToSingle(), 2);
+
+        // Raw bit access is symmetric.
+        Assert.Equal(0x3F80, ((BFloat16)1f).ToBits());
+        Assert.Equal(1f, BFloat16.FromBits(0x3F80).ToSingle());
+    }
+
+    [Theory]
+    [InlineData(IndexType.Flat, SimilarityMetricType.L2)]
+    [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
+    public async Task Search_bfloat16_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
+        {
+            return;
+        }
+
+        MilvusCollection bf16Collection = Client.GetCollection(nameof(Search_bfloat16_vector));
+        string collectionName = bf16Collection.Name;
+
+        await bf16Collection.DropAsync(TestContext.Current.CancellationToken);
+        await Client.CreateCollectionAsync(
+            collectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                FieldSchema.CreateBFloat16Vector("bfloat16_vector", 4)
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        var indexParams = indexType == IndexType.Hnsw
+            ? new Dictionary<string, string> { ["M"] = "16", ["efConstruction"] = "200" }
+            : new Dictionary<string, string>();
+
+        await bf16Collection.CreateIndexAsync(
+            "bfloat16_vector", indexType, similarityMetricType, "bfloat16_idx", indexParams,
+            TestContext.Current.CancellationToken);
+
+        // All chosen to be exactly representable in bfloat16, so the round trip is lossless.
+        ReadOnlyMemory<BFloat16>[] vectors =
+        {
+            new BFloat16[] { 1f, 0f, 0f, 0f },
+            new BFloat16[] { 0f, 1f, 0f, 0f },
+            new BFloat16[] { 0f, 0f, 1f, 0f },
+        };
+
+        await bf16Collection.InsertAsync(
+            new FieldData[]
+            {
+                FieldData.Create("id", new[] { 1L, 2L, 3L }),
+                FieldData.CreateBFloat16Vector("bfloat16_vector", vectors)
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        await bf16Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await bf16Collection.WaitForCollectionLoadAsync(
+            waitingInterval: TimeSpan.FromMilliseconds(100), timeout: TimeSpan.FromMinutes(1),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Query the vector back and confirm the bytes survived the round trip through the server.
+        IReadOnlyList<FieldData> fields = await bf16Collection.QueryAsync(
+            "id == 1",
+            new QueryParameters
+            {
+                OutputFields = { "bfloat16_vector" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            }, TestContext.Current.CancellationToken);
+
+        var vectorField = Assert.IsType<BFloat16VectorFieldData>(
+            Assert.Single(fields, f => f.FieldName == "bfloat16_vector"));
+        Assert.Equal(MilvusDataType.BFloat16Vector, vectorField.DataType);
+        ReadOnlyMemory<BFloat16> returned = Assert.Single(vectorField.Data);
+        Assert.Equal(new[] { 1f, 0f, 0f, 0f }, returned.ToArray().Select(v => v.ToSingle()));
+
+        // Searching with the first vector must rank its own row first.
+        var results = await bf16Collection.SearchAsync(
+            "bfloat16_vector",
+            new[] { vectors[0] },
+            similarityMetricType,
+            limit: 2,
+            parameters: new() { ConsistencyLevel = ConsistencyLevel.Strong },
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(collectionName, results.CollectionName);
+        Assert.Equal(2, results.Ids.LongIds!.Count);
+        Assert.Equal(1L, results.Ids.LongIds[0]);
+
+        await bf16Collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
     [Theory]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.Ip)]

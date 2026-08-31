@@ -122,6 +122,9 @@ public abstract class FieldData
 #else
                         throw new NotSupportedException("Float16Vector is only supported on .NET 8.0 or greater");
 #endif
+                    case Grpc.VectorField.DataOneofCase.Bfloat16Vector:
+                        return CreateBFloat16VectorFromBytes(fieldData.FieldName, fieldData.Vectors.Bfloat16Vector.Span, dim);
+
                     case Grpc.VectorField.DataOneofCase.Int8Vector:
                         return CreateInt8VectorFromBytes(fieldData.FieldName, fieldData.Vectors.Int8Vector.Span, dim);
                     case Grpc.VectorField.DataOneofCase.SparseFloatVector:
@@ -448,6 +451,16 @@ public abstract class FieldData
 #endif
 
     /// <summary>
+    /// Create a bfloat16 vector. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <returns></returns>
+    public static BFloat16VectorFieldData CreateBFloat16Vector(
+        string fieldName, IReadOnlyList<ReadOnlyMemory<BFloat16>> data)
+        => new(fieldName, data);
+
+    /// <summary>
     /// Create an int8 vector. Available since Milvus v2.6.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
@@ -578,6 +591,33 @@ public abstract class FieldData
         return new Float16VectorFieldData(fieldName, vectors);
     }
 #endif
+
+    private static BFloat16VectorFieldData CreateBFloat16VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
+        int dimension)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.GreaterThan(dimension, 0);
+
+        int bytesPerVector = dimension * sizeof(ushort);
+        int vectorCount = bytes.Length / bytesPerVector;
+        var vectors = new ReadOnlyMemory<BFloat16>[vectorCount];
+
+        for (int i = 0; i < vectorCount; i++)
+        {
+            BFloat16[] vector = new BFloat16[dimension];
+            ReadOnlySpan<byte> vectorBytes = bytes.Slice(i * bytesPerVector, bytesPerVector);
+
+            for (int j = 0; j < dimension; j++)
+            {
+                int offset = j * sizeof(ushort);
+                vector[j] = BFloat16.FromBits((ushort)(vectorBytes[offset] | (vectorBytes[offset + 1] << 8)));
+            }
+
+            vectors[i] = vector;
+        }
+
+        return new BFloat16VectorFieldData(fieldName, vectors);
+    }
 
     private static Int8VectorFieldData CreateInt8VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
         int dimension)
