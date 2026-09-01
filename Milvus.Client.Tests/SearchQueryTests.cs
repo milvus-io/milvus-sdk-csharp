@@ -615,8 +615,6 @@ public class SearchQueryTests(
     }
 #endif
 
-    // Milvus 2.6 only accepts HNSW (and AutoIndex) for Int8Vector fields; FLAT, IVF_*, DISKANN and
-    // SCANN are all rejected with "data type Int8Vector can't build with this index".
     [Fact]
     public void BFloat16_conversion_round_trips()
     {
@@ -720,6 +718,9 @@ public class SearchQueryTests(
         await bf16Collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
+    // Milvus 2.6 only accepts HNSW (and AutoIndex) for Int8Vector fields; FLAT, IVF_*, DISKANN and
+    // SCANN are all rejected with "data type Int8Vector can't build with this index", which is why
+    // this theory covers only those two.
     [Theory]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.Ip)]
