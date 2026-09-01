@@ -106,21 +106,5 @@ public enum MilvusDataType
     /// <summary>
     /// Int8Vector.
     /// </summary>
-    Int8Vector = 105,
-
-    /// <summary>
-    /// Array of Vector.
-    /// </summary>
-    ArrayOfVector = 106,
-
-    /// <summary>
-    /// Array of Structure
-    /// </summary>
-    ArrayOfStruct = 200,
-
-    /// <summary>
-    /// Structure
-    /// </summary>
-    Struct = 201 
-
+    Int8Vector = 105
 }
