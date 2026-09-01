@@ -185,4 +185,78 @@ public partial class MilvusClient
 
         await InvokeAsync(GrpcClient.TransferReplicaAsync, request, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Returns the in-memory replicas of a loaded collection, and which query nodes serve them.
+    /// </summary>
+    /// <param name="collectionName">The collection whose replicas should be returned.</param>
+    /// <param name="withShardNodes">
+    /// The proto's <c>with_shard_nodes</c> flag, passed through unchanged. Controls whether
+    /// <see cref="MilvusShardReplica.NodeIds" /> is populated — see the remarks, because the server
+    /// treats it the opposite way round from how it reads.
+    /// </param>
+    /// <param name="databaseName">
+    /// An optional database name. Defaults to the database this client is connected to.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>
+    /// One entry per replica. A collection loaded with one replica returns a single entry. From Milvus
+    /// 2.4 an unloaded collection returns an empty list; see the remarks for 2.3.
+    /// </returns>
+    /// <exception cref="MilvusException">
+    /// The collection does not exist, or — on Milvus 2.3 only — is not loaded.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// A replica only exists while the collection is loaded, and the two release lines disagree about
+    /// what that means for an unloaded one. Milvus 2.4 and later treat it as simply having no replicas
+    /// and return an empty list; 2.3 looks the replica up by id and fails with <c>"replica not
+    /// found"</c>. Verified against 2.3.22, 2.4.23, 2.5.20 and 2.6.4. A collection that does not exist
+    /// at all throws on every version.
+    /// </para>
+    /// <para>
+    /// <paramref name="withShardNodes" /> defaults to <see langword="false" /> because Milvus has the
+    /// flag backwards: the proto says <c>node_ids</c> is "set only for GetReplicas() if
+    /// with_shard_nodes is true", but sending <see langword="true" /> returns per-shard node lists
+    /// that are <em>empty</em>, and sending <see langword="false" /> returns them populated. Verified
+    /// against Milvus 2.3.22, 2.4.23 and 2.6.4, so this is longstanding rather than a regression. The
+    /// value is passed through rather than negated, so a server that fixes this keeps working — only
+    /// this note goes stale. Note that the replica-level <see cref="MilvusReplicaInfo.NodeIds" /> is
+    /// populated either way; the flag only affects the per-shard lists.
+    /// </para>
+    /// </remarks>
+    public async Task<IReadOnlyList<MilvusReplicaInfo>> GetReplicasAsync(
+        string collectionName,
+        bool withShardNodes = false,
+        string? databaseName = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+
+        GetReplicasRequest request = new()
+        {
+            CollectionName = collectionName,
+            WithShardNodes = withShardNodes
+        };
+
+        if (databaseName is not null)
+        {
+            request.DbName = databaseName;
+        }
+
+        GetReplicasResponse response = await InvokeAsync(
+                GrpcClient.GetReplicasAsync, request, static r => r.Status, cancellationToken)
+            .ConfigureAwait(false);
+
+        List<MilvusReplicaInfo> replicas = new(response.Replicas.Count);
+
+        foreach (Grpc.ReplicaInfo replica in response.Replicas)
+        {
+            replicas.Add(MilvusReplicaInfo.FromGrpc(replica));
+        }
+
+        return replicas;
+    }
 }
