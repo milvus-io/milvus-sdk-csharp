@@ -56,7 +56,11 @@ public abstract class FieldData
     /// <summary>
     /// Used only internally for dynamic fields, which get serialized to JSON.
     /// </summary>
-    internal abstract object GetValueAsObject(int index);
+    /// <summary>
+    /// The value at <paramref name="index" /> as a boxed object, used to pack dynamic fields into the
+    /// <c>$meta</c> JSON column. Null when the column is nullable and has no value for that row.
+    /// </summary>
+    internal abstract object? GetValueAsObject(int index);
 
     /// <summary>
     /// Get string data.
@@ -1001,21 +1005,17 @@ public class FieldData<TData> : FieldData
         return fieldData;
     }
 
-    internal override object GetValueAsObject(int index)
+    internal override object? GetValueAsObject(int index)
         => DataType switch
         {
-            MilvusDataType.Bool => ((IReadOnlyList<bool>)Data)[index],
-            MilvusDataType.Int8 => ((IReadOnlyList<sbyte>)Data)[index],
-            MilvusDataType.Int16 => ((IReadOnlyList<short>)Data)[index],
-            MilvusDataType.Int32 => ((IReadOnlyList<int>)Data)[index],
-            MilvusDataType.Int64 => ((IReadOnlyList<long>)Data)[index],
-            MilvusDataType.Float => ((IReadOnlyList<float>)Data)[index],
-            MilvusDataType.Double => ((IReadOnlyList<double>)Data)[index],
-            MilvusDataType.String => ((IReadOnlyList<string>)Data)[index],
-            MilvusDataType.VarChar => ((IReadOnlyList<string>)Data)[index],
-            MilvusDataType.Json => ((IReadOnlyList<string>)Data)[index],
-            MilvusDataType.Geometry => ((IReadOnlyList<string>)Data)[index],
-            MilvusDataType.Timestamptz => ((IReadOnlyList<string>)Data)[index],
+            // Boxing the element directly, rather than casting Data to a list of the non-nullable
+            // element type, is what lets a nullable column work here: its Data is a List<T?>, which
+            // is not an IReadOnlyList<T>, and its nulls have to survive as nulls.
+            MilvusDataType.Bool or MilvusDataType.Int8 or MilvusDataType.Int16 or MilvusDataType.Int32
+                or MilvusDataType.Int64 or MilvusDataType.Float or MilvusDataType.Double
+                or MilvusDataType.String or MilvusDataType.VarChar or MilvusDataType.Json
+                or MilvusDataType.Geometry or MilvusDataType.Timestamptz
+                => Data[index],
 
             MilvusDataType.None => throw new MilvusException($"DataType Error:{DataType}"),
             _ => throw new MilvusException($"DataType Error:{DataType}, not supported")

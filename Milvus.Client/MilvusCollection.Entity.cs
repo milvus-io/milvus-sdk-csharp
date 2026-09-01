@@ -106,7 +106,16 @@ public partial class MilvusCollection
                     Dictionary<string, object?> rowDynamicData =
                         dynamicFieldsData[rowNum] ?? (dynamicFieldsData[rowNum] = new Dictionary<string, object?>());
 
-                    rowDynamicData[field.FieldName!] = field.GetValueAsObject(rowNum);
+                    object? value = field.GetValueAsObject(rowNum);
+
+                    // Dynamic fields are stored per row, so each row's $meta object carries only the
+                    // keys that row actually has. A null means this row has no value for the key, and
+                    // omitting it is not the same as writing an explicit JSON null -- the latter would
+                    // make the key exist with a null value.
+                    if (value is not null)
+                    {
+                        rowDynamicData[field.FieldName!] = value;
+                    }
                 }
             }
             else

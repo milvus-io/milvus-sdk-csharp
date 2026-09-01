@@ -25,7 +25,8 @@ public partial class MilvusCollection
     /// </para>
     /// <para>
     /// When the schema enables dynamic fields, any key not matching a declared field is sent as a
-    /// dynamic field rather than rejected.
+    /// dynamic field rather than rejected. Dynamic fields are per-row optional: a key present in one
+    /// row and absent from another is sent as null for the rows that lack it.
     /// </para>
     /// </remarks>
     public async Task<MutationResult> InsertAsync(
@@ -188,17 +189,31 @@ public partial class MilvusCollection
     /// Builds a dynamic column. The element type is inferred from the first non-null value, since a
     /// dynamic field has no schema to consult.
     /// </summary>
+    /// <remarks>
+    /// Dynamic columns are always built nullable. Milvus stores dynamic fields per row, so each row
+    /// may carry a different set of extra keys, and a row that lacks this one has to send null rather
+    /// than fail the whole batch.
+    /// </remarks>
     private static FieldData BuildDynamicColumn(string name, object?[] values)
     {
         object? sample = values.FirstOrDefault(v => v is not null);
 
         return sample switch
         {
-            null => FieldData.CreateVarChar(name, values.Select(_ => (string?)null).ToList(), isDynamic: true),
-            bool => FieldData.Create(name, Cast<bool>(name, values), isDynamic: true),
-            sbyte or short or int or long => FieldData.Create(name, values.Select(ToInt64).ToList(), isDynamic: true),
-            float or double => FieldData.Create(name, values.Select(ToDouble).ToList(), isDynamic: true),
-            string => FieldData.CreateVarChar(name, values.Select(v => (string?)v).ToList(), isDynamic: true),
+            null => FieldData.CreateVarChar(name, new string?[values.Length], isDynamic: true),
+
+            bool => ScalarColumn<bool>(name, values, ToBoolean, nullable: true, isDynamic: true),
+
+            // The accepted set matches ToInt64 and ToDouble below, so inference and conversion cannot
+            // disagree about which CLR types are usable.
+            sbyte or byte or short or ushort or int or uint or long
+                => ScalarColumn<long>(name, values, ToInt64, nullable: true, isDynamic: true),
+            float or double
+                => ScalarColumn<double>(name, values, ToDouble, nullable: true, isDynamic: true),
+
+            string => FieldData.CreateVarChar(
+                name, TextColumn(name, values, ToText, nullable: true), isDynamic: true),
+
             _ => throw new MilvusException(
                 $"Dynamic field '{name}' has unsupported value type '{sample.GetType()}'. Supported types are " +
                 "bool, integers, floating point numbers and strings.")
@@ -208,22 +223,23 @@ public partial class MilvusCollection
     private static FieldData BuildColumn(FieldSchema field, object?[] values)
         => field.DataType switch
         {
-            MilvusDataType.Bool => FieldData.Create(field.Name, Cast<bool>(field.Name, values)),
-            MilvusDataType.Int8 => FieldData.Create(field.Name, values.Select(v => (sbyte)ToInt64(v)).ToList()),
-            MilvusDataType.Int16 => FieldData.Create(field.Name, values.Select(v => (short)ToInt64(v)).ToList()),
-            MilvusDataType.Int32 => FieldData.Create(field.Name, values.Select(v => (int)ToInt64(v)).ToList()),
-            MilvusDataType.Int64 => FieldData.Create(field.Name, values.Select(ToInt64).ToList()),
-            MilvusDataType.Float => FieldData.Create(field.Name, values.Select(v => (float)ToDouble(v)).ToList()),
-            MilvusDataType.Double => FieldData.Create(field.Name, values.Select(ToDouble).ToList()),
+            MilvusDataType.Bool => ScalarColumn<bool>(field.Name, values, ToBoolean, field.Nullable),
+            MilvusDataType.Int8 => ScalarColumn<sbyte>(field.Name, values, ToInt8, field.Nullable),
+            MilvusDataType.Int16 => ScalarColumn<short>(field.Name, values, ToInt16, field.Nullable),
+            MilvusDataType.Int32 => ScalarColumn<int>(field.Name, values, ToInt32, field.Nullable),
+            MilvusDataType.Int64 => ScalarColumn<long>(field.Name, values, ToInt64, field.Nullable),
+            MilvusDataType.Float => ScalarColumn<float>(field.Name, values, ToFloat, field.Nullable),
+            MilvusDataType.Double => ScalarColumn<double>(field.Name, values, ToDouble, field.Nullable),
 
             MilvusDataType.String or MilvusDataType.VarChar
-                => FieldData.CreateVarChar(field.Name, values.Select(ToNullableString).ToList()),
-            MilvusDataType.Json
-                => FieldData.CreateJson(field.Name, values.Select(v => ToNullableString(v) ?? "{}").ToList()),
+                => FieldData.CreateVarChar(field.Name, TextColumn(field.Name, values, ToText, field.Nullable)),
             MilvusDataType.Geometry
-                => FieldData.CreateGeometry(field.Name, values.Select(ToNullableString).ToList()),
+                => FieldData.CreateGeometry(field.Name, TextColumn(field.Name, values, ToText, field.Nullable)),
             MilvusDataType.Timestamptz
-                => FieldData.CreateTimestamptz(field.Name, values.Select(ToTimestamptzString).ToList()),
+                => FieldData.CreateTimestamptz(
+                    field.Name, TextColumn(field.Name, values, ToTimestamptzText, field.Nullable)),
+            MilvusDataType.Json
+                => FieldData.CreateJson(field.Name, JsonColumn(field.Name, values)),
 
             MilvusDataType.FloatVector
                 => FieldData.CreateFloatVector(field.Name, Cast<ReadOnlyMemory<float>>(field.Name, values)),
@@ -246,6 +262,93 @@ public partial class MilvusCollection
                 "column-based InsertAsync overload for this collection.")
         };
 
+    private delegate T RowConverter<out T>(object value, string fieldName, int row);
+
+    /// <summary>
+    /// Projects one column of raw row values into typed <see cref="FieldData" />.
+    /// </summary>
+    /// <remarks>
+    /// When the column accepts nulls the data is built as <c>List&lt;T?&gt;</c>, which is what makes
+    /// <see cref="FieldData{TData}" /> emit the <c>valid_data</c> mask the server needs to distinguish
+    /// a null from a zero. When it does not, a null is a caller mistake and is reported against the
+    /// specific field and row rather than being coerced.
+    /// </remarks>
+    private static FieldData ScalarColumn<T>(
+        string fieldName, object?[] values, RowConverter<T> convert, bool nullable, bool isDynamic = false)
+        where T : struct
+    {
+        if (nullable)
+        {
+            List<T?> data = new(values.Length);
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                data.Add(values[i] is null ? null : convert(values[i]!, fieldName, i));
+            }
+
+            return FieldData.Create(fieldName, data, isDynamic);
+        }
+
+        List<T> required = new(values.Length);
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (values[i] is null)
+            {
+                throw NullNotAllowed(fieldName, i);
+            }
+
+            required.Add(convert(values[i]!, fieldName, i));
+        }
+
+        return FieldData.Create(fieldName, required, isDynamic);
+    }
+
+    /// <summary>
+    /// Projects a column whose values travel as text. The varchar, geometry and timestamptz wire paths
+    /// all carry nulls themselves, so this only has to decide whether a null is allowed.
+    /// </summary>
+    private static List<string?> TextColumn(
+        string fieldName, object?[] values, RowConverter<string> convert, bool nullable)
+    {
+        List<string?> data = new(values.Length);
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (values[i] is null)
+            {
+                data.Add(nullable ? null : throw NullNotAllowed(fieldName, i));
+            }
+            else
+            {
+                data.Add(convert(values[i]!, fieldName, i));
+            }
+        }
+
+        return data;
+    }
+
+    private static List<string> JsonColumn(string fieldName, object?[] values)
+    {
+        List<string> data = new(values.Length);
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (values[i] is null)
+            {
+                // Unlike varchar, the JSON wire path has no valid_data branch, so a null cannot be
+                // represented at all. Reporting it beats silently writing an empty object.
+                throw new MilvusException(
+                    $"Field '{fieldName}' is JSON and row {i} is null, which the wire protocol cannot " +
+                    "represent. Pass the string \"{}\" if an empty object is what you mean.");
+            }
+
+            data.Add(ToText(values[i]!, fieldName, i));
+        }
+
+        return data;
+    }
+
     private static T[] Cast<T>(string fieldName, object?[] values)
     {
         T[] result = new T[values.Length];
@@ -267,10 +370,12 @@ public partial class MilvusCollection
         return result;
     }
 
-    private static long ToInt64(object? value)
+    private static bool ToBoolean(object value, string fieldName, int row)
+        => value is bool converted ? converted : throw TypeMismatch(fieldName, row, value, "a boolean");
+
+    private static long ToInt64(object value, string fieldName, int row)
         => value switch
         {
-            null => throw new MilvusException("Null is not valid for a non-nullable integer field."),
             sbyte v => v,
             byte v => v,
             short v => v,
@@ -278,38 +383,73 @@ public partial class MilvusCollection
             int v => v,
             uint v => v,
             long v => v,
-            _ => throw new MilvusException($"Cannot convert '{value.GetType()}' to an integer field value.")
+            _ => throw TypeMismatch(fieldName, row, value, "an integer")
         };
 
-    private static double ToDouble(object? value)
+    // The narrower integer fields are range-checked rather than cast: an unchecked cast turns 300 for
+    // an Int8 field into 44, writing a value the caller never supplied.
+    private static sbyte ToInt8(object value, string fieldName, int row)
+        => (sbyte)InRange(ToInt64(value, fieldName, row), sbyte.MinValue, sbyte.MaxValue, "Int8", fieldName, row);
+
+    private static short ToInt16(object value, string fieldName, int row)
+        => (short)InRange(ToInt64(value, fieldName, row), short.MinValue, short.MaxValue, "Int16", fieldName, row);
+
+    private static int ToInt32(object value, string fieldName, int row)
+        => (int)InRange(ToInt64(value, fieldName, row), int.MinValue, int.MaxValue, "Int32", fieldName, row);
+
+    private static long InRange(long value, long min, long max, string typeName, string fieldName, int row)
+        => value >= min && value <= max
+            ? value
+            : throw new MilvusException(
+                $"Field '{fieldName}' is {typeName}, but row {row} has value {value}, which is outside the " +
+                $"representable range {min} to {max}.");
+
+    private static double ToDouble(object value, string fieldName, int row)
         => value switch
         {
-            null => throw new MilvusException("Null is not valid for a non-nullable floating point field."),
             float v => v,
             double v => v,
-            sbyte or byte or short or ushort or int or uint or long => ToInt64(value),
-            _ => throw new MilvusException($"Cannot convert '{value.GetType()}' to a floating point field value.")
+            sbyte or byte or short or ushort or int or uint or long => ToInt64(value, fieldName, row),
+            _ => throw TypeMismatch(fieldName, row, value, "a floating point number")
         };
 
-    private static string? ToNullableString(object? value)
-        => value switch
+    private static float ToFloat(object value, string fieldName, int row)
+    {
+        double wide = ToDouble(value, fieldName, row);
+        float narrow = (float)wide;
+
+        // Same problem as the integer casts, in a different disguise: a finite double outside float's
+        // range narrows to infinity instead of failing.
+        if (float.IsInfinity(narrow) && !double.IsInfinity(wide))
         {
-            null => null,
-            string s => s,
-            _ => throw new MilvusException($"Cannot convert '{value.GetType()}' to a string field value.")
-        };
+            throw new MilvusException(
+                $"Field '{fieldName}' is Float, but row {row} has value " +
+                $"{wide.ToString("R", CultureInfo.InvariantCulture)}, which is outside the range of a " +
+                "32-bit float.");
+        }
+
+        return narrow;
+    }
+
+    private static string ToText(object value, string fieldName, int row)
+        => value is string converted ? converted : throw TypeMismatch(fieldName, row, value, "a string");
 
     /// <summary>
     /// Timestamptz travels as ISO 8601 text, so accept the natural .NET date types as well as a
     /// pre-formatted string.
     /// </summary>
-    private static string? ToTimestamptzString(object? value)
+    private static string ToTimestamptzText(object value, string fieldName, int row)
         => value switch
         {
-            null => null,
             string s => s,
             DateTimeOffset dto => dto.ToString("O", CultureInfo.InvariantCulture),
             DateTime dt => dt.ToString("O", CultureInfo.InvariantCulture),
-            _ => throw new MilvusException($"Cannot convert '{value.GetType()}' to a Timestamptz field value.")
+            _ => throw TypeMismatch(fieldName, row, value, "a string, DateTime or DateTimeOffset")
         };
+
+    private static MilvusException TypeMismatch(string fieldName, int row, object value, string expected)
+        => new($"Field '{fieldName}' expects {expected}, but row {row} has {value.GetType()}.");
+
+    private static MilvusException NullNotAllowed(string fieldName, int row)
+        => new($"Field '{fieldName}' is not nullable, but row {row} has no value for it.");
 }
