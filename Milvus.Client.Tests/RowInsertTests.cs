@@ -186,6 +186,99 @@ public class RowInsertTests(MilvusFixture milvusFixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Row_upsert_replaces_existing_row()
+    {
+        MilvusCollection collection = await CreateCollectionAsync(nameof(Row_upsert_replaces_existing_row));
+
+        await collection.InsertAsync(
+            new List<IDictionary<string, object?>>
+            {
+                new Dictionary<string, object?>
+                {
+                    ["id"] = 1L,
+                    ["name"] = "before",
+                    ["score"] = 1f,
+                    ["vector"] = new ReadOnlyMemory<float>(new[] { 1f, 0f })
+                }
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        await LoadAsync(collection);
+
+        await collection.UpsertAsync(
+            new List<IDictionary<string, object?>>
+            {
+                new Dictionary<string, object?>
+                {
+                    ["id"] = 1L,
+                    ["name"] = "after",
+                    ["score"] = 9f,
+                    ["vector"] = new ReadOnlyMemory<float>(new[] { 0f, 1f })
+                }
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        IReadOnlyList<FieldData> fields = await collection.QueryAsync(
+            "id == 1",
+            new QueryParameters
+            {
+                OutputFields = { "name", "score" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            }, TestContext.Current.CancellationToken);
+
+        // The row was replaced, not duplicated.
+        var ids = (FieldData<long>)Assert.Single(fields, f => f.FieldName == "id");
+        Assert.Equal(1L, Assert.Single(ids.Data));
+
+        var names = (FieldData<string>)Assert.Single(fields, f => f.FieldName == "name");
+        Assert.Equal("after", Assert.Single(names.Data));
+
+        var scores = (FieldData<float>)Assert.Single(fields, f => f.FieldName == "score");
+        Assert.Equal(9f, Assert.Single(scores.Data));
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Row_upsert_inserts_when_key_absent()
+    {
+        MilvusCollection collection = await CreateCollectionAsync(nameof(Row_upsert_inserts_when_key_absent));
+
+        await collection.UpsertAsync(
+            new List<IDictionary<string, object?>>
+            {
+                new Dictionary<string, object?>
+                {
+                    ["id"] = 42L,
+                    ["name"] = "fresh",
+                    ["score"] = 3f,
+                    ["vector"] = new ReadOnlyMemory<float>(new[] { 1f, 1f })
+                }
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        await LoadAsync(collection);
+
+        IReadOnlyList<FieldData> fields = await collection.QueryAsync(
+            "id == 42",
+            new QueryParameters { OutputFields = { "name" }, ConsistencyLevel = ConsistencyLevel.Strong },
+            TestContext.Current.CancellationToken);
+
+        var names = (FieldData<string>)Assert.Single(fields, f => f.FieldName == "name");
+        Assert.Equal("fresh", Assert.Single(names.Data));
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Row_upsert_rejects_empty_input()
+    {
+        MilvusCollection collection = Client.GetCollection(nameof(Row_upsert_rejects_empty_input));
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            collection.UpsertAsync(
+                new List<IDictionary<string, object?>>(),
+                cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task Row_insert_rejects_empty_input()
     {
         MilvusCollection collection = Client.GetCollection(nameof(Row_insert_rejects_empty_input));

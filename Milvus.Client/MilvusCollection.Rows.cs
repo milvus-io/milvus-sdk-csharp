@@ -42,9 +42,50 @@ public partial class MilvusCollection
 
         MilvusCollectionDescription description = await DescribeAsync(cancellationToken).ConfigureAwait(false);
 
-        IReadOnlyList<FieldData> columns = BuildColumns(rows, description.Schema);
+        IReadOnlyList<FieldData> columns = BuildColumns(rows, description.Schema, includeAutoId: false);
 
         return await InsertAsync(columns, partitionName, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Upserts rows of data into a collection, given one dictionary per row.
+    /// </summary>
+    /// <param name="rows">The rows to upsert, in the same shape accepted by the row-based insert.</param>
+    /// <param name="partitionName">An optional name of a partition to upsert into.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// Like the row-based insert, this pivots the rows into columns client-side and costs one extra
+    /// <c>DescribeCollection</c> call.
+    /// </para>
+    /// <para>
+    /// Unlike insert, an upsert has to identify the row it is replacing, so the primary key must be
+    /// present in every row — including when the key is declared <c>autoId</c>, where insert would
+    /// omit it. Milvus deletes the old row and inserts the new one, so a collection with an auto-id
+    /// key assigns a fresh key rather than preserving the supplied one.
+    /// </para>
+    /// </remarks>
+    public async Task<MutationResult> UpsertAsync(
+        IReadOnlyList<IDictionary<string, object?>> rows,
+        string? partitionName = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(rows);
+
+        if (rows.Count == 0)
+        {
+            throw new ArgumentException("At least one row must be provided.", nameof(rows));
+        }
+
+        MilvusCollectionDescription description = await DescribeAsync(cancellationToken).ConfigureAwait(false);
+
+        // includeAutoId: an upsert must carry the primary key even when it is auto-generated,
+        // otherwise Milvus cannot tell which row is being replaced.
+        IReadOnlyList<FieldData> columns = BuildColumns(rows, description.Schema, includeAutoId: true);
+
+        return await UpsertAsync(columns, partitionName, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -52,7 +93,7 @@ public partial class MilvusCollection
     /// expects, using the collection schema to decide each column's type.
     /// </summary>
     private static List<FieldData> BuildColumns(
-        IReadOnlyList<IDictionary<string, object?>> rows, CollectionSchema schema)
+        IReadOnlyList<IDictionary<string, object?>> rows, CollectionSchema schema, bool includeAutoId)
     {
         List<FieldData> columns = new();
         HashSet<string> declaredFields = new(StringComparer.Ordinal);
@@ -61,9 +102,10 @@ public partial class MilvusCollection
         {
             declaredFields.Add(field.Name);
 
-            // The server generates auto-id primary keys, and function outputs (e.g. a BM25 sparse
-            // vector), so those columns must not be sent.
-            if (field.AutoId || field.IsFunctionOutput)
+            // Function outputs (e.g. a BM25 sparse vector) are always computed server-side. Auto-id
+            // primary keys are generated on insert, but an upsert must still carry the key so the
+            // server knows which row is being replaced.
+            if (field.IsFunctionOutput || (field.AutoId && !includeAutoId))
             {
                 continue;
             }
