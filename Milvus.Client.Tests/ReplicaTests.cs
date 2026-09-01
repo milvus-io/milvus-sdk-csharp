@@ -110,6 +110,61 @@ public class ReplicaTests(MilvusFixture milvusFixture) : IAsyncLifetime
         => await Assert.ThrowsAsync<ArgumentException>(() =>
             Client.GetReplicasAsync(" ", cancellationToken: TestContext.Current.CancellationToken));
 
+    [Fact]
+    public async Task LoadBalance_is_accepted_for_a_loaded_collection()
+    {
+        MilvusCollection collection =
+            await CreateLoadedCollectionAsync(nameof(LoadBalance_is_accepted_for_a_loaded_collection));
+
+        IReadOnlyList<MilvusReplicaInfo> replicas =
+            await Client.GetReplicasAsync(collection.Name, cancellationToken: TestContext.Current.CancellationToken);
+
+        long nodeId = Assert.Single(replicas).NodeIds[0];
+
+        // Letting Milvus choose both the targets and the segments. The container has a single query
+        // node, so there is nowhere to move anything and this is a no-op -- it verifies the request is
+        // well formed and accepted, not that a rebalance happened.
+        await Client.LoadBalanceAsync(
+            collection.Name, nodeId, cancellationToken: TestContext.Current.CancellationToken);
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task LoadBalance_rejects_a_source_node_not_serving_the_collection()
+    {
+        MilvusCollection collection = await CreateLoadedCollectionAsync(
+            nameof(LoadBalance_rejects_a_source_node_not_serving_the_collection));
+
+        // The collection is loaded, so the rejection can only be about the node id.
+        await Assert.ThrowsAsync<MilvusException>(() =>
+            Client.LoadBalanceAsync(
+                collection.Name, sourceNodeId: 999999, targetNodeIds: new[] { 888888L },
+                cancellationToken: TestContext.Current.CancellationToken));
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task LoadBalance_rejects_an_unloaded_collection()
+    {
+        MilvusCollection collection =
+            await CreateCollectionAsync(nameof(LoadBalance_rejects_an_unloaded_collection));
+
+        // Only the exception type is asserted: Milvus answers this one with a Go stack trace rather
+        // than a readable reason.
+        await Assert.ThrowsAsync<MilvusException>(() =>
+            Client.LoadBalanceAsync(
+                collection.Name, sourceNodeId: 1, cancellationToken: TestContext.Current.CancellationToken));
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task LoadBalance_rejects_empty_collection_name()
+        => await Assert.ThrowsAsync<ArgumentException>(() =>
+            Client.LoadBalanceAsync(" ", 1, cancellationToken: TestContext.Current.CancellationToken));
+
     private async Task<MilvusCollection> CreateCollectionAsync(string name)
     {
         MilvusCollection collection = Client.GetCollection(name);

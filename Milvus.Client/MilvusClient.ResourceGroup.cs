@@ -259,4 +259,76 @@ public partial class MilvusClient
 
         return replicas;
     }
+
+    /// <summary>
+    /// Manually moves sealed segments off one query node onto others, to even out load.
+    /// </summary>
+    /// <param name="collectionName">The collection whose segments should be moved.</param>
+    /// <param name="sourceNodeId">
+    /// The query node to move segments off. Get candidate ids from
+    /// <see cref="MilvusReplicaInfo.NodeIds" /> or <see cref="ResourceGroupDescription.Nodes" />.
+    /// </param>
+    /// <param name="targetNodeIds">
+    /// The query nodes to move segments onto. When null or empty, Milvus picks the targets itself.
+    /// </param>
+    /// <param name="sealedSegmentIds">
+    /// The specific sealed segments to move. When null or empty, Milvus moves whatever it considers
+    /// necessary to balance the source node.
+    /// </param>
+    /// <param name="databaseName">
+    /// An optional database name. Defaults to the database this client is connected to.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// The collection is not loaded, or <paramref name="sourceNodeId" /> is not serving any replica of
+    /// it.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// Only sealed segments can be moved; growing segments stay on the node that is writing them until
+    /// they seal. The collection must be loaded, and the source node must actually be serving it —
+    /// both are server-side errors rather than empty successes.
+    /// </para>
+    /// <para>
+    /// This is a manual override of the balancing Milvus already does on its own, so it is mostly
+    /// useful for draining a specific node. On a single-query-node deployment there is nowhere to move
+    /// segments to, and Milvus accepts the request and does nothing rather than reporting an error, so
+    /// a successful return is not by itself evidence that anything moved.
+    /// </para>
+    /// </remarks>
+    public async Task LoadBalanceAsync(
+        string collectionName,
+        long sourceNodeId,
+        IReadOnlyList<long>? targetNodeIds = null,
+        IReadOnlyList<long>? sealedSegmentIds = null,
+        string? databaseName = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(collectionName);
+
+        LoadBalanceRequest request = new()
+        {
+            CollectionName = collectionName,
+            SrcNodeID = sourceNodeId
+        };
+
+        if (targetNodeIds is not null)
+        {
+            request.DstNodeIDs.AddRange(targetNodeIds);
+        }
+
+        if (sealedSegmentIds is not null)
+        {
+            request.SealedSegmentIDs.AddRange(sealedSegmentIds);
+        }
+
+        if (databaseName is not null)
+        {
+            request.DbName = databaseName;
+        }
+
+        await InvokeAsync(GrpcClient.LoadBalanceAsync, request, cancellationToken).ConfigureAwait(false);
+    }
 }
