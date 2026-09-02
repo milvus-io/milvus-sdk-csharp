@@ -159,6 +159,68 @@ public partial class MilvusCollection
     }
 
     /// <summary>
+    /// Sets or removes properties on an existing field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">The name of the field to alter.</param>
+    /// <param name="properties">
+    /// Properties to set, e.g. <c>max_length</c> on a <c>VarChar</c> field, or <c>mmap.enabled</c> on
+    /// any field. At least one of <paramref name="properties" /> or <paramref name="deleteKeys" /> must
+    /// be non-empty.
+    /// </param>
+    /// <param name="deleteKeys">
+    /// Property keys to remove. Milvus only accepts a fixed set of recognized property names here --
+    /// unrecognized keys are rejected even if never set on this field, so this is not a general-purpose
+    /// key removal.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// Both <paramref name="properties" /> and <paramref name="deleteKeys" /> are empty.
+    /// </exception>
+    /// <exception cref="MilvusException">
+    /// <paramref name="fieldName" /> does not exist, or a key in <paramref name="deleteKeys" /> is not
+    /// one Milvus recognizes as a field property.
+    /// </exception>
+    /// <remarks>
+    /// Unlike a typical database, <c>max_length</c> can be both increased and decreased freely --
+    /// confirmed empirically against 2.6.4, on both an empty field and one already holding data longer
+    /// than the new limit.
+    /// </remarks>
+    public async Task AlterCollectionFieldAsync(
+        string fieldName,
+        IReadOnlyDictionary<string, string>? properties = null,
+        IReadOnlyList<string>? deleteKeys = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+
+        if ((properties is null || properties.Count == 0) && (deleteKeys is null || deleteKeys.Count == 0))
+        {
+            throw new ArgumentException(
+                $"At least one of {nameof(properties)} or {nameof(deleteKeys)} must be non-empty.");
+        }
+
+        var request = new AlterCollectionFieldRequest { CollectionName = Name, FieldName = fieldName };
+
+        if (properties is not null)
+        {
+            foreach (KeyValuePair<string, string> property in properties)
+            {
+                request.Properties.Add(new Grpc.KeyValuePair { Key = property.Key, Value = property.Value });
+            }
+        }
+
+        if (deleteKeys is not null)
+        {
+            request.DeleteKeys.AddRange(deleteKeys);
+        }
+
+        await _client.InvokeAsync(_client.GrpcClient.AlterCollectionFieldAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Renames a collection.
     /// </summary>
     /// <param name="newName">The new collection name.</param>
