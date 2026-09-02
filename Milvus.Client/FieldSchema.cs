@@ -166,11 +166,56 @@ public sealed class FieldSchema
 #endif
 
     /// <summary>
+    /// Create a field schema for a bfloat16 vector field. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="dimension">The dimension of the vector. Must be greater than zero.</param>
+    /// <param name="description">An optional description for the field.</param>
+    public static FieldSchema CreateBFloat16Vector(string name, int dimension, string description = "")
+        => new(name, MilvusDataType.BFloat16Vector, description: description) { Dimension = dimension };
+
+    /// <summary>
+    /// Create a field schema for an int8 vector field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="dimension">The dimension of the vector. Must be greater than zero.</param>
+    /// <param name="description">An optional description for the field.</param>
+    public static FieldSchema CreateInt8Vector(string name, int dimension, string description = "")
+        => new(name, MilvusDataType.Int8Vector, description: description) { Dimension = dimension };
+
+    /// <summary>
     /// Create a field schema for a JSON field.
     /// </summary>
     /// <param name="name">The field name.</param>
     public static FieldSchema CreateJson(string name)
         => new(name, MilvusDataType.Json);
+
+    /// <summary>
+    /// Create a field schema for a geometry field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field accepts null values.</param>
+    /// <remarks>
+    /// Values are exchanged as WKT (well-known text), e.g. <c>POINT (30 10)</c>. Use
+    /// <see cref="IndexType.RTree" /> to accelerate spatial predicates on this field.
+    /// </remarks>
+    public static FieldSchema CreateGeometry(string name, string description = "", bool nullable = false)
+        => new(name, MilvusDataType.Geometry, description: description, nullable: nullable);
+
+    /// <summary>
+    /// Create a field schema for a timezone-aware timestamp field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="name">The field name.</param>
+    /// <param name="description">An optional description for the field.</param>
+    /// <param name="nullable">Whether the field accepts null values.</param>
+    /// <remarks>
+    /// Values are exchanged as ISO 8601 strings, e.g. <c>2025-01-01T00:00:00Z</c>. The output
+    /// timezone can be controlled by setting a <c>timezone</c> property (an IANA name such as
+    /// <c>America/New_York</c>) on the database or collection.
+    /// </remarks>
+    public static FieldSchema CreateTimestamptz(string name, string description = "", bool nullable = false)
+        => new(name, MilvusDataType.Timestamptz, description: description, nullable: nullable);
 
     /// <summary>
     /// Create a field schema for a sparse float vector field. Available since Milvus v2.4.

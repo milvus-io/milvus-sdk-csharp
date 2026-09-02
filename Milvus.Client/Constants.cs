@@ -71,6 +71,16 @@ internal static class Constants
     internal const string RoundDecimal = "round_decimal";
 
     /// <summary>
+    /// The outer boundary of a range search. Goes inside the search <c>params</c> JSON.
+    /// </summary>
+    internal const string Radius = "radius";
+
+    /// <summary>
+    /// The inner boundary of a range search. Goes inside the search <c>params</c> JSON.
+    /// </summary>
+    internal const string RangeFilter = "range_filter";
+
+    /// <summary>
     /// Key name.
     /// </summary>
     internal const string Params = "params";

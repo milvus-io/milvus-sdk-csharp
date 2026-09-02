@@ -106,7 +106,16 @@ public partial class MilvusCollection
                     Dictionary<string, object?> rowDynamicData =
                         dynamicFieldsData[rowNum] ?? (dynamicFieldsData[rowNum] = new Dictionary<string, object?>());
 
-                    rowDynamicData[field.FieldName!] = field.GetValueAsObject(rowNum);
+                    object? value = field.GetValueAsObject(rowNum);
+
+                    // Dynamic fields are stored per row, so each row's $meta object carries only the
+                    // keys that row actually has. A null means this row has no value for the key, and
+                    // omitting it is not the same as writing an explicit JSON null -- the latter would
+                    // make the key exist with a null value.
+                    if (value is not null)
+                    {
+                        rowDynamicData[field.FieldName!] = value;
+                    }
                 }
             }
             else
@@ -205,8 +214,15 @@ public partial class MilvusCollection
                 PopulateFloat16VectorData(float16Vectors, placeholderValue);
                 break;
 #endif
+            case IReadOnlyList<ReadOnlyMemory<BFloat16>> bfloat16Vectors:
+                PopulateBFloat16VectorData(bfloat16Vectors, placeholderValue);
+                break;
+            case IReadOnlyList<ReadOnlyMemory<sbyte>> int8Vectors:
+                PopulateInt8VectorData(int8Vectors, placeholderValue);
+                break;
             default:
-                throw new ArgumentException("Only vectors of float, byte, or Half are supported", nameof(vectors));
+                throw new ArgumentException(
+                    "Only vectors of float, byte, Half, BFloat16, or sbyte are supported", nameof(vectors));
         }
 
         return await SearchInternalAsync(vectorFieldName, placeholderValue, metricType, limit, parameters, cancellationToken)
@@ -567,7 +583,7 @@ public partial class MilvusCollection
                 new Grpc.KeyValuePair
                 {
                     Key = Constants.Params,
-                    Value = parameters is null ? "{}" : Combine(parameters.ExtraParameters)
+                    Value = parameters is null ? "{}" : CombineSearchParams(parameters)
                 }
             });
 
@@ -606,6 +622,12 @@ public partial class MilvusCollection
                 PopulateFloat16VectorData(halfRequest.Vectors, placeholderValue);
                 break;
 #endif
+            case VectorAnnSearchRequest<BFloat16> bfloat16Request:
+                PopulateBFloat16VectorData(bfloat16Request.Vectors, placeholderValue);
+                break;
+            case VectorAnnSearchRequest<sbyte> int8Request:
+                PopulateInt8VectorData(int8Request.Vectors, placeholderValue);
+                break;
             case SparseVectorAnnSearchRequest<float> sparseRequest:
                 PopulateFloatSparseVectorData(sparseRequest.Vectors, placeholderValue);
                 break;
@@ -716,6 +738,49 @@ public partial class MilvusCollection
         }
     }
 #endif
+
+    private static void PopulateBFloat16VectorData(
+        IReadOnlyList<ReadOnlyMemory<BFloat16>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.Bfloat16Vector;
+
+        foreach (ReadOnlyMemory<BFloat16> milvusVector in vectors)
+        {
+            ReadOnlySpan<BFloat16> span = milvusVector.Span;
+            int length = span.Length * sizeof(ushort);
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                ushort bits = span[i].ToBits();
+                bytes[i * sizeof(ushort)] = (byte)bits;
+                bytes[i * sizeof(ushort) + 1] = (byte)(bits >> 8);
+            }
+
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, length)));
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
+
+    private static void PopulateInt8VectorData(
+        IReadOnlyList<ReadOnlyMemory<sbyte>> vectors, Grpc.PlaceholderValue placeholderValue)
+    {
+        placeholderValue.Type = Grpc.PlaceholderType.Int8Vector;
+
+        foreach (ReadOnlyMemory<sbyte> milvusVector in vectors)
+        {
+            ReadOnlySpan<sbyte> span = milvusVector.Span;
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(span.Length);
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                bytes[i] = unchecked((byte)span[i]);
+            }
+
+            placeholderValue.Values.Add(ByteString.CopyFrom(bytes.AsSpan(0, span.Length)));
+            ArrayPool<byte>.Shared.Return(bytes);
+        }
+    }
 
     private static void PopulateFloatSparseVectorData(
         IReadOnlyList<MilvusSparseVector<float>> vectors, Grpc.PlaceholderValue placeholderValue)

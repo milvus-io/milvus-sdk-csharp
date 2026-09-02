@@ -94,7 +94,8 @@ public partial class MilvusCollection
         CollectionSchema milvusCollectionSchema = new(fields, functions)
         {
             Name = response.Schema.Name,
-            Description = response.Schema.Description
+            Description = response.Schema.Description,
+            EnableDynamicFields = response.Schema.EnableDynamicField
 
             // Note that an AutoId previously existed at the schema level, but is not deprecated.
             // AutoId is now only defined at the field level.

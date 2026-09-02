@@ -254,4 +254,33 @@ public enum IndexType
     /// </para>
     /// </remarks>
     SparseInvertedIndex,
+
+    /// <summary>
+    /// SPARSE_WAND index for sparse float vector fields. Available since Milvus v2.4.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Uses the Weak-AND (WAND) algorithm, which skips low-impact terms during traversal. This is
+    /// typically faster than <see cref="SparseInvertedIndex" /> for short queries or small <c>k</c>,
+    /// at the cost of being more sensitive to the score distribution.
+    /// </para>
+    /// <para>
+    /// Build parameter: <c>drop_ratio_build</c> (the proportion of small vector values excluded
+    /// during index building, range [0, 1)).
+    /// </para>
+    /// <para>
+    /// Search parameter: <c>drop_ratio_search</c> (the proportion of small vector values excluded
+    /// during search, range [0, 1), default 0).
+    /// </para>
+    /// </remarks>
+    SparseWand,
+
+    /// <summary>
+    /// RTREE spatial index for geometry fields. Available since Milvus v2.6.
+    /// </summary>
+    /// <remarks>
+    /// Accelerates spatial predicates (<c>st_contains</c>, <c>st_within</c>, <c>st_intersects</c>,
+    /// <c>st_dwithin</c>, ...) on <see cref="MilvusDataType.Geometry" /> fields.
+    /// </remarks>
+    RTree,
 }

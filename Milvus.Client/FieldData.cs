@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using Google.Protobuf.Collections;
 
 namespace Milvus.Client;
@@ -55,7 +56,11 @@ public abstract class FieldData
     /// <summary>
     /// Used only internally for dynamic fields, which get serialized to JSON.
     /// </summary>
-    internal abstract object GetValueAsObject(int index);
+    /// <summary>
+    /// The value at <paramref name="index" /> as a boxed object, used to pack dynamic fields into the
+    /// <c>$meta</c> JSON column. Null when the column is nullable and has no value for that row.
+    /// </summary>
+    internal abstract object? GetValueAsObject(int index);
 
     /// <summary>
     /// Get string data.
@@ -121,10 +126,14 @@ public abstract class FieldData
 #else
                         throw new NotSupportedException("Float16Vector is only supported on .NET 8.0 or greater");
 #endif
+                    case Grpc.VectorField.DataOneofCase.Bfloat16Vector:
+                        return CreateBFloat16VectorFromBytes(fieldData.FieldName, fieldData.Vectors.Bfloat16Vector.Span, dim);
 
+                    case Grpc.VectorField.DataOneofCase.Int8Vector:
+                        return CreateInt8VectorFromBytes(fieldData.FieldName, fieldData.Vectors.Int8Vector.Span, dim);
                     case Grpc.VectorField.DataOneofCase.SparseFloatVector:
                         return CreateSparseFloatVectorFromGrpc(fieldData.FieldName, fieldData.Vectors.SparseFloatVector);
-
+                    
                     default:
                         throw new NotSupportedException("VectorField.DataOneofCase.None not supported");
                 }
@@ -155,12 +164,27 @@ public abstract class FieldData
                         => Create(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.LongData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.LongData }
                         => Create(fieldData.FieldName, fieldData.Scalars.LongData.Data, fieldData.IsDynamic),
+                    // Timestamptz shares the string_data slot with VarChar (it travels as an ISO 8601
+                    // string, matching the official Go SDK), so it must be discriminated on the
+                    // field's declared type before the VarChar cases below.
+                    { DataCase: ScalarField.DataOneofCase.StringData }
+                        when fieldData.Type == Grpc.DataType.Timestamptz && hasValidData
+                        => CreateTimestamptz(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.StringData.Data, fieldData.ValidData), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.StringData }
+                        when fieldData.Type == Grpc.DataType.Timestamptz
+                        => CreateTimestamptz(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.StringData } when hasValidData
                         => CreateVarChar(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.StringData.Data, fieldData.ValidData), fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.StringData }
                         => CreateVarChar(fieldData.FieldName, fieldData.Scalars.StringData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.JsonData }
                         => CreateJson(fieldData.FieldName, fieldData.Scalars.JsonData.Data.Select(p => p.ToStringUtf8()).ToList(), fieldData.IsDynamic),
+                    // Geometry travels as WKT text in geometry_wkt_data, matching the official Go
+                    // SDK; the binary geometry_data (WKB) slot is not what the server returns.
+                    { DataCase: ScalarField.DataOneofCase.GeometryWktData } when hasValidData
+                        => CreateGeometry(fieldData.FieldName, ApplyValidMask(fieldData.Scalars.GeometryWktData.Data, fieldData.ValidData), fieldData.IsDynamic),
+                    { DataCase: ScalarField.DataOneofCase.GeometryWktData }
+                        => CreateGeometry(fieldData.FieldName, fieldData.Scalars.GeometryWktData.Data, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool } when hasValidData
                         => CreateNullableArray(fieldData.FieldName, fieldData.Scalars.ArrayData.Data.Select(x => x.BoolData?.Data).ToArray(), fieldData.ValidData, fieldData.IsDynamic),
                     { DataCase: ScalarField.DataOneofCase.ArrayData, ArrayData.ElementType: Grpc.DataType.Bool }
@@ -431,6 +455,25 @@ public abstract class FieldData
 #endif
 
     /// <summary>
+    /// Create a bfloat16 vector. Available since Milvus v2.4.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <returns></returns>
+    public static BFloat16VectorFieldData CreateBFloat16Vector(
+        string fieldName, IReadOnlyList<ReadOnlyMemory<BFloat16>> data)
+        => new(fieldName, data);
+
+    /// <summary>
+    /// Create an int8 vector. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="data">Data in this field</param>
+    /// <returns></returns>
+    public static Int8VectorFieldData CreateInt8Vector(string fieldName, IReadOnlyList<ReadOnlyMemory<sbyte>> data)
+        => new(fieldName, data);
+
+    /// <summary>
     /// Create a sparse float vector field. Available since Milvus v2.4.
     /// </summary>
     /// <param name="fieldName">Field name.</param>
@@ -467,6 +510,62 @@ public abstract class FieldData
         return new FieldData<string>(fieldName, json, MilvusDataType.Json, isDynamic);
     }
 
+    /// <summary>
+    /// Create a geometry field from WKT (well-known text) values, e.g. <c>POINT (30 10)</c>.
+    /// Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="wkt">
+    /// The WKT representation of each geometry value. Values can be null if the field is nullable.
+    /// </param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    public static FieldData<string?> CreateGeometry(
+        string fieldName,
+        IReadOnlyList<string?> wkt,
+        bool isDynamic = false)
+        => new(fieldName, wkt, MilvusDataType.Geometry, isDynamic);
+
+    /// <summary>
+    /// Create a timezone-aware timestamp field from ISO 8601 strings, e.g.
+    /// <c>2025-01-01T00:00:00Z</c>. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="timestamps">
+    /// The ISO 8601 representation of each timestamp. Values can be null if the field is nullable.
+    /// </param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    public static FieldData<string?> CreateTimestamptz(
+        string fieldName,
+        IReadOnlyList<string?> timestamps,
+        bool isDynamic = false)
+        => new(fieldName, timestamps, MilvusDataType.Timestamptz, isDynamic);
+
+    /// <summary>
+    /// Create a timezone-aware timestamp field from <see cref="DateTimeOffset" /> values.
+    /// Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">Field name.</param>
+    /// <param name="timestamps">
+    /// The timestamps to insert. Values can be null if the field is nullable. Each value is
+    /// formatted as a round-trippable ISO 8601 string, preserving its UTC offset.
+    /// </param>
+    /// <param name="isDynamic">Whether the field is dynamic.</param>
+    public static FieldData<string?> CreateTimestamptz(
+        string fieldName,
+        IReadOnlyList<DateTimeOffset?> timestamps,
+        bool isDynamic = false)
+    {
+        Verify.NotNull(timestamps);
+
+        string?[] formatted = new string?[timestamps.Count];
+        for (int i = 0; i < timestamps.Count; i++)
+        {
+            formatted[i] = timestamps[i]?.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        return new FieldData<string?>(fieldName, formatted, MilvusDataType.Timestamptz, isDynamic);
+    }
+
 #if NET8_0_OR_GREATER
     private static Float16VectorFieldData CreateFloat16VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
         int dimension)
@@ -496,6 +595,59 @@ public abstract class FieldData
         return new Float16VectorFieldData(fieldName, vectors);
     }
 #endif
+
+    private static BFloat16VectorFieldData CreateBFloat16VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
+        int dimension)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.GreaterThan(dimension, 0);
+
+        int bytesPerVector = dimension * sizeof(ushort);
+        int vectorCount = bytes.Length / bytesPerVector;
+        var vectors = new ReadOnlyMemory<BFloat16>[vectorCount];
+
+        for (int i = 0; i < vectorCount; i++)
+        {
+            BFloat16[] vector = new BFloat16[dimension];
+            ReadOnlySpan<byte> vectorBytes = bytes.Slice(i * bytesPerVector, bytesPerVector);
+
+            for (int j = 0; j < dimension; j++)
+            {
+                int offset = j * sizeof(ushort);
+                vector[j] = BFloat16.FromBits((ushort)(vectorBytes[offset] | (vectorBytes[offset + 1] << 8)));
+            }
+
+            vectors[i] = vector;
+        }
+
+        return new BFloat16VectorFieldData(fieldName, vectors);
+    }
+
+    private static Int8VectorFieldData CreateInt8VectorFromBytes(string fieldName, ReadOnlySpan<byte> bytes,
+        int dimension)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+        Verify.GreaterThan(dimension, 0);
+
+        int bytesPerVector = dimension;
+        int vectorCount = bytes.Length / bytesPerVector;
+        var vectors = new ReadOnlyMemory<sbyte>[vectorCount];
+
+        for (int i = 0; i < vectorCount; i++)
+        {
+            sbyte[] vector = new sbyte[dimension];
+            ReadOnlySpan<byte> vectorBytes = bytes.Slice(i * bytesPerVector, bytesPerVector);
+
+            for (int j = 0; j < dimension; j++)
+            {
+                vector[j] = unchecked((sbyte)vectorBytes[j]);
+            }
+
+            vectors[i] = vector;
+        }
+
+        return new Int8VectorFieldData(fieldName, vectors);
+    }
 
     private static SparseFloatVectorFieldData CreateSparseFloatVectorFromGrpc(
         string fieldName,
@@ -792,6 +944,58 @@ public class FieldData<TData> : FieldData
                 }
                 fieldData.Scalars = new Grpc.ScalarField { JsonData = jsonData, };
                 break;
+
+            // Timestamptz travels as ISO 8601 text in string_data (same slot as VarChar), matching
+            // the official Go SDK -- not the int64 timestamptz_data slot.
+            case MilvusDataType.Timestamptz:
+                Grpc.StringArray timestamptzData = new();
+                bool hasNullTimestamptz = Data.Any(item => item is null);
+                if (hasNullTimestamptz)
+                {
+                    foreach (string? item in (IReadOnlyList<string?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            timestamptzData.Data.Add(item);
+                        }
+                    }
+                }
+                else
+                {
+                    timestamptzData.Data.AddRange((IReadOnlyList<string>)Data);
+                }
+                fieldData.Scalars = new Grpc.ScalarField { StringData = timestamptzData };
+                break;
+
+            case MilvusDataType.Geometry:
+                Grpc.GeometryWktArray geometryData = new();
+                bool hasNullGeometry = Data.Any(item => item is null);
+                if (hasNullGeometry)
+                {
+                    foreach (string? item in (IReadOnlyList<string?>)Data)
+                    {
+                        if (item is null)
+                        {
+                            fieldData.ValidData.Add(false);
+                        }
+                        else
+                        {
+                            fieldData.ValidData.Add(true);
+                            geometryData.Data.Add(item);
+                        }
+                    }
+                }
+                else
+                {
+                    geometryData.Data.AddRange((IReadOnlyList<string>)Data);
+                }
+                fieldData.Scalars = new Grpc.ScalarField { GeometryWktData = geometryData };
+                break;
             case MilvusDataType.None:
                 throw new MilvusException($"DataType Error:{DataType}");
             default:
@@ -801,19 +1005,17 @@ public class FieldData<TData> : FieldData
         return fieldData;
     }
 
-    internal override object GetValueAsObject(int index)
+    internal override object? GetValueAsObject(int index)
         => DataType switch
         {
-            MilvusDataType.Bool => ((IReadOnlyList<bool>)Data)[index],
-            MilvusDataType.Int8 => ((IReadOnlyList<sbyte>)Data)[index],
-            MilvusDataType.Int16 => ((IReadOnlyList<short>)Data)[index],
-            MilvusDataType.Int32 => ((IReadOnlyList<int>)Data)[index],
-            MilvusDataType.Int64 => ((IReadOnlyList<long>)Data)[index],
-            MilvusDataType.Float => ((IReadOnlyList<float>)Data)[index],
-            MilvusDataType.Double => ((IReadOnlyList<double>)Data)[index],
-            MilvusDataType.String => ((IReadOnlyList<string>)Data)[index],
-            MilvusDataType.VarChar => ((IReadOnlyList<string>)Data)[index],
-            MilvusDataType.Json => ((IReadOnlyList<string>)Data)[index],
+            // Boxing the element directly, rather than casting Data to a list of the non-nullable
+            // element type, is what lets a nullable column work here: its Data is a List<T?>, which
+            // is not an IReadOnlyList<T>, and its nulls have to survive as nulls.
+            MilvusDataType.Bool or MilvusDataType.Int8 or MilvusDataType.Int16 or MilvusDataType.Int32
+                or MilvusDataType.Int64 or MilvusDataType.Float or MilvusDataType.Double
+                or MilvusDataType.String or MilvusDataType.VarChar or MilvusDataType.Json
+                or MilvusDataType.Geometry or MilvusDataType.Timestamptz
+                => Data[index],
 
             MilvusDataType.None => throw new MilvusException($"DataType Error:{DataType}"),
             _ => throw new MilvusException($"DataType Error:{DataType}, not supported")

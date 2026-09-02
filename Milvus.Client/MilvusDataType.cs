@@ -69,6 +69,16 @@ public enum MilvusDataType
     Json = 23,
 
     /// <summary>
+    /// Geometry, carried as WKT (well-known text). Available since Milvus v2.6.
+    /// </summary>
+    Geometry = 24,
+
+    /// <summary>
+    /// Timezone-aware timestamp, carried as an ISO 8601 string. Available since Milvus v2.6.
+    /// </summary>
+    Timestamptz = 26,
+
+    /// <summary>
     /// BinaryVector
     /// </summary>
     BinaryVector = 100,
@@ -84,7 +94,17 @@ public enum MilvusDataType
     Float16Vector = 102,
 
     /// <summary>
+    /// BFloat16Vector. Available since Milvus v2.4.
+    /// </summary>
+    BFloat16Vector = 103,
+
+    /// <summary>
     /// SparseFloatVector. Available since Milvus v2.4.
     /// </summary>
     SparseFloatVector = 104,
+
+    /// <summary>
+    /// Int8Vector.
+    /// </summary>
+    Int8Vector = 105
 }
