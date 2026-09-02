@@ -1,3 +1,4 @@
+using Grpc.Core;
 using Xunit;
 
 namespace Milvus.Client.Tests;
@@ -287,6 +288,118 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
             collection.AlterCollectionFieldAsync(
                 "text", new Dictionary<string, string> { ["mmap.enabled"] = "true" },
                 cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AddCollectionFunction_is_currently_rejected_for_bm25()
+    {
+        if (await Skip()) return;
+
+        // AddCollectionFunction cannot succeed today for BM25 -- the only function type this SDK has a
+        // builder for (FunctionSchema.CreateBm25; Rerank and TextEmbedding are enum-only, unbuilt). Two
+        // failure modes were observed empirically, one per server version tested: 2.6.4 does not
+        // implement the RPC at all (RpcException at the gRPC transport level), while 2.6.20 implements
+        // it but explicitly rejects BM25 (MilvusException). Both count as "not usable"; only the second
+        // is checked for content, since the first carries no message to check. If this ever starts
+        // succeeding, the test fails loudly here rather than silently passing.
+        MilvusCollection collection = await CreateBm25ReadyCollectionAsync(
+            nameof(AddCollectionFunction_is_currently_rejected_for_bm25));
+
+        try
+        {
+            await collection.AddCollectionFunctionAsync(
+                FunctionSchema.CreateBm25("bm25_fn", "text", "sparse_vector"),
+                TestContext.Current.CancellationToken);
+
+            Assert.Fail(
+                "AddCollectionFunctionAsync succeeded for a BM25 function. Milvus apparently lifted the " +
+                "restriction documented on AddCollectionFunctionAsync -- update the docs and this test.");
+        }
+        catch (RpcException e) when (e.StatusCode == StatusCode.Unimplemented)
+        {
+            // Milvus 2.6.4: the RPC does not exist yet.
+        }
+        catch (MilvusException e)
+        {
+            Assert.Contains("BM25", e.Message);
+        }
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task AlterCollectionFunction_is_currently_rejected_for_bm25()
+    {
+        if (await Skip()) return;
+
+        MilvusCollection collection = await CreateBm25ReadyCollectionAsync(
+            nameof(AlterCollectionFunction_is_currently_rejected_for_bm25));
+
+        try
+        {
+            await collection.AlterCollectionFunctionAsync(
+                "bm25_fn", FunctionSchema.CreateBm25("bm25_fn", "text", "sparse_vector"),
+                TestContext.Current.CancellationToken);
+
+            Assert.Fail(
+                "AlterCollectionFunctionAsync succeeded for a BM25 function. Milvus apparently lifted the " +
+                "restriction documented on AlterCollectionFunctionAsync -- update the docs and this test.");
+        }
+        catch (RpcException e) when (e.StatusCode == StatusCode.Unimplemented)
+        {
+            // Milvus 2.6.4: the RPC does not exist yet.
+        }
+        catch (MilvusException e)
+        {
+            Assert.Contains("BM25", e.Message);
+        }
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task DropCollectionFunction_does_not_throw_for_a_function_that_was_never_added()
+    {
+        if (await Skip()) return;
+
+        // Since AddCollectionFunction cannot currently succeed for any function type this SDK can
+        // build (see the sibling tests), there is no way to construct a function that genuinely
+        // exists, so this can only exercise the not-found path. On 2.6.20 that path was observed to
+        // succeed silently rather than throw; on 2.6.4 the RPC is not implemented, so both are treated
+        // as acceptable outcomes here.
+        MilvusCollection collection = await CreateBm25ReadyCollectionAsync(
+            nameof(DropCollectionFunction_does_not_throw_for_a_function_that_was_never_added));
+
+        try
+        {
+            await collection.DropCollectionFunctionAsync("never_added_fn", TestContext.Current.CancellationToken);
+        }
+        catch (RpcException e) when (e.StatusCode == StatusCode.Unimplemented)
+        {
+            // Milvus 2.6.4: the RPC does not exist yet.
+        }
+
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task<MilvusCollection> CreateBm25ReadyCollectionAsync(string name)
+    {
+        MilvusCollection collection = Client.GetCollection(name);
+        await collection.DropAsync(TestContext.Current.CancellationToken);
+
+        await Client.CreateCollectionAsync(
+            name,
+            new CollectionSchema
+            {
+                Fields =
+                {
+                    FieldSchema.Create<long>("id", isPrimaryKey: true),
+                    FieldSchema.CreateVarchar("text", maxLength: 1000, enableAnalyzer: true),
+                    FieldSchema.CreateSparseFloatVector("sparse_vector")
+                }
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        return collection;
     }
 
     private async Task<bool> Skip() => await Client.GetParsedMilvusVersion() < new Version(2, 6);

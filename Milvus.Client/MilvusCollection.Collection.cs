@@ -221,6 +221,108 @@ public partial class MilvusCollection
     }
 
     /// <summary>
+    /// Adds a function to an existing collection. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="function">
+    /// The function to add. Its input and output fields must already exist in the collection -- this
+    /// does not create them.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// Always, for a <see cref="FunctionType.Bm25" /> function as of Milvus 2.6.20 -- see the remarks.
+    /// Also thrown for an input or output field that does not exist.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// <b>Not currently usable for BM25, the only function type this SDK can build.</b> Verified against
+    /// two server versions: Milvus 2.6.4 does not implement this RPC at all (the call fails at the gRPC
+    /// transport level with an <c>Unimplemented</c> status, surfacing as a raw
+    /// <see cref="global::Grpc.Core.RpcException" /> rather than a <see cref="MilvusException" />).
+    /// Milvus 2.6.20 does implement the RPC, but rejects a BM25 function outright with <c>"currently
+    /// does not support adding BM25 function"</c>. <see cref="FunctionType.Rerank" /> and
+    /// <see cref="FunctionType.TextEmbedding" /> are unverified -- this SDK has no builder for either,
+    /// see <see cref="FunctionSchema" />'s constructor -- so whether they fare any better is unknown.
+    /// </para>
+    /// <para>
+    /// Because <see cref="AddCollectionFieldAsync" /> refuses vector fields, a function's output field
+    /// -- typically a sparse vector for BM25 -- has to already be part of the collection's original
+    /// schema for this to have anything to attach to, once it does become usable. Until then, that
+    /// field behaves as an ordinary column: it must be supplied on every insert, exactly like any other
+    /// non-nullable field.
+    /// </para>
+    /// </remarks>
+    public async Task AddCollectionFunctionAsync(FunctionSchema function, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(function);
+
+        var request = new AddCollectionFunctionRequest { CollectionName = Name, FunctionSchema = function.ToGrpc() };
+
+        await _client.InvokeAsync(_client.GrpcClient.AddCollectionFunctionAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Replaces the definition of an existing function. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="functionName">The name of the function to alter.</param>
+    /// <param name="newFunction">The function's new definition, which replaces the old one entirely.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// Always, for a <see cref="FunctionType.Bm25" /> function as of Milvus 2.6.20: rejected with
+    /// <c>"currently does not support alter BM25 function"</c>, the same restriction documented on
+    /// <see cref="AddCollectionFunctionAsync" />. Also thrown when <paramref name="functionName" />
+    /// does not exist.
+    /// </exception>
+    public async Task AlterCollectionFunctionAsync(
+        string functionName, FunctionSchema newFunction, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(functionName);
+        Verify.NotNull(newFunction);
+
+        var request = new AlterCollectionFunctionRequest
+        {
+            CollectionName = Name,
+            FunctionName = functionName,
+            FunctionSchema = newFunction.ToGrpc()
+        };
+
+        await _client.InvokeAsync(_client.GrpcClient.AlterCollectionFunctionAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Drops a function from a collection. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="functionName">The name of the function to drop.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// Dropping a function that does not exist was observed to succeed silently on Milvus 2.6.20
+    /// rather than throw -- confirmed both for a function name that was never valid, and for one whose
+    /// add had itself failed (see <see cref="AddCollectionFunctionAsync" />). Whether this holds for a
+    /// function that genuinely existed and was actively producing output could not be verified: adding
+    /// a function currently fails for every function type this SDK can construct, so there was nothing
+    /// real to drop. On Milvus 2.6.4 this RPC is not implemented at all, the same as
+    /// <see cref="AddCollectionFunctionAsync" /> and <see cref="AlterCollectionFunctionAsync" />.
+    /// </para>
+    /// </remarks>
+    public async Task DropCollectionFunctionAsync(string functionName, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(functionName);
+
+        var request = new DropCollectionFunctionRequest { CollectionName = Name, FunctionName = functionName };
+
+        await _client.InvokeAsync(_client.GrpcClient.DropCollectionFunctionAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Renames a collection.
     /// </summary>
     /// <param name="newName">The new collection name.</param>
