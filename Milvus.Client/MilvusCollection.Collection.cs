@@ -117,6 +117,48 @@ public partial class MilvusCollection
     }
 
     /// <summary>
+    /// Adds a new field to an existing collection. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="field">
+    /// The field to add. Must have <see cref="FieldSchema.Nullable" /> set — Milvus rejects any added
+    /// field that isn't, even an empty collection with no existing rows to reconcile, and even one
+    /// that also sets <see cref="FieldSchema.DefaultValue" />: a default does not substitute for
+    /// nullable, the two are independent requirements. Vector fields cannot be added this way.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// <paramref name="field" /> is not nullable, is a vector type, or duplicates an existing field
+    /// name; or the collection does not exist.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// Rows that existed before the field was added read back as <see langword="null" /> for it,
+    /// unless <see cref="FieldSchema.DefaultValue" /> is also set, in which case they read back as
+    /// that default — Milvus backfills it rather than leaving existing rows null. The same default
+    /// applies to new rows that omit the field going forward, same as at collection creation.
+    /// </para>
+    /// <para>
+    /// The collection does not need to be released first, but a newly added field is not searchable or
+    /// queryable in already-loaded segments until the collection is released and reloaded.
+    /// </para>
+    /// </remarks>
+    public async Task AddCollectionFieldAsync(FieldSchema field, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(field);
+
+        var request = new AddCollectionFieldRequest
+        {
+            CollectionName = Name,
+            Schema = field.ToGrpc().ToByteString()
+        };
+
+        await _client.InvokeAsync(_client.GrpcClient.AddCollectionFieldAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Renames a collection.
     /// </summary>
     /// <param name="newName">The new collection name.</param>
