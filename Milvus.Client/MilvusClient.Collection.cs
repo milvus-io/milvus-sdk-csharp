@@ -1,7 +1,4 @@
-﻿using System.Globalization;
-using System.Text.Json;
-
-namespace Milvus.Client;
+﻿namespace Milvus.Client;
 
 public partial class MilvusClient
 {
@@ -84,93 +81,12 @@ public partial class MilvusClient
 
         foreach (FieldSchema field in schema.Fields)
         {
-            Grpc.FieldSchema grpcField = new()
-            {
-                Name = field.Name,
-                DataType = (DataType)(int)field.DataType,
-                ElementType = (DataType)(int)field.ElementDataType,
-                IsPrimaryKey = field.IsPrimaryKey,
-                IsPartitionKey = field.IsPartitionKey,
-                AutoID = field.AutoId,
-                Nullable = field.Nullable,
-                Description = field.Description
-            };
-
-            if (field.MaxLength is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.VarcharMaxLength,
-                    Value = field.MaxLength.Value.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            if (field.Dimension is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.VectorDim,
-                    Value = field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            if (field.MaxCapacity is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.MaxCapacity,
-                    Value = field.MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            if (field.DefaultValue is not null)
-            {
-                grpcField.DefaultValue = ConvertToValueField(field.DefaultValue, field.DataType);
-            }
-
-            if (field.EnableAnalyzer)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.EnableAnalyzer,
-                    Value = "true"
-                });
-            }
-
-            if (field.AnalyzerParams is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.AnalyzerParams,
-                    Value = JsonSerializer.Serialize(field.AnalyzerParams)
-                });
-            }
-
-            grpcCollectionSchema.Fields.Add(grpcField);
+            grpcCollectionSchema.Fields.Add(field.ToGrpc());
         }
 
         foreach (FunctionSchema function in schema.Functions)
         {
-            Grpc.FunctionSchema grpcFunction = new()
-            {
-                Name = function.Name,
-                Description = function.Description,
-                Type = (Grpc.FunctionType)(int)function.Type
-            };
-
-            grpcFunction.InputFieldNames.AddRange(function.InputFieldNames);
-            grpcFunction.OutputFieldNames.AddRange(function.OutputFieldNames);
-
-            foreach (var param in function.Params)
-            {
-                grpcFunction.Params.Add(new Grpc.KeyValuePair
-                {
-                    Key = param.Key,
-                    Value = param.Value
-                });
-            }
-
-            grpcCollectionSchema.Functions.Add(grpcFunction);
+            grpcCollectionSchema.Functions.Add(function.ToGrpc());
         }
 
 #pragma warning disable CS0612 // Schema-level AutoID is obsolete, but still there in pymilvus
@@ -290,41 +206,5 @@ public partial class MilvusClient
                 .ConfigureAwait(false);
 
         return FlushResult.From(response);
-    }
-
-    private static Grpc.ValueField ConvertToValueField(object value, MilvusDataType dataType)
-    {
-        Grpc.ValueField valueField = new();
-
-        switch (dataType)
-        {
-            case MilvusDataType.Bool:
-                valueField.BoolData = (bool)value;
-                break;
-            case MilvusDataType.Int8:
-            case MilvusDataType.Int16:
-            case MilvusDataType.Int32:
-                valueField.IntData = (int)value;
-                break;
-            case MilvusDataType.Int64:
-                valueField.LongData = (long)value;
-                break;
-            case MilvusDataType.Float:
-                valueField.FloatData = (float)value;
-                break;
-            case MilvusDataType.Double:
-                valueField.DoubleData = (double)value;
-                break;
-            case MilvusDataType.String:
-            case MilvusDataType.VarChar:
-                valueField.StringData = (string)value;
-                break;
-            default:
-                throw new ArgumentException(
-                    $"Default values are not supported for {dataType} fields. Only scalar fields support default values.",
-                    nameof(value));
-        }
-
-        return valueField;
     }
 }
