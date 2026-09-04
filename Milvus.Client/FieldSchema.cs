@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Text.Json;
 
 namespace Milvus.Client;
 
@@ -450,4 +452,111 @@ public sealed class FieldSchema
     public long FieldId { get; }
 
     private string DebuggerDisplay => $"{Name} ({DataType})";
+
+    /// <summary>
+    /// Converts this field schema to its wire representation. Shared by <c>CreateCollection</c>, which sends a
+    /// whole schema, and <c>AddCollectionField</c>, which sends one field's schema on its own.
+    /// </summary>
+    internal Grpc.FieldSchema ToGrpc()
+    {
+        Grpc.FieldSchema grpcField = new()
+        {
+            Name = Name,
+            DataType = (Grpc.DataType)(int)DataType,
+            ElementType = (Grpc.DataType)(int)ElementDataType,
+            IsPrimaryKey = IsPrimaryKey,
+            IsPartitionKey = IsPartitionKey,
+            AutoID = AutoId,
+            Nullable = Nullable,
+            Description = Description
+        };
+
+        if (MaxLength is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.VarcharMaxLength,
+                Value = MaxLength.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        if (Dimension is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.VectorDim,
+                Value = Dimension.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        if (MaxCapacity is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.MaxCapacity,
+                Value = MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        if (DefaultValue is not null)
+        {
+            grpcField.DefaultValue = ConvertToValueField(DefaultValue, DataType);
+        }
+
+        if (EnableAnalyzer)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.EnableAnalyzer,
+                Value = "true"
+            });
+        }
+
+        if (AnalyzerParams is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.AnalyzerParams,
+                Value = JsonSerializer.Serialize(AnalyzerParams)
+            });
+        }
+
+        return grpcField;
+    }
+
+    private static Grpc.ValueField ConvertToValueField(object value, MilvusDataType dataType)
+    {
+        Grpc.ValueField valueField = new();
+
+        switch (dataType)
+        {
+            case MilvusDataType.Bool:
+                valueField.BoolData = (bool)value;
+                break;
+            case MilvusDataType.Int8:
+            case MilvusDataType.Int16:
+            case MilvusDataType.Int32:
+                valueField.IntData = Convert.ToInt32(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Int64:
+                valueField.LongData = Convert.ToInt64(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Float:
+                valueField.FloatData = Convert.ToSingle(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.Double:
+                valueField.DoubleData = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                break;
+            case MilvusDataType.String:
+            case MilvusDataType.VarChar:
+                valueField.StringData = (string)value;
+                break;
+            default:
+                throw new ArgumentException(
+                    $"Default values are not supported for {dataType} fields. Only scalar fields support default values.",
+                    nameof(value));
+        }
+
+        return valueField;
+    }
 }

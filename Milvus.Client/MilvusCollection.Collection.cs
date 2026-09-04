@@ -117,6 +117,213 @@ public partial class MilvusCollection
     }
 
     /// <summary>
+    /// Adds a new field to an existing collection. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="field">
+    /// The field to add. Must have <see cref="FieldSchema.Nullable" /> set — Milvus rejects any added
+    /// field that isn't, even an empty collection with no existing rows to reconcile, and even one
+    /// that also sets <see cref="FieldSchema.DefaultValue" />: a default does not substitute for
+    /// nullable, the two are independent requirements. Vector fields cannot be added this way.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// <paramref name="field" /> is not nullable, is a vector type, or duplicates an existing field
+    /// name; or the collection does not exist.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// Rows that existed before the field was added read back as <see langword="null" /> for it,
+    /// unless <see cref="FieldSchema.DefaultValue" /> is also set, in which case they read back as
+    /// that default — Milvus backfills it rather than leaving existing rows null. The same default
+    /// applies to new rows that omit the field going forward, same as at collection creation.
+    /// </para>
+    /// <para>
+    /// The collection does not need to be released first, and — verified against Milvus 2.6.4 — a newly
+    /// added field is immediately queryable on an already-loaded collection, with no release/reload
+    /// required.
+    /// </para>
+    /// </remarks>
+    public async Task AddCollectionFieldAsync(FieldSchema field, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(field);
+
+        var request = new AddCollectionFieldRequest
+        {
+            CollectionName = Name,
+            Schema = field.ToGrpc().ToByteString()
+        };
+
+        await _client.InvokeAsync(_client.GrpcClient.AddCollectionFieldAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sets or removes properties on an existing field. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="fieldName">The name of the field to alter.</param>
+    /// <param name="properties">
+    /// Properties to set, e.g. <c>max_length</c> on a <c>VarChar</c> field, or <c>mmap.enabled</c> on
+    /// any field. At least one of <paramref name="properties" /> or <paramref name="deleteKeys" /> must
+    /// be non-empty.
+    /// </param>
+    /// <param name="deleteKeys">
+    /// Property keys to remove. Milvus only accepts a fixed set of recognized property names here --
+    /// unrecognized keys are rejected even if never set on this field, so this is not a general-purpose
+    /// key removal.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// Both <paramref name="properties" /> and <paramref name="deleteKeys" /> are empty.
+    /// </exception>
+    /// <exception cref="MilvusException">
+    /// <paramref name="fieldName" /> does not exist, or a key in <paramref name="deleteKeys" /> is not
+    /// one Milvus recognizes as a field property.
+    /// </exception>
+    /// <remarks>
+    /// Unlike a typical database, <c>max_length</c> can be both increased and decreased freely --
+    /// confirmed empirically against 2.6.4, on both an empty field and one already holding data longer
+    /// than the new limit.
+    /// </remarks>
+    public async Task AlterCollectionFieldAsync(
+        string fieldName,
+        IReadOnlyDictionary<string, string>? properties = null,
+        IReadOnlyList<string>? deleteKeys = null,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(fieldName);
+
+        if ((properties is null || properties.Count == 0) && (deleteKeys is null || deleteKeys.Count == 0))
+        {
+            throw new ArgumentException(
+                $"At least one of {nameof(properties)} or {nameof(deleteKeys)} must be non-empty.");
+        }
+
+        var request = new AlterCollectionFieldRequest { CollectionName = Name, FieldName = fieldName };
+
+        if (properties is not null)
+        {
+            foreach (KeyValuePair<string, string> property in properties)
+            {
+                request.Properties.Add(new Grpc.KeyValuePair { Key = property.Key, Value = property.Value });
+            }
+        }
+
+        if (deleteKeys is not null)
+        {
+            request.DeleteKeys.AddRange(deleteKeys);
+        }
+
+        await _client.InvokeAsync(_client.GrpcClient.AlterCollectionFieldAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Adds a function to an existing collection. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="function">
+    /// The function to add. Its input and output fields must already exist in the collection -- this
+    /// does not create them.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// Always, for a <see cref="FunctionType.Bm25" /> function as of Milvus 2.6.20 -- see the remarks.
+    /// Also thrown for an input or output field that does not exist.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// <b>Not currently usable for BM25, the only function type this SDK can build.</b> Verified against
+    /// two server versions: Milvus 2.6.4 does not implement this RPC at all (the call fails at the gRPC
+    /// transport level with an <c>Unimplemented</c> status, surfacing as a raw
+    /// <see cref="global::Grpc.Core.RpcException" /> rather than a <see cref="MilvusException" />).
+    /// Milvus 2.6.20 does implement the RPC, but rejects a BM25 function outright with <c>"currently
+    /// does not support adding BM25 function"</c>. <see cref="FunctionType.Rerank" /> and
+    /// <see cref="FunctionType.TextEmbedding" /> are unverified -- this SDK has no builder for either,
+    /// see <see cref="FunctionSchema" />'s constructor -- so whether they fare any better is unknown.
+    /// </para>
+    /// <para>
+    /// Because <see cref="AddCollectionFieldAsync" /> refuses vector fields, a function's output field
+    /// -- typically a sparse vector for BM25 -- has to already be part of the collection's original
+    /// schema for this to have anything to attach to, once it does become usable. Until then, that
+    /// field behaves as an ordinary column: it must be supplied on every insert, exactly like any other
+    /// non-nullable field.
+    /// </para>
+    /// </remarks>
+    public async Task AddCollectionFunctionAsync(FunctionSchema function, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(function);
+
+        var request = new AddCollectionFunctionRequest { CollectionName = Name, FunctionSchema = function.ToGrpc() };
+
+        await _client.InvokeAsync(_client.GrpcClient.AddCollectionFunctionAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Replaces the definition of an existing function. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="functionName">The name of the function to alter.</param>
+    /// <param name="newFunction">The function's new definition, which replaces the old one entirely.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <exception cref="MilvusException">
+    /// Always, for a <see cref="FunctionType.Bm25" /> function as of Milvus 2.6.20: rejected with
+    /// <c>"currently does not support alter BM25 function"</c>, the same restriction documented on
+    /// <see cref="AddCollectionFunctionAsync" />. Also thrown when <paramref name="functionName" />
+    /// does not exist.
+    /// </exception>
+    public async Task AlterCollectionFunctionAsync(
+        string functionName, FunctionSchema newFunction, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(functionName);
+        Verify.NotNull(newFunction);
+
+        var request = new AlterCollectionFunctionRequest
+        {
+            CollectionName = Name,
+            FunctionName = functionName,
+            FunctionSchema = newFunction.ToGrpc()
+        };
+
+        await _client.InvokeAsync(_client.GrpcClient.AlterCollectionFunctionAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Drops a function from a collection. Available since Milvus v2.6.
+    /// </summary>
+    /// <param name="functionName">The name of the function to drop.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// Dropping a function that does not exist was observed to succeed silently on Milvus 2.6.20
+    /// rather than throw -- confirmed both for a function name that was never valid, and for one whose
+    /// add had itself failed (see <see cref="AddCollectionFunctionAsync" />). Whether this holds for a
+    /// function that genuinely existed and was actively producing output could not be verified: adding
+    /// a function currently fails for every function type this SDK can construct, so there was nothing
+    /// real to drop. On Milvus 2.6.4 this RPC is not implemented at all, the same as
+    /// <see cref="AddCollectionFunctionAsync" /> and <see cref="AlterCollectionFunctionAsync" />.
+    /// </para>
+    /// </remarks>
+    public async Task DropCollectionFunctionAsync(string functionName, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNullOrWhiteSpace(functionName);
+
+        var request = new DropCollectionFunctionRequest { CollectionName = Name, FunctionName = functionName };
+
+        await _client.InvokeAsync(_client.GrpcClient.DropCollectionFunctionAsync, request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Renames a collection.
     /// </summary>
     /// <param name="newName">The new collection name.</param>

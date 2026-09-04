@@ -114,4 +114,29 @@ public sealed class FunctionSchema
     public IDictionary<string, string> Params => _params;
 
     private string DebuggerDisplay => $"{Name} ({Type})";
+
+    /// <summary>
+    /// Converts this function schema to its wire representation. Shared by <c>CreateCollection</c>, which sends a
+    /// whole schema, and <c>AddCollectionFunction</c>/<c>AlterCollectionFunction</c>, which send one function's
+    /// schema on its own.
+    /// </summary>
+    internal Grpc.FunctionSchema ToGrpc()
+    {
+        Grpc.FunctionSchema grpcFunction = new()
+        {
+            Name = Name,
+            Description = Description,
+            Type = (Grpc.FunctionType)(int)Type
+        };
+
+        grpcFunction.InputFieldNames.AddRange(InputFieldNames);
+        grpcFunction.OutputFieldNames.AddRange(OutputFieldNames);
+
+        foreach (KeyValuePair<string, string> param in Params)
+        {
+            grpcFunction.Params.Add(new Grpc.KeyValuePair { Key = param.Key, Value = param.Value });
+        }
+
+        return grpcFunction;
+    }
 }
