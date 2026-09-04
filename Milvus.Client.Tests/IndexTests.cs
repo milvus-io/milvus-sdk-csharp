@@ -220,6 +220,7 @@ public class IndexTests : IAsyncLifetime
         await Collection.CreateIndexAsync("varchar", IndexType.Bitmap, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.InsertAsync(new FieldData[]
         {
@@ -254,6 +255,7 @@ public class IndexTests : IAsyncLifetime
             cancellationToken: TestContext.Current.CancellationToken);
         await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
 
         await Collection.InsertAsync(new FieldData[]
         {
