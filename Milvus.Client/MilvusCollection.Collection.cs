@@ -140,8 +140,9 @@ public partial class MilvusCollection
     /// applies to new rows that omit the field going forward, same as at collection creation.
     /// </para>
     /// <para>
-    /// The collection does not need to be released first, but a newly added field is not searchable or
-    /// queryable in already-loaded segments until the collection is released and reloaded.
+    /// The collection does not need to be released first, and — verified against Milvus 2.6.4 — a newly
+    /// added field is immediately queryable on an already-loaded collection, with no release/reload
+    /// required.
     /// </para>
     /// </remarks>
     public async Task AddCollectionFieldAsync(FieldSchema field, CancellationToken cancellationToken = default)

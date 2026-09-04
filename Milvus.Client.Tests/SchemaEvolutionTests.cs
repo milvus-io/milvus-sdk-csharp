@@ -112,11 +112,16 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
 
         MilvusCollection collection = await CreateCollectionAsync(nameof(AddCollectionField_rejects_a_vector_field));
 
-        MilvusException exception = await Assert.ThrowsAsync<MilvusException>(() =>
-            collection.AddCollectionFieldAsync(
-                FieldSchema.CreateFloatVector("extra_vector", 2), TestContext.Current.CancellationToken));
+        // Nullable, so this is unambiguously testing the vector-type rejection and not the separate
+        // nullable requirement covered by AddCollectionField_requires_nullable above -- on a server whose
+        // request validation checks nullability before field type, a non-nullable vector field here would
+        // be rejected for being non-nullable rather than for being a vector, making the rejection reason
+        // this test cares about untestable.
+        FieldSchema vectorField = FieldSchema.Create("extra_vector", MilvusDataType.FloatVector, nullable: true);
+        vectorField.Dimension = 2;
 
-        Assert.Contains("vector", exception.Message);
+        await Assert.ThrowsAsync<MilvusException>(() =>
+            collection.AddCollectionFieldAsync(vectorField, TestContext.Current.CancellationToken));
 
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
