@@ -7,13 +7,13 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: Build and test with Milvus ${{ matrix.milvus_version }}
+  build-v1:
+    name: Build and test V1 with Milvus ${{ matrix.milvus_version }}
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        milvus_version: [v2.3.22, v2.4.23, v2.5.20, v2.6.4]
+        milvus_version: [v2.3.22, v2.4.23, v2.5.20, v2.6.20]
 
     steps:
       - name: Checkout
@@ -28,7 +28,53 @@ jobs:
           # global.json targets 8.0; pin it to avoid the MSB3030 apphost bug on the SDK 10 default.
           dotnet-version: 8.0.x
 
+      - name: Build V1 SDK (all target frameworks)
+        run: dotnet build Milvus.Client/Milvus.Client.csproj
+
+      - name: Build
+        run: dotnet build Milvus.Client.Tests/Milvus.Client.Tests.csproj
+
       - name: Test
-        run: dotnet test --logger "GitHubActions;report-warnings=false"
+        run: dotnet test Milvus.Client.Tests/Milvus.Client.Tests.csproj --no-build --logger "GitHubActions;report-warnings=false"
         env:
           MILVUS_IMAGE: milvusdb/milvus:${{ matrix.milvus_version }}
+
+  build-v2:
+    name: Build and test V2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Setup .NET SDKs
+        uses: actions/setup-dotnet@v5
+        with:
+          # global.json targets 8.0; pin it to avoid the MSB3030 apphost bug on the SDK 10 default.
+          dotnet-version: 8.0.x
+
+      - name: Build V2 SDK (all target frameworks)
+        run: dotnet build Milvus.Client.V2/Milvus.Client.V2.csproj
+
+      - name: Build examples
+        run: dotnet build examples/v2/Milvus.Examples.csproj
+
+      - name: Unit test
+        run: dotnet test Milvus.Client.V2.Tests/Milvus.Client.V2.Tests.csproj --filter "Category=Unit" --logger "GitHubActions;report-warnings=false" --collect "XPlat Code Coverage" --settings coverage.runsettings
+
+      - name: Integration test
+        run: dotnet test Milvus.Client.V2.Tests/Milvus.Client.V2.Tests.csproj --filter "Category=Integration" --logger "GitHubActions;report-warnings=false" --collect "XPlat Code Coverage" --settings coverage.runsettings
+
+      - name: System test
+        run: dotnet test Milvus.Client.V2.Tests/Milvus.Client.V2.Tests.csproj --filter "Category=System" --logger "GitHubActions;report-warnings=false" --collect "XPlat Code Coverage" --settings coverage.runsettings
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: TestResults/**/coverage.cobertura.xml
+          name: v2-coverage
+          disable_safe_directory: true
+          verbose: true

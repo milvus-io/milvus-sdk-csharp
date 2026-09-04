@@ -96,20 +96,36 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
     }
 
     [MilvusFact(MinimumVersion = "2.6")]
-    public async Task AddCollectionField_rejects_a_vector_field()
+    public async Task AddCollectionField_handles_a_vector_field()
     {
-        MilvusCollection collection = await CreateCollectionAsync(nameof(AddCollectionField_rejects_a_vector_field));
+        MilvusCollection collection = await CreateCollectionAsync(nameof(AddCollectionField_handles_a_vector_field));
 
-        // Nullable, so this is unambiguously testing the vector-type rejection and not the separate
+        // Nullable, so this is unambiguously testing the vector-type handling and not the separate
         // nullable requirement covered by AddCollectionField_requires_nullable above -- on a server whose
         // request validation checks nullability before field type, a non-nullable vector field here would
-        // be rejected for being non-nullable rather than for being a vector, making the rejection reason
-        // this test cares about untestable.
+        // be rejected for being non-nullable rather than for being a vector.
+        //
+        // Server behavior differs across versions: older 2.6.x rejects any vector field in
+        // AddCollectionField, while newer 2.6.20+ accepts a nullable vector field. Assert whichever the
+        // server does -- on rejection, no exception type check beyond MilvusException; on acceptance,
+        // verify the field is really added.
         FieldSchema vectorField = FieldSchema.Create("extra_vector", MilvusDataType.FloatVector, nullable: true);
         vectorField.Dimension = 2;
 
-        await Assert.ThrowsAsync<MilvusException>(() =>
-            collection.AddCollectionFieldAsync(vectorField, TestContext.Current.CancellationToken));
+        try
+        {
+            await collection.AddCollectionFieldAsync(vectorField, TestContext.Current.CancellationToken);
+        }
+        catch (MilvusException ex) when ((int)ex.ErrorCode == 1100) // PARAMETER_INVALID: schema-validation rejection
+        {
+            // Older server: vector fields rejected by AddCollectionField. Nothing further to assert.
+            await collection.DropAsync(TestContext.Current.CancellationToken);
+            return;
+        }
+
+        // Newer server accepted the nullable vector field; verify it is actually present.
+        MilvusCollectionDescription description = await collection.DescribeAsync(TestContext.Current.CancellationToken);
+        Assert.Contains(description.Schema.Fields, f => f.Name == "extra_vector");
 
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }

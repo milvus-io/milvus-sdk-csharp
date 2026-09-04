@@ -12,13 +12,24 @@
 
 C# SDK for [Milvus](https://github.com/milvus-io/milvus).
 
+## SDKs
+
+Two generations of the SDK live in this repository:
+
+| SDK | Assembly | Status |
+| --- | --- | --- |
+| **V1** — `Milvus.Client` | `Milvus.Client.dll` | Legacy, maintained; [NuGet](https://www.nuget.org/packages/Milvus.Client/) |
+| **V2** — `Milvus.Client.V2` | `Milvus.Client.V2.dll` | Current development, DTO-based API aligned with the Java/C++/Rust V2 SDKs |
+
+V1 supports the Milvus versions listed below; V2 targets the 2.6 API surface.
+
 **Supported Net versions:**
 * .NET Core 2.1+
 * .NET Framework 4.6.1+
 
 **[NuGet](https://www.nuget.org/packages/Milvus.Client/)**
 
-Milvus.Client is delivered via NuGet package manager.
+Milvus.Client (V1) is delivered via NuGet package manager.
 
 | Nuget version | Branch | Description | Milvus version
 | --- | --- | --- | --- |
@@ -28,22 +39,23 @@ Milvus.Client is delivered via NuGet package manager.
 
 ## Docs 📚
 
-* [Quick Start](./docs/readme.md)
+* [V1 Quick Start](./docs/v1/readme.md)
+* [V2 design](./docs/design/v2_design.md)
 * [Milvus docs](https://milvus.io/docs)
 
 ### Jupyter Notebooks 📙
 
-You can find Jupyter notebooks in the [docs/notebooks](./docs/notebooks) folder.
+You can find Jupyter notebooks in the [docs/v1/notebooks](./docs/v1/notebooks) folder.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/milvus-io/milvus-sdk-csharp)
 
-* [00.Settings.ipynb](./docs/notebooks/00.Settings.ipynb)
-* [01.Connect to milvus.ipynb](./docs/notebooks/01.Connect%20to%20milvus.ipynb)
-* [02.Create a Collection.ipynb](./docs/notebooks/02.Create%20a%20Collection.ipynb)
-* [03.Create a Partition.ipynb](./docs/notebooks/03.Create%20a%20Partition.ipynb)
-* [04.Insert Vectors.ipynb](./docs/notebooks/04.Insert%20Vectors.ipynb)
-* [05.Build an Index on Vectors.ipynb](./docs/notebooks/05.Build%20an%20Index%20on%20Vectors.ipynb)
-* [06.Search.ipynb](./docs/notebooks/06.Search.ipynb)
-* [07.Query.ipynb](./docs/notebooks/07.Query.ipynb)
+* [00.Settings.ipynb](./docs/v1/notebooks/00.Settings.ipynb)
+* [01.Connect to milvus.ipynb](./docs/v1/notebooks/01.Connect%20to%20milvus.ipynb)
+* [02.Create a Collection.ipynb](./docs/v1/notebooks/02.Create%20a%20Collection.ipynb)
+* [03.Create a Partition.ipynb](./docs/v1/notebooks/03.Create%20a%20Partition.ipynb)
+* [04.Insert Vectors.ipynb](./docs/v1/notebooks/04.Insert%20Vectors.ipynb)
+* [05.Build an Index on Vectors.ipynb](./docs/v1/notebooks/05.Build%20an%20Index%20on%20Vectors.ipynb)
+* [06.Search.ipynb](./docs/v1/notebooks/06.Search.ipynb)
+* [07.Query.ipynb](./docs/v1/notebooks/07.Query.ipynb)
 
 > Requirements: C# notebooks require .NET 7 and the VS Code Polyglot extension.

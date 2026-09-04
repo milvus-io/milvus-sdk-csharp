@@ -146,13 +146,29 @@ public class RunAnalyzerTests : IAsyncLifetime
         await collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
         await collection.WaitForCollectionLoadAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        MilvusException exception = await Assert.ThrowsAsync<MilvusException>(() =>
-            Client.RunAnalyzerAsync(
+        // Milvus 2.6.8+ relaxed the field-based RunAnalyzer check: any analyzer-enabled field (not only a
+        // BM25 function input) is accepted. Assert the older rejection on earlier versions and the new
+        // successful tokenization on 2.6.8+.
+        if (await Client.GetParsedMilvusVersion() >= new Version(2, 6, 8))
+        {
+            var results = await Client.RunAnalyzerAsync(
                 new[] { "hello world" },
                 collectionName: nameof(Field_based_mode_rejects_a_field_that_is_not_a_bm25_input),
                 fieldName: "text",
-                cancellationToken: TestContext.Current.CancellationToken));
-        Assert.Contains("bm25", exception.Message, StringComparison.OrdinalIgnoreCase);
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.NotEmpty(Assert.Single(results));
+        }
+        else
+        {
+            MilvusException exception = await Assert.ThrowsAsync<MilvusException>(() =>
+                Client.RunAnalyzerAsync(
+                    new[] { "hello world" },
+                    collectionName: nameof(Field_based_mode_rejects_a_field_that_is_not_a_bm25_input),
+                    fieldName: "text",
+                    cancellationToken: TestContext.Current.CancellationToken));
+            Assert.Contains("bm25", exception.Message, StringComparison.OrdinalIgnoreCase);
+        }
 
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
