@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- We target net462 directly since the net462 version of Grpc.Net.Client automatically uses WinHttpHandler -->
+    <TargetFrameworks>net8.0;netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DeveloperBuild)' == 'True'">net8.0</TargetFrameworks>
+
+    <PackageId>Milvus.Client.V2</PackageId>
+    <AssemblyName>Milvus.Client.V2</AssemblyName>
+    <RootNamespace>Milvus.Client.V2</RootNamespace>
+
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AnalysisMode>All</AnalysisMode>
+
+    <Description>Milvus C# SDK (V2)</Description>
+    <PackageProjectUrl>https://github.com/milvus-io/milvus-sdk-csharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/milvus-io/milvus-sdk-csharp</RepositoryUrl>
+    <PackageTags>milvus;vector database</PackageTags>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!--
+    Reference the shared milvus-proto submodule sources without moving them. The generated classes are
+    internal and use the proto-declared "Milvus.Client.Grpc" namespace; being internal they can never
+    clash with the V1 assembly's same-named internal types, even when both packages are referenced.
+  -->
+  <ItemGroup>
+    <Protobuf Include="..\Protos\proto\common.proto" GrpcServices="Both" Access="internal" />
+    <Protobuf Include="..\Protos\proto\schema.proto" GrpcServices="Both" ProtoRoot="..\Protos\proto" Access="internal" />
+    <Protobuf Include="..\Protos\proto\milvus.proto" GrpcServices="Both" ProtoRoot="..\Protos\proto" Access="internal" />
+    <Protobuf Include="..\Protos\proto\msg.proto" GrpcServices="Both" ProtoRoot="..\Protos\proto" Access="internal" />
+    <Protobuf Include="..\Protos\proto\feder.proto" GrpcServices="Both" ProtoRoot="..\Protos\proto" Access="internal" />
+    <Protobuf Include="..\Protos\proto\rg.proto" GrpcServices="Both" ProtoRoot="..\Protos\proto" Access="internal" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Allow the test project to host an in-process mock server using the internal generated service stubs. -->
+    <InternalsVisibleTo Include="Milvus.Client.V2.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net462'">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" />
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Google.Protobuf" />
+    <Using Include="Grpc.Core" />
+    <Using Include="Grpc.Net.Client" />
+    <Using Include="Milvus.Client.Grpc" Alias="Grpc" />
+  </ItemGroup>
+
+</Project>

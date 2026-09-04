@@ -142,6 +142,9 @@ _TeamCity*
 *.coverage
 *.coveragexml
 
+# dotnet test code coverage output (--collect "XPlat Code Coverage")
+TestResults/
+
 # NCrunch
 _NCrunch_*
 .*crunch*.local.xml
@@ -352,3 +355,22 @@ MigrationBackup/
 
 # Docker
 volumes
+
+# Jupyter notebooks (docs/v1/notebooks) checkpoints
+.ipynb_checkpoints/
+
+# Python (milvus_container.py and notebooks helpers)
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# reportgenerator HTML coverage output
+coverage-report/
+
+# VSTest result files
+*.trx
+
+# macOS
+.DS_Store
