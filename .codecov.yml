@@ -1,0 +1,35 @@
+codecov:
+  require_ci_to_pass: no
+  notify:
+    require_ci_to_pass: no
+    wait_for_ci: false
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 0%
+    patch:
+      default:
+        target: 70%
+        threshold: 0%
+        if_ci_failed: error
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "**/obj/**"
+  - "**/bin/**"
+  - "**/*.g.cs"
+  - "examples/**"
+  - "Protos/**"
+  - "Milvus.Client.Tests/**"
+  - "Milvus.Client.V2.Tests/**"
