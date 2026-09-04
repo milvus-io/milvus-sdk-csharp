@@ -363,8 +363,11 @@ public enum IndexType
     /// </para>
     /// <para>
     /// Search parameters: <c>nprobe</c> (number of clusters to search, range [1, nlist]),
-    /// <c>rbq_query_bits</c> (query-vector quantization level, 0 to disable or 1-8 for SQ1-SQ8), and, when
-    /// <c>refine</c> was enabled at build time, <c>refine_k</c> (refinement candidate multiplier, &gt;= 1).
+    /// <c>rbq_bits_query</c> (query-vector quantization level, 0 to disable or 1-8 for SQ1-SQ8 — note the
+    /// word order: knowhere's <c>IvfRaBitQConfig</c> and the official Go SDK both read
+    /// <c>rbq_bits_query</c>, not <c>rbq_query_bits</c> as the milvus.io docs page for this index
+    /// currently states), and, when <c>refine</c> was enabled at build time, <c>refine_k</c> (refinement
+    /// candidate multiplier, &gt;= 1).
     /// </para>
     /// </remarks>
     IvfRabitq,
