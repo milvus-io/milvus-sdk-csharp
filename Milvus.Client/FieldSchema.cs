@@ -536,16 +536,16 @@ public sealed class FieldSchema
             case MilvusDataType.Int8:
             case MilvusDataType.Int16:
             case MilvusDataType.Int32:
-                valueField.IntData = (int)value;
+                valueField.IntData = Convert.ToInt32(value, CultureInfo.InvariantCulture);
                 break;
             case MilvusDataType.Int64:
-                valueField.LongData = (long)value;
+                valueField.LongData = Convert.ToInt64(value, CultureInfo.InvariantCulture);
                 break;
             case MilvusDataType.Float:
-                valueField.FloatData = (float)value;
+                valueField.FloatData = Convert.ToSingle(value, CultureInfo.InvariantCulture);
                 break;
             case MilvusDataType.Double:
-                valueField.DoubleData = (double)value;
+                valueField.DoubleData = Convert.ToDouble(value, CultureInfo.InvariantCulture);
                 break;
             case MilvusDataType.String:
             case MilvusDataType.VarChar:
