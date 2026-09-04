@@ -164,4 +164,16 @@ public enum SimilarityMetricType
     /// </para>
     /// </remarks>
     Bm25,
+
+    /// <summary>
+    /// MinHash-based Jaccard similarity, used with the <see cref="IndexType.MinHashLsh" /> index to estimate
+    /// Jaccard similarity between sets encoded as MinHash signatures.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This metric type is valid only for binary vector fields carrying MinHash signatures, indexed with
+    /// <see cref="IndexType.MinHashLsh" />.
+    /// </para>
+    /// </remarks>
+    MhJaccard,
 }
