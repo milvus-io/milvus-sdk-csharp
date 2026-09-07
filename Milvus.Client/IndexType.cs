@@ -283,4 +283,92 @@ public enum IndexType
     /// <c>st_dwithin</c>, ...) on <see cref="MilvusDataType.Geometry" /> fields.
     /// </remarks>
     RTree,
+
+    /// <summary>
+    /// BITMAP index for scalar fields. Available since Milvus v2.5.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Stores a bitmap of the distinct values in the field and answers scalar filters with bitwise
+    /// operations. This is most effective for low-cardinality fields (Milvus recommends cardinality below
+    /// 500); query performance degrades as cardinality grows.
+    /// </para>
+    /// <para>
+    /// Applies to all scalar fields except <c>JSON</c>, <c>FLOAT</c> and <c>DOUBLE</c>, and to
+    /// <see cref="MilvusDataType.Array" /> fields whose element type satisfies the same restriction. There
+    /// are no build or search parameters.
+    /// </para>
+    /// </remarks>
+    Bitmap,
+
+    /// <summary>
+    /// NGRAM index for VARCHAR (and JSON, via a string-typed path) fields. Available since Milvus v2.6.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Splits indexed strings into overlapping substrings of length between <c>min_gram</c> and
+    /// <c>max_gram</c> (both required build parameters, with <c>min_gram &lt;= max_gram</c>), accelerating
+    /// <c>LIKE</c>/wildcard and regex pattern-matching queries whose literal substrings fall within that
+    /// length range.
+    /// </para>
+    /// <para>
+    /// To index a JSON path instead of a VARCHAR field, also set the <c>json_path</c> (e.g.
+    /// <c>"json_field[\"body\"]"</c>) and <c>json_cast_type</c> (currently only <c>"varchar"</c> is
+    /// supported) build parameters.
+    /// </para>
+    /// </remarks>
+    Ngram,
+
+    /// <summary>
+    /// MINHASH_LSH index for binary vectors holding MinHash signatures, used for Jaccard-similarity
+    /// near-duplicate detection. Available since Milvus v2.6.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Requires <see cref="SimilarityMetricType.MhJaccard" /> as the metric type. The indexed binary vector
+    /// field's dimension must equal <c>mh_element_bit_width</c> multiplied by the number of MinHash
+    /// signatures stored per row.
+    /// </para>
+    /// <para>
+    /// Build parameters (passed via <c>extraParams</c>): <c>mh_element_bit_width</c> (bit width of each
+    /// hash value; one of 8, 16, 32, 64), <c>mh_lsh_band</c> (number of LSH bands the signature is split
+    /// into), <c>mh_lsh_code_in_mem</c> (keep LSH codes in memory rather than memory-mapped, boolean),
+    /// <c>with_raw_data</c> (keep the raw MinHash signatures alongside the LSH codes so results can be
+    /// refined, boolean, default <c>false</c>), and <c>mh_lsh_bloom_false_positive_prob</c> (bloom-filter
+    /// false-positive rate, range [0.001, 0.1]).
+    /// </para>
+    /// <para>
+    /// Search parameters: <c>mh_search_with_jaccard</c> (compute exact Jaccard similarity over the LSH
+    /// candidates, boolean), <c>refine_k</c> (candidate multiplier before refinement), and
+    /// <c>mh_lsh_batch_search</c> (batch multiple query vectors together, boolean).
+    /// </para>
+    /// </remarks>
+    MinHashLsh,
+
+    /// <summary>
+    /// IVF_RABITQ index for float vector fields, combining IVF clustering with RaBitQ binary quantization.
+    /// Available since Milvus v2.6.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Quantizes each vector down to roughly 1 bit per dimension, giving up to a 32x storage reduction over
+    /// an unquantized index while retaining a tunable amount of recall via optional refinement.
+    /// </para>
+    /// <para>
+    /// Build parameters: <c>nlist</c> (number of cluster units, range [1, 65536], default 128),
+    /// <c>refine</c> (whether to keep additional data for search-time refinement, boolean, default
+    /// <c>false</c>), and, when <c>refine</c> is <c>true</c>, <c>refine_type</c> (the precision used for
+    /// refinement data: one of <c>"SQ6"</c>, <c>"SQ8"</c>, <c>"FP16"</c>, <c>"BF16"</c>, <c>"FP32"</c> —
+    /// note string values must be quoted in JSON, e.g. <c>"\"SQ8\""</c>).
+    /// </para>
+    /// <para>
+    /// Search parameters: <c>nprobe</c> (number of clusters to search, range [1, nlist]),
+    /// <c>rbq_bits_query</c> (query-vector quantization level, 0 to disable or 1-8 for SQ1-SQ8 — note the
+    /// word order: knowhere's <c>IvfRaBitQConfig</c> and the official Go SDK both read
+    /// <c>rbq_bits_query</c>, not <c>rbq_query_bits</c> as the milvus.io docs page for this index
+    /// currently states), and, when <c>refine</c> was enabled at build time, <c>refine_k</c> (refinement
+    /// candidate multiplier, &gt;= 1).
+    /// </para>
+    /// </remarks>
+    IvfRabitq,
 }

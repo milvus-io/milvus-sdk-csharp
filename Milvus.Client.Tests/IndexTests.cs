@@ -210,6 +210,73 @@ public class IndexTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Scalar_index_bitmap()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
+        {
+            return;
+        }
+
+        await Collection.CreateIndexAsync("varchar", IndexType.Bitmap, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
+
+        await Collection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new long[] { 1, 2, 3 }),
+            FieldData.Create("varchar", new[] { "a", "b", "a" }),
+            FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+            {
+                new float[] { 1, 1, 1, 1 }, new float[] { 2, 2, 2, 2 }, new float[] { 3, 3, 3, 3 },
+            }),
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForCollectionLoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var results = await Collection.QueryAsync(
+            "varchar == \"a\"", new QueryParameters { OutputFields = { "id" } },
+            cancellationToken: TestContext.Current.CancellationToken);
+        var idData = (FieldData<long>)Assert.Single(results, f => f.FieldName == "id");
+        Assert.Equal(new long[] { 1, 3 }, idData.Data);
+    }
+
+    [Fact]
+    public async Task Ngram_index()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        await Collection.CreateIndexAsync(
+            "varchar", IndexType.Ngram,
+            extraParams: new Dictionary<string, string> { ["min_gram"] = "2", ["max_gram"] = "3" },
+            cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
+
+        await Collection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new long[] { 1, 2, 3 }),
+            FieldData.Create("varchar", new[] { "hello world", "foobar", "abcdef" }),
+            FieldData.CreateFloatVector("float_vector", new ReadOnlyMemory<float>[]
+            {
+                new float[] { 1, 1, 1, 1 }, new float[] { 2, 2, 2, 2 }, new float[] { 3, 3, 3, 3 },
+            }),
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForCollectionLoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var results = await Collection.QueryAsync(
+            "varchar like \"%bcd%\"", new QueryParameters { OutputFields = { "id" } },
+            cancellationToken: TestContext.Current.CancellationToken);
+        var idData = (FieldData<long>)Assert.Single(results, f => f.FieldName == "id");
+        Assert.Equal(new long[] { 3 }, idData.Data);
+    }
+
+    [Fact]
     public async Task Sparse_inverted_index()
     {
         if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
@@ -240,6 +307,83 @@ public class IndexTests : IAsyncLifetime
         var indexes = await Collection.DescribeIndexAsync("sparse_vector", cancellationToken: TestContext.Current.CancellationToken);
         var index = Assert.Single(indexes);
         Assert.Contains(index.Params, kv => kv is { Key: "index_type", Value: "SPARSE_INVERTED_INDEX" });
+    }
+
+    [Fact]
+    public async Task IvfRabitq_index()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        await Collection.CreateIndexAsync(
+            "float_vector", IndexType.IvfRabitq, SimilarityMetricType.L2,
+            extraParams: new Dictionary<string, string> { ["nlist"] = "8" },
+            cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
+
+        ReadOnlyMemory<float>[] vectors = { new float[] { 1, 1, 1, 1 }, new float[] { 2, 2, 2, 2 } };
+        await Collection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new long[] { 1, 2 }),
+            FieldData.Create("varchar", new[] { "one", "two" }),
+            FieldData.CreateFloatVector("float_vector", vectors),
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForCollectionLoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var results = await Collection.SearchAsync(
+            "float_vector", new[] { vectors[0] }, SimilarityMetricType.L2, limit: 1,
+            parameters: new SearchParameters { ExtraParameters = { ["nprobe"] = "8" } },
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(1, Assert.Single(results.Ids.LongIds!));
+    }
+
+    [Fact]
+    public async Task MinHashLsh_index()
+    {
+        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
+        {
+            return;
+        }
+
+        await Collection.DropAsync(TestContext.Current.CancellationToken);
+        await Client.CreateCollectionAsync(
+            CollectionName,
+            new[]
+            {
+                FieldSchema.Create<long>("id", isPrimaryKey: true),
+                // Dimension = mh_element_bit_width (64) * number of MinHash signatures per row (4) = 256 bits.
+                FieldSchema.CreateBinaryVector("minhash_signature", 256),
+            }, cancellationToken: TestContext.Current.CancellationToken);
+
+        await Collection.CreateIndexAsync(
+            "minhash_signature", IndexType.MinHashLsh, SimilarityMetricType.MhJaccard,
+            extraParams: new Dictionary<string, string>
+            {
+                ["mh_element_bit_width"] = "64",
+                ["mh_lsh_band"] = "4",
+            }, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForIndexBuildAsync("minhash_signature", cancellationToken: TestContext.Current.CancellationToken);
+
+        ReadOnlyMemory<byte>[] vectors =
+        {
+            Enumerable.Range(1, 32).Select(i => (byte)i).ToArray(),
+            Enumerable.Range(50, 32).Select(i => (byte)i).ToArray(),
+        };
+        await Collection.InsertAsync(new FieldData[]
+        {
+            FieldData.Create("id", new long[] { 1, 2 }),
+            FieldData.CreateBinaryVectors("minhash_signature", vectors),
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.LoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await Collection.WaitForCollectionLoadAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var results = await Collection.SearchAsync(
+            "minhash_signature", new[] { vectors[0] }, SimilarityMetricType.MhJaccard, limit: 2,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Contains(1L, results.Ids.LongIds!);
     }
 
 #pragma warning disable CS0618 // Type or member is obsolete
