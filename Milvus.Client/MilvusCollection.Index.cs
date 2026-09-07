@@ -96,6 +96,10 @@ public partial class MilvusCollection
                 IndexType.SparseInvertedIndex => "SPARSE_INVERTED_INDEX",
                 IndexType.SparseWand => "SPARSE_WAND",
                 IndexType.RTree => "RTREE",
+                IndexType.Bitmap => "BITMAP",
+                IndexType.Ngram => "NGRAM",
+                IndexType.MinHashLsh => "MINHASH_LSH",
+                IndexType.IvfRabitq => "IVF_RABITQ",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
             };
@@ -113,6 +117,7 @@ public partial class MilvusCollection
                 SimilarityMetricType.Superstructure => "SUPERSTRUCTURE",
                 SimilarityMetricType.Substructure => "SUBSTRUCTURE",
                 SimilarityMetricType.Bm25 => "BM25",
+                SimilarityMetricType.MhJaccard => "MHJACCARD",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(similarityMetricType), similarityMetricType, null)
             };
