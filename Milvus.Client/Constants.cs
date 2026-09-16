@@ -201,4 +201,10 @@ internal static class Constants
     /// Key name in type_params. Contains analyzer parameters as JSON.
     /// </summary>
     internal const string AnalyzerParams = "analyzer_params";
+
+    /// <summary>
+    /// Key name in type_params. Indicates whether an inverted index for TEXT_MATCH filtering is built for
+    /// this field.
+    /// </summary>
+    internal const string EnableMatch = "enable_match";
 }

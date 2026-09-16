@@ -74,6 +74,14 @@ public enum MilvusDataType
     Geometry = 24,
 
     /// <summary>
+    /// Free-form text intended for longer content than <see cref="VarChar" />, sharing the same wire
+    /// representation. Available since Milvus v2.6. Cannot be a primary key, a partition key, or an
+    /// <see cref="Array" /> element type, and does not support a default value. See
+    /// <see cref="FieldSchema.CreateText" />.
+    /// </summary>
+    Text = 25,
+
+    /// <summary>
     /// Timezone-aware timestamp, carried as an ISO 8601 string. Available since Milvus v2.6.
     /// </summary>
     Timestamptz = 26,

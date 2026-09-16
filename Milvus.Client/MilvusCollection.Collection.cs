@@ -69,6 +69,10 @@ public partial class MilvusCollection
                     case Constants.AnalyzerParams:
                         milvusField.AnalyzerParams = JsonSerializer.Deserialize<Dictionary<string, object>>(parameter.Value);
                         break;
+
+                    case Constants.EnableMatch:
+                        milvusField.EnableMatch = parameter.Value.Equals("true", StringComparison.OrdinalIgnoreCase);
+                        break;
                 }
             }
 

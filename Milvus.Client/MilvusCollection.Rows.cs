@@ -90,6 +90,97 @@ public partial class MilvusCollection
     }
 
     /// <summary>
+    /// Retrieves rows from a collection via scalar filtering, using the same field name/value shape as
+    /// the row-based <see cref="InsertAsync(IReadOnlyList{IDictionary{string, object}}, string, CancellationToken)" />
+    /// -- though each returned row is read-only (<see cref="IReadOnlyDictionary{TKey, TValue}" />), so
+    /// feeding it back into a row-based insert or upsert (which take a mutable <see cref="IDictionary{TKey, TValue}" />)
+    /// requires copying into a new <see cref="Dictionary{TKey, TValue}" /> first.
+    /// </summary>
+    /// <param name="expression">A boolean expression determining which rows are to be returned.</param>
+    /// <param name="parameters">Various additional optional parameters to configure the query.</param>
+    /// <param name="cancellationToken">
+    /// The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.
+    /// </param>
+    /// <returns>
+    /// One dictionary per matched row, mapping each requested field name to its value. This is a
+    /// convenience over <see cref="QueryAsync(string, QueryParameters?, CancellationToken)" />, which
+    /// returns the same data column-oriented; it is not a distinct server operation.
+    /// </returns>
+    public async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> QueryRowsAsync(
+        string expression,
+        QueryParameters? parameters = null,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<FieldData> columns = await QueryAsync(expression, parameters, cancellationToken)
+            .ConfigureAwait(false);
+
+        return PivotToRows(columns);
+    }
+
+    /// <summary>
+    /// Pivots column-oriented <see cref="FieldData" /> -- what the wire protocol actually returns --
+    /// into one dictionary per row. Used by <see cref="QueryRowsAsync" /> and by
+    /// <see cref="SearchResults.GetHits(int)" />.
+    /// </summary>
+    /// <param name="columns">The columns to pivot.</param>
+    /// <param name="start">The first row index to include, e.g. one query's share of a multi-query search.</param>
+    /// <param name="count">
+    /// The number of rows to include starting at <paramref name="start" />; the rest of the column's
+    /// rows when <see langword="null" /> (the default).
+    /// </param>
+    internal static List<Dictionary<string, object?>> PivotToRows(
+        IReadOnlyList<FieldData> columns, int start = 0, int? count = null)
+    {
+        if (columns.Count == 0)
+        {
+            return new List<Dictionary<string, object?>>();
+        }
+
+        long firstColumnRowCount = columns[0].RowCount;
+        foreach (FieldData column in columns)
+        {
+            if (column.RowCount != firstColumnRowCount)
+            {
+                throw new MilvusException(
+                    $"Column '{column.FieldName}' has {column.RowCount} rows, but column " +
+                    $"'{columns[0].FieldName}' has {firstColumnRowCount} -- the server returned " +
+                    "inconsistent column lengths, so these columns cannot be pivoted into rows.");
+            }
+        }
+
+        if (start < 0 || start > firstColumnRowCount)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(start), start, $"Must be in [0, {firstColumnRowCount}] -- these columns have {firstColumnRowCount} rows.");
+        }
+
+        int rowCount = count ?? (int)firstColumnRowCount - start;
+
+        if (rowCount < 0 || start + rowCount > firstColumnRowCount)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(count), count,
+                $"start ({start}) + count ({rowCount}) must not exceed the columns' row count ({firstColumnRowCount}).");
+        }
+
+        List<Dictionary<string, object?>> rows = new(rowCount);
+        for (int i = 0; i < rowCount; i++)
+        {
+            rows.Add(new Dictionary<string, object?>(columns.Count, StringComparer.Ordinal));
+        }
+
+        foreach (FieldData column in columns)
+        {
+            for (int i = 0; i < rowCount; i++)
+            {
+                rows[i][column.FieldName!] = column.GetRowValue(start + i);
+            }
+        }
+
+        return rows;
+    }
+
+    /// <summary>
     /// Pivots row dictionaries into the column-oriented <see cref="FieldData" /> the wire protocol
     /// expects, using the collection schema to decide each column's type.
     /// </summary>
@@ -233,6 +324,8 @@ public partial class MilvusCollection
 
             MilvusDataType.String or MilvusDataType.VarChar
                 => FieldData.CreateVarChar(field.Name, TextColumn(field.Name, values, ToText, field.Nullable)),
+            MilvusDataType.Text
+                => FieldData.CreateText(field.Name, TextColumn(field.Name, values, ToText, field.Nullable)),
             MilvusDataType.Geometry
                 => FieldData.CreateGeometry(field.Name, TextColumn(field.Name, values, ToText, field.Nullable)),
             MilvusDataType.Timestamptz
@@ -305,8 +398,8 @@ public partial class MilvusCollection
     }
 
     /// <summary>
-    /// Projects a column whose values travel as text. The varchar, geometry and timestamptz wire paths
-    /// all carry nulls themselves, so this only has to decide whether a null is allowed.
+    /// Projects a column whose values travel as text. The varchar, text, geometry and timestamptz wire
+    /// paths all carry nulls themselves, so this only has to decide whether a null is allowed.
     /// </summary>
     private static List<string?> TextColumn(
         string fieldName, object?[] values, RowConverter<string> convert, bool nullable)

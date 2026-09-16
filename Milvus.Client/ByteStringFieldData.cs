@@ -44,4 +44,7 @@ public sealed class ByteStringFieldData : FieldData
 
     internal override object GetValueAsObject(int index)
         => throw new NotSupportedException("Dynamic ByteString fields are not supported");
+
+    internal override object GetRowValue(int index)
+        => throw new NotSupportedException("ByteStringFieldData holds a single raw vector, not row-oriented data");
 }
