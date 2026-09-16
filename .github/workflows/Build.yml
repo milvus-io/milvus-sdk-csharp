@@ -24,6 +24,9 @@ jobs:
 
       - name: Setup .NET SDKs
         uses: actions/setup-dotnet@v5
+        with:
+          # global.json targets 8.0; pin it to avoid the MSB3030 apphost bug on the SDK 10 default.
+          dotnet-version: 8.0.x
 
       - name: Test
         run: dotnet test --logger "GitHubActions;report-warnings=false"
