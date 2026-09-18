@@ -33,11 +33,9 @@ public class TextTests : IAsyncLifetime
 
     public TextTests(MilvusFixture milvusFixture) => Client = milvusFixture.CreateClient();
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Insert_and_query_round_trip()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateCollectionAsync(nameof(Insert_and_query_round_trip));
 
         await collection.CreateIndexAsync("vec", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
@@ -58,11 +56,9 @@ public class TextTests : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Describe_round_trips_properties()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateCollectionAsync(nameof(Describe_round_trips_properties));
 
         MilvusCollectionDescription description = await collection.DescribeAsync(TestContext.Current.CancellationToken);
@@ -80,11 +76,9 @@ public class TextTests : IAsyncLifetime
     // above, so it runs against its own dedicated, disposable container instead of this shared one -- see
     // TextMaxLengthCrashRegressionTests.
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Rejects_as_primary_key()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection(nameof(Rejects_as_primary_key));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -101,11 +95,9 @@ public class TextTests : IAsyncLifetime
                 }, cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Rejects_default_value()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection(nameof(Rejects_default_value));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -124,11 +116,9 @@ public class TextTests : IAsyncLifetime
                 }, cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task TEXT_MATCH_is_currently_rejected()
     {
-        if (await Skip()) return;
-
         // Unlike VarChar (see TextMatchTests), Milvus rejects any filter expression -- TEXT_MATCH
         // included -- against a Text field outright, even with EnableMatch and EnableAnalyzer both set.
         // Confirmed against 2.6.4: "filter on text field (...) is not supported yet". This test fails
@@ -172,8 +162,6 @@ public class TextTests : IAsyncLifetime
 
         return collection;
     }
-
-    private async Task<bool> Skip() => await Client.GetParsedMilvusVersion() < new Version(2, 6);
 
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 

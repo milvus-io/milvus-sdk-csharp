@@ -13,14 +13,9 @@ public sealed class ResourceGroupTestsCollection;
 [Collection(nameof(ResourceGroupTests))]
 public class ResourceGroupTests(MilvusFixture milvusFixture) : IAsyncLifetime
 {
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Create_List_Describe_Drop()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         Assert.DoesNotContain(GroupName,
             await Client.ListResourceGroupsAsync(TestContext.Current.CancellationToken));
 
@@ -48,14 +43,9 @@ public class ResourceGroupTests(MilvusFixture milvusFixture) : IAsyncLifetime
             await Client.ListResourceGroupsAsync(TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Update_config()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Client.CreateResourceGroupAsync(
             GroupName, new ResourceGroupConfig(requestsNodeNum: 0, limitsNodeNum: 0),
             TestContext.Current.CancellationToken);
@@ -81,14 +71,9 @@ public class ResourceGroupTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await DropGroupAsync(GroupName);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Default_resource_group_is_always_present()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         IReadOnlyList<string> groups = await Client.ListResourceGroupsAsync(TestContext.Current.CancellationToken);
 
         // Every query node not explicitly assigned elsewhere lives in the default group, so it exists

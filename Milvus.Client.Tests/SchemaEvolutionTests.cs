@@ -5,11 +5,9 @@ namespace Milvus.Client.Tests;
 
 public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
 {
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_adds_a_nullable_field_to_an_empty_collection()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection =
             await CreateCollectionAsync(nameof(AddCollectionField_adds_a_nullable_field_to_an_empty_collection));
 
@@ -22,11 +20,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_requires_nullable()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateCollectionAsync(nameof(AddCollectionField_requires_nullable));
 
         MilvusException exception = await Assert.ThrowsAsync<MilvusException>(() =>
@@ -38,11 +34,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_requires_nullable_even_with_a_default_value()
     {
-        if (await Skip()) return;
-
         // A default value looks like it should be enough to reconcile old rows, but Milvus treats
         // nullable and defaultValue as independent requirements: this is rejected exactly like the
         // no-default case above, same error.
@@ -58,11 +52,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_backfills_null_for_existing_rows()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection =
             await CreateLoadedCollectionWithOneRowAsync(nameof(AddCollectionField_backfills_null_for_existing_rows));
 
@@ -75,11 +67,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_backfills_the_default_value_for_existing_and_new_rows()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateLoadedCollectionWithOneRowAsync(
             nameof(AddCollectionField_backfills_the_default_value_for_existing_and_new_rows));
 
@@ -105,11 +95,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_rejects_a_vector_field()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateCollectionAsync(nameof(AddCollectionField_rejects_a_vector_field));
 
         // Nullable, so this is unambiguously testing the vector-type rejection and not the separate
@@ -126,11 +114,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_rejects_a_duplicate_field_name()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection =
             await CreateCollectionAsync(nameof(AddCollectionField_rejects_a_duplicate_field_name));
 
@@ -141,11 +127,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionField_throws_for_a_collection_that_does_not_exist()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection("schema_evolution_tests_no_such_collection");
 
         await Assert.ThrowsAsync<MilvusException>(() =>
@@ -153,11 +137,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
                 FieldSchema.Create<long?>("extra", nullable: true), TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_increases_varchar_max_length()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateVarcharCollectionAsync(
             nameof(AlterCollectionField_increases_varchar_max_length), maxLength: 10);
 
@@ -171,11 +153,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_decreases_varchar_max_length_without_truncating_existing_data()
     {
-        if (await Skip()) return;
-
         // Unlike a typical database, Milvus does not validate existing data against a shrunk
         // max_length: the limit only applies to future writes, so a string already longer than the
         // new limit survives untouched.
@@ -213,11 +193,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_sets_and_deletes_a_property()
     {
-        if (await Skip()) return;
-
         // mmap.enabled has no observable effect through this SDK's read path (it is a segment loading
         // hint, not part of FieldSchema), so this only verifies both calls are accepted.
         MilvusCollection collection =
@@ -234,11 +212,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_rejects_an_unrecognized_delete_key()
     {
-        if (await Skip()) return;
-
         // Rejected because Milvus does not recognize the key name as a field property at all -- not
         // because it was never set on this field. A recognized key like mmap.enabled can be deleted
         // even when never set (see the sibling test), so this is a name allow-list, not presence.
@@ -255,11 +231,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_throws_for_a_field_that_does_not_exist()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection =
             await CreateVarcharCollectionAsync(nameof(AlterCollectionField_throws_for_a_field_that_does_not_exist), 10);
 
@@ -271,22 +245,18 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_requires_properties_or_delete_keys()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection(nameof(AlterCollectionField_requires_properties_or_delete_keys));
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             collection.AlterCollectionFieldAsync("text", cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionField_throws_for_a_collection_that_does_not_exist()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection("schema_evolution_tests_no_such_collection_2");
 
         await Assert.ThrowsAsync<MilvusException>(() =>
@@ -295,11 +265,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
                 cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AddCollectionFunction_is_currently_rejected_for_bm25()
     {
-        if (await Skip()) return;
-
         // AddCollectionFunction cannot succeed today for BM25 -- the only function type this SDK has a
         // builder for (FunctionSchema.CreateBm25; Rerank and TextEmbedding are enum-only, unbuilt). Two
         // failure modes were observed empirically, one per server version tested: 2.6.4 does not
@@ -332,11 +300,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task AlterCollectionFunction_is_currently_rejected_for_bm25()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateBm25ReadyCollectionAsync(
             nameof(AlterCollectionFunction_is_currently_rejected_for_bm25));
 
@@ -362,11 +328,9 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task DropCollectionFunction_does_not_throw_for_a_function_that_was_never_added()
     {
-        if (await Skip()) return;
-
         // Since AddCollectionFunction cannot currently succeed for any function type this SDK can
         // build (see the sibling tests), there is no way to construct a function that genuinely
         // exists, so this can only exercise the not-found path. On 2.6.20 that path was observed to
@@ -406,8 +370,6 @@ public class SchemaEvolutionTests(MilvusFixture milvusFixture) : IAsyncLifetime
 
         return collection;
     }
-
-    private async Task<bool> Skip() => await Client.GetParsedMilvusVersion() < new Version(2, 6);
 
     private async Task<FieldData> QuerySingleFieldAsync(
         MilvusCollection collection, string fieldName, string filter = "id == 1")

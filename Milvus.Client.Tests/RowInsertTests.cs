@@ -289,14 +289,9 @@ public class RowInsertTests(MilvusFixture milvusFixture) : IAsyncLifetime
                 cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Row_insert_sends_null_for_nullable_fields()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Row_insert_sends_null_for_nullable_fields));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 

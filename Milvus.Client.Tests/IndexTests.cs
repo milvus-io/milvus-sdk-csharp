@@ -57,7 +57,7 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("float_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Theory]
+    [MilvusTheory(MinimumVersion = "2.4")]
     [InlineData(IndexType.Flat, """{ "nlist": "8" }""")]
     [InlineData(IndexType.IvfFlat, """{ "nlist": "8" }""")]
     [InlineData(IndexType.IvfSq8, """{ "nlist": "8" }""")]
@@ -67,11 +67,6 @@ public class IndexTests : IAsyncLifetime
     [InlineData(IndexType.AutoIndex, """{ }""")]
     public async Task Index_types_float16(IndexType indexType, string extraParamsString)
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,
@@ -87,19 +82,14 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("float16_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Theory]
+    // GPU indexes were introduced in Milvus 2.4
+    [MilvusTheory(MinimumVersion = "2.4")]
     [InlineData(IndexType.GpuCagra, """{ "nlist": "8" }""")]
     [InlineData(IndexType.GpuIvfFlat, """{ "nlist": "8" }""")]
     [InlineData(IndexType.GpuIvfPq, """{ "nlist": "8", "m": "4" }""")]
     [InlineData(IndexType.GpuBruteForce, """{ "nlist": "8" }""")]
     public async Task Index_types_float_gpu(IndexType indexType, string extraParamsString)
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            // GPU indexes were introduced in Milvus 2.4
-            return;
-        }
-
         try
         {
             await Collection.CreateIndexAsync(
@@ -163,38 +153,23 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("binary_vector", cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Scalar_index_inverted()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Collection.CreateIndexAsync("varchar", IndexType.Inverted, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Scalar_index_trie()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Collection.CreateIndexAsync("varchar", IndexType.Trie, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Scalar_index_stl_sort()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,
@@ -209,14 +184,9 @@ public class IndexTests : IAsyncLifetime
         await Collection.WaitForIndexBuildAsync("numeric_field", cancellationToken: TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Scalar_index_bitmap()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         await Collection.CreateIndexAsync("varchar", IndexType.Bitmap, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.CreateIndexAsync("float_vector", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
         await Collection.WaitForIndexBuildAsync("varchar", cancellationToken: TestContext.Current.CancellationToken);
@@ -241,14 +211,9 @@ public class IndexTests : IAsyncLifetime
         Assert.Equal(new long[] { 1, 3 }, idData.Data);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Ngram_index()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         await Collection.CreateIndexAsync(
             "varchar", IndexType.Ngram,
             extraParams: new Dictionary<string, string> { ["min_gram"] = "2", ["max_gram"] = "3" },
@@ -276,14 +241,9 @@ public class IndexTests : IAsyncLifetime
         Assert.Equal(new long[] { 3 }, idData.Data);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Sparse_inverted_index()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,
@@ -309,14 +269,9 @@ public class IndexTests : IAsyncLifetime
         Assert.Contains(index.Params, kv => kv is { Key: "index_type", Value: "SPARSE_INVERTED_INDEX" });
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task IvfRabitq_index()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         await Collection.CreateIndexAsync(
             "float_vector", IndexType.IvfRabitq, SimilarityMetricType.L2,
             extraParams: new Dictionary<string, string> { ["nlist"] = "8" },
@@ -340,14 +295,9 @@ public class IndexTests : IAsyncLifetime
         Assert.Equal(1, Assert.Single(results.Ids.LongIds!));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task MinHashLsh_index()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         await Collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
             CollectionName,

@@ -177,14 +177,9 @@ public class CollectionTests : IAsyncLifetime
             });
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Describe_returns_nullable_and_default_value()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         var collection = Client.GetCollection(CollectionName);
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -342,14 +337,9 @@ public class CollectionTests : IAsyncLifetime
         Assert.Equal(CompactionState.Completed, compactionPlans.State);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Collection_with_multiple_embedding_fields()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         await Client.CreateCollectionAsync(
             CollectionName,
             new[]

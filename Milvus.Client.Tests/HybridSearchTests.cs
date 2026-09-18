@@ -10,16 +10,10 @@ public class HybridSearchTests(
     private readonly MilvusClient Client = milvusFixture.CreateClient();
     private MilvusCollection Collection => hybridSearchCollectionFixture.Collection;
     private string CollectionName => Collection.Name;
-    private bool SupportsHybridSearch => hybridSearchCollectionFixture.SupportsHybridSearch;
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_RRF_reranker()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -43,14 +37,9 @@ public class HybridSearchTests(
         Assert.Equal(1L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_Rrf_reranker_custom_k()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -74,14 +63,9 @@ public class HybridSearchTests(
         Assert.Equal(1L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_weighted_reranker()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -105,14 +89,9 @@ public class HybridSearchTests(
         Assert.Equal(1L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_output_fields()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -147,14 +126,9 @@ public class HybridSearchTests(
         Assert.Equal(["one", "two", "three"], ((FieldData<string>)varcharField).Data);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_expression_filter()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var request1 = new VectorAnnSearchRequest<float>(
             "float_vector_1",
             [new[] { 1f, 2f }],
@@ -189,14 +163,9 @@ public class HybridSearchTests(
         Assert.Equal(3L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_group_by()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -224,14 +193,9 @@ public class HybridSearchTests(
         Assert.Equal(1L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task HybridSearch_with_group_size()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(HybridSearch_with_group_size));
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -305,14 +269,9 @@ public class HybridSearchTests(
         Assert.True(results.Ids.LongIds!.Count > 2);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task HybridSearch_with_strict_group_size()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(HybridSearch_with_strict_group_size));
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -381,14 +340,9 @@ public class HybridSearchTests(
         Assert.Equal(2, groupIdField.Data.Count(g => g == 1L));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_partition_names()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -416,14 +370,9 @@ public class HybridSearchTests(
         Assert.Equal(1L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_with_multiple_query_vectors()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var results = await Collection.HybridSearchAsync(
             [
                 new VectorAnnSearchRequest<float>(
@@ -452,14 +401,9 @@ public class HybridSearchTests(
         Assert.True(results.Ids.LongIds.Count > 0);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_sparse_vectors()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         var collection = Client.GetCollection(nameof(HybridSearch_sparse_vectors));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -518,14 +462,9 @@ public class HybridSearchTests(
         Assert.True(results.Ids.LongIds.Count > 0);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_binary_vectors()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var collection = Client.GetCollection(nameof(HybridSearch_binary_vectors));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -585,14 +524,9 @@ public class HybridSearchTests(
     }
 
 #if NET8_0_OR_GREATER
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_float16_vectors()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         var collection = Client.GetCollection(nameof(HybridSearch_float16_vectors));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -686,14 +620,9 @@ public class HybridSearchTests(
         Assert.Throws<ArgumentException>(() => new WeightedReranker());
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_throws_for_invalid_limit()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var requests = new AnnSearchRequest[]
         {
             new VectorAnnSearchRequest<float>(
@@ -714,14 +643,9 @@ public class HybridSearchTests(
             limit: 16385, cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task HybridSearch_throws_for_mismatched_weighted_reranker()
     {
-        if (!SupportsHybridSearch)
-        {
-            return;
-        }
-
         var requests = new AnnSearchRequest[]
         {
             new VectorAnnSearchRequest<float>(

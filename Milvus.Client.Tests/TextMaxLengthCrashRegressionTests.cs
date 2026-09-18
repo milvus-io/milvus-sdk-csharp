@@ -22,16 +22,12 @@ public class TextMaxLengthCrashRegressionTests : IClassFixture<IsolatedMilvusFix
 
     public void Dispose() => Client?.Dispose();
 
-    [Fact]
+    // Text (and this crash) is 2.6+, which is also the version IsolatedMilvusFixture requires before it starts a
+    // container, so Client is only null when this test is skipped.
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task CreateCollection_without_max_length_fails()
     {
-        // IsolatedMilvusFixture itself decides, from the MILVUS_IMAGE tag alone, whether this version
-        // is new enough to bother starting a container for -- Text (and this crash) is 2.6+. A null
-        // Client here means it decided no, so there's nothing to test on this CI image.
-        if (Client is null)
-        {
-            return;
-        }
+        Assert.NotNull(Client);
 
         MilvusCollection collection = Client.GetCollection(nameof(CreateCollection_without_max_length_fails));
         await collection.DropAsync(TestContext.Current.CancellationToken);

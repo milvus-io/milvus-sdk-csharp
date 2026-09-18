@@ -6,14 +6,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
 {
     private readonly MilvusClient Client = milvusFixture.CreateClient();
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_full_text_search()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_full_text_search));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -75,14 +70,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.Contains("fox", textField.Data[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_search_returns_correct_scores()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_search_returns_correct_scores));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -141,14 +131,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.Contains(2L, topIds);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_multiple_queries()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_multiple_queries));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -201,14 +186,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.Equal(2, results.NumQueries);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Describe_collection_with_bm25_function()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Describe_collection_with_bm25_function));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -254,14 +234,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.True(sparseField.IsFunctionOutput, "sparse_output should be marked as function output");
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_with_filter_expression()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_filter_expression));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -325,14 +300,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.All(categoryField.Data, c => Assert.Equal(1L, c));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_hybrid_search_with_dense_vector()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_hybrid_search_with_dense_vector));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -407,14 +377,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.Contains("machine learning", titleField.Data[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_with_english_analyzer()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_english_analyzer));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -482,14 +447,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.True(results.Ids.LongIds.Count >= 2);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_with_custom_index_parameters()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_with_custom_index_parameters));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -553,14 +513,9 @@ public class Bm25Tests(MilvusFixture milvusFixture) : IDisposable
         Assert.Equal(1L, results.Ids.LongIds[0]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Bm25_hybrid_search_with_weighted_reranker()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Bm25_hybrid_search_with_weighted_reranker));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 

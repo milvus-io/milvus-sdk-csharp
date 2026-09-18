@@ -542,17 +542,12 @@ public class SearchQueryTests(
     }
 
 #if NET8_0_OR_GREATER
-    [Theory]
+    [MilvusTheory(MinimumVersion = "2.4")]
     [InlineData(IndexType.Flat, SimilarityMetricType.L2)]
     [InlineData(IndexType.Flat, SimilarityMetricType.Ip)]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
     public async Task Search_float16_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         MilvusCollection float16VectorCollection = Client.GetCollection(nameof(Search_float16_vector));
         string collectionName = float16VectorCollection.Name;
 
@@ -637,16 +632,11 @@ public class SearchQueryTests(
         Assert.Equal(1f, BFloat16.FromBits(0x3F80).ToSingle());
     }
 
-    [Theory]
+    [MilvusTheory(MinimumVersion = "2.4")]
     [InlineData(IndexType.Flat, SimilarityMetricType.L2)]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
     public async Task Search_bfloat16_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         MilvusCollection bf16Collection = Client.GetCollection(nameof(Search_bfloat16_vector));
         string collectionName = bf16Collection.Name;
 
@@ -721,17 +711,12 @@ public class SearchQueryTests(
     // Milvus 2.6 only accepts HNSW (and AutoIndex) for Int8Vector fields; FLAT, IVF_*, DISKANN and
     // SCANN are all rejected with "data type Int8Vector can't build with this index", which is why
     // this theory covers only those two.
-    [Theory]
+    [MilvusTheory(MinimumVersion = "2.6")]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.L2)]
     [InlineData(IndexType.Hnsw, SimilarityMetricType.Ip)]
     [InlineData(IndexType.AutoIndex, SimilarityMetricType.L2)]
     public async Task Search_int8_vector(IndexType indexType, SimilarityMetricType similarityMetricType)
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection int8VectorCollection = Client.GetCollection(nameof(Search_int8_vector));
         string collectionName = int8VectorCollection.Name;
 
@@ -795,14 +780,9 @@ public class SearchQueryTests(
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Query_geometry()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection geometryCollection = Client.GetCollection(nameof(Query_geometry));
 
         await geometryCollection.DropAsync(TestContext.Current.CancellationToken);
@@ -873,14 +853,9 @@ public class SearchQueryTests(
         await geometryCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Query_timestamptz()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection tsCollection = Client.GetCollection(nameof(Query_timestamptz));
 
         await tsCollection.DropAsync(TestContext.Current.CancellationToken);
@@ -947,14 +922,9 @@ public class SearchQueryTests(
         await tsCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Insert_timestamptz_from_DateTimeOffset()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection tsCollection = Client.GetCollection(nameof(Insert_timestamptz_from_DateTimeOffset));
 
         await tsCollection.DropAsync(TestContext.Current.CancellationToken);
@@ -1215,14 +1185,9 @@ public class SearchQueryTests(
         Assert.Equal((ReadOnlyMemory<float>)new[] { 3.3f, 4.4f }, floatVectorField.Data[1]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Search_with_nullable_types()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         var collection = Client.GetCollection("nullable_types");
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -1393,14 +1358,9 @@ public class SearchQueryTests(
         Assert.Equal((ReadOnlyMemory<float>)new[] { 5.5f, 6.6f }, floatVectorField.Data[2]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Search_with_default_values()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 5))
-        {
-            return;
-        }
-
         var collection = Client.GetCollection("default_values_test");
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -1541,14 +1501,9 @@ public class SearchQueryTests(
         Assert.Collection(results.Limits, l => Assert.Equal(2, l));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Search_with_group_size()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_group_size));
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -1600,14 +1555,9 @@ public class SearchQueryTests(
         Assert.True(results.Ids.LongIds!.Count > 2);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task Search_with_strict_group_size()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(Search_with_strict_group_size));
         await collection.DropAsync(TestContext.Current.CancellationToken);
         await Client.CreateCollectionAsync(
@@ -1656,14 +1606,9 @@ public class SearchQueryTests(
         Assert.Equal(2, groupIdField.Data.Count(g => g == 1L));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Search_sparse_vector()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         MilvusCollection sparseCollection = Client.GetCollection(nameof(Search_sparse_vector));
         string collectionName = sparseCollection.Name;
 
@@ -1715,14 +1660,9 @@ public class SearchQueryTests(
         Assert.Equal(1L, searchResults.Ids.LongIds[1]);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Search_sparse_vector_with_wand_index()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         MilvusCollection sparseCollection = Client.GetCollection(nameof(Search_sparse_vector_with_wand_index));
         string collectionName = sparseCollection.Name;
 
@@ -1778,14 +1718,9 @@ public class SearchQueryTests(
         await sparseCollection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.4")]
     public async Task Query_sparse_vector()
     {
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 4))
-        {
-            return;
-        }
-
         MilvusCollection sparseCollection = Client.GetCollection(nameof(Query_sparse_vector));
         string collectionName = sparseCollection.Name;
 
