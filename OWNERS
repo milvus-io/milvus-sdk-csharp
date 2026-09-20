@@ -1,0 +1,6 @@
+filters:
+  ".*":
+    reviewers:
+      - yhmo
+    approvers:
+      - yhmo
