@@ -35,23 +35,25 @@ pull_request_rules:
     conditions:
       - or: *BRANCHES
       - and:
-          - "check-success=Build and test with Milvus v2.3.22"
-          - "check-success=Build and test with Milvus v2.4.23"
-          - "check-success=Build and test with Milvus v2.5.20"
-          - "check-success=Build and test with Milvus v2.6.4"
+          - "check-success~=^Build and test( V1)? with Milvus v2\\.3\\."
+          - "check-success~=^Build and test( V1)? with Milvus v2\\.4\\."
+          - "check-success~=^Build and test( V1)? with Milvus v2\\.5\\."
+          - "check-success~=^Build and test( V1)? with Milvus v2\\.6\\."
     actions:
       label:
         add:
           - ci-passed
 
-  - name: Remove ci-passed when build failed
+  - name: Remove ci-passed when required builds are not green
     conditions:
       - or: *BRANCHES
+      - label=ci-passed
+      - files~=^(?!.*\.(md)).*$
       - or:
-          - "check-failure=Build and test with Milvus v2.3.22"
-          - "check-failure=Build and test with Milvus v2.4.23"
-          - "check-failure=Build and test with Milvus v2.5.20"
-          - "check-failure=Build and test with Milvus v2.6.4"
+          - "-check-success~=^Build and test( V1)? with Milvus v2\\.3\\."
+          - "-check-success~=^Build and test( V1)? with Milvus v2\\.4\\."
+          - "-check-success~=^Build and test( V1)? with Milvus v2\\.5\\."
+          - "-check-success~=^Build and test( V1)? with Milvus v2\\.6\\."
     actions:
       label:
         remove:
