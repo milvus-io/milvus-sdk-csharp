@@ -696,12 +696,12 @@ public class HybridSearchTests(
 
         private readonly MilvusClient Client;
         public readonly MilvusCollection Collection;
-        public bool SupportsHybridSearch { get; private set; }
 
         public async ValueTask InitializeAsync()
         {
-            SupportsHybridSearch = await Client.GetParsedMilvusVersion() >= new Version(2, 4);
-            if (!SupportsHybridSearch)
+            // The same source of truth as the [MilvusFact(MinimumVersion = "2.4")] gate on the tests themselves, so
+            // the setup decision and the skip decision can't disagree.
+            if (!MilvusTestImage.IsAtLeast(new Version(2, 4)))
             {
                 return;
             }

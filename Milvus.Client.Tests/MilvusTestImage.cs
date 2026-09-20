@@ -27,9 +27,13 @@ public static class MilvusTestImage
     /// so a genuinely new/unexpected image format still gets exercised rather than silently skipped.
     /// </summary>
     public static bool IsAtLeast(Version minimumVersion)
-        => ParsedVersion is null || ParsedVersion >= minimumVersion;
+        => IsAtLeast(ParsedVersion, minimumVersion);
 
-    private static Version? ParseVersion(string image)
+    /// <summary>The rule behind <see cref="IsAtLeast(Version)" />, over an explicit version so it can be tested.</summary>
+    internal static bool IsAtLeast(Version? parsedVersion, Version minimumVersion)
+        => parsedVersion is null || parsedVersion >= minimumVersion;
+
+    internal static Version? ParseVersion(string image)
     {
         // e.g. "milvusdb/milvus:v2.6.4" -> "2.6.4"
         Match match = Regex.Match(image, @":v?(?<version>\d+(\.\d+){1,3})$");

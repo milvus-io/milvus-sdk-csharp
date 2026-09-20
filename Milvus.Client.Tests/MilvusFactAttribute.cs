@@ -56,7 +56,21 @@ public sealed class MilvusTheoryAttribute(
 internal static class MilvusVersionRequirement
 {
     public static string? GetSkipReason(string? minimumVersion)
-        => minimumVersion is null || MilvusTestImage.IsAtLeast(Version.Parse(minimumVersion))
+    {
+        if (minimumVersion is null)
+        {
+            return null;
+        }
+
+        if (!Version.TryParse(minimumVersion, out Version? parsedMinimumVersion))
+        {
+            throw new ArgumentException(
+                $"'{minimumVersion}' is not a valid MinimumVersion; expected a version such as \"2.5\".",
+                nameof(minimumVersion));
+        }
+
+        return MilvusTestImage.IsAtLeast(parsedMinimumVersion)
             ? null
             : $"Requires Milvus {minimumVersion} or later, but the tests run against {MilvusTestImage.Name}.";
+    }
 }
