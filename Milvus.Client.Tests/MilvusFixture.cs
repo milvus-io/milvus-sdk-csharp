@@ -7,10 +7,8 @@ namespace Milvus.Client.Tests;
 
 public sealed class MilvusFixture : IAsyncLifetime
 {
-    private const string DefaultMilvusImage = "milvusdb/milvus:v2.6.4";
-
     private readonly MilvusContainer _container =
-        new MilvusBuilder(Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage)
+        new MilvusBuilder(MilvusTestImage.Name)
             .WithEnvironment("QUOTA_AND_LIMITS_FLUSH_RATE_COLLECTION_MAX", "-1")
             .Build();
 

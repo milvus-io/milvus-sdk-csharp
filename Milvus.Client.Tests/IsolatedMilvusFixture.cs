@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Testcontainers.Milvus;
 using Xunit;
 
@@ -12,29 +11,23 @@ namespace Milvus.Client.Tests;
 /// cost is a fresh container start (tens of seconds) for that class alone, not shared with anything else.
 /// </summary>
 /// <remarks>
-/// If the caller's test only applies from some minimum Milvus version onward (the common pattern
-/// elsewhere in this suite: check <c>GetParsedMilvusVersion()</c> and return early), check
-/// <see cref="IsAvailable" /> for the same purpose <em>before</em> calling <see cref="CreateClient" /> --
-/// it's parsed from the <c>MILVUS_IMAGE</c> tag alone, with no container involved, so a version-gated
-/// test on an older CI image never pays this fixture's container-start cost just to immediately return.
+/// If the caller's test only applies from some minimum Milvus version onward, mark it with
+/// <see cref="MilvusFactAttribute" /> (or <see cref="MilvusTheoryAttribute" />) so it's reported as skipped
+/// on older images, and check <see cref="IsAvailable" /> <em>before</em> calling <see cref="CreateClient" />
+/// -- it's based on the <c>MILVUS_IMAGE</c> tag alone, with no container involved, so a version-gated
+/// test on an older CI image never pays this fixture's container-start cost.
 /// </remarks>
 public sealed class IsolatedMilvusFixture : IAsyncLifetime
 {
-    private const string DefaultMilvusImage = "milvusdb/milvus:v2.6.4";
-
     private readonly MilvusContainer? _container;
 
     public IsolatedMilvusFixture()
     {
-        string image = Environment.GetEnvironmentVariable("MILVUS_IMAGE") ?? DefaultMilvusImage;
-        ParsedImageVersion = ParseImageVersion(image);
-
         // Only build (not start -- that's still InitializeAsync's job) the container when the image
-        // actually looks new enough to be worth it. An unparseable tag is treated as available rather
-        // than silently skipped, so a genuinely new/unexpected image format still gets exercised.
-        if (ParsedImageVersion is null || ParsedImageVersion >= MinimumVersion)
+        // actually looks new enough to be worth it.
+        if (MilvusTestImage.IsAtLeast(MinimumVersion))
         {
-            _container = new MilvusBuilder(image)
+            _container = new MilvusBuilder(MilvusTestImage.Name)
                 .WithEnvironment("QUOTA_AND_LIMITS_FLUSH_RATE_COLLECTION_MAX", "-1")
                 .Build();
         }
@@ -50,7 +43,7 @@ public sealed class IsolatedMilvusFixture : IAsyncLifetime
     /// The Milvus version parsed from the <c>MILVUS_IMAGE</c> tag (e.g. <c>v2.6.4</c> -&gt;
     /// <c>2.6.4</c>), or <see langword="null" /> if the tag doesn't look like a version at all.
     /// </summary>
-    public Version? ParsedImageVersion { get; }
+    public Version? ParsedImageVersion => MilvusTestImage.ParsedVersion;
 
     /// <summary>
     /// Whether this fixture actually started a container. False when <see cref="ParsedImageVersion" /> is
@@ -69,13 +62,4 @@ public sealed class IsolatedMilvusFixture : IAsyncLifetime
 
     public ValueTask InitializeAsync() => _container is null ? default : new ValueTask(_container.StartAsync());
     public ValueTask DisposeAsync() => _container is null ? default : _container.DisposeAsync();
-
-    private static Version? ParseImageVersion(string image)
-    {
-        // e.g. "milvusdb/milvus:v2.6.4" -> "2.6.4"
-        Match match = Regex.Match(image, @":v?(?<version>\d+(\.\d+){1,3})$");
-        return match.Success && System.Version.TryParse(match.Groups["version"].Value, out Version? version)
-            ? version
-            : null;
-    }
 }

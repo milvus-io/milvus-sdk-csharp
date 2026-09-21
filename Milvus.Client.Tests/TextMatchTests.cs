@@ -16,11 +16,9 @@ public class TextMatchTests : IAsyncLifetime
 
     public TextMatchTests(MilvusFixture milvusFixture) => Client = milvusFixture.CreateClient();
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task TEXT_MATCH_finds_matching_rows()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateCollectionAsync(nameof(TEXT_MATCH_finds_matching_rows));
 
         await collection.CreateIndexAsync("vec", IndexType.Flat, SimilarityMetricType.L2, cancellationToken: TestContext.Current.CancellationToken);
@@ -42,18 +40,11 @@ public class TextMatchTests : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    // Milvus 2.5.20 does not enforce this at all -- TEXT_MATCH works there even with EnableMatch
+    // left false, as long as EnableAnalyzer is set. The strict rejection is 2.6+ behavior.
+    [MilvusFact(MinimumVersion = "2.6")]
     public async Task TEXT_MATCH_rejected_without_EnableMatch()
     {
-        if (await Skip()) return;
-
-        // Milvus 2.5.20 does not enforce this at all -- TEXT_MATCH works there even with EnableMatch
-        // left false, as long as EnableAnalyzer is set. The strict rejection is 2.6+ behavior.
-        if (await Client.GetParsedMilvusVersion() < new Version(2, 6))
-        {
-            return;
-        }
-
         MilvusCollection collection = Client.GetCollection(nameof(TEXT_MATCH_rejected_without_EnableMatch));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -96,11 +87,9 @@ public class TextMatchTests : IAsyncLifetime
         Assert.Contains("EnableAnalyzer", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Describe_round_trips_EnableMatch()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = await CreateCollectionAsync(nameof(Describe_round_trips_EnableMatch));
 
         MilvusCollectionDescription description = await collection.DescribeAsync(TestContext.Current.CancellationToken);
@@ -127,8 +116,6 @@ public class TextMatchTests : IAsyncLifetime
 
         return collection;
     }
-
-    private async Task<bool> Skip() => await Client.GetParsedMilvusVersion() < new Version(2, 5);
 
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 

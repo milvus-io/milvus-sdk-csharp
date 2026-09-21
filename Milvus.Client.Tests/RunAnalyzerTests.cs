@@ -16,11 +16,9 @@ public class RunAnalyzerTests : IAsyncLifetime
 
     public RunAnalyzerTests(MilvusFixture milvusFixture) => Client = milvusFixture.CreateClient();
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Tokenizes_with_explicit_analyzer_params()
     {
-        if (await Skip()) return;
-
         var results = await Client.RunAnalyzerAsync(
             new[] { "The quick foxes are running" },
             new Dictionary<string, object> { ["type"] = "english" },
@@ -32,11 +30,9 @@ public class RunAnalyzerTests : IAsyncLifetime
         Assert.Equal(new[] { "quick", "fox", "run" }, tokens);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Tokenizes_multiple_texts_in_order()
     {
-        if (await Skip()) return;
-
         var results = await Client.RunAnalyzerAsync(
             new[] { "hello world", "goodbye world" },
             new Dictionary<string, object> { ["type"] = "standard" },
@@ -47,22 +43,18 @@ public class RunAnalyzerTests : IAsyncLifetime
         Assert.Equal(new[] { "goodbye", "world" }, results[1].Select(t => t.Token));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Uses_a_default_analyzer_when_no_params_are_given()
     {
-        if (await Skip()) return;
-
         var results = await Client.RunAnalyzerAsync(
             new[] { "hello world" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(new[] { "hello", "world" }, Assert.Single(results).Select(t => t.Token));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task WithDetail_populates_offsets_and_position()
     {
-        if (await Skip()) return;
-
         var results = await Client.RunAnalyzerAsync(
             new[] { "The Quick Brown Fox" },
             new Dictionary<string, object> { ["type"] = "standard" },
@@ -77,11 +69,9 @@ public class RunAnalyzerTests : IAsyncLifetime
         Assert.Equal(("fox", 16, 19, 3), (tokens[3].Token, tokens[3].StartOffset, tokens[3].EndOffset, tokens[3].Position));
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Without_detail_offsets_and_position_come_back_as_zero()
     {
-        if (await Skip()) return;
-
         var results = await Client.RunAnalyzerAsync(
             new[] { "The Quick Brown Fox" },
             new Dictionary<string, object> { ["type"] = "standard" },
@@ -93,11 +83,9 @@ public class RunAnalyzerTests : IAsyncLifetime
         Assert.Equal(0, token.Position);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task WithHash_populates_hash()
     {
-        if (await Skip()) return;
-
         var withHash = await Client.RunAnalyzerAsync(
             new[] { "hello" }, new Dictionary<string, object> { ["type"] = "standard" },
             withHash: true, cancellationToken: TestContext.Current.CancellationToken);
@@ -109,11 +97,9 @@ public class RunAnalyzerTests : IAsyncLifetime
         Assert.Null(Assert.Single(Assert.Single(withoutHash)).Hash);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Field_based_mode_works_for_a_bm25_input_field()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection(nameof(Field_based_mode_works_for_a_bm25_input_field));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -142,11 +128,9 @@ public class RunAnalyzerTests : IAsyncLifetime
         await collection.DropAsync(TestContext.Current.CancellationToken);
     }
 
-    [Fact]
+    [MilvusFact(MinimumVersion = "2.5")]
     public async Task Field_based_mode_rejects_a_field_that_is_not_a_bm25_input()
     {
-        if (await Skip()) return;
-
         MilvusCollection collection = Client.GetCollection(nameof(Field_based_mode_rejects_a_field_that_is_not_a_bm25_input));
         await collection.DropAsync(TestContext.Current.CancellationToken);
 
@@ -201,8 +185,6 @@ public class RunAnalyzerTests : IAsyncLifetime
                 cancellationToken: TestContext.Current.CancellationToken));
         Assert.Contains("must be supplied together", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
-
-    private async Task<bool> Skip() => await Client.GetParsedMilvusVersion() < new Version(2, 5);
 
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
