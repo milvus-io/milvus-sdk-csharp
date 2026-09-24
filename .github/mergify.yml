@@ -7,6 +7,8 @@ pull_request_rules:
           - &MAIN_BRANCH base=main
       #  In this pull request, the changes are based on the 2.x branch
           - &2X_BRANCH base~=2\.\d
+      #  In this pull request, the changes are based on the 3.x branch
+          - &3X_BRANCH base~=3\.\d
 
       - -status-success=DCO
     actions:
@@ -35,10 +37,11 @@ pull_request_rules:
     conditions:
       - or: *BRANCHES
       - and:
-          - "check-success=Build and test with Milvus v2.3.22"
-          - "check-success=Build and test with Milvus v2.4.23"
-          - "check-success=Build and test with Milvus v2.5.20"
-          - "check-success=Build and test with Milvus v2.6.4"
+          - "check-success=Build and test V1 with Milvus v2.3.22"
+          - "check-success=Build and test V1 with Milvus v2.4.23"
+          - "check-success=Build and test V1 with Milvus v2.5.20"
+          - "check-success=Build and test V1 with Milvus v2.6.20"
+          - "check-success=Build and test V2"
     actions:
       label:
         add:
@@ -48,10 +51,11 @@ pull_request_rules:
     conditions:
       - or: *BRANCHES
       - or:
-          - "check-failure=Build and test with Milvus v2.3.22"
-          - "check-failure=Build and test with Milvus v2.4.23"
-          - "check-failure=Build and test with Milvus v2.5.20"
-          - "check-failure=Build and test with Milvus v2.6.4"
+          - "check-failure=Build and test V1 with Milvus v2.3.22"
+          - "check-failure=Build and test V1 with Milvus v2.4.23"
+          - "check-failure=Build and test V1 with Milvus v2.5.20"
+          - "check-failure=Build and test V1 with Milvus v2.6.20"
+          - "check-failure=Build and test V2"
     actions:
       label:
         remove:
@@ -65,3 +69,14 @@ pull_request_rules:
       label:
         add:
           - ci-passed
+
+  - name: Auto-queue when all review labels present
+    conditions:
+      - or: *BRANCHES
+      - and:
+          - label=approved
+          - label=dco-passed
+          - label=ci-passed
+          - label=lgtm
+    actions:
+      queue:
