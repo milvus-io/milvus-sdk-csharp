@@ -1,0 +1,197 @@
+name: Publish to nuget.org
+
+run-name: Publish release ${{ github.ref_name }}
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+# nuget.org versions are immutable. Do not publish two release tags at the same time, and do not cancel a
+# workflow after it has started uploading a package.
+concurrency:
+  group: nuget-publish
+  cancel-in-progress: false
+
+env:
+  # CI job names the release must have passed on the tagged commit before publishing. The V1 job name includes
+  # the Milvus image version (matrix), so match its prefix. Keep in sync with the job names in Build.yml.
+  CI_V2_CHECK: 'Build and test V2'
+  CI_V2_WINDOWS_CHECK: 'Build and test V2 on Windows'
+  CI_V1_CHECK_PREFIX: 'Build and test V1 with Milvus'
+
+jobs:
+  validate:
+    name: Validate release commit
+    if: github.repository == 'milvus-io/milvus-sdk-csharp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout release tag and history
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # A release tag must point at a commit that is already on main with a green CI run, so a tag can never
+      # publish code that did not pass the required checks (mirrors the Rust SDK's publish-release flow).
+      - name: Verify tag ancestry and completed CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          if ! git merge-base --is-ancestor "${TAG_SHA}" origin/main; then
+            echo "Release tag commit ${TAG_SHA} is not contained in main." >&2
+            exit 1
+          fi
+          echo "Release commit is contained in main."
+
+          check_runs="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG_SHA}/check-runs?per_page=100")"
+          if ! jq -e --arg name "${{ env.CI_V2_CHECK }}" --arg sha "${TAG_SHA}" \
+            '[.check_runs[] | select(.name == $name and .head_sha == $sha and .conclusion == "success")] | length > 0' <<<"${check_runs}" >/dev/null; then
+            echo "No successful ${{ env.CI_V2_CHECK }} check was found for ${TAG_SHA}." >&2
+            exit 1
+          fi
+          if ! jq -e --arg name "${{ env.CI_V2_WINDOWS_CHECK }}" --arg sha "${TAG_SHA}" \
+            '[.check_runs[] | select(.name == $name and .head_sha == $sha and .conclusion == "success")] | length > 0' <<<"${check_runs}" >/dev/null; then
+            echo "No successful ${{ env.CI_V2_WINDOWS_CHECK }} check was found for ${TAG_SHA}." >&2
+            exit 1
+          fi
+          if ! jq -e --arg prefix "${{ env.CI_V1_CHECK_PREFIX }}" --arg sha "${TAG_SHA}" \
+            '[.check_runs[] | select((.name | startswith($prefix)) and .head_sha == $sha and .conclusion == "success")] | length > 0' <<<"${check_runs}" >/dev/null; then
+            echo "No successful V1 matrix check was found for ${TAG_SHA}." >&2
+            exit 1
+          fi
+          echo "Required post-merge checks passed for ${TAG_SHA}."
+
+  publish:
+    name: Publish to nuget.org
+    needs: validate
+    if: github.repository == 'milvus-io/milvus-sdk-csharp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # id-token: write is required for Trusted Publishing (GitHub OIDC). See the Trusted Publishing policy on
+    # nuget.org (repository owner: milvus-io, repository: milvus-sdk-csharp, workflow file: NugetPublish.yml).
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET SDKs
+        uses: actions/setup-dotnet@v5
+
+      # https://github.com/dotnet-campus/dotnetCampus.TagToVersion
+      - name: Install dotnet tool
+        run: dotnet tool install -g dotnetCampus.TagToVersion
+
+      - name: Set tag to version
+        run: dotnet TagToVersion -t ${{ github.ref }} -f Version.props
+
+      - name: Validate release tag and package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: ${tag}. Expected vX.Y.Z." >&2
+            exit 1
+          fi
+
+          tag_version="${tag#v}"
+          props_version="$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' Version.props)"
+          if [[ "${tag_version}" != "${props_version}" ]]; then
+            echo "Release tag version ${tag_version} does not match Version.props version ${props_version}." >&2
+            exit 1
+          fi
+
+          # The release must have a CHANGELOG.md entry; extracting it both validates the entry exists and
+          # proves the release notes are ready.
+          ./scripts/extract_changelog.sh "${tag_version}" > /dev/null
+
+          echo "Publishing Milvus.Client / Milvus.Client.V2 ${props_version} from tag ${tag}."
+
+      - name: Build
+        run: dotnet build -c Release
+
+      # Pack the two SDK projects explicitly so the examples/test projects are not published as packages.
+      - name: Pack
+        run: |
+          dotnet pack Milvus.Client/Milvus.Client.csproj -c Release -o Artifacts
+          dotnet pack Milvus.Client.V2/Milvus.Client.V2.csproj -c Release -o Artifacts
+
+      - name: NuGet login (Trusted Publishing: OIDC -> temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish to nuget.org
+        run: |
+          # Push the packages and their symbol packages; *.snupkg (symbols/source-link) are emitted by
+          # IncludeSymbols but never matched by *.nupkg, so pushing them explicitly keeps the release complete.
+          dotnet nuget push Artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+          dotnet nuget push Artifacts/*.snupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
+  release:
+    name: Create GitHub release
+    needs: publish
+    if: needs.publish.result == 'success' && github.repository == 'milvus-io/milvus-sdk-csharp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+
+      - name: Prepare release body
+        id: release-info
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          version="${RELEASE_TAG#v}"
+          release_date="$(date -u +%F)"
+          milvus_minor="$(echo "$version" | cut -d. -f1,2)"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "milvus_minor=${milvus_minor}" >> "${GITHUB_OUTPUT}"
+
+          changelog="$(./scripts/extract_changelog.sh "${version}")"
+          body_file="${RUNNER_TEMP}/release_body.md"
+          {
+            echo "Release date: ${release_date}"
+            echo "Compatible with Milvus v${milvus_minor}.x"
+            echo "nuget.org: https://www.nuget.org/packages/Milvus.Client/${version}"
+            echo "nuget.org (V2): https://www.nuget.org/packages/Milvus.Client.V2/${version}"
+            echo
+            printf '%s\n' "${changelog}"
+          } > "${body_file}"
+          echo "body_path=${body_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: milvus-sdk-csharp-${{ steps.release-info.outputs.version }}
+          bodyFile: ${{ steps.release-info.outputs.body_path }}
+          draft: false
+          allowUpdates: true
+          omitNameDuringUpdate: true
+          omitBodyDuringUpdate: true
+          token: ${{ secrets.GITHUB_TOKEN }}
