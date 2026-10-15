@@ -133,7 +133,7 @@ jobs:
           dotnet pack Milvus.Client/Milvus.Client.csproj -c Release -o Artifacts
           dotnet pack Milvus.Client.V2/Milvus.Client.V2.csproj -c Release -o Artifacts
 
-      - name: NuGet login (Trusted Publishing: OIDC -> temporary API key)
+      - name: "NuGet login (Trusted Publishing: OIDC -> temporary API key)"
         uses: NuGet/login@v1
         id: login
         with:
