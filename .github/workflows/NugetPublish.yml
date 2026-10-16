@@ -37,8 +37,9 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      # A release tag must point at a commit that is already on main with a green CI run, so a tag can never
-      # publish code that did not pass the required checks (mirrors the Rust SDK's publish-release flow).
+      # A release tag must point at a commit that is already on some remote branch (main, 2.6, 3.0, ...) with a
+      # green CI run on that commit, so a tag can never publish code that did not pass the required checks
+      # (mirrors the Rust SDK's publish-release flow).
       - name: Verify tag ancestry and completed CI
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,11 +49,11 @@ jobs:
           set -euo pipefail
 
           git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
-          if ! git merge-base --is-ancestor "${TAG_SHA}" origin/main; then
-            echo "Release tag commit ${TAG_SHA} is not contained in main." >&2
+          if ! git branch -r --contains "${TAG_SHA}" | grep -q 'origin/'; then
+            echo "Release tag commit ${TAG_SHA} is not contained in any remote branch." >&2
             exit 1
           fi
-          echo "Release commit is contained in main."
+          echo "Release commit is contained in a remote branch."
 
           check_runs="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG_SHA}/check-runs?per_page=100")"
           if ! jq -e --arg name "${{ env.CI_V2_CHECK }}" --arg sha "${TAG_SHA}" \
