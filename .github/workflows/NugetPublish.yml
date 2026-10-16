@@ -144,8 +144,10 @@ jobs:
         run: |
           # Push the packages and their symbol packages; *.snupkg (symbols/source-link) are emitted by
           # IncludeSymbols but never matched by *.nupkg, so pushing them explicitly keeps the release complete.
-          dotnet nuget push Artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-          dotnet nuget push Artifacts/*.snupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+          # --skip-duplicate makes the push idempotent so a re-run after a partial publish (e.g. one package
+          # already uploaded) skips the existing version instead of failing the whole job.
+          dotnet nuget push Artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push Artifacts/*.snupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   release:
     name: Create GitHub release
