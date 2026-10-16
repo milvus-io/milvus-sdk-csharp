@@ -40,12 +40,12 @@ import urllib.request
 import uuid
 
 
-DEFAULT_IMAGE = "milvusdb/milvus:v2.6.20"
+DEFAULT_IMAGE = "milvusdb/milvus:v2.6.25"
 DEFAULT_GRPC_PORT = 29630
 DEFAULT_HEALTH_PORT = 19191
 DEFAULT_TIMEOUT = 300
 REAP_LABEL = "milvus-sdk-csharp-test"
-MINIO_IMAGE = "milvusdb/minio:RELEASE.2024-05-28T17-19-04Z"
+MINIO_IMAGE = "milvusdb/minio:RELEASE.2024-12-18T13-15-44Z"
 MINIO_PORT = 19100
 MINIO_ACCESS_KEY = "minioadmin"
 MINIO_SECRET_KEY = "minioadmin"

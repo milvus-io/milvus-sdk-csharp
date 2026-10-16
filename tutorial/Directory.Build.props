@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Tutorials are standalone console apps that consume the published Milvus.Client.V2 NuGet package.
+    This file isolates them from the SDK's own build settings (central package management, release
+    version props, warnings-as-errors analyzers) so a tutorial project behaves like any app that
+    installs the SDK from nuget.org.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AnalysisLevel>none</AnalysisLevel>
+  </PropertyGroup>
+
+</Project>

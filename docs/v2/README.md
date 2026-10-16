@@ -74,6 +74,12 @@ See `docs/design/v2_design.md` for the full design and the request/response DTO 
 `examples/v2/` project for runnable, per-feature sample programs (each one is a small console app that
 connects to a server, exercises one feature area, and cleans up after itself).
 
+For an independently buildable application that covers collection creation, insertion, loading,
+search, result handling, and cleanup, follow [Tutorial 1: Quick start](../tutorial/1_quickstart/).
+A full beginner-to-advanced sequence lives in the [`tutorial`](../tutorial/README.md) directory:
+each tutorial is a standalone console project that depends on the published `Milvus.Client.V2`
+package, with its own run command, expected output, and troubleshooting guidance.
+
 ## Connection
 
 ```csharp
@@ -106,3 +112,4 @@ The examples honor the `MILVUS_URI` and `MILVUS_TOKEN` environment variables
 | `docs/v1/` | Legacy first-generation SDK (`Milvus.Client`) docs. |
 | `docs/design/v2_design.md` | V2 design document. |
 | `examples/v2/` | Runnable V2 example programs. |
+| `tutorial/` | Standalone V2 tutorial projects consuming the published package. |
