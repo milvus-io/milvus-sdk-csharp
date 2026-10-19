@@ -400,7 +400,8 @@ public class CollectionRespTests
             CollectionNames = { "book", "user" },
             CollectionIds = { 100, 200 },
             CreatedTimestamps = { 1000, 2000 },
-            CreatedUtcTimestamps = { 1001, 2001 }
+            CreatedUtcTimestamps = { 1001, 2001 },
+            ShardsNum = { 2, 4 }
         };
 #pragma warning disable CS0612
         response.InMemoryPercentages.Add(50);
@@ -413,6 +414,7 @@ public class CollectionRespTests
         Assert.Equal(new[] { 100L, 200L }, resp.CollectionIds);
         Assert.Equal(new[] { 1000UL, 2000UL }, resp.CreatedTimestamps);
         Assert.Equal(new[] { 1001UL, 2001UL }, resp.CreatedUtcTimestamps);
+        Assert.Equal(new[] { 2, 4 }, resp.ShardsNums);
 #pragma warning disable CS0612
         Assert.Equal(new[] { 50L, 100L }, resp.InMemoryPercentages);
 #pragma warning restore CS0612

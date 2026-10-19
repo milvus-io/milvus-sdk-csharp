@@ -26,6 +26,13 @@ public sealed class MutationResp
         Acknowledged = acknowledged;
     }
 
+    /// <summary>
+    /// An empty mutation result, returned when a DML operation short-circuits (e.g. an insert or upsert with
+    /// no rows), mirroring the Java SDK's empty insert/upsert response.
+    /// </summary>
+    internal static MutationResp Empty()
+        => new(null, null, 0, 0, 0, 0, null, null, 0, false);
+
     internal static MutationResp FromGrpc(Grpc.MutationResult response)
     {
         IReadOnlyList<long>? longIds = null;

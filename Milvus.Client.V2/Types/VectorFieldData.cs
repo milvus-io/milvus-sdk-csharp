@@ -25,6 +25,14 @@ public sealed class FloatVectorFieldData : FieldData<ReadOnlyMemory<float>>
         => new FloatVectorFieldData(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
 
     /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new FloatVectorFieldData(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new FloatVectorFieldData(FieldName, Data.Concat(((FloatVectorFieldData)other).Data).ToList(), IsDynamic);
+
+    /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
     {
         var field = new Grpc.FieldData
@@ -83,6 +91,14 @@ public sealed class BinaryVectorFieldData : FieldData<ReadOnlyMemory<byte>>
     /// <inheritdoc />
     internal override FieldData SliceCore(int start, int count)
         => new BinaryVectorFieldData(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new BinaryVectorFieldData(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new BinaryVectorFieldData(FieldName, Data.Concat(((BinaryVectorFieldData)other).Data).ToList(), IsDynamic);
 
     /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
@@ -144,6 +160,14 @@ public sealed class SparseFloatVectorFieldData : FieldData<SparseVector<float>>
         => new SparseFloatVectorFieldData(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
 
     /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new SparseFloatVectorFieldData(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new SparseFloatVectorFieldData(FieldName, Data.Concat(((SparseFloatVectorFieldData)other).Data).ToList(), IsDynamic);
+
+    /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
     {
         var field = new Grpc.FieldData
@@ -198,6 +222,14 @@ public sealed class Float16VectorFieldData : FieldData<ReadOnlyMemory<ushort>>
     /// <inheritdoc />
     internal override FieldData SliceCore(int start, int count)
         => new Float16VectorFieldData(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new Float16VectorFieldData(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new Float16VectorFieldData(FieldName, Data.Concat(((Float16VectorFieldData)other).Data).ToList(), IsDynamic);
 
     /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
@@ -266,6 +298,14 @@ public sealed class BFloat16VectorFieldData : FieldData<ReadOnlyMemory<ushort>>
         => new BFloat16VectorFieldData(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
 
     /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new BFloat16VectorFieldData(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new BFloat16VectorFieldData(FieldName, Data.Concat(((BFloat16VectorFieldData)other).Data).ToList(), IsDynamic);
+
+    /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
     {
         var field = new Grpc.FieldData
@@ -330,6 +370,14 @@ public sealed class Int8VectorFieldData : FieldData<ReadOnlyMemory<sbyte>>
     /// <inheritdoc />
     internal override FieldData SliceCore(int start, int count)
         => new Int8VectorFieldData(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new Int8VectorFieldData(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new Int8VectorFieldData(FieldName, Data.Concat(((Int8VectorFieldData)other).Data).ToList(), IsDynamic);
 
     /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()

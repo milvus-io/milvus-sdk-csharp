@@ -263,7 +263,15 @@ public sealed partial class MilvusClientV2
     {
         Verify.NotNull(request);
 
+        // Surface connection/auth failures up front, then treat an empty id list as a no-op: return an empty
+        // result without issuing the RPC (mirroring the Java SDK, which short-circuits empty get ids to an
+        // empty GetResp).
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        if (request.Ids.Count == 0)
+        {
+            return GetResp.Empty();
+        }
 
         string databaseName = ResolveDatabaseName(request.DatabaseName);
 
@@ -749,9 +757,21 @@ public sealed partial class MilvusClientV2
         string? token = null;
         float? lastBound = null;
 
+        // Filtered-page accumulation cache: when ExternalFilterFunc is set, filtered pages are buffered and
+        // only yielded once a full batch of targetLen (= min(BatchSize, remaining)) rows has accumulated,
+        // mirroring the Java SearchIteratorV2 cache and the C++ FetchPageFromCache. The surplus stays in the
+        // cache for the next yield, so a sparse filter keeps server calls to one per page instead of one per
+        // tiny batch.
+        List<SingleResult>? filteredCache = null;
+        int cachedRows = 0;
+
         while (remaining > 0)
         {
-            int batchSize = Math.Min(request.BatchSize, remaining);
+            // Ask the server for a fixed BatchSize per page, matching the Java SearchIteratorV2
+            // (executeSearch(batchSize)) and the C++ SearchIteratorV2Impl (limit = batchSize). The targetLen
+            // of min(BatchSize, remaining) below only governs how many rows are taken from the client-side
+            // cache (or yielded) per batch, so the final partial batch is truncated rather than over-requested.
+            int batchSize = request.BatchSize;
             ReplaceKeyValueItems(grpcRequest.SearchParams,
                 new Grpc.KeyValuePair { Key = "topk", Value = batchSize.ToString(CultureInfo.InvariantCulture) },
                 new Grpc.KeyValuePair { Key = "search_iter_batch_size", Value = batchSize.ToString(CultureInfo.InvariantCulture) });
@@ -795,15 +815,27 @@ public sealed partial class MilvusClientV2
             int count = response.Results?.Topks.Count > 0 ? (int)response.Results.Topks[0] : 0;
             if (count == 0)
             {
+                // The server has no more rows. With a filter set, flush any rows still buffered in the cache
+                // as the final (possibly sub-batch) batch, mirroring the Java wrapReturnRes on the tail.
+                if (filteredCache is { Count: > 0 })
+                {
+                    SingleResult flushed = SingleResult.Merge(filteredCache);
+                    filteredCache.Clear();
+                    cachedRows = 0;
+                    yield return flushed;
+                    remaining -= flushed.Scores.Count;
+                }
+
                 yield break;
             }
 
             // The search iterator accepts a single query vector, so each page produces exactly one
             // SingleResult carrying the page's top-K scores, primary keys and output fields.
             SearchResp page = SearchResp.FromGrpc(response);
+            SingleResult result;
             if (page.SingleResults is { Count: > 0 } singleResults)
             {
-                yield return singleResults[0];
+                result = singleResults[0];
             }
             else
             {
@@ -812,15 +844,91 @@ public sealed partial class MilvusClientV2
                 string pkName = string.IsNullOrEmpty(response.Results!.PrimaryFieldName) ? "id" : response.Results!.PrimaryFieldName;
                 IReadOnlyList<long>? longIds = response.Results!.Ids?.IntId?.Data;
                 IReadOnlyList<string>? stringIds = response.Results!.Ids?.StrId?.Data;
-                yield return new SingleResult(
+                result = new SingleResult(
                     pkName,
                     Ids.FromSlices(longIds, stringIds),
                     response.Results!.Scores,
                     fields);
             }
 
-            remaining -= count;
+            // Apply the client-side page filter (mirroring the Java/C++/pymilvus externalFilterFunc): keep
+            // only the rows whose indices the callback returns. A page that filters to zero rows does not
+            // grow the cache; skip it and keep pulling the next page.
+            if (request.ExternalFilterFunc is { } filter)
+            {
+                IReadOnlyList<int> keep = filter(result);
+                foreach (int i in keep)
+                {
+                    if (i < 0 || i >= result.Scores.Count)
+                    {
+                        throw new ArgumentException(
+                            $"ExternalFilterFunc returned row index {i}, out of range [0, {result.Scores.Count}).",
+                            nameof(request));
+                    }
+                }
+
+                result = result.SelectRows(keep);
+                if (result.Scores.Count == 0)
+                {
+                    continue;
+                }
+
+                filteredCache ??= new List<SingleResult>();
+                filteredCache.Add(result);
+                cachedRows += result.Scores.Count;
+
+                int targetLen = Math.Min(request.BatchSize, remaining);
+                if (cachedRows < targetLen)
+                {
+                    // The batch is not full yet; pull more pages until it satisfies the filter.
+                    continue;
+                }
+
+                (SingleResult batch, cachedRows) = TakeBatchFromCache(filteredCache, targetLen);
+                yield return batch;
+                remaining -= batch.Scores.Count;
+                continue;
+            }
+
+            // No filter: yield the server page, truncating to the remaining limit when the final page
+            // over-delivers (a fixed BatchSize request can return more rows than are left), mirroring the
+            // Java wrapReturnRes.
+            if (result.Scores.Count > remaining)
+            {
+                result = result.SelectRows(Enumerable.Range(0, remaining).ToList());
+            }
+
+            yield return result;
+            remaining -= result.Scores.Count;
         }
+    }
+
+    // Removes up to targetLen rows from the front of the filtered-page cache, merging them into one
+    // SingleResult batch. Surplus rows stay in the cache for the next yield. Mirrors the Java
+    // SearchIteratorV2 cache and the C++ FetchPageFromCache.
+    private static (SingleResult Batch, int RemainingRows) TakeBatchFromCache(
+        List<SingleResult> cache, int targetLen)
+    {
+        var parts = new List<SingleResult>();
+        int need = targetLen;
+        while (need > 0 && cache.Count > 0)
+        {
+            SingleResult first = cache[0];
+            int take = Math.Min(need, first.Scores.Count);
+            parts.Add(first.SelectRows(Enumerable.Range(0, take).ToList()));
+            if (take == first.Scores.Count)
+            {
+                cache.RemoveAt(0);
+            }
+            else
+            {
+                cache[0] = first.SelectRows(Enumerable.Range(take, first.Scores.Count - take).ToList());
+            }
+
+            need -= take;
+        }
+
+        return (SingleResult.Merge(parts), cache.Sum(p => p.Scores.Count));
     }
 
     private static string FormatIteratorBound(float bound)

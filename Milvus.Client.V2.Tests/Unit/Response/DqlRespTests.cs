@@ -498,4 +498,108 @@ public class DqlRespTests
 
         Assert.Null(result.SingleResults);
     }
+
+    [Fact]
+    public void SingleResult_SelectRows_keeps_only_selected_rows()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData
+            {
+                NumQueries = 1,
+                TopK = 3,
+                Ids = new Grpc.IDs { IntId = new Grpc.LongArray { Data = { 1L, 2L, 3L } } },
+                Scores = { 0.9f, 0.8f, 0.7f },
+                Topks = { 3L },
+                FieldsData =
+                {
+                    new Grpc.FieldData
+                    {
+                        FieldName = "id",
+                        Type = Grpc.DataType.Int64,
+                        Scalars = new Grpc.ScalarField { LongData = new Grpc.LongArray { Data = { 1L, 2L, 3L } } }
+                    }
+                }
+            }
+        };
+
+        SingleResult page = SearchResp.FromGrpc(response).SingleResults![0];
+
+        SingleResult filtered = page.SelectRows(new[] { 0, 2 });
+
+        Assert.Equal("id", filtered.PrimaryKeyName);
+        Assert.Equal(new[] { 0.9f, 0.7f }, filtered.Scores);
+        Assert.Equal(new[] { 1L, 3L }, filtered.Ids.LongIds);
+        Assert.Equal(1L, filtered.GetRow(0)["id"]);
+        Assert.Equal(3L, filtered.GetRow(1)["id"]);
+
+        // An empty selection yields an empty page with no output fields.
+        SingleResult empty = page.SelectRows(Array.Empty<int>());
+        Assert.Empty(empty.Scores);
+        Assert.Empty(empty.OutputFields);
+    }
+
+    [Fact]
+    public void SingleResult_Merge_concatenates_pages()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData
+            {
+                NumQueries = 1,
+                TopK = 2,
+                Ids = new Grpc.IDs { IntId = new Grpc.LongArray { Data = { 1L, 2L } } },
+                Scores = { 0.9f, 0.8f },
+                Topks = { 2L },
+                FieldsData =
+                {
+                    new Grpc.FieldData
+                    {
+                        FieldName = "id",
+                        Type = Grpc.DataType.Int64,
+                        Scalars = new Grpc.ScalarField { LongData = new Grpc.LongArray { Data = { 1L, 2L } } }
+                    }
+                }
+            }
+        };
+
+        SingleResult first = SearchResp.FromGrpc(response).SingleResults![0];
+        SingleResult second = first.SelectRows(new[] { 1 });
+
+        SingleResult merged = SingleResult.Merge(new[] { first, second });
+
+        Assert.Equal("id", merged.PrimaryKeyName);
+        Assert.Equal(new[] { 0.9f, 0.8f, 0.8f }, merged.Scores);
+        Assert.Equal(new[] { 1L, 2L, 2L }, merged.Ids.LongIds);
+        Assert.Equal(3, merged.OutputFields[0].RowCount);
+
+        // A single page merges to itself.
+        Assert.Same(first, SingleResult.Merge(new[] { first }));
+    }
+
+    [Fact]
+    public void FieldData_SelectRows_and_Concat_preserve_concrete_vector_type()
+    {
+        var page = new SingleResult(
+            "id",
+            Milvus.Client.V2.Types.Ids.FromSlices(new[] { 1L, 2L, 3L }, null),
+            new[] { 0.9f, 0.8f, 0.7f },
+            new[] { FieldData.CreateFloatVector("vector", new[]
+            {
+                new ReadOnlyMemory<float>(new[] { 1f, 2f }),
+                new ReadOnlyMemory<float>(new[] { 3f, 4f }),
+                new ReadOnlyMemory<float>(new[] { 5f, 6f })
+            }) });
+
+        FieldData selected = page.OutputFields[0].SelectRows(new[] { 0, 2 });
+        Assert.IsType<FloatVectorFieldData>(selected);
+        Assert.Equal(2, selected.RowCount);
+        Assert.Equal(new[] { 1f, 2f }, ((FloatVectorFieldData)selected).Data[0].ToArray());
+        Assert.Equal(new[] { 5f, 6f }, ((FloatVectorFieldData)selected).Data[1].ToArray());
+
+        FieldData concat = page.OutputFields[0].Concat(selected);
+        Assert.IsType<FloatVectorFieldData>(concat);
+        Assert.Equal(5, concat.RowCount);
+        Assert.Equal(new[] { 5f, 6f }, ((FloatVectorFieldData)concat).Data[4].ToArray());
+    }
 }

@@ -11,8 +11,10 @@ namespace Milvus.Examples;
 
 /// <summary>
 /// Demonstrates server-side iterators: page over all rows of a query, or all nearest
-/// neighbours of a search, in <c>BatchSize</c>-sized batches via <c>await foreach</c>.
-/// Mirrors cpp examples/src/v2/iterator_query.cpp and iterator_search.cpp, and java IteratorExample.
+/// neighbours of a search, in <c>BatchSize</c>-sized batches via <c>await foreach</c>,
+/// including a client-side page filter (<c>ExternalFilterFunc</c>) that prunes hits before
+/// they are yielded. Mirrors cpp examples/src/v2/iterator_query.cpp and iterator_search.cpp,
+/// and java IteratorExample.
 /// </summary>
 /// <remarks>
 /// <para><b>Purpose:</b> show how to consume a large result set without loading it at once:
@@ -20,7 +22,7 @@ namespace Milvus.Examples;
 /// (top-K ordered). Both are <see cref="IAsyncEnumerable{T}" />.</para>
 /// <para><b>APIs used:</b> <c>CreateCollectionAsync</c>, <c>CreateIndexAsync</c>,
 /// <c>InsertAsync</c>, <c>QueryIteratorAsync</c>, <c>SearchIteratorAsync</c>,
-/// <c>DropCollectionAsync</c>.</para>
+/// <c>SearchIteratorReq.ExternalFilterFunc</c>, <c>DropCollectionAsync</c>.</para>
 /// <para><b>Expected output:</b> a row count per query-iterator page, a hit count per
 /// search-iterator page, then "Done.".</para>
 /// </remarks>
@@ -47,6 +49,7 @@ public static class IteratorExample
                 Fields =
                 {
                     new FieldSchema("id", DataType.Int64, isPrimaryKey: true),
+                    new FieldSchema("age", DataType.Int8),
                     FieldSchema.CreateFloatVector("vector", dimension: dimension)
                 }
             }
@@ -70,6 +73,7 @@ public static class IteratorExample
             ColumnsData =
             [
                 FieldData.Create("id", Enumerable.Range(0, rowCount).Select(i => (long)i).ToArray()),
+                FieldData.Create("age", Enumerable.Range(0, rowCount).Select(i => (sbyte)(i % 10)).ToArray()),
                 FieldData.CreateFloatVector("vector", vectors)
             ]
         });
@@ -133,6 +137,52 @@ public static class IteratorExample
         }
 
         Console.WriteLine($"  total hits iterated: {searchHits}");
+        #endregion
+
+        #region Snippet:MilvusIterator_Search_ExternalFilter
+        Console.WriteLine("Search iterator with client-side page filter (keep even ages only):");
+        int filteredHits = 0;
+        await foreach (SingleResult batch in client.SearchIteratorAsync(
+            new SearchIteratorReq
+            {
+                CollectionName = collectionName,
+                VectorFieldName = "vector",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.5f, 0.5f, 0.5f, 0.5f }) },
+                MetricType = MetricType.L2,
+                BatchSize = 10,
+                Limit = 50,
+                Parameters = new SearchParameters { OutputFields = { "id", "age" } },
+                // Mirror cpp examples/src/v2/iterator_search.cpp iterateWithExternalFilter:
+                // the callback receives each fetched page and returns the 0-based row indices to
+                // keep. Here we drop every hit whose "age" output field is odd.
+                ExternalFilterFunc = page =>
+                {
+                    FieldData? ageField = page.OutputFields.FirstOrDefault(f => f.FieldName == "age");
+                    if (ageField is null)
+                    {
+                        throw new ArgumentException("age output field missing in search result");
+                    }
+
+                    var ages = (FieldData<sbyte>)ageField;
+                    return Enumerable.Range(0, ages.Data.Count)
+                        .Where(i => ages.Data[i] % 2 == 0)
+                        .ToList();
+                }
+            }))
+        {
+            Console.WriteLine($"  page of {batch.Scores.Count} hits");
+            foreach (int i in Enumerable.Range(0, batch.Scores.Count))
+            {
+                if (((sbyte)batch.GetRow(i)["age"]!) % 2 != 0)
+                {
+                    Console.WriteLine("  ERROR: a row with odd age slipped through the external filter");
+                }
+            }
+
+            filteredHits += batch.Scores.Count;
+        }
+
+        Console.WriteLine($"  total hits iterated with external filter: {filteredHits}");
         #endregion
 
         Console.WriteLine("Deleting...");

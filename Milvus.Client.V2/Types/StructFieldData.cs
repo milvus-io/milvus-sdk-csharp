@@ -40,6 +40,14 @@ public sealed class StructFieldData : FieldData<IReadOnlyList<IDictionary<string
         => new StructFieldData(FieldName, Data.Skip(start).Take(count).ToList(), _subFields);
 
     /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => new StructFieldData(FieldName, indices.Select(i => Data[i]).ToList(), _subFields);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+        => new StructFieldData(FieldName, Data.Concat(((StructFieldData)other).Data).ToList(), _subFields);
+
+    /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
     {
         var field = new Grpc.FieldData
