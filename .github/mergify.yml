@@ -48,10 +48,16 @@ pull_request_rules:
         add:
           - ci-passed
 
-  - name: Remove ci-passed when build failed
+  - name: Remove ci-passed when checks are not green
     conditions:
       - or: *BRANCHES
       - or:
+          - "check-pending=Build and test V1 with Milvus v2.3.22"
+          - "check-pending=Build and test V1 with Milvus v2.4.23"
+          - "check-pending=Build and test V1 with Milvus v2.5.20"
+          - "check-pending=Build and test V1 with Milvus v2.6.20"
+          - "check-pending=Build and test V2"
+          - "check-pending=Build and test V2 on Windows"
           - "check-failure=Build and test V1 with Milvus v2.3.22"
           - "check-failure=Build and test V1 with Milvus v2.4.23"
           - "check-failure=Build and test V1 with Milvus v2.5.20"
