@@ -1239,6 +1239,27 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return Task.FromResult(new GetMetricsResponse { Status = NextStatus() });
     }
 
+    public override Task<Grpc.Status> AddFileResource(AddFileResourceRequest request, ServerCallContext context)
+    {
+        Record(nameof(AddFileResource), request);
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<Grpc.Status> RemoveFileResource(RemoveFileResourceRequest request, ServerCallContext context)
+    {
+        Record(nameof(RemoveFileResource), request);
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<ListFileResourcesResponse> ListFileResources(ListFileResourcesRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListFileResources), request);
+        var response = new ListFileResourcesResponse { Status = NextStatus() };
+        response.Resources.Add(new Milvus.Client.Grpc.FileResourceInfo { Id = 1, Name = "res-1", Path = "s3://bucket/path1" });
+        response.Resources.Add(new Milvus.Client.Grpc.FileResourceInfo { Id = 2, Name = "res-2", Path = "s3://bucket/path2" });
+        return Task.FromResult(response);
+    }
+
     public override Task<GetReplicateInfoResponse> GetReplicateInfo(GetReplicateInfoRequest request, ServerCallContext context)
     {
         Record(nameof(GetReplicateInfo), request);
