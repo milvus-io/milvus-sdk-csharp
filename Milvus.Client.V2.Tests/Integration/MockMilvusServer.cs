@@ -1277,6 +1277,108 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return Task.CompletedTask;
     }
 
+    // ---- Snapshot ----
+
+    public override Task<Grpc.Status> CreateSnapshot(CreateSnapshotRequest request, ServerCallContext context)
+    {
+        Record(nameof(CreateSnapshot), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<Grpc.Status> DropSnapshot(DropSnapshotRequest request, ServerCallContext context)
+    {
+        Record(nameof(DropSnapshot), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<ListSnapshotsResponse> ListSnapshots(ListSnapshotsRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListSnapshots), request);
+        var response = new ListSnapshotsResponse { Status = NextStatus() };
+        response.Snapshots.Add("snapshot-1");
+        response.Snapshots.Add("snapshot-2");
+        return Task.FromResult(response);
+    }
+
+    public override Task<DescribeSnapshotResponse> DescribeSnapshot(DescribeSnapshotRequest request, ServerCallContext context)
+    {
+        Record(nameof(DescribeSnapshot), request);
+        var response = new DescribeSnapshotResponse
+        {
+            Status = NextStatus(),
+            Name = request.Name,
+            Description = "mock description",
+            CollectionName = request.CollectionName,
+            CreateTs = 1234567890,
+            S3Location = "s3://bucket/path"
+        };
+        response.PartitionNames.Add("p0");
+        response.PartitionNames.Add("p1");
+        return Task.FromResult(response);
+    }
+
+    public override Task<RestoreSnapshotResponse> RestoreSnapshot(RestoreSnapshotRequest request, ServerCallContext context)
+    {
+        Record(nameof(RestoreSnapshot), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(new RestoreSnapshotResponse { Status = NextStatus(), JobId = 77 });
+    }
+
+    public override Task<GetRestoreSnapshotStateResponse> GetRestoreSnapshotState(
+        GetRestoreSnapshotStateRequest request, ServerCallContext context)
+    {
+        Record(nameof(GetRestoreSnapshotState), request);
+        var response = new GetRestoreSnapshotStateResponse { Status = NextStatus() };
+        response.Info = new RestoreSnapshotInfo
+        {
+            JobId = request.JobId,
+            SnapshotName = "snapshot-1",
+            DbName = "default",
+            CollectionName = "coll",
+            State = Milvus.Client.Grpc.RestoreSnapshotState.RestoreSnapshotCompleted,
+            Progress = 100,
+            Reason = "",
+            StartTime = 1000,
+            TimeCost = 500
+        };
+        return Task.FromResult(response);
+    }
+
+    public override Task<ListRestoreSnapshotJobsResponse> ListRestoreSnapshotJobs(
+        ListRestoreSnapshotJobsRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListRestoreSnapshotJobs), request);
+        var response = new ListRestoreSnapshotJobsResponse { Status = NextStatus() };
+        response.Jobs.Add(new RestoreSnapshotInfo
+        {
+            JobId = 1,
+            SnapshotName = "snapshot-1",
+            DbName = "default",
+            CollectionName = "coll",
+            State = Milvus.Client.Grpc.RestoreSnapshotState.RestoreSnapshotPending,
+            Progress = 0,
+            Reason = "",
+            StartTime = 1000,
+            TimeCost = 0
+        });
+        return Task.FromResult(response);
+    }
+
+    public override Task<PinSnapshotDataResponse> PinSnapshotData(PinSnapshotDataRequest request, ServerCallContext context)
+    {
+        Record(nameof(PinSnapshotData), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(new PinSnapshotDataResponse { Status = NextStatus(), PinId = 99 });
+    }
+
+    public override Task<Grpc.Status> UnpinSnapshotData(UnpinSnapshotDataRequest request, ServerCallContext context)
+    {
+        Record(nameof(UnpinSnapshotData), request);
+        return Task.FromResult(NextStatus());
+    }
+
     private static readonly Milvus.Client.Grpc.Status OkStatus = new() { Code = 0, Reason = "Success" };
 
     private static bool IsVectorType(Milvus.Client.V2.Types.DataType dataType)

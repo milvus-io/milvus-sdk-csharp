@@ -43,6 +43,7 @@ internal static class Program
             [nameof(TimestampExample)] = TimestampExample.Run,
             [nameof(OptimizeExample)] = OptimizeExample.Run,
             [nameof(CDCExample)] = CDCExample.Run,
+            [nameof(SnapshotExample)] = SnapshotExample.Run,
             [nameof(HighlighterExample)] = HighlighterExample.Run,
             [nameof(TLSExample)] = TLSExample.Run
         };
