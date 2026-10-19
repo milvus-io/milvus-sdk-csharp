@@ -65,6 +65,15 @@ public sealed class SearchIteratorReq
     public IReadOnlyList<string>? Texts { get; set; }
 
     /// <summary>
+    /// The embedding lists to search for, used for Array-of-Struct vector sub-fields (e.g. searching
+    /// <c>"clips[vector]"</c> with a MAX_SIM metric). Each <see cref="EmbeddingList" /> carries the vectors
+    /// of one query; when set, <see cref="VectorFieldName" /> must name a struct sub-field. Mirrors the C++
+    /// SDK's <c>EmbeddingList</c>. The search iterator accepts a single query, so only one
+    /// <see cref="EmbeddingList" /> may be provided.
+    /// </summary>
+    public IReadOnlyList<EmbeddingList>? EmbeddingLists { get; set; }
+
+    /// <summary>
     /// The metric type used to measure the distance between vectors.
     /// </summary>
     public MetricType MetricType { get; set; }
@@ -103,18 +112,34 @@ public sealed class SearchIteratorReq
                            + (BFloat16Vectors is { Count: > 0 } ? 1 : 0)
                            + (BinaryVectors is { Count: > 0 } ? 1 : 0)
                            + (Int8Vectors is { Count: > 0 } ? 1 : 0)
-                           + (Texts is { Count: > 0 } ? 1 : 0);
+                           + (Texts is { Count: > 0 } ? 1 : 0)
+                           + (EmbeddingLists is { Count: > 0 } ? 1 : 0);
         if (vectorInputs != 1)
         {
             throw new ArgumentException(
-                "Exactly one of Vectors, SparseVectors, Float16Vectors, BFloat16Vectors, BinaryVectors, Int8Vectors or Texts must be provided.");
+                "Exactly one of Vectors, SparseVectors, Float16Vectors, BFloat16Vectors, BinaryVectors, Int8Vectors, Texts or EmbeddingLists must be provided.");
         }
 
         if (Vectors.Count > 1 || (SparseVectors?.Count ?? 0) > 1 || (Float16Vectors?.Count ?? 0) > 1
             || (BFloat16Vectors?.Count ?? 0) > 1 || (BinaryVectors?.Count ?? 0) > 1
-            || (Int8Vectors?.Count ?? 0) > 1 || (Texts?.Count ?? 0) > 1)
+            || (Int8Vectors?.Count ?? 0) > 1 || (Texts?.Count ?? 0) > 1 || (EmbeddingLists?.Count ?? 0) > 1)
         {
             throw new ArgumentException("The search iterator does not support processing multiple vectors simultaneously.");
+        }
+
+        // Fail fast on an empty inner embedding list (e.g. `new EmbeddingList()` with no vectors), which would
+        // otherwise pack a zero-byte EmbListFloatVector placeholder and only fail server-side. Mirrors the Java
+        // SDK's EmbeddingList.getData "EmbeddingList is empty" guard.
+        if (EmbeddingLists is { Count: > 0 })
+        {
+            foreach (EmbeddingList embeddingList in EmbeddingLists)
+            {
+                if (embeddingList.Count == 0)
+                {
+                    throw new ArgumentException(
+                        "An EmbeddingList must contain at least one vector.", nameof(EmbeddingLists));
+                }
+            }
         }
 
         if (BatchSize < 1 || BatchSize > 16384)

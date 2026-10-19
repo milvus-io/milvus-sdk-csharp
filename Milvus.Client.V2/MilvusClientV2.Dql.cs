@@ -728,6 +728,7 @@ public sealed partial class MilvusClientV2
             BinaryVectors = request.BinaryVectors,
             Int8Vectors = request.Int8Vectors,
             Texts = request.Texts,
+            EmbeddingLists = request.EmbeddingLists,
             MetricType = metricType,
             Limit = request.BatchSize,
             Parameters = request.Parameters
@@ -1033,7 +1034,7 @@ public sealed partial class MilvusClientV2
         if (searchByIds ? vectorInputs != 0 : vectorInputs != 1)
         {
             throw new ArgumentException(
-                "Exactly one of Vectors, SparseVectors, Float16Vectors, BFloat16Vectors, BinaryVectors, Int8Vectors or Texts must be provided (or Ids for a primary-key search).");
+                "Exactly one of Vectors, SparseVectors, Float16Vectors, BFloat16Vectors, BinaryVectors, Int8Vectors, Texts or EmbeddingLists must be provided (or Ids for a primary-key search).");
         }
 
         Verify.GreaterThan(request.Limit, 0);

@@ -776,6 +776,116 @@ public class DqlTests
     }
 
     [Fact]
+    public async Task SearchIterator_embedding_lists_forwards_struct_subfield()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+
+        await Assert.ThrowsAsync<MilvusException>(async () =>
+        {
+            await foreach (SingleResult page in client
+                .SearchIteratorAsync(new SearchIteratorReq
+                {
+                    CollectionName = "iter_coll",
+                    VectorFieldName = "clips[vector]",
+                    EmbeddingLists =
+                    [
+                        new EmbeddingList().Add(new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }))
+                    ],
+                    MetricType = MetricType.MaxSimCosine,
+                    Limit = 1,
+                    BatchSize = 10
+                })
+                .WithCancellation(TestContext.Current.CancellationToken))
+            {
+                Assert.NotNull(page);
+            }
+        });
+
+        Assert.True(server.Service.Requests.ContainsKey("Search"));
+        var grpcRequest = Assert.IsType<Milvus.Client.Grpc.SearchRequest>(server.Service.Requests["Search"]);
+        Assert.Equal("clips[vector]", grpcRequest.SearchParams.Single(p => p.Key == "anns_field").Value);
+
+        var searchParams = grpcRequest.SearchParams.ToDictionary(p => p.Key, p => p.Value);
+        Assert.Equal("True", searchParams["iterator"]);
+        Assert.Equal("True", searchParams["search_iter_v2"]);
+
+        // The embedding list is packed as a single EmbListFloatVector placeholder value; nq = 1.
+        Grpc.PlaceholderGroup placeholderGroup = Grpc.PlaceholderGroup.Parser.ParseFrom(grpcRequest.PlaceholderGroup);
+        Grpc.PlaceholderValue placeholder = Assert.Single(placeholderGroup.Placeholders);
+        Assert.Equal(Grpc.PlaceholderType.EmbListFloatVector, placeholder.Type);
+        Assert.Single(placeholder.Values);
+        Assert.Equal(1, grpcRequest.Nq);
+    }
+
+    [Fact]
+    public async Task SearchIterator_embedding_lists_rejects_multiple_queries()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await foreach (SingleResult page in client
+                .SearchIteratorAsync(new SearchIteratorReq
+                {
+                    CollectionName = "iter_coll",
+                    VectorFieldName = "clips[vector]",
+                    EmbeddingLists =
+                    [
+                        new EmbeddingList().Add(new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f })),
+                        new EmbeddingList().Add(new ReadOnlyMemory<float>(new[] { 5f, 6f, 7f, 8f }))
+                    ],
+                    MetricType = MetricType.MaxSimCosine,
+                    Limit = 1,
+                    BatchSize = 10
+                })
+                .WithCancellation(TestContext.Current.CancellationToken))
+            {
+                Assert.NotNull(page);
+            }
+        });
+
+        Assert.False(server.Service.Requests.ContainsKey("Search"));
+    }
+
+    [Fact]
+    public async Task SearchIterator_embedding_lists_rejects_empty_inner_list()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await foreach (SingleResult page in client
+                .SearchIteratorAsync(new SearchIteratorReq
+                {
+                    CollectionName = "iter_coll",
+                    VectorFieldName = "clips[vector]",
+                    EmbeddingLists = [new EmbeddingList()],
+                    MetricType = MetricType.MaxSimCosine,
+                    Limit = 1,
+                    BatchSize = 10
+                })
+                .WithCancellation(TestContext.Current.CancellationToken))
+            {
+                Assert.NotNull(page);
+            }
+        });
+
+        Assert.False(server.Service.Requests.ContainsKey("Search"));
+    }
+
+    [Fact]
     public async Task QueryIterator_caps_over_delivered_pages_to_the_limit()
     {
         using var server = new MockMilvusServer();
