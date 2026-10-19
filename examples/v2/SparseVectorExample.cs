@@ -49,7 +49,7 @@ public static class SparseVectorExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("sparse", null, IndexType.SparseInvertedIndex, SimilarityMetricType.Ip) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Ip) ]
         });
         #endregion
 
@@ -92,7 +92,7 @@ public static class SparseVectorExample
             CollectionName = collectionName,
             VectorFieldName = "sparse",
             SparseVectors = new[] { query },
-            MetricType = SimilarityMetricType.Ip,
+            MetricType = MetricType.Ip,
             Limit = 3
         });
 

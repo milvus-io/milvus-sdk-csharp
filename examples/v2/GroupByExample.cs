@@ -49,7 +49,7 @@ public static class GroupByExample
         await client.CreateIndexAsync(new Milvus.Client.V2.Requests.Index.CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, MetricType.L2) ]
         });
 
         await client.InsertAsync(new InsertReq
@@ -76,7 +76,7 @@ public static class GroupByExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 0f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 4,
             Parameters = new SearchParameters
             {
@@ -95,7 +95,7 @@ public static class GroupByExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 0f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 4,
             Parameters = new SearchParameters
             {

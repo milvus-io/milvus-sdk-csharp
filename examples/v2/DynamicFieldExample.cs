@@ -75,7 +75,7 @@ public static class DynamicFieldExample
             Sync = false,
             Indexes =
             [
-                new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2),
+                new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, MetricType.L2),
                 // Dynamic fields live in the server-side "$meta" column; the INVERTED index must be created on
                 // that reserved field (not a literal "meta" field) with a json_path covering the filtered key
                 // (unknown_int), plus the mandatory json_cast_type extra param; DOUBLE matches the numeric

@@ -51,7 +51,7 @@ public static class TimestampExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
         });
 
         #region Snippet:MilvusTimestamp_Insert
@@ -99,7 +99,7 @@ public static class TimestampExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.15f, 0.15f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 5,
             Parameters = new SearchParameters
             {
@@ -121,7 +121,7 @@ public static class TimestampExample
                 {
                     VectorFieldName = "vector",
                     Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.15f, 0.15f }) },
-                    MetricType = SimilarityMetricType.L2,
+                    MetricType = MetricType.L2,
                     Limit = 5,
                     Timezone = "Asia/Shanghai"
                 }

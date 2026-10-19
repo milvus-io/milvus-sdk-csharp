@@ -52,7 +52,7 @@ public static class HighlighterExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("sparse", null, IndexType.SparseInvertedIndex, SimilarityMetricType.Bm25)]
+            Indexes = [new IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Bm25)]
         });
 
         await client.InsertAsync(new InsertReq
@@ -86,7 +86,7 @@ public static class HighlighterExample
             CollectionName = collectionName,
             VectorFieldName = "sparse",
             Texts = new[] { "Milvus" },
-            MetricType = SimilarityMetricType.Bm25,
+            MetricType = MetricType.Bm25,
             Limit = 5,
             Parameters = new SearchParameters
             {

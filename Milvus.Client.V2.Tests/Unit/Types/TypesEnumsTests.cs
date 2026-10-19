@@ -199,4 +199,44 @@ public class TypesEnumsTests
         Assert.True(Enum.IsDefined(typeof(SegmentLevel), SegmentLevel.L1));
         Assert.True(Enum.IsDefined(typeof(SegmentLevel), SegmentLevel.L2));
     }
+
+    [Theory]
+    [InlineData(MetricType.Invalid, 0)]
+    [InlineData(MetricType.L2, 1)]
+    [InlineData(MetricType.Ip, 2)]
+    [InlineData(MetricType.Cosine, 3)]
+    [InlineData(MetricType.Hamming, 4)]
+    [InlineData(MetricType.Jaccard, 5)]
+    [InlineData(MetricType.MhJaccard, 6)]
+    [InlineData(MetricType.Bm25, 7)]
+    [InlineData(MetricType.MaxSim, 8)]
+    [InlineData(MetricType.MaxSimCosine, 9)]
+    [InlineData(MetricType.MaxSimIp, 10)]
+    [InlineData(MetricType.MaxSimL2, 11)]
+    [InlineData(MetricType.MaxSimJaccard, 12)]
+    [InlineData(MetricType.MaxSimHamming, 13)]
+    public void MetricType_values_match_source(MetricType metricType, int expected)
+    {
+        Assert.Equal(expected, (int)metricType);
+    }
+
+    [Theory]
+    [InlineData(MetricType.Invalid, "INVALID")]
+    [InlineData(MetricType.L2, "L2")]
+    [InlineData(MetricType.Ip, "IP")]
+    [InlineData(MetricType.Cosine, "COSINE")]
+    [InlineData(MetricType.Hamming, "HAMMING")]
+    [InlineData(MetricType.Jaccard, "JACCARD")]
+    [InlineData(MetricType.MhJaccard, "MHJACCARD")]
+    [InlineData(MetricType.Bm25, "BM25")]
+    [InlineData(MetricType.MaxSim, "MAX_SIM")]
+    [InlineData(MetricType.MaxSimCosine, "MAX_SIM_COSINE")]
+    [InlineData(MetricType.MaxSimIp, "MAX_SIM_IP")]
+    [InlineData(MetricType.MaxSimL2, "MAX_SIM_L2")]
+    [InlineData(MetricType.MaxSimJaccard, "MAX_SIM_JACCARD")]
+    [InlineData(MetricType.MaxSimHamming, "MAX_SIM_HAMMING")]
+    public void MetricType_ToWireString_matches_type_mappings(MetricType metricType, string expected)
+    {
+        Assert.Equal(expected, metricType.ToWireString());
+    }
 }

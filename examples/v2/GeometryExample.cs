@@ -51,7 +51,7 @@ public static class GeometryExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
         });
 
         // Spatial index on the geometry field (RTREE); no metric type applies. A distinct index name is

@@ -45,7 +45,7 @@ public class DqlSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new IndexParam("embedding", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new IndexParam("embedding", null, IndexType.Flat, MetricType.L2) ]
         }, TestContext.Current.CancellationToken);
 
         MutationResp mutation = await Client.InsertAsync(new InsertReq
@@ -75,7 +75,7 @@ public class DqlSystemTests : SystemTestBase
             CollectionName = collectionName,
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 2,
             Parameters = new SearchParameters { OutputFields = { "title" } }
         }, TestContext.Current.CancellationToken);
@@ -121,7 +121,7 @@ public class DqlSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new IndexParam("dummy_vec", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new IndexParam("dummy_vec", null, IndexType.Flat, MetricType.L2) ]
         }, TestContext.Current.CancellationToken);
 
         await Client.InsertAsync(new InsertReq
@@ -180,11 +180,11 @@ public class DqlSystemTests : SystemTestBase
 
         // Index each vector field with a metric appropriate to its type. Each needs a distinct index name
         // (the server allows at most one index per (field, index-name) and index names are global).
-        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("fp16", "idx_fp16", IndexType.Hnsw, SimilarityMetricType.Cosine) ] }, TestContext.Current.CancellationToken);
-        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("bf16", "idx_bf16", IndexType.Hnsw, SimilarityMetricType.Cosine) ] }, TestContext.Current.CancellationToken);
-        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("bin", "idx_bin", IndexType.BinFlat, SimilarityMetricType.Hamming) ] }, TestContext.Current.CancellationToken);
-        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("i8", "idx_i8", IndexType.Hnsw, SimilarityMetricType.Cosine) ] }, TestContext.Current.CancellationToken);
-        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("sparse", "idx_sparse", IndexType.SparseInvertedIndex, SimilarityMetricType.Ip) ] }, TestContext.Current.CancellationToken);
+        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("fp16", "idx_fp16", IndexType.Hnsw, MetricType.Cosine) ] }, TestContext.Current.CancellationToken);
+        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("bf16", "idx_bf16", IndexType.Hnsw, MetricType.Cosine) ] }, TestContext.Current.CancellationToken);
+        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("bin", "idx_bin", IndexType.BinFlat, MetricType.Hamming) ] }, TestContext.Current.CancellationToken);
+        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("i8", "idx_i8", IndexType.Hnsw, MetricType.Cosine) ] }, TestContext.Current.CancellationToken);
+        await Client.CreateIndexAsync(new CreateIndexReq { CollectionName = collectionName, Indexes = [ new IndexParam("sparse", "idx_sparse", IndexType.SparseInvertedIndex, MetricType.Ip) ] }, TestContext.Current.CancellationToken);
 
         // FP16 bit patterns for 1.0f and 0.0f (little-endian), BFloat16 same; binary 2 bytes; int8 2 values; sparse 2 non-zero entries.
         const ushort fp16One = 0x3C00; // 1.0f
@@ -225,7 +225,7 @@ public class DqlSystemTests : SystemTestBase
             CollectionName = collectionName,
             VectorFieldName = "fp16",
             Float16Vectors = new[] { new ReadOnlyMemory<ushort>(new[] { fp16One, (ushort)0 }) },
-            MetricType = SimilarityMetricType.Cosine,
+            MetricType = MetricType.Cosine,
             Limit = 1
         }, TestContext.Current.CancellationToken);
         Assert.Equal(1L, fp16Search.Ids.LongIds![0]);
@@ -235,7 +235,7 @@ public class DqlSystemTests : SystemTestBase
             CollectionName = collectionName,
             VectorFieldName = "bf16",
             BFloat16Vectors = new[] { new ReadOnlyMemory<ushort>(new[] { bf16One, (ushort)0 }) },
-            MetricType = SimilarityMetricType.Cosine,
+            MetricType = MetricType.Cosine,
             Limit = 1
         }, TestContext.Current.CancellationToken);
         Assert.Equal(1L, bf16Search.Ids.LongIds![0]);
@@ -245,7 +245,7 @@ public class DqlSystemTests : SystemTestBase
             CollectionName = collectionName,
             VectorFieldName = "bin",
             BinaryVectors = new[] { new ReadOnlyMemory<byte>(new byte[] { 0b10000000, 0b00000000 }) },
-            MetricType = SimilarityMetricType.Hamming,
+            MetricType = MetricType.Hamming,
             Limit = 1
         }, TestContext.Current.CancellationToken);
         Assert.Equal(1L, binSearch.Ids.LongIds![0]);
@@ -255,7 +255,7 @@ public class DqlSystemTests : SystemTestBase
             CollectionName = collectionName,
             VectorFieldName = "i8",
             Int8Vectors = new[] { new ReadOnlyMemory<sbyte>(new sbyte[] { 1, 0 }) },
-            MetricType = SimilarityMetricType.Cosine,
+            MetricType = MetricType.Cosine,
             Limit = 1
         }, TestContext.Current.CancellationToken);
         Assert.Equal(1L, i8Search.Ids.LongIds![0]);
@@ -265,7 +265,7 @@ public class DqlSystemTests : SystemTestBase
             CollectionName = collectionName,
             VectorFieldName = "sparse",
             SparseVectors = new[] { new SparseVector<float>(new[] { 1 }, new[] { 1.0f }) },
-            MetricType = SimilarityMetricType.Ip,
+            MetricType = MetricType.Ip,
             Limit = 1
         }, TestContext.Current.CancellationToken);
         Assert.Equal(1L, sparseSearch.Ids.LongIds![0]);
@@ -346,7 +346,7 @@ public class DqlSystemTests : SystemTestBase
         {
             CollectionName = collectionName,
             DatabaseName = dbName,
-            Indexes = [new IndexParam("embedding", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("embedding", null, IndexType.Flat, MetricType.L2)]
         }, TestContext.Current.CancellationToken);
 
         // Insert into the other database.
@@ -398,7 +398,7 @@ public class DqlSystemTests : SystemTestBase
             DatabaseName = dbName,
             VectorFieldName = "embedding",
             Vectors = [new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f })],
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 1
         }, TestContext.Current.CancellationToken);
         Assert.Single(search.Ids.LongIds!);
@@ -470,7 +470,7 @@ public class DqlSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("embedding", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("embedding", null, IndexType.Flat, MetricType.L2)]
         }, TestContext.Current.CancellationToken);
 
         await Client.LoadCollectionAsync(new LoadCollectionReq { CollectionName = collectionName },

@@ -51,7 +51,7 @@ public static class OptimizeExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
         });
 
         // Insert enough rows that compaction has something to merge.
