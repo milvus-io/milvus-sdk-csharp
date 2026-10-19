@@ -24,7 +24,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 2
             },
             TestContext.Current.CancellationToken);
@@ -49,7 +49,7 @@ public class DqlTests
                 DatabaseName = "other_db",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 2
             },
             TestContext.Current.CancellationToken);
@@ -75,7 +75,7 @@ public class DqlTests
                 CollectionName = "session_coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1,
                 Parameters = new SearchParameters { ConsistencyLevel = ConsistencyLevel.Session }
             },
@@ -99,7 +99,7 @@ public class DqlTests
                 CollectionName = "session_coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1
             },
             TestContext.Current.CancellationToken);
@@ -124,7 +124,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1,
                 Parameters = parameters
             },
@@ -146,7 +146,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1,
                 Parameters = new SearchParameters
                 {
@@ -181,7 +181,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1,
                 Parameters = new SearchParameters
                 {
@@ -215,7 +215,7 @@ public class DqlTests
                     {
                         VectorFieldName = "embedding",
                         Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                        MetricType = SimilarityMetricType.L2,
+                        MetricType = MetricType.L2,
                         Limit = 1,
                         GroupByField = "category",
                         GroupSize = 3
@@ -244,7 +244,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1,
                 Parameters = parameters
             },
@@ -263,7 +263,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Ids = new object[] { 1L, 2L, 3L },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 3
             },
             TestContext.Current.CancellationToken);
@@ -289,7 +289,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Ids = new object[] { first, Convert.ChangeType(first, first.GetType(), System.Globalization.CultureInfo.InvariantCulture)! },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 2
             },
             TestContext.Current.CancellationToken);
@@ -310,7 +310,7 @@ public class DqlTests
             CollectionName = "coll",
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 2,
             Parameters = new SearchParameters { Offset = 20000 }
         };
@@ -417,7 +417,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1,
                 Parameters = parameters
             },
@@ -451,7 +451,7 @@ public class DqlTests
                 CollectionName = "coll",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 1
             },
             TestContext.Current.CancellationToken);
@@ -478,14 +478,14 @@ public class DqlTests
                     {
                         VectorFieldName = "embedding",
                         Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                        MetricType = SimilarityMetricType.L2,
+                        MetricType = MetricType.L2,
                         Limit = 10
                     },
                     new AnnSearchReq
                     {
                         VectorFieldName = "embedding",
                         Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                        MetricType = SimilarityMetricType.Ip,
+                        MetricType = MetricType.Ip,
                         Limit = 10
                     }
                 ],
@@ -530,7 +530,7 @@ public class DqlTests
                                 new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f })
                             })
                         ],
-                        MetricType = SimilarityMetricType.MaxSimCosine,
+                        MetricType = MetricType.MaxSimCosine,
                         Limit = 5
                     }
                 ],
@@ -751,7 +751,7 @@ public class DqlTests
                     CollectionName = "iter_coll",
                     VectorFieldName = "embedding",
                     Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                    MetricType = SimilarityMetricType.L2,
+                    MetricType = MetricType.L2,
                     Limit = 1,
                     BatchSize = 10
                 })
@@ -825,7 +825,7 @@ public class DqlTests
                 CollectionName = "iter_coll_success",
                 VectorFieldName = "embedding",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 Limit = 2,
                 BatchSize = 1
             })

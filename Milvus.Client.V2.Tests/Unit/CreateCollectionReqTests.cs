@@ -145,7 +145,7 @@ public class CreateCollectionReqTests
     [Fact]
     public void IndexDesc_to_create_index_req_carries_fields()
     {
-        var index = new IndexParam("embedding", "idx1", IndexType.Hnsw, SimilarityMetricType.Cosine);
+        var index = new IndexParam("embedding", "idx1", IndexType.Hnsw, MetricType.Cosine);
         index.ExtraParams["M"] = "16";
 
         var request = new CreateIndexReq { CollectionName = "book", Indexes = [index] };

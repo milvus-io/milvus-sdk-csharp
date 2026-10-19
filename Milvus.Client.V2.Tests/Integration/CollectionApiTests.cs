@@ -53,7 +53,7 @@ public class CollectionApiTests
                     FieldSchema.CreateFloatVector("embedding", dimension: 4)
                 }
             },
-            Indexes = [new IndexParam("embedding", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("embedding", null, IndexType.Flat, MetricType.L2)]
         }, TestContext.Current.CancellationToken);
 
         // The create carries the database, and so must the auto-created index and auto-load sub-requests.

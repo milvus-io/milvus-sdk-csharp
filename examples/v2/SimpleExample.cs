@@ -55,7 +55,7 @@ public static class SimpleExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("embeddings", null, IndexType.AutoIndex, SimilarityMetricType.Cosine) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("embeddings", null, IndexType.AutoIndex, MetricType.Cosine) ]
         });
 
         Console.WriteLine("Inserting 10 rows...");
@@ -103,7 +103,7 @@ public static class SimpleExample
             CollectionName = collectionName,
             VectorFieldName = "embeddings",
             Vectors = new[] { new ReadOnlyMemory<float>(Enumerable.Repeat(1f, 8).ToArray()) },
-            MetricType = SimilarityMetricType.Cosine,
+            MetricType = MetricType.Cosine,
             Limit = 3,
             Parameters = new SearchParameters { OutputFields = { "pk" } }
         });

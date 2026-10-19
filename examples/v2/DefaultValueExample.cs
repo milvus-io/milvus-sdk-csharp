@@ -57,7 +57,7 @@ public static class DefaultValueExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("embedding", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("embedding", null, IndexType.Flat, MetricType.L2)]
         });
 
         // "title" and "score" are omitted: the server fills in the defaults. A second row supplies
@@ -106,7 +106,7 @@ public static class DefaultValueExample
             CollectionName = collectionName,
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 10,
             Parameters = new SearchParameters
             {

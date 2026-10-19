@@ -50,7 +50,7 @@ public static class BinaryVectorExample
         await client.CreateIndexAsync(new Milvus.Client.V2.Requests.Index.CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.BinFlat, SimilarityMetricType.Jaccard) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.BinFlat, MetricType.Jaccard) ]
         });
 
         Console.WriteLine("Inserting...");
@@ -87,7 +87,7 @@ public static class BinaryVectorExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             BinaryVectors = new[] { new ReadOnlyMemory<byte>(new byte[] { 0x0F, 0xF0 }) },
-            MetricType = SimilarityMetricType.Jaccard,
+            MetricType = MetricType.Jaccard,
             Limit = 2
         });
         Console.WriteLine($"Search returned {search.Ids.LongIds?.Count ?? 0} hits; top score = {search.Scores.FirstOrDefault():F4}");

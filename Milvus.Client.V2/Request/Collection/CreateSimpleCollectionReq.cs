@@ -53,9 +53,9 @@ public sealed class CreateSimpleCollectionReq
     public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.BoundedStaleness;
 
     /// <summary>
-    /// The metric type used for the vector index and search. Defaults to <see cref="SimilarityMetricType.Cosine" />.
+    /// The metric type used for the vector index and search. Defaults to <see cref="MetricType.Cosine" />.
     /// </summary>
-    public SimilarityMetricType MetricType { get; set; } = SimilarityMetricType.Cosine;
+    public MetricType MetricType { get; set; } = MetricType.Cosine;
 
     /// <summary>
     /// Whether primary-key values are automatically generated. Defaults to <c>false</c>.

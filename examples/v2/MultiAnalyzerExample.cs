@@ -86,7 +86,7 @@ public static class MultiAnalyzerExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("sparse", null, IndexType.SparseInvertedIndex, SimilarityMetricType.Bm25)]
+            Indexes = [new IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Bm25)]
         });
 
         Console.WriteLine("Inserting...");
@@ -111,7 +111,7 @@ public static class MultiAnalyzerExample
             CollectionName = collectionName,
             VectorFieldName = "sparse",
             Texts = new[] { "Milvus" },
-            MetricType = SimilarityMetricType.Bm25,
+            MetricType = MetricType.Bm25,
             Limit = 5,
             Parameters = new SearchParameters { OutputFields = { "id", "text" } }
         });
@@ -127,7 +127,7 @@ public static class MultiAnalyzerExample
             CollectionName = collectionName,
             VectorFieldName = "sparse",
             Texts = new[] { "Milvus" },
-            MetricType = SimilarityMetricType.Bm25,
+            MetricType = MetricType.Bm25,
             Limit = 5,
             Parameters = new SearchParameters
             {

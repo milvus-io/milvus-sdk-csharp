@@ -14,7 +14,7 @@ public sealed class IndexParam
     /// Creates an index descriptor.
     /// </summary>
     public IndexParam(string fieldName, string? indexName = null, IndexType? indexType = null,
-        SimilarityMetricType? metricType = null)
+        MetricType? metricType = null)
     {
         Verify.NotNullOrWhiteSpace(fieldName);
         FieldName = fieldName;
@@ -41,7 +41,7 @@ public sealed class IndexParam
     /// <summary>
     /// The metric type. For vector fields, must match the metric used for search.
     /// </summary>
-    public SimilarityMetricType? MetricType { get; }
+    public MetricType? MetricType { get; }
 
     /// <summary>
     /// Additional index parameters (e.g. <c>nlist</c>, <c>M</c>, <c>efConstruction</c>). Values are serialized

@@ -26,7 +26,7 @@ public sealed partial class MilvusClientV2
     ///     CollectionName = "book",
     ///     VectorFieldName = "embedding",
     ///     Vectors = new[] { new ReadOnlyMemory&lt;float&gt;(new[] { 0.1f, 0.2f, 0.3f, 0.4f }) },
-    ///     MetricType = SimilarityMetricType.L2,
+    ///     MetricType = MetricType.L2,
     ///     Limit = 5,
     ///     Parameters = new SearchParameters { OutputFields = { "title" } }
     /// });
@@ -674,7 +674,7 @@ public sealed partial class MilvusClientV2
 
         // MetricType is validated non-default by SearchIteratorReq.Validate (C++ CheckInput rejects
         // MetricType::DEFAULT).
-        SimilarityMetricType metricType = request.MetricType;
+        MetricType metricType = request.MetricType;
 
         // Radius/range-filter ordering, mirroring the C++ SearchIteratorImpl::CheckInput: for positive-related
         // metrics (IP/Cosine, larger is closer) radius must exceed range_filter; for distance metrics it must
@@ -683,7 +683,7 @@ public sealed partial class MilvusClientV2
         {
             double radiusValue = ParseRangeNumber(radius, nameof(SearchParameters.Radius));
             double rangeFilterValue = ParseRangeNumber(rangeFilter, nameof(SearchParameters.RangeFilter));
-            bool positiveRelated = metricType is SimilarityMetricType.Ip or SimilarityMetricType.Cosine;
+            bool positiveRelated = metricType is MetricType.Ip or MetricType.Cosine;
             bool invalid = positiveRelated ? radiusValue <= rangeFilterValue : radiusValue >= rangeFilterValue;
             if (invalid)
             {
@@ -825,12 +825,12 @@ public sealed partial class MilvusClientV2
     private static string FormatIteratorBound(float bound)
         => ((double)bound).ToString("0.000000000000000", CultureInfo.InvariantCulture);
 
-    private static bool TryParseMetricType(string name, out SimilarityMetricType metricType)
+    private static bool TryParseMetricType(string name, out MetricType metricType)
     {
         // The index parameters carry metric_type as the wire name (e.g. "L2"); map it back to the enum.
-        foreach (SimilarityMetricType value in Enum.GetValues(typeof(SimilarityMetricType)))
+        foreach (MetricType value in Enum.GetValues(typeof(MetricType)))
         {
-            if (value == SimilarityMetricType.Invalid)
+            if (value == MetricType.Invalid)
             {
                 continue;
             }
@@ -842,7 +842,7 @@ public sealed partial class MilvusClientV2
             }
         }
 
-        metricType = SimilarityMetricType.Invalid;
+        metricType = MetricType.Invalid;
         return false;
     }
 
@@ -1220,10 +1220,10 @@ public sealed partial class MilvusClientV2
                 }
             });
 
-        // metric_type defaults to SimilarityMetricType.Invalid (enum 0), which maps to the literal string
+        // metric_type defaults to MetricType.Invalid (enum 0), which maps to the literal string
         // "INVALID"; the proxy fails metric resolution on that value instead of inferring it from the index.
         // Match C++/Java and omit the metric_type search param when it is unset.
-        if (request.MetricType != SimilarityMetricType.Invalid)
+        if (request.MetricType != MetricType.Invalid)
         {
             grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = "metric_type", Value = request.MetricType.ToWireString() });
         }
@@ -1427,7 +1427,7 @@ public sealed partial class MilvusClientV2
             });
 
         // Same as BuildSearchRequest: omit metric_type when it is unset (Invalid) so the proxy infers it.
-        if (subRequest.MetricType != SimilarityMetricType.Invalid)
+        if (subRequest.MetricType != MetricType.Invalid)
         {
             request.SearchParams.Add(new Grpc.KeyValuePair { Key = "metric_type", Value = subRequest.MetricType.ToWireString() });
         }

@@ -117,7 +117,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = -1
         };
         Assert.Throws<ArgumentOutOfRangeException>(() => request.Validate());
@@ -135,7 +135,7 @@ public class DqlReqTests
                 new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f }),
                 new ReadOnlyMemory<float>(new[] { 0.3f, 0.4f })
             },
-            MetricType = SimilarityMetricType.L2
+            MetricType = MetricType.L2
         };
         Assert.Throws<ArgumentException>(() => multi.Validate());
 
@@ -144,7 +144,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Parameters = new SearchParameters { Offset = 5 }
         };
         Assert.Throws<ArgumentException>(() => offset.Validate());
@@ -157,7 +157,7 @@ public class DqlReqTests
         {
             CollectionName = "book",
             VectorFieldName = "embedding",
-            MetricType = SimilarityMetricType.L2
+            MetricType = MetricType.L2
         };
         Assert.Throws<ArgumentException>(() => request.Validate());
     }
@@ -181,7 +181,7 @@ public class DqlReqTests
                 {
                     VectorFieldName = "embedding",
                     Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f }) },
-                    MetricType = SimilarityMetricType.L2,
+                    MetricType = MetricType.L2,
                     Limit = 10
                 }
             },
@@ -199,7 +199,7 @@ public class DqlReqTests
         {
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 16384,
             Offset = 1
         };
@@ -522,7 +522,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "embedding",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1.0f, 2.0f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 1
         };
 
@@ -549,7 +549,7 @@ public class DqlReqTests
                     new ReadOnlyMemory<float>(new[] { 3.0f, 4.0f })
                 })
             ],
-            MetricType = SimilarityMetricType.MaxSimCosine,
+            MetricType = MetricType.MaxSimCosine,
             Limit = 1
         };
 
@@ -570,7 +570,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "sparse",
             SparseVectors = [new SparseVector<float>(new[] { 0, 1 }, new[] { 1.0f, 2.0f })],
-            MetricType = SimilarityMetricType.Ip,
+            MetricType = MetricType.Ip,
             Limit = 1
         };
 
@@ -596,7 +596,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "fp16",
             Float16Vectors = [(ReadOnlyMemory<ushort>)new ushort[] { 0x3C00, 0x0000 }],
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 1
         };
 
@@ -615,7 +615,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "bf16",
             BFloat16Vectors = [(ReadOnlyMemory<ushort>)new ushort[] { 0x3F80, 0x0000 }],
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 1
         };
 
@@ -633,7 +633,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "bin",
             BinaryVectors = [(ReadOnlyMemory<byte>)new byte[] { 0x0F, 0xF0 }],
-            MetricType = SimilarityMetricType.Jaccard,
+            MetricType = MetricType.Jaccard,
             Limit = 1
         };
 
@@ -651,7 +651,7 @@ public class DqlReqTests
             CollectionName = "book",
             VectorFieldName = "i8",
             Int8Vectors = [(ReadOnlyMemory<sbyte>)new sbyte[] { 1, -2 }],
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 1
         };
 
