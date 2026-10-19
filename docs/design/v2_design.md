@@ -125,7 +125,8 @@ Milvus.Client.V2/
 ├── MilvusClientV2.Rbac.cs            # RBAC facade               (§4.10)
 ├── MilvusClientV2.ResourceGroup.cs   # Resource group facade     (§4.11)
 ├── MilvusClientV2.Utility.cs         # Utility facade            (§4.12)
-├── MilvusClientV2.BulkImport.cs      # BulkImport facade (REST)  (§4.13, planned)
+├── MilvusClientV2.Snapshot.cs        # Snapshot facade           (§4.13)
+├── MilvusClientV2.BulkImport.cs      # BulkImport facade (REST)  (§4.14, planned)
 │
 ├── MilvusErrorCode.cs                # Public error codes
 ├── MilvusException.cs                # Public exception type
@@ -139,7 +140,7 @@ Milvus.Client.V2/
 │   ├── ConnectConfig.cs              # Connection parameters (mirrors C++ ConnectParam / Java ConnectConfig)
 │   ├── RetryConfig.cs                # Retry parameters (§5.2)
 │   ├── DataType.cs  ConsistencyLevel.cs  FunctionType.cs
-│   ├── IndexType.cs  MetricType.cs      # planned (§4.14)
+│   ├── IndexType.cs  MetricType.cs      # planned (§4.15)
 │   ├── FieldSchema.cs  CollectionSchema.cs  FunctionSchema.cs
 │   ├── FieldData.cs  SparseVector.cs  HealthState.cs
 │   └── Float16Utils.cs              # FP16/BFloat16 conversions (§3.5.2)
@@ -148,7 +149,7 @@ Milvus.Client.V2/
     ├── Verify.cs  Constants.cs  MilvusTimestampUtils.cs
     ├── Logging.cs  CompilerAttributes.cs  NullableAttributes.cs
     ├── CollectionCacheKey.cs  CollectionTsCache.cs  SchemaCache.cs  RetryPolicy.cs
-    └── RestfulClient.cs              # REST client for BulkImport (§4.13, planned)
+    └── RestfulClient.cs              # REST client for BulkImport (§4.14, planned)
 ```
 
 > The facade is a `partial class`; each feature area (§4) contributes one `MilvusClientV2.<Area>.cs`
@@ -314,7 +315,8 @@ the C++ SDK splits implementations. The facade files map one-to-one onto the Fea
 | `MilvusClientV2.Rbac.cs` | §4.10 RBAC | `CreateUserAsync`, `GrantPrivilegeAsync`, privilege groups |
 | `MilvusClientV2.ResourceGroup.cs` | §4.11 Resource group | `CreateResourceGroupAsync`, `TransferReplicaAsync` |
 | `MilvusClientV2.Utility.cs` | §4.12 Utility | `FlushAsync`, `CompactAsync`, `RunAnalyzerAsync` |
-| `BulkImport.cs` | §4.13 BulkImport | `BulkImportConfig` + `BulkImport` REST client (`BulkImportAsync`, `GetImportProgressAsync`, `ListImportJobsAsync`) |
+| `MilvusClientV2.Snapshot.cs` | §4.13 Snapshot | `CreateSnapshotAsync`, `RestoreSnapshotAsync`, `PinSnapshotDataAsync` |
+| `BulkImport.cs` | §4.14 BulkImport | `BulkImportConfig` + `BulkImport` REST client (`BulkImportAsync`, `GetImportProgressAsync`, `ListImportJobsAsync`) |
 
 Each facade file only **orchestrates** (verify → `ToGrpc*()` → `InvokeAsync` → `FromGrpc()`); the
 actual request/response conversion lives in the `Request/*.cs` and `Response/*.cs` classes (§3.1).
@@ -671,7 +673,21 @@ while `UseDatabaseAsync` remains the way to change the default database. The sch
 caches key by the **resolved** database (`DatabaseName ?? current`), so cross-database operations never
 collide in the caches.
 
-### 4.13 BulkImport (3)
+### 4.13 Snapshot (9)
+
+| name | request | response | description |
+|---|---|---|---|
+| `CreateSnapshotAsync` | `CreateSnapshotReq` | — | Creates a snapshot of a collection |
+| `DropSnapshotAsync` | `DropSnapshotReq` | — | Drops a snapshot permanently |
+| `ListSnapshotsAsync` | `ListSnapshotsReq` | `ListSnapshotsResp` | Lists the snapshots of a collection |
+| `DescribeSnapshotAsync` | `DescribeSnapshotReq` | `DescribeSnapshotResp` | Gets detailed snapshot information |
+| `RestoreSnapshotAsync` | `RestoreSnapshotReq` | `RestoreSnapshotResp` | Restores a snapshot into a new collection (async job) |
+| `GetRestoreSnapshotStateAsync` | `GetRestoreSnapshotStateReq` | `GetRestoreSnapshotStateResp` | Queries a restore snapshot job's state |
+| `ListRestoreSnapshotJobsAsync` | `ListRestoreSnapshotJobsReq` | `ListRestoreSnapshotJobsResp` | Lists restore snapshot jobs |
+| `PinSnapshotDataAsync` | `PinSnapshotDataReq` | `PinSnapshotDataResp` | Pins snapshot data to prevent GC while copying |
+| `UnpinSnapshotDataAsync` | `UnpinSnapshotDataReq` | — | Releases a snapshot data pin |
+
+### 4.14 BulkImport (3)
 
 Milvus bulk import (data files → collection) is exposed as a **REST** API in the 2.6 SDKs (not
 gRPC). C# V2 therefore exposes a small REST client, `BulkImport`, built from a `BulkImportConfig`
@@ -690,7 +706,7 @@ operation takes a `*Req` DTO and returns the typed `BulkImportResp` envelope (wi
 > Java request classes (`apiKey` + `options`, etc.) and the C++ method parameters above. (C++ also
 > has 2PC `Commit`/`Abort`, but the 2.6 parity scope is the 3 APIs above.)
 
-### 4.14 Supported enums (DataType / IndexType / MetricType)
+### 4.15 Supported enums (DataType / IndexType / MetricType)
 
 The enum surface is aligned with the Java/C++ SDK 2.6 branches (numeric codes may differ between
 SDKs; names are the parity unit). "In C# V2" marks whether the value is already present in the V2
