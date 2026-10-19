@@ -634,7 +634,7 @@ Privileges and privilege groups:
 | `TransferNodeAsync` | `TransferNodeReq` | — | Transfers a query node between resource groups |
 | `TransferReplicaAsync` | `TransferReplicaReq` | — | Transfers a replica between resource groups |
 
-### 4.12 Utility (17)
+### 4.12 Utility (20)
 
 | name | request | response | description |
 |---|---|---|---|
@@ -655,6 +655,9 @@ Privileges and privilege groups:
 | `CheckHealthAsync` | — | `HealthState` | Checks server health |
 | `GetServerVersionAsync` | `GetServerVersionReq` | `GetServerVersionResp` | Gets the server version with detail |
 | `UseDatabaseAsync` | `UseDatabaseReq` | — | Switches the default database for this client |
+| `AddFileResourceAsync` | `AddFileResourceReq` | — | Registers a named file resource |
+| `RemoveFileResourceAsync` | `RemoveFileResourceReq` | — | Removes a registered file resource |
+| `ListFileResourcesAsync` | `ListFileResourcesReq` | `ListFileResourcesResp` | Lists all registered file resources |
 
 #### Database scoping
 

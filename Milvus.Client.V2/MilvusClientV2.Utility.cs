@@ -263,6 +263,50 @@ public sealed partial class MilvusClientV2
     }
 
     /// <summary>
+    /// Registers a named file resource for external-table workflows.
+    /// </summary>
+    public async Task AddFileResourceAsync(
+        AddFileResourceReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        request.Validate();
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.AddFileResourceRequest grpcRequest = request.ToGrpcAddFileResourceRequest();
+        await InvokeAsync(GrpcClient.AddFileResourceAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Removes a registered file resource by name.
+    /// </summary>
+    /// <remarks>
+    /// The operation is idempotent: removing a name that does not exist is not an error. Drop or alter
+    /// collections that still reference the resource first.
+    /// </remarks>
+    public async Task RemoveFileResourceAsync(
+        RemoveFileResourceReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        request.Validate();
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.RemoveFileResourceRequest grpcRequest = request.ToGrpcRemoveFileResourceRequest();
+        await InvokeAsync(GrpcClient.RemoveFileResourceAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Lists all registered file resources with their names and paths.
+    /// </summary>
+    public async Task<ListFileResourcesResp> ListFileResourcesAsync(
+        ListFileResourcesReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.ListFileResourcesRequest grpcRequest = ListFileResourcesReq.ToGrpcListFileResourcesRequest();
+        Grpc.ListFileResourcesResponse response = await InvokeAsync(
+            GrpcClient.ListFileResourcesAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return ListFileResourcesResp.FromGrpc(response);
+    }
+
+    /// <summary>
     /// Gets replication info about a physical channel.
     /// </summary>
     public async Task<GetReplicateInfoResp> GetReplicateInfoAsync(
