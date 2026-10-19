@@ -55,7 +55,7 @@ public static class RankerExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.Cosine)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.Cosine)]
         });
 
         var rows = new List<IDictionary<string, object?>>();
@@ -117,7 +117,7 @@ public static class RankerExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { query },
-            MetricType = SimilarityMetricType.Cosine,
+            MetricType = MetricType.Cosine,
             Limit = 5,
             Parameters = new SearchParameters
             {

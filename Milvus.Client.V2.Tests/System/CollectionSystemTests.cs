@@ -128,7 +128,7 @@ public class CollectionSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new IndexParam("st[vector]", null, IndexType.Hnsw, SimilarityMetricType.MaxSimCosine) ]
+            Indexes = [ new IndexParam("st[vector]", null, IndexType.Hnsw, MetricType.MaxSimCosine) ]
         }, TestContext.Current.CancellationToken);
 
         await Client.InsertAsync(new InsertReq

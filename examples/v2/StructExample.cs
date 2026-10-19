@@ -67,7 +67,7 @@ public static class StructExample
             CollectionName = collectionName,
             Indexes =
             [
-                new IndexParam(structVectorName, "struct_vec_idx", IndexType.Hnsw, SimilarityMetricType.MaxSimCosine)
+                new IndexParam(structVectorName, "struct_vec_idx", IndexType.Hnsw, MetricType.MaxSimCosine)
             ]
         });
 
@@ -130,7 +130,7 @@ public static class StructExample
             CollectionName = collectionName,
             VectorFieldName = structVectorName,
             EmbeddingLists = new[] { query },
-            MetricType = SimilarityMetricType.MaxSimCosine,
+            MetricType = MetricType.MaxSimCosine,
             Limit = 5
         });
         Console.WriteLine($"Struct search returned {results.Ids.LongIds?.Count ?? 0} hits; top score = {results.Scores.FirstOrDefault():F4}");

@@ -56,8 +56,8 @@ public static class HybridSearchExample
             CollectionName = collectionName,
             Indexes =
             [
-                new IndexParam("dense", "dense_idx", IndexType.AutoIndex, SimilarityMetricType.Cosine),
-                new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, SimilarityMetricType.Ip)
+                new IndexParam("dense", "dense_idx", IndexType.AutoIndex, MetricType.Cosine),
+                new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, MetricType.Ip)
             ]
         });
         #endregion
@@ -102,7 +102,7 @@ public static class HybridSearchExample
                 {
                     VectorFieldName = "dense",
                     Vectors = new[] { DenseVector(0, dimension) },
-                    MetricType = SimilarityMetricType.Cosine,
+                    MetricType = MetricType.Cosine,
                     Expression = "flag == 2",
                     Limit = 5
                 },
@@ -113,7 +113,7 @@ public static class HybridSearchExample
                     {
                         new SparseVector<float>(new[] { 0, 10 }, new[] { 0.1f, 0.2f })
                     },
-                    MetricType = SimilarityMetricType.Ip,
+                    MetricType = MetricType.Ip,
                     Expression = "flag in [1, 3]",
                     Limit = 5
                 }

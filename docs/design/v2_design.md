@@ -139,7 +139,7 @@ Milvus.Client.V2/
 │   ├── ConnectConfig.cs              # Connection parameters (mirrors C++ ConnectParam / Java ConnectConfig)
 │   ├── RetryConfig.cs                # Retry parameters (§5.2)
 │   ├── DataType.cs  ConsistencyLevel.cs  FunctionType.cs
-│   ├── IndexType.cs  SimilarityMetricType.cs      # planned (§4.14)
+│   ├── IndexType.cs  MetricType.cs      # planned (§4.14)
 │   ├── FieldSchema.cs  CollectionSchema.cs  FunctionSchema.cs
 │   ├── FieldData.cs  SparseVector.cs  HealthState.cs
 │   └── Float16Utils.cs              # FP16/BFloat16 conversions (§3.5.2)
@@ -361,7 +361,7 @@ the facade + its DTOs only; everything that supports them is internal**.
 
 | Visibility | Contents |
 |---|---|
-| **public** | `MilvusClientV2` (facade), `*Req` / `*Resp` DTOs, `Types` (config & data model: `ConnectConfig`, `RetryConfig`, `DataType`, `IndexType`, `SimilarityMetricType`, `FieldSchema`, `CollectionSchema`, `FieldSchema`, `HealthState`, ...), `MilvusException`, `MilvusErrorCode`, `MilvusTimestampUtils`, the FP16 utility, and `CollectionTsCache` (process-wide singleton kept public for parity with the Java/C++ static caches; see §5.1.2) |
+| **public** | `MilvusClientV2` (facade), `*Req` / `*Resp` DTOs, `Types` (config & data model: `ConnectConfig`, `RetryConfig`, `DataType`, `IndexType`, `MetricType`, `FieldSchema`, `CollectionSchema`, `FieldSchema`, `HealthState`, ...), `MilvusException`, `MilvusErrorCode`, `MilvusTimestampUtils`, the FP16 utility, and `CollectionTsCache` (process-wide singleton kept public for parity with the Java/C++ static caches; see §5.1.2) |
 | **internal** | `Milvus.Client.Grpc.*` (generated proto), `InvokeAsync`, the gRPC client, `ToGrpc*()` / `FromGrpc()`, `Utils` helpers (`Verify`, `Constants`, `LoggingExtensions`), caches (`SchemaCache`), `RetryPolicy`, `RestfulClient` |
 | `InternalsVisibleTo("Milvus.Client.V2.Tests")` | tests only |
 
@@ -694,7 +694,7 @@ operation takes a `*Req` DTO and returns the typed `BulkImportResp` envelope (wi
 
 The enum surface is aligned with the Java/C++ SDK 2.6 branches (numeric codes may differ between
 SDKs; names are the parity unit). "In C# V2" marks whether the value is already present in the V2
-`Types` enums (`Types/DataType.cs`, `Types/IndexType.cs` and `Types/SimilarityMetricType.cs`).
+`Types` enums (`Types/DataType.cs`, `Types/IndexType.cs` and `Types/MetricType.cs`).
 
 #### DataType
 
@@ -735,7 +735,7 @@ SDKs; names are the parity unit). "In C# V2" marks whether the value is already 
 
 #### MetricType
 
-| Java 2.6 (`IndexParam.MetricType`) | C++ 2.6 | In C# V2 (`Types/SimilarityMetricType`) |
+| Java 2.6 (`IndexParam.MetricType`) | C++ 2.6 | In C# V2 (`Types/MetricType`) |
 |---|---|---|
 | `L2` / `IP` / `COSINE` | `L2`/`IP`/`COSINE` | Yes |
 | `HAMMING` / `JACCARD` / `MHJACCARD` | `HAMMING`/`JACCARD`/`MHJACCARD` | Yes (`Hamming`/`Jaccard`/`MhJaccard`) |

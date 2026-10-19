@@ -55,7 +55,7 @@ await client.InsertAsync(new InsertReq
 await client.CreateIndexAsync(new CreateIndexReq
 {
     CollectionName = "book",
-    Indexes = [new IndexParam("embedding", indexType: IndexType.AutoIndex, metricType: SimilarityMetricType.Cosine)]
+    Indexes = [new IndexParam("embedding", indexType: IndexType.AutoIndex, metricType: MetricType.Cosine)]
 });
 await client.LoadCollectionAsync(new LoadCollectionReq { CollectionName = "book" });
 
@@ -65,7 +65,7 @@ SearchResp results = await client.SearchAsync(new SearchReq
     CollectionName = "book",
     VectorFieldName = "embedding",
     Vectors = [Enumerable.Repeat(0.1f, 128).ToArray()],
-    MetricType = SimilarityMetricType.Cosine,
+    MetricType = MetricType.Cosine,
     Limit = 10
 });
 ```

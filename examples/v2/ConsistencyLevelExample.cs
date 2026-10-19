@@ -52,7 +52,7 @@ public static class ConsistencyLevelExample
         await client.CreateIndexAsync(new Milvus.Client.V2.Requests.Index.CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, MetricType.L2) ]
         });
 
         Console.WriteLine("Inserting...");
@@ -91,7 +91,7 @@ public static class ConsistencyLevelExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 0f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 2,
             Parameters = new SearchParameters { ConsistencyLevel = ConsistencyLevel.Strong }
         });
@@ -116,7 +116,7 @@ public static class ConsistencyLevelExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 0f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 2,
             Parameters = new SearchParameters { ConsistencyLevel = ConsistencyLevel.BoundedStaleness }
         });
