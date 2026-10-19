@@ -41,6 +41,46 @@ public readonly struct Ids : IEquatable<Ids>
                 ? new Ids(stringIds)
                 : default;
 
+    /// <summary>
+    /// Returns a copy of this ID list containing only the elements at the given <paramref name="indices" />
+    /// (in the given order), or <c>default</c> when this list is empty. Used by the search iterator's
+    /// client-side page filter.
+    /// </summary>
+    internal Ids SelectRows(IReadOnlyList<int> indices)
+    {
+        if (LongIds is { Count: > 0 } longIds)
+        {
+            return indices.Count == 0 ? default : new Ids(indices.Select(i => longIds[i]).ToList());
+        }
+
+        if (StringIds is { Count: > 0 } stringIds)
+        {
+            return indices.Count == 0 ? default : new Ids(indices.Select(i => stringIds[i]).ToList());
+        }
+
+        return default;
+    }
+
+    /// <summary>
+    /// Returns the concatenation of this ID list and <paramref name="other" /> (both long or both string),
+    /// preserving element order. Used by the search iterator's client-side page filter to merge filtered
+    /// pages into a full batch.
+    /// </summary>
+    internal Ids Concat(Ids other)
+    {
+        if (LongIds is { Count: > 0 } longIds)
+        {
+            return new Ids(longIds.Concat(other.LongIds ?? Array.Empty<long>()).ToList());
+        }
+
+        if (StringIds is { Count: > 0 } stringIds)
+        {
+            return new Ids(stringIds.Concat(other.StringIds ?? Array.Empty<string>()).ToList());
+        }
+
+        return other;
+    }
+
     /// <inheritdoc />
     public bool Equals(Ids other)
     {

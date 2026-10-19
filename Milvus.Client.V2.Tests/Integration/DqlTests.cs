@@ -400,6 +400,27 @@ public class DqlTests
     }
 
     [Fact]
+    public async Task Get_empty_ids_short_circuits_without_rpc()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        CollectionTsCache.Instance.Clear();
+
+        // An empty id list returns an empty result without issuing the Query/Describe RPC (mirroring the
+        // Java SDK); the connection check still runs first, so a Connect RPC is issued.
+        GetResp response = await client.GetAsync(
+            new GetReq { CollectionName = "coll", Ids = [] },
+            TestContext.Current.CancellationToken);
+
+        Assert.Empty(response.FieldsData);
+        Assert.True(server.Service.Requests.ContainsKey("Connect"));
+        Assert.False(server.Service.Requests.ContainsKey("DescribeCollection"));
+        Assert.False(server.Service.Requests.ContainsKey("Query"));
+    }
+
+    [Fact]
     public async Task Search_forwards_highlighter_type()
     {
         using var server = new MockMilvusServer();
@@ -771,8 +792,10 @@ public class DqlTests
         var searchParams = grpcRequest.SearchParams.ToDictionary(p => p.Key, p => p.Value);
         Assert.Equal("True", searchParams["iterator"]);
         Assert.Equal("True", searchParams["search_iter_v2"]);
-        Assert.Equal("1", searchParams["topk"]);
-        Assert.Equal("1", searchParams["search_iter_batch_size"]);
+        // The server page is requested at the fixed BatchSize (10), matching Java/C++; Limit=1 only
+        // controls how many rows are yielded from the page.
+        Assert.Equal("10", searchParams["topk"]);
+        Assert.Equal("10", searchParams["search_iter_batch_size"]);
     }
 
     [Fact]
@@ -968,6 +991,195 @@ public class DqlTests
         Assert.Equal("1.500000000000000", page2Params["search_iter_last_bound"]);
         // The snapshot timestamp returned by page 1 is pinned for page 2.
         Assert.Equal(999UL, page2.GuaranteeTimestamp);
+    }
+
+    [Fact]
+    public async Task SearchIterator_applies_external_filter_per_page()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+        // The mock returns 1 hit per page with score 0.5 and id 1; two pages are driven by Limit=2 + BatchSize=1.
+        server.Service.SearchIteratorToken = "tok-1";
+
+        var pages = new List<SingleResult>();
+        await foreach (SingleResult page in client
+            .SearchIteratorAsync(new SearchIteratorReq
+            {
+                CollectionName = "iter_coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
+                MetricType = MetricType.L2,
+                Limit = 2,
+                BatchSize = 1,
+                // Keep only hits whose score is at least 0.5, i.e. every page here; the callback still runs
+                // per page and returns the kept row indices.
+                ExternalFilterFunc = page => Enumerable.Range(0, page.Scores.Count)
+                    .Where(i => page.Scores[i] >= 0.5f)
+                    .ToList()
+            })
+            .WithCancellation(TestContext.Current.CancellationToken))
+        {
+            pages.Add(page);
+        }
+
+        Assert.Equal(2, pages.Count);
+        Assert.All(pages, page => Assert.Equal(new[] { 0.5f }, page.Scores));
+        Assert.Equal(2, server.Service.SearchRequests.Count);
+    }
+
+    [Fact]
+    public async Task SearchIterator_external_filter_skips_fully_filtered_pages()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+        server.Service.SearchIteratorToken = "tok-1";
+
+        // Drop every hit of the first page; keep the second. The iterator must skip the fully-filtered page
+        // and keep pulling until a page satisfies the filter.
+        int callCount = 0;
+        var pages = new List<SingleResult>();
+        await foreach (SingleResult page in client
+            .SearchIteratorAsync(new SearchIteratorReq
+            {
+                CollectionName = "iter_coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
+                MetricType = MetricType.L2,
+                Limit = 1,
+                BatchSize = 1,
+                ExternalFilterFunc = page =>
+                {
+                    callCount++;
+                    return callCount > 1
+                        ? Enumerable.Range(0, page.Scores.Count).ToList()
+                        : Array.Empty<int>();
+                }
+            })
+            .WithCancellation(TestContext.Current.CancellationToken))
+        {
+            pages.Add(page);
+        }
+
+        // Page 1 was filtered to zero rows and skipped; only page 2 is yielded.
+        Assert.Single(pages);
+        Assert.Equal(new[] { 0.5f }, pages[0].Scores);
+        Assert.Equal(2, server.Service.SearchRequests.Count);
+    }
+
+    [Fact]
+    public async Task SearchIterator_external_filter_partial_selection_of_multi_row_page()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+        server.Service.SearchIteratorToken = "tok-1";
+
+        // The mock returns one page of 4 hits (ids 1..4, scores 0.5) per call. Keep only the even-id rows
+        // (ids 2 and 4), which halves each page; with BatchSize=4 / Limit=8 the iterator accumulates two
+        // pages before yielding a full batch, and every yielded row must be an even id.
+        var pages = new List<SingleResult>();
+        await foreach (SingleResult page in client
+            .SearchIteratorAsync(new SearchIteratorReq
+            {
+                CollectionName = "iter_coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
+                MetricType = MetricType.L2,
+                Limit = 8,
+                BatchSize = 4,
+                ExternalFilterFunc = page => Enumerable.Range(0, page.Scores.Count)
+                    .Where(i => page.Ids.LongIds![i] % 2 == 0)
+                    .ToList()
+            })
+            .WithCancellation(TestContext.Current.CancellationToken))
+        {
+            pages.Add(page);
+        }
+
+        Assert.All(pages, page =>
+        {
+            Assert.Equal(new[] { 0.5f, 0.5f, 0.5f, 0.5f }, page.Scores);
+            Assert.All(page.Ids.LongIds!, id => Assert.Equal(0, id % 2));
+        });
+        // Two full batches of 4 accumulated from four 4-row pages filtered down to 2 rows each.
+        Assert.Equal(4, server.Service.SearchRequests.Count);
+    }
+
+    [Fact]
+    public async Task SearchIterator_external_filter_accumulates_pages_to_full_batches()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+        server.Service.SearchIteratorToken = "tok-1";
+
+        // Keep only the first hit of each 2-hit page. A single page (1 kept row) is below the batch size, so
+        // the iterator must pull the next page and accumulate 2 kept rows before yielding a full batch of 2.
+        // Limit=4 drives two such accumulated batches; with the old per-page model this would yield four
+        // single-row pages (and the two-batch semantics match the Java SearchIteratorV2 cache).
+        var pages = new List<SingleResult>();
+        await foreach (SingleResult page in client
+            .SearchIteratorAsync(new SearchIteratorReq
+            {
+                CollectionName = "iter_coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
+                MetricType = MetricType.L2,
+                Limit = 4,
+                BatchSize = 2,
+                ExternalFilterFunc = page => new[] { 0 }
+            })
+            .WithCancellation(TestContext.Current.CancellationToken))
+        {
+            pages.Add(page);
+        }
+
+        // Two full batches of 2 rows each, accumulated across 4 server calls.
+        Assert.Equal(2, pages.Count);
+        Assert.All(pages, page => Assert.Equal(new[] { 0.5f, 0.5f }, page.Scores));
+        Assert.Equal(4, server.Service.SearchRequests.Count);
+    }
+
+    [Fact]
+    public async Task SearchIterator_external_filter_out_of_range_index_throws()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+        server.Service.SearchIteratorToken = "tok-1";
+
+        // The mock returns one hit per page; returning an index beyond the page's row count must surface the
+        // validation error through the iterator enumeration.
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await foreach (SingleResult page in client
+                .SearchIteratorAsync(new SearchIteratorReq
+                {
+                    CollectionName = "iter_coll",
+                    VectorFieldName = "embedding",
+                    Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
+                    MetricType = MetricType.L2,
+                    Limit = 1,
+                    BatchSize = 1,
+                    ExternalFilterFunc = page => new[] { 5 }
+                })
+                .WithCancellation(TestContext.Current.CancellationToken))
+            {
+                Assert.NotNull(page);
+            }
+        });
     }
 
     [Fact]

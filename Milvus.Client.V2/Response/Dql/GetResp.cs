@@ -32,6 +32,13 @@ public sealed class GetResp
             DqlConversions.GetExtraInfoFloat(response.Status, "cache_hit_ratio"));
 
     /// <summary>
+    /// An empty get result, returned when a get short-circuits (e.g. an empty id list), mirroring the Java
+    /// SDK's empty get response.
+    /// </summary>
+    internal static GetResp Empty()
+        => new(Array.Empty<FieldData>(), 0, null, 0, 0, 0, null);
+
+    /// <summary>
     /// The returned fields data.
     /// </summary>
     public IReadOnlyList<FieldData> FieldsData { get; }

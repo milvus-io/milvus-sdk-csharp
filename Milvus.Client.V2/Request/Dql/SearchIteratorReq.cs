@@ -1,3 +1,4 @@
+using Milvus.Client.V2.Responses.Dql;
 using Milvus.Client.V2.Types;
 using Milvus.Client.V2.Utils;
 
@@ -92,6 +93,30 @@ public sealed class SearchIteratorReq
     /// The number of rows to fetch per batch. Defaults to 1000.
     /// </summary>
     public int BatchSize { get; set; } = 1000;
+
+    /// <summary>
+    /// An optional client-side per-page filter, mirroring the Java SDK's <c>SearchIteratorReqV2.externalFilterFunc</c>
+    /// and the C++ SDK's <c>SetExternalFilterFunc</c>. The function receives a page's <see cref="SingleResult" />
+    /// and returns the 0-based row indices to keep (in the desired order). Rows not listed are dropped from the
+    /// page.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The index-based contract deliberately diverges from the sibling SDKs: Java/pymilvus return the kept
+    /// results (<c>List&lt;SearchResult&gt;</c> / <c>Hits</c>) and C++ mutates the <c>SingleResult</c> in
+    /// place. Here <see cref="SingleResult" /> is an immutable DTO that users cannot reconstruct, so the
+    /// callback returns the 0-based row indices to keep and the SDK rebuilds the filtered page via
+    /// <c>SelectRows</c>. Returning indices (rather than rows) also permits reordering the kept hits.
+    /// </para>
+    /// <para>
+    /// When the filter is set, the iterator accumulates the filtered pages and yields a batch only once it
+    /// reaches <see cref="BatchSize" /> rows (or the remaining <see cref="Limit" />, whichever is smaller),
+    /// mirroring the Java <c>SearchIteratorV2.next</c> cache and the C++ <c>FetchPageFromCache</c>. A page
+    /// that filters to zero rows is skipped and the iterator keeps pulling the next one; the final (possibly
+    /// smaller) batch is yielded when the server has no more results.
+    /// </para>
+    /// </remarks>
+    public Func<SingleResult, IReadOnlyList<int>>? ExternalFilterFunc { get; set; }
 
     internal void Validate()
     {
