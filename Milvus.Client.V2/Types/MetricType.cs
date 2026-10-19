@@ -5,9 +5,10 @@ namespace Milvus.Client.V2.Types;
 /// </summary>
 /// <remarks>
 /// Aligned with the Milvus 2.6 metric types. The enum names are the parity unit; the wire value is a
-/// string (e.g. <c>L2</c>) sent in the index/search requests.
+/// string (e.g. <c>L2</c>) sent in the index/search requests. Mirrors the Java/C++/Rust V2 SDKs' top-level
+/// <c>MetricType</c> enum.
 /// </remarks>
-public enum SimilarityMetricType
+public enum MetricType
 {
     /// <summary>
     /// An invalid metric type.

@@ -56,7 +56,7 @@ public static class IteratorExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
         });
 
         var vectors = Enumerable.Range(0, rowCount)
@@ -123,7 +123,7 @@ public static class IteratorExample
                 CollectionName = collectionName,
                 VectorFieldName = "vector",
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.5f, 0.5f, 0.5f, 0.5f }) },
-                MetricType = SimilarityMetricType.L2,
+                MetricType = MetricType.L2,
                 BatchSize = 10,
                 Limit = 50
             }))

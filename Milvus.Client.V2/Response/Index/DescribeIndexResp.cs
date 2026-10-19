@@ -69,7 +69,7 @@ public sealed class IndexDesc
         IndexType = parameters.TryGetValue("index_type", out string? indexType) && TryParseIndexType(indexType, out IndexType parsedIndexType)
             ? parsedIndexType
             : null;
-        MetricType = parameters.TryGetValue("metric_type", out string? metricType) && TryParseMetricType(metricType, out SimilarityMetricType parsedMetricType)
+        MetricType = parameters.TryGetValue("metric_type", out string? metricType) && TryParseMetricType(metricType, out MetricType parsedMetricType)
             ? parsedMetricType
             : null;
     }
@@ -144,7 +144,7 @@ public sealed class IndexDesc
     /// The typed metric type, parsed from <see cref="Parameters" />'s <c>metric_type</c> entry, or
     /// <c>null</c> when absent or unrecognized (e.g. scalar indexes have no metric).
     /// </summary>
-    public SimilarityMetricType? MetricType { get; }
+    public MetricType? MetricType { get; }
 
     private static bool TryParseIndexType(string wire, out IndexType indexType)
     {
@@ -161,18 +161,18 @@ public sealed class IndexDesc
         return false;
     }
 
-    private static bool TryParseMetricType(string wire, out SimilarityMetricType metricType)
+    private static bool TryParseMetricType(string wire, out MetricType metricType)
     {
-        foreach (SimilarityMetricType value in Enum.GetValues(typeof(SimilarityMetricType)))
+        foreach (MetricType value in Enum.GetValues(typeof(MetricType)))
         {
-            if (value != Types.SimilarityMetricType.Invalid && string.Equals(value.ToWireString(), wire, StringComparison.OrdinalIgnoreCase))
+            if (value != Types.MetricType.Invalid && string.Equals(value.ToWireString(), wire, StringComparison.OrdinalIgnoreCase))
             {
                 metricType = value;
                 return true;
             }
         }
 
-        metricType = Types.SimilarityMetricType.Invalid;
+        metricType = Types.MetricType.Invalid;
         return false;
     }
 }

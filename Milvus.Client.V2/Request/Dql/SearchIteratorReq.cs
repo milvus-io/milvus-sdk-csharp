@@ -67,7 +67,7 @@ public sealed class SearchIteratorReq
     /// <summary>
     /// The metric type used to measure the distance between vectors.
     /// </summary>
-    public SimilarityMetricType MetricType { get; set; }
+    public MetricType MetricType { get; set; }
 
     /// <summary>
     /// The maximum total number of rows to return. <c>0</c> or <c>int.MaxValue</c> means no limit.
@@ -91,7 +91,7 @@ public sealed class SearchIteratorReq
 
         // C++ SearchIteratorImpl::CheckInput rejects MetricType::DEFAULT ("must specify metrics type for
         // search iterator"); the C# enum's Invalid member is the equivalent sentinel.
-        if (MetricType == SimilarityMetricType.Invalid)
+        if (MetricType == MetricType.Invalid)
         {
             throw new ArgumentException(
                 "MetricType must be specified for a search iterator.", nameof(MetricType));

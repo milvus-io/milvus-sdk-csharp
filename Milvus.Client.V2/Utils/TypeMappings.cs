@@ -3,7 +3,7 @@ using Milvus.Client.V2.Types;
 namespace Milvus.Client.V2.Utils;
 
 /// <summary>
-/// Maps the public <see cref="IndexType" /> / <see cref="SimilarityMetricType" /> enums to the string values
+/// Maps the public <see cref="IndexType" /> / <see cref="MetricType" /> enums to the string values
 /// sent over the wire (index create / search requests).
 /// </summary>
 internal static class TypeMappings
@@ -45,22 +45,22 @@ internal static class TypeMappings
         _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, null)
     };
 
-    internal static string ToWireString(this SimilarityMetricType metricType) => metricType switch
+    internal static string ToWireString(this MetricType metricType) => metricType switch
     {
-        SimilarityMetricType.Invalid => "INVALID",
-        SimilarityMetricType.L2 => "L2",
-        SimilarityMetricType.Ip => "IP",
-        SimilarityMetricType.Cosine => "COSINE",
-        SimilarityMetricType.Hamming => "HAMMING",
-        SimilarityMetricType.Jaccard => "JACCARD",
-        SimilarityMetricType.MhJaccard => "MHJACCARD",
-        SimilarityMetricType.Bm25 => "BM25",
-        SimilarityMetricType.MaxSim => "MAX_SIM",
-        SimilarityMetricType.MaxSimCosine => "MAX_SIM_COSINE",
-        SimilarityMetricType.MaxSimIp => "MAX_SIM_IP",
-        SimilarityMetricType.MaxSimL2 => "MAX_SIM_L2",
-        SimilarityMetricType.MaxSimJaccard => "MAX_SIM_JACCARD",
-        SimilarityMetricType.MaxSimHamming => "MAX_SIM_HAMMING",
+        MetricType.Invalid => "INVALID",
+        MetricType.L2 => "L2",
+        MetricType.Ip => "IP",
+        MetricType.Cosine => "COSINE",
+        MetricType.Hamming => "HAMMING",
+        MetricType.Jaccard => "JACCARD",
+        MetricType.MhJaccard => "MHJACCARD",
+        MetricType.Bm25 => "BM25",
+        MetricType.MaxSim => "MAX_SIM",
+        MetricType.MaxSimCosine => "MAX_SIM_COSINE",
+        MetricType.MaxSimIp => "MAX_SIM_IP",
+        MetricType.MaxSimL2 => "MAX_SIM_L2",
+        MetricType.MaxSimJaccard => "MAX_SIM_JACCARD",
+        MetricType.MaxSimHamming => "MAX_SIM_HAMMING",
         _ => throw new ArgumentOutOfRangeException(nameof(metricType), metricType, null)
     };
 }

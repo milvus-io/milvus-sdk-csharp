@@ -39,7 +39,7 @@ public class IndexSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new IndexParam("embedding", "idx_embedding", IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new IndexParam("embedding", "idx_embedding", IndexType.Flat, MetricType.L2) ]
         }, TestContext.Current.CancellationToken);
 
         DescribeIndexResp describe = await Client.DescribeIndexAsync(new DescribeIndexReq

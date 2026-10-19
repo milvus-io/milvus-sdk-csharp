@@ -13,7 +13,7 @@ public class IndexPartitionReqTests
     public void CreateIndex_maps_fields_index_type_metric_type_and_extra_params()
     {
         var request = new CreateIndexReq { CollectionName = "book" };
-        var index = new IndexParam("embedding", "my_idx", IndexType.Hnsw, SimilarityMetricType.Cosine);
+        var index = new IndexParam("embedding", "my_idx", IndexType.Hnsw, MetricType.Cosine);
         index.ExtraParams["nlist"] = 1024;
         index.ExtraParams["M"] = "32";
 
@@ -40,7 +40,7 @@ public class IndexPartitionReqTests
     public void CreateIndex_rejects_non_integral_or_non_positive_dimension_extra_param(object dimension)
     {
         var request = new CreateIndexReq { CollectionName = "book" };
-        var index = new IndexParam("embedding", "my_idx", IndexType.Hnsw, SimilarityMetricType.Cosine);
+        var index = new IndexParam("embedding", "my_idx", IndexType.Hnsw, MetricType.Cosine);
         index.ExtraParams["dim"] = dimension;
 
         // The dimension must be a positive integral value (matching Java's isLegalDimensionValue): negative,
@@ -52,7 +52,7 @@ public class IndexPartitionReqTests
     public void CreateIndex_accepts_positive_integral_dimension_extra_param()
     {
         var request = new CreateIndexReq { CollectionName = "book" };
-        var index = new IndexParam("embedding", "my_idx", IndexType.Hnsw, SimilarityMetricType.Cosine);
+        var index = new IndexParam("embedding", "my_idx", IndexType.Hnsw, MetricType.Cosine);
         index.ExtraParams["dim"] = 128;
 
         Grpc.CreateIndexRequest grpc = request.ToGrpcCreateIndexRequest(index);

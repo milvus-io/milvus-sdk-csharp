@@ -84,7 +84,7 @@ public sealed class SearchReq
     /// <summary>
     /// The metric type used to measure the distance between vectors.
     /// </summary>
-    public SimilarityMetricType MetricType { get; set; }
+    public MetricType MetricType { get; set; }
 
     /// <summary>
     /// The maximum number of results to return, also known as 'topk'.

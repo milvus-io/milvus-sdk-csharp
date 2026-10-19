@@ -25,7 +25,7 @@ public class IndexApiTests
                 CollectionName = "coll",
                 Indexes =
                 [
-                    new IndexParam("embedding", "idx1", IndexType.Hnsw, SimilarityMetricType.L2)
+                    new IndexParam("embedding", "idx1", IndexType.Hnsw, MetricType.L2)
                     {
                         ExtraParams = { { "nlist", "128" } }
                     }
@@ -55,7 +55,7 @@ public class IndexApiTests
                 Sync = false,
                 Indexes =
                 [
-                    new IndexParam("embedding", "idx_a", IndexType.Hnsw, SimilarityMetricType.L2),
+                    new IndexParam("embedding", "idx_a", IndexType.Hnsw, MetricType.L2),
                     new IndexParam("text", "idx_b", IndexType.Bitmap, null)
                 ]
             },

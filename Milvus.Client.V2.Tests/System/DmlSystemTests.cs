@@ -45,7 +45,7 @@ public class DmlSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new IndexParam("embedding", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new IndexParam("embedding", null, IndexType.Flat, MetricType.L2) ]
         }, TestContext.Current.CancellationToken);
 
         // Row-based insert with a nullable vector (row 0 has a null embedding) and a dynamic key ("color").
@@ -138,7 +138,7 @@ public class DmlSystemTests : SystemTestBase
         await Client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new IndexParam("dummy_vec", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new IndexParam("dummy_vec", null, IndexType.Flat, MetricType.L2) ]
         }, TestContext.Current.CancellationToken);
 
         await Client.InsertAsync(new InsertReq

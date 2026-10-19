@@ -71,7 +71,7 @@ public static class JsonFieldExample
         await client.CreateIndexAsync(new Milvus.Client.V2.Requests.Index.CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, MetricType.L2) ]
         });
 
         // Filtering on a JSON field path requires an INVERTED index on the JSON field since Milvus 2.4,
@@ -109,7 +109,7 @@ public static class JsonFieldExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 1f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 2,
             Parameters = new SearchParameters
             {

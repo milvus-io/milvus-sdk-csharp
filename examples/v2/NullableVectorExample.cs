@@ -56,7 +56,7 @@ public static class NullableVectorExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
         });
 
         // Row 1 supplies a vector; row 2 supplies null for the vector field.
@@ -111,7 +111,7 @@ public static class NullableVectorExample
             CollectionName = collectionName,
             // A distinct index name is required: index names are global within a collection, so the default
             // "_default_idx" is already taken by the "vector" field's index.
-            Indexes = [new IndexParam("extra_vector", "extra_vector_idx", IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("extra_vector", "extra_vector_idx", IndexType.Flat, MetricType.L2)]
         });
 
         Console.WriteLine("Reloading collection...");

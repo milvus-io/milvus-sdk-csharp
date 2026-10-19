@@ -47,7 +47,7 @@ public static class Int8VectorExample
         await client.CreateIndexAsync(new Milvus.Client.V2.Requests.Index.CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Hnsw, SimilarityMetricType.L2) ]
+            Indexes = [ new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Hnsw, MetricType.L2) ]
         });
         #endregion
 
@@ -85,7 +85,7 @@ public static class Int8VectorExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Int8Vectors = new[] { (ReadOnlyMemory<sbyte>)new sbyte[] { 1, 2, 3, 4 } },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 2
         });
         Console.WriteLine($"Search returned {search.Ids.LongIds?.Count ?? 0} hits; top score = {search.Scores.FirstOrDefault():F4}");

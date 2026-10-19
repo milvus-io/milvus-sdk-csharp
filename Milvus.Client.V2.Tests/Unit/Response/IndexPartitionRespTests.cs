@@ -43,7 +43,7 @@ public class IndexPartitionRespTests
         Assert.Equal("HNSW", description.Parameters["index_type"]);
         Assert.Equal("COSINE", description.Parameters["metric_type"]);
         Assert.Equal(IndexType.Hnsw, description.IndexType);
-        Assert.Equal(SimilarityMetricType.Cosine, description.MetricType);
+        Assert.Equal(MetricType.Cosine, description.MetricType);
     }
 
     [Fact]

@@ -69,8 +69,8 @@ public static class Float16VectorExample
             CollectionName = collectionName,
             Indexes =
             [
-                new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2),
-                new Milvus.Client.V2.Types.IndexParam("bf16", "bf16_idx", IndexType.Flat, SimilarityMetricType.L2)
+                new Milvus.Client.V2.Types.IndexParam("vector", null, IndexType.Flat, MetricType.L2),
+                new Milvus.Client.V2.Types.IndexParam("bf16", "bf16_idx", IndexType.Flat, MetricType.L2)
             ]
         });
 
@@ -98,7 +98,7 @@ public static class Float16VectorExample
             {
                 (ReadOnlyMemory<ushort>)new[] { Float16Utils.FloatToFp16(1f), Float16Utils.FloatToFp16(0f), (ushort)0, (ushort)0 }
             },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 3
         });
 
@@ -114,7 +114,7 @@ public static class Float16VectorExample
             {
                 (ReadOnlyMemory<ushort>)new[] { Float16Utils.FloatToBf16(1f), Float16Utils.FloatToBf16(0f), (ushort)0, (ushort)0 }
             },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 3
         });
 

@@ -53,7 +53,7 @@ public static class FilterTemplateExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, SimilarityMetricType.L2)]
+            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
         });
 
         var vectors = Enumerable.Range(0, rowCount)
@@ -101,7 +101,7 @@ public static class FilterTemplateExample
             CollectionName = collectionName,
             VectorFieldName = "vector",
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.5f, 0.5f, 0.5f, 0.5f }) },
-            MetricType = SimilarityMetricType.L2,
+            MetricType = MetricType.L2,
             Limit = 10,
             Parameters = new SearchParameters
             {

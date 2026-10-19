@@ -66,9 +66,9 @@ public sealed class AnnSearchReq
 
     /// <summary>
     /// The metric type used to measure the distance between vectors for this leg. Defaults to
-    /// <see cref="SimilarityMetricType.Invalid" />, letting the server infer it from the index.
+    /// <see cref="MetricType.Invalid" />, letting the server infer it from the index.
     /// </summary>
-    public SimilarityMetricType MetricType { get; set; }
+    public MetricType MetricType { get; set; }
 
     /// <summary>
     /// A boolean expression to filter the results of this leg.
