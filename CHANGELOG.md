@@ -1,5 +1,31 @@
 # Changelog
 
+## milvus-sdk-csharp 2.6.1 (2026-10-20)
+
+### Breaking Change
+
+- Rename the V2 `SimilarityMetricType` enum to `MetricType`, aligning the public surface with the
+  Java/C++/Rust V2 SDKs; the legacy enum is removed entirely. Consumers must recompile and use
+  `MetricType` (the wire strings are unchanged).
+
+### Feature
+
+- Add embedding-list (Array-of-Struct vector sub-field, e.g. `clips[vector]`) search to
+  `SearchIterator`
+- Add `SearchIteratorReq.ExternalFilterFunc`, a client-side per-page row filter that returns the
+  0-based row indices to keep (mirroring Java `externalFilterFunc` / C++ `SetExternalFilterFunc` /
+  PyMilvus `external_filter_func`); filtered results are accumulated and yielded in full batches
+- Expose per-collection shard counts (`ShardsNums`) on `ListCollectionsResp`, matching the Java
+  per-collection `shardNum`
+
+### Improvement
+
+- `InsertAsync`/`UpsertAsync`/`GetAsync` short-circuit empty data/ids to an empty result without
+  issuing any RPC, matching the Java SDK
+- Add a `tutorial/` directory of standalone console projects that consume the published
+  `Milvus.Client.V2` package, align the README with the other Milvus SDKs, and add `DEVELOPMENT.md`
+- Align the mergify automation so the `ci-passed` label is dropped as soon as CI checks re-run
+
 ## milvus-sdk-csharp 2.6.0 (2026-10-16)
 
 ### Feature

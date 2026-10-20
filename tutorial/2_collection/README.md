@@ -1,6 +1,6 @@
 # Tutorial 2: Manage the collection lifecycle
 
-This tutorial is a standalone console project that downloads `Milvus.Client.V2` version `2.6.0` from
+This tutorial is a standalone console project that downloads `Milvus.Client.V2` version `2.6.1` from
 nuget.org. It demonstrates the collection lifecycle:
 
 1. Create a collection with a description, a vector index, and Bounded consistency.
@@ -17,7 +17,7 @@ nuget.org. It demonstrates the collection lifecycle:
 
 - .NET SDK 8.0.x is installed.
 - Milvus is running and accessible.
-- `Milvus.Client.V2` version `2.6.0` has been published to nuget.org.
+- `Milvus.Client.V2` version `2.6.1` has been published to nuget.org.
 
 The tutorial uses these environment variables:
 

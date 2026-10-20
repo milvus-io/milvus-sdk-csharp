@@ -85,8 +85,8 @@ async Task CreateLoadAndInsert(MilvusClientV2 client, string collection)
         CollectionName = collection,
         Indexes =
         [
-            new IndexParam("dense", "dense_idx", IndexType.AutoIndex, SimilarityMetricType.Cosine),
-            new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, SimilarityMetricType.Ip)
+            new IndexParam("dense", "dense_idx", IndexType.AutoIndex, MetricType.Cosine),
+            new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, MetricType.Ip)
         ],
         Sync = true,
         TimeoutMs = 60_000
@@ -145,7 +145,7 @@ async Task RunSearch(MilvusClientV2 client, string collection)
         CollectionName = collection,
         VectorFieldName = "dense",
         Vectors = [DenseVector(2)],
-        MetricType = SimilarityMetricType.Cosine,
+        MetricType = MetricType.Cosine,
         Limit = 3,
         Parameters = new SearchParameters
         {
@@ -169,14 +169,14 @@ async Task RunHybridSearch(MilvusClientV2 client, string collection)
             {
                 VectorFieldName = "dense",
                 Vectors = [DenseVector(2)],
-                MetricType = SimilarityMetricType.Cosine,
+                MetricType = MetricType.Cosine,
                 Limit = 6
             },
             new AnnSearchReq
             {
                 VectorFieldName = "sparse",
                 SparseVectors = [SparseVector(2)],
-                MetricType = SimilarityMetricType.Ip,
+                MetricType = MetricType.Ip,
                 Limit = 6
             }
         ],
@@ -234,7 +234,7 @@ async Task RunSearchIterator(MilvusClientV2 client, string collection)
         CollectionName = collection,
         VectorFieldName = "dense",
         Vectors = [DenseVector(2)],
-        MetricType = SimilarityMetricType.Cosine,
+        MetricType = MetricType.Cosine,
         BatchSize = 3,
         Limit = 7,
         Parameters = new SearchParameters
