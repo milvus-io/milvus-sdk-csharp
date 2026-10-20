@@ -307,6 +307,58 @@ public sealed partial class MilvusClientV2
     }
 
     /// <summary>
+    /// Refreshes an external collection from its external data source.
+    /// </summary>
+    /// <remarks>
+    /// The operation is asynchronous and returns a job id that can be polled via
+    /// <see cref="GetRefreshExternalCollectionProgressAsync" />.
+    /// </remarks>
+    public async Task<RefreshExternalCollectionResp> RefreshExternalCollectionAsync(
+        RefreshExternalCollectionReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        request.Validate();
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.RefreshExternalCollectionRequest grpcRequest =
+            request.ToGrpcRefreshExternalCollectionRequest(ResolveDatabaseName(request.DatabaseName));
+        Grpc.RefreshExternalCollectionResponse response = await InvokeAsync(
+            GrpcClient.RefreshExternalCollectionAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return RefreshExternalCollectionResp.FromGrpc(response);
+    }
+
+    /// <summary>
+    /// Retrieves the state and progress of a refresh-external-collection job.
+    /// </summary>
+    public async Task<GetRefreshExternalCollectionProgressResp> GetRefreshExternalCollectionProgressAsync(
+        GetRefreshExternalCollectionProgressReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        request.Validate();
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.GetRefreshExternalCollectionProgressRequest grpcRequest =
+            request.ToGrpcGetRefreshExternalCollectionProgressRequest();
+        Grpc.GetRefreshExternalCollectionProgressResponse response = await InvokeAsync(
+            GrpcClient.GetRefreshExternalCollectionProgressAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return GetRefreshExternalCollectionProgressResp.FromGrpc(response);
+    }
+
+    /// <summary>
+    /// Lists refresh-external-collection jobs for a collection, or for the whole database when the collection
+    /// name is omitted.
+    /// </summary>
+    public async Task<ListRefreshExternalCollectionJobsResp> ListRefreshExternalCollectionJobsAsync(
+        ListRefreshExternalCollectionJobsReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.ListRefreshExternalCollectionJobsRequest grpcRequest =
+            request.ToGrpcListRefreshExternalCollectionJobsRequest(ResolveDatabaseName(request.DatabaseName));
+        Grpc.ListRefreshExternalCollectionJobsResponse response = await InvokeAsync(
+            GrpcClient.ListRefreshExternalCollectionJobsAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return ListRefreshExternalCollectionJobsResp.FromGrpc(response);
+    }
+
+    /// <summary>
     /// Gets replication info about a physical channel.
     /// </summary>
     public async Task<GetReplicateInfoResp> GetReplicateInfoAsync(

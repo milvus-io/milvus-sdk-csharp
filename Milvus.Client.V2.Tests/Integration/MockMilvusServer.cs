@@ -1260,6 +1260,65 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return Task.FromResult(response);
     }
 
+    public override Task<RefreshExternalCollectionResponse> RefreshExternalCollection(
+        RefreshExternalCollectionRequest request, ServerCallContext context)
+    {
+        Record(nameof(RefreshExternalCollection), request);
+        return Task.FromResult(new RefreshExternalCollectionResponse { Status = NextStatus(), JobId = 42 });
+    }
+
+    public override Task<GetRefreshExternalCollectionProgressResponse> GetRefreshExternalCollectionProgress(
+        GetRefreshExternalCollectionProgressRequest request, ServerCallContext context)
+    {
+        Record(nameof(GetRefreshExternalCollectionProgress), request);
+        var response = new GetRefreshExternalCollectionProgressResponse { Status = NextStatus() };
+        response.JobInfo = new Milvus.Client.Grpc.RefreshExternalCollectionJobInfo
+        {
+            JobId = 42,
+            CollectionName = "coll",
+            State = Milvus.Client.Grpc.RefreshExternalCollectionState.RefreshCompleted,
+            Progress = 100,
+            Reason = "",
+            ExternalSource = "s3://bucket/path1",
+            StartTime = 1000,
+            EndTime = 2000,
+            ExternalSpec = "{\"k\":\"v\"}"
+        };
+        return Task.FromResult(response);
+    }
+
+    public override Task<ListRefreshExternalCollectionJobsResponse> ListRefreshExternalCollectionJobs(
+        ListRefreshExternalCollectionJobsRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListRefreshExternalCollectionJobs), request);
+        var response = new ListRefreshExternalCollectionJobsResponse { Status = NextStatus() };
+        response.Jobs.Add(new Milvus.Client.Grpc.RefreshExternalCollectionJobInfo
+        {
+            JobId = 1,
+            CollectionName = "coll-1",
+            State = Milvus.Client.Grpc.RefreshExternalCollectionState.RefreshPending,
+            Progress = 0,
+            Reason = "",
+            ExternalSource = "s3://bucket/path1",
+            StartTime = 1000,
+            EndTime = 0,
+            ExternalSpec = ""
+        });
+        response.Jobs.Add(new Milvus.Client.Grpc.RefreshExternalCollectionJobInfo
+        {
+            JobId = 2,
+            CollectionName = "coll-2",
+            State = Milvus.Client.Grpc.RefreshExternalCollectionState.RefreshFailed,
+            Progress = 50,
+            Reason = "boom",
+            ExternalSource = "s3://bucket/path2",
+            StartTime = 2000,
+            EndTime = 3000,
+            ExternalSpec = "{\"a\":\"b\"}"
+        });
+        return Task.FromResult(response);
+    }
+
     public override Task<GetReplicateInfoResponse> GetReplicateInfo(GetReplicateInfoRequest request, ServerCallContext context)
     {
         Record(nameof(GetReplicateInfo), request);
