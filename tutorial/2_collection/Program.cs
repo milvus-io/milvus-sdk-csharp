@@ -69,7 +69,7 @@ async Task<Exception?> DemonstrateCollectionInterfaces(MilvusClientV2 client, st
             ConsistencyLevel = ConsistencyLevel.BoundedStaleness,
             Indexes =
             [
-                new IndexParam(VECTOR_FIELD, indexType: IndexType.AutoIndex, metricType: SimilarityMetricType.Cosine)
+                new IndexParam(VECTOR_FIELD, indexType: IndexType.AutoIndex, metricType: MetricType.Cosine)
             ]
         });
         Console.WriteLine("CreateCollectionAsync completed");

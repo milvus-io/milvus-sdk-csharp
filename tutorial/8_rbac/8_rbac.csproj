@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Milvus.Client.V2" Version="2.6.0" />
+    <PackageReference Include="Milvus.Client.V2" Version="2.6.1" />
   </ItemGroup>
 
 </Project>

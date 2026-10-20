@@ -1,6 +1,6 @@
 # Tutorial 4: Create and manage indexes
 
-This standalone console project uses `Milvus.Client.V2` version `2.6.0` to demonstrate indexes for
+This standalone console project uses `Milvus.Client.V2` version `2.6.1` to demonstrate indexes for
 both vector and scalar fields.
 
 The tutorial:
@@ -15,7 +15,7 @@ The tutorial:
 
 ## Index choices
 
-Vector indexes require a compatible `SimilarityMetricType`. This tutorial uses HNSW with cosine
+Vector indexes require a compatible `MetricType`. This tutorial uses HNSW with cosine
 distance and supplies its `M` and `efConstruction` build parameters. `AutoIndex` is a simpler
 alternative when you want Milvus to choose the vector index implementation.
 
@@ -31,7 +31,7 @@ Common scalar choices include:
 
 - .NET SDK 8.0.x is installed.
 - Milvus 2.6 or later is running and accessible.
-- `Milvus.Client.V2` version `2.6.0` has been published to nuget.org.
+- `Milvus.Client.V2` version `2.6.1` has been published to nuget.org.
 
 Connection settings come from `MILVUS_URI` and `MILVUS_TOKEN`, defaulting to `localhost:19530` and
 `root:Milvus`.
