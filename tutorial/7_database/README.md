@@ -1,6 +1,6 @@
 # Tutorial 7: Manage databases (advanced)
 
-This tutorial is a standalone console project that downloads `Milvus.Client.V2` version `2.6.0`
+This tutorial is a standalone console project that downloads `Milvus.Client.V2` version `2.6.1`
 from nuget.org. It demonstrates how to:
 
 1. Connect with `MilvusClientV2`.
@@ -14,7 +14,7 @@ from nuget.org. It demonstrates how to:
 
 - .NET SDK 8.0.x is installed.
 - Milvus is running and accessible.
-- `Milvus.Client.V2` version `2.6.0` has been published to nuget.org.
+- `Milvus.Client.V2` version `2.6.1` has been published to nuget.org.
 
 The tutorial uses these environment variables:
 

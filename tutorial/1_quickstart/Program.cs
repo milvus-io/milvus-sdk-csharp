@@ -47,7 +47,7 @@ try
         CollectionName = collection,
         Indexes =
         [
-            new IndexParam("embedding", indexType: IndexType.AutoIndex, metricType: SimilarityMetricType.Cosine)
+            new IndexParam("embedding", indexType: IndexType.AutoIndex, metricType: MetricType.Cosine)
         ],
         Sync = true,
         TimeoutMs = 60_000
@@ -81,7 +81,7 @@ try
         CollectionName = collection,
         VectorFieldName = "embedding",
         Vectors = [new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f })],
-        MetricType = SimilarityMetricType.Cosine,
+        MetricType = MetricType.Cosine,
         Limit = 2,
         Parameters = new SearchParameters { OutputFields = { "id", "text" } }
     });

@@ -152,7 +152,7 @@ async Task CreateAndLoadCollection(MilvusClientV2 client, string collection)
         Schema = schema,
         Indexes =
         [
-            new IndexParam("embedding", indexType: IndexType.AutoIndex, metricType: SimilarityMetricType.Cosine)
+            new IndexParam("embedding", indexType: IndexType.AutoIndex, metricType: MetricType.Cosine)
         ]
     });
     Console.WriteLine("CreateCollectionAsync completed");

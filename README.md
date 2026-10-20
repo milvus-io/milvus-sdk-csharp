@@ -22,7 +22,7 @@ The following table lists the recommended Milvus C# SDK version for each Milvus 
 |:---:|:---:|
 | 2.2.x | `v2.2.2` (V1) |
 | 2.3.x | `release/2.3` branch (V1) |
-| 2.6.x | `v2.6.0` (V2) |
+| 2.6.x | `v2.6.1` (V2) |
 
 Two generations of the SDK live in this repository:
 
@@ -128,6 +128,7 @@ and its connection settings before running it.
 
 | NuGet version | Branch | Description | Milvus version |
 | --- | --- | --- | --- |
+| v2.6.1 | 2.6 | V2 parity, embedding-list iterator search, and `MetricType` rename | 2.6.x |
 | v2.6.0 | 2.6 | V2 `Milvus.Client.V2` first stable release | 2.6.x |
 | v2.2.2 | main | Support grpc only | 2.2.x |
 | v2.2.1 | main | Support restfulapi and grpc[**Obsolete**] | 2.2.x |

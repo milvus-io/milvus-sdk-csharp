@@ -18,7 +18,7 @@ non-primary fields.
 
 - .NET SDK 8.0.x is installed.
 - Milvus 2.6 or later is running and accessible.
-- `Milvus.Client.V2` version `2.6.0` has been published to nuget.org.
+- `Milvus.Client.V2` version `2.6.1` has been published to nuget.org.
 
 Connection settings come from `MILVUS_URI` and `MILVUS_TOKEN`, defaulting to `localhost:19530` and
 `root:Milvus`.
