@@ -8,24 +8,28 @@ public sealed class ListCollectionsResp
     private ListCollectionsResp(
         IReadOnlyList<string> collectionNames, IReadOnlyList<long> collectionIds,
         IReadOnlyList<ulong> createdTimestamps, IReadOnlyList<ulong> createdUtcTimestamps,
-        IReadOnlyList<long> inMemoryPercentages)
+        IReadOnlyList<long> inMemoryPercentages, IReadOnlyList<int> shardsNums)
     {
         CollectionNames = collectionNames;
         CollectionIds = collectionIds;
         CreatedTimestamps = createdTimestamps;
         CreatedUtcTimestamps = createdUtcTimestamps;
         InMemoryPercentages = inMemoryPercentages;
+        ShardsNums = shardsNums;
     }
 
     internal static ListCollectionsResp FromGrpc(Grpc.ShowCollectionsResponse response)
-        => new(
+    {
+#pragma warning disable CS0612 // InMemoryPercentages is [deprecated] in the proto but read for C++ parity.
+        return new(
             response.CollectionNames.ToList(),
             response.CollectionIds.ToList(),
             response.CreatedTimestamps.ToList(),
             response.CreatedUtcTimestamps.ToList(),
-#pragma warning disable CS0612 // InMemoryPercentages is [deprecated] in the proto but read for C++ parity.
-            response.InMemoryPercentages.ToList());
+            response.InMemoryPercentages.ToList(),
+            response.ShardsNum.ToList());
 #pragma warning restore CS0612
+    }
 
     /// <summary>
     /// The names of the collections.
@@ -51,4 +55,11 @@ public sealed class ListCollectionsResp
     /// The percentage of each collection loaded into memory, aligned with <see cref="CollectionNames" />.
     /// </summary>
     public IReadOnlyList<long> InMemoryPercentages { get; }
+
+    /// <summary>
+    /// The number of shards of each collection, aligned with <see cref="CollectionNames" />. A zero means the
+    /// collection predates the stored count (the server derives a value from its vchannels for these), not that
+    /// the collection has no shards. Mirrors the Java SDK's per-collection <c>shardNum</c>.
+    /// </summary>
+    public IReadOnlyList<int> ShardsNums { get; }
 }

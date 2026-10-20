@@ -54,7 +54,16 @@ public sealed partial class MilvusClientV2
     {
         Verify.NotNull(request);
 
+        // Surface connection/auth failures up front, then treat an empty data list as a no-op: return an
+        // empty result without issuing the DML RPC (mirroring the Java SDK, which short-circuits empty
+        // insert data to an empty InsertResp). Keeping the short-circuit after the connection check means a
+        // misconfigured client fails rather than silently reporting success.
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        if (request.ColumnsData.Count == 0 && request.RowsData.Count == 0)
+        {
+            return MutationResp.Empty();
+        }
 
         string databaseName = ResolveDatabaseName(request.DatabaseName);
 
@@ -116,7 +125,15 @@ public sealed partial class MilvusClientV2
     {
         Verify.NotNull(request);
 
+        // Surface connection/auth failures up front, then treat an empty data list as a no-op: return an
+        // empty result without issuing the DML RPC (mirroring the Java SDK, which short-circuits empty
+        // upsert data to an empty UpsertResp).
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        if (request.ColumnsData.Count == 0 && request.RowsData.Count == 0)
+        {
+            return MutationResp.Empty();
+        }
 
         string databaseName = ResolveDatabaseName(request.DatabaseName);
 

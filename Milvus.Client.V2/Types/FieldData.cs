@@ -166,6 +166,20 @@ public abstract class FieldData
     /// N*topk response and to cap an over-delivered iterator page.
     /// </summary>
     internal abstract FieldData Slice(int start, int count);
+
+    /// <summary>
+    /// Returns a copy of this column containing only the rows at the given <paramref name="indices" /> (in
+    /// the given order), preserving the field name, data type and dynamic flag. Used by the search iterator's
+    /// client-side page filter (<c>ExternalFilterFunc</c>) to drop hits from a page.
+    /// </summary>
+    internal abstract FieldData SelectRows(IReadOnlyList<int> indices);
+
+    /// <summary>
+    /// Returns a copy of this column with the rows of <paramref name="other" /> (a same-named, same-typed
+    /// column) appended, preserving the field name, data type and dynamic flag. Used by the search iterator's
+    /// client-side page filter to merge filtered pages into a full batch.
+    /// </summary>
+    internal abstract FieldData Concat(FieldData other);
 }
 
 /// <summary>
@@ -224,6 +238,32 @@ public class FieldData<TData> : FieldData
         return sliced;
     }
 
+    /// <inheritdoc />
+    internal override FieldData SelectRows(IReadOnlyList<int> indices)
+    {
+        FieldData selected = SelectRowsCore(indices);
+        if (ValidData is not null)
+        {
+            selected.ValidData = indices.Select(i => ValidData[i]).ToList();
+        }
+
+        return selected;
+    }
+
+    /// <inheritdoc />
+    internal override FieldData Concat(FieldData other)
+    {
+        FieldData merged = ConcatCore(other);
+        if (ValidData is not null || other.ValidData is not null)
+        {
+            IReadOnlyList<bool> left = ValidData ?? Enumerable.Repeat(true, RowCount).ToList();
+            IReadOnlyList<bool> right = other.ValidData ?? Enumerable.Repeat(true, other.RowCount).ToList();
+            merged.ValidData = left.Concat(right).ToList();
+        }
+
+        return merged;
+    }
+
     // Subclasses that carry a distinct concrete type (vector fields) override this to preserve their type
     // through a slice; the default reconstructs the base FieldData<TData>.
     internal virtual FieldData SliceCore(int start, int count)
@@ -234,6 +274,30 @@ public class FieldData<TData> : FieldData
         return string.IsNullOrEmpty(FieldName)
             ? new FieldData<TData>(sliced, DataType, IsDynamic)
             : new FieldData<TData>(FieldName, sliced, DataType, IsDynamic);
+    }
+
+    // Subclasses that carry a distinct concrete type (vector fields) override this to preserve their type
+    // through a row selection; the default reconstructs the base FieldData<TData>.
+    internal virtual FieldData SelectRowsCore(IReadOnlyList<int> indices)
+    {
+        IReadOnlyList<TData> selected = indices.Select(i => Data[i]).ToList();
+        // Dynamic $meta columns produced on the read path carry an empty field name; preserve that shape
+        // through the name-less constructor rather than tripping the blank-name guard.
+        return string.IsNullOrEmpty(FieldName)
+            ? new FieldData<TData>(selected, DataType, IsDynamic)
+            : new FieldData<TData>(FieldName, selected, DataType, IsDynamic);
+    }
+
+    // Subclasses that carry a distinct concrete type (vector fields) override this to preserve their type
+    // through a merge; the default reconstructs the base FieldData<TData>.
+    internal virtual FieldData ConcatCore(FieldData other)
+    {
+        IReadOnlyList<TData> merged = Data.Concat(((FieldData<TData>)other).Data).ToList();
+        // Dynamic $meta columns produced on the read path carry an empty field name; preserve that shape
+        // through the name-less constructor rather than tripping the blank-name guard.
+        return string.IsNullOrEmpty(FieldName)
+            ? new FieldData<TData>(merged, DataType, IsDynamic)
+            : new FieldData<TData>(FieldName, merged, DataType, IsDynamic);
     }
 
     /// <inheritdoc />

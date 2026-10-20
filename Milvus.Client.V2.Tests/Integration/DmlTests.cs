@@ -434,6 +434,80 @@ public class DmlTests
         Assert.Equal(200L, CollectionTsCache.Instance.Get(server.Uri, "default", "dml_coll"));
     }
 
+    [Fact]
+    public async Task Insert_empty_data_short_circuits_without_rpc()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        CollectionTsCache.Instance.Clear();
+
+        // Empty column data returns an empty result without issuing the DML RPC (mirroring the Java SDK).
+        // The connection check still runs first, so a Connect RPC is issued but no DescribeCollection/Insert.
+        MutationResp response = await client.InsertAsync(
+            new InsertReq
+            {
+                CollectionName = "dml_coll",
+                ColumnsData = []
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, response.InsertCount);
+        Assert.Equal(0UL, response.Timestamp);
+        Assert.True(server.Service.Requests.ContainsKey("Connect"));
+        Assert.False(server.Service.Requests.ContainsKey("DescribeCollection"));
+        Assert.False(server.Service.Requests.ContainsKey("Insert"));
+    }
+
+    [Fact]
+    public async Task Insert_empty_rows_data_short_circuits_without_rpc()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // Empty row data returns an empty result without issuing the DML RPC (mirroring the Java SDK); the
+        // connection check still runs first, so a Connect RPC is issued but no DescribeCollection/Insert.
+        MutationResp response = await client.InsertAsync(
+            new InsertReq
+            {
+                CollectionName = "dml_coll",
+                RowsData = []
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, response.InsertCount);
+        Assert.True(server.Service.Requests.ContainsKey("Connect"));
+        Assert.False(server.Service.Requests.ContainsKey("DescribeCollection"));
+        Assert.False(server.Service.Requests.ContainsKey("Insert"));
+    }
+
+    [Fact]
+    public async Task Upsert_empty_data_short_circuits_without_rpc()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        CollectionTsCache.Instance.Clear();
+
+        // Empty column data returns an empty result without issuing the DML RPC (mirroring the Java SDK);
+        // the connection check still runs first, so a Connect RPC is issued but no DescribeCollection/Upsert.
+        MutationResp response = await client.UpsertAsync(
+            new UpsertReq
+            {
+                CollectionName = "dml_coll",
+                ColumnsData = []
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, response.UpsertCount);
+        Assert.Equal(0UL, response.Timestamp);
+        Assert.True(server.Service.Requests.ContainsKey("Connect"));
+        Assert.False(server.Service.Requests.ContainsKey("DescribeCollection"));
+        Assert.False(server.Service.Requests.ContainsKey("Upsert"));
+    }
+
     private static CollectionSchema BuildSchema()
     {
         var schema = new CollectionSchema { Name = "dml_coll" };
