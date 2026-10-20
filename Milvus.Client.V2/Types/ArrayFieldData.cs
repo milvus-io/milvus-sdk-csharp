@@ -48,6 +48,22 @@ public sealed class ArrayFieldData<TElement> : FieldData<IReadOnlyList<TElement>
             : new ArrayFieldData<TElement>(FieldName, Data.Skip(start).Take(count).ToList(), IsDynamic);
 
     /// <inheritdoc />
+    internal override FieldData SelectRowsCore(IReadOnlyList<int> indices)
+        => _elementTypeOverride is { } overrideType
+            ? new ArrayFieldData<TElement>(FieldName, indices.Select(i => Data[i]).ToList(), overrideType, IsDynamic)
+            : new ArrayFieldData<TElement>(FieldName, indices.Select(i => Data[i]).ToList(), IsDynamic);
+
+    /// <inheritdoc />
+    internal override FieldData ConcatCore(FieldData other)
+    {
+        IReadOnlyList<IReadOnlyList<TElement>?> merged =
+            Data.Concat(((ArrayFieldData<TElement>)other).Data).ToList();
+        return _elementTypeOverride is { } overrideType
+            ? new ArrayFieldData<TElement>(FieldName, merged, overrideType, IsDynamic)
+            : new ArrayFieldData<TElement>(FieldName, merged, IsDynamic);
+    }
+
+    /// <inheritdoc />
     internal override Grpc.FieldData ToGrpcFieldData()
     {
         var fieldData = new Grpc.FieldData

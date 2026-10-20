@@ -43,6 +43,76 @@ public sealed class SingleResult
     public IReadOnlyList<FieldData> OutputFields { get; }
 
     /// <summary>
+    /// Returns a new <see cref="SingleResult" /> containing only the rows at the given
+    /// <paramref name="indices" /> (in the given order), preserving the primary-key name. Used by the search
+    /// iterator's client-side page filter.
+    /// </summary>
+    internal SingleResult SelectRows(IReadOnlyList<int> indices)
+        => indices.Count == 0
+            ? new SingleResult(PrimaryKeyName, default, Array.Empty<float>(), Array.Empty<FieldData>())
+            : new SingleResult(
+                PrimaryKeyName,
+                Ids.SelectRows(indices),
+                indices.Select(i => Scores[i]).ToList(),
+                OutputFields.Count == 0 ? OutputFields : OutputFields.Select(f => f.SelectRows(indices)).ToList());
+
+    /// <summary>
+    /// Merges multiple pages (e.g. filtered pages accumulated by the search iterator's external page filter)
+    /// into a single <see cref="SingleResult" />, concatenating the primary-key lists, scores and output
+    /// columns in order. All pages must share the same primary-key name and output-field set.
+    /// </summary>
+    internal static SingleResult Merge(IReadOnlyList<SingleResult> pages)
+    {
+        if (pages.Count == 0)
+        {
+            return new SingleResult("", default, Array.Empty<float>(), Array.Empty<FieldData>());
+        }
+
+        if (pages.Count == 1)
+        {
+            return pages[0];
+        }
+
+        IReadOnlyList<FieldData>? outputFields = null;
+        foreach (SingleResult page in pages)
+        {
+            if (outputFields is null)
+            {
+                outputFields = page.OutputFields;
+                continue;
+            }
+
+            // The same search request drives every page, so the columns arrive in the same order with the
+            // same names; merge positionally and defensively fall back to name-matching.
+            if (outputFields.Count == page.OutputFields.Count)
+            {
+                outputFields = outputFields.Zip(page.OutputFields, static (l, r) => l.Concat(r)).ToList();
+            }
+            else
+            {
+                outputFields = outputFields.Select(l =>
+                    page.OutputFields.FirstOrDefault(r => r.FieldName == l.FieldName) is { } matched
+                        ? l.Concat(matched)
+                        : l).ToList();
+            }
+        }
+
+        Ids ids = pages[0].Ids;
+        var scores = new List<float>(pages.Sum(p => p.Scores.Count));
+        for (int i = 1; i < pages.Count; i++)
+        {
+            ids = ids.Concat(pages[i].Ids);
+        }
+
+        foreach (SingleResult page in pages)
+        {
+            scores.AddRange(page.Scores);
+        }
+
+        return new SingleResult(pages[0].PrimaryKeyName, ids, scores, outputFields ?? Array.Empty<FieldData>());
+    }
+
+    /// <summary>
     /// Materializes the hit at row <paramref name="rowIndex" /> into a row dictionary mapping field name to
     /// value (plus the <c>"score"</c> entry), the same shape the row-based insert/upsert accepts.
     /// </summary>
