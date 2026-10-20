@@ -1,7 +1,7 @@
 # Tutorial 3: Define collection schemas
 
 A schema defines the fields that each entity in a collection can contain. This standalone console
-project downloads `Milvus.Client.V2` version `2.6.0` from nuget.org and demonstrates every usable V2
+project downloads `Milvus.Client.V2` version `2.6.1` from nuget.org and demonstrates every usable V2
 `DataType`.
 
 The program creates three collections so the examples remain within common Milvus vector-field
@@ -34,7 +34,7 @@ collections.
 
 - .NET SDK 8.0.x is installed.
 - Milvus 2.6 or later is running and accessible.
-- `Milvus.Client.V2` version `2.6.0` has been published to nuget.org.
+- `Milvus.Client.V2` version `2.6.1` has been published to nuget.org.
 
 Connection settings come from `MILVUS_URI` and `MILVUS_TOKEN`, defaulting to `localhost:19530` and
 `root:Milvus`.

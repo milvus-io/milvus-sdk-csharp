@@ -10,7 +10,7 @@ revokes and removes everything it created.
 - Milvus 2.6 or later is running.
 - The connection in `MILVUS_TOKEN` has permission to manage users and roles when authorization is
   enabled.
-- `Milvus.Client.V2` version `2.6.0` has been published to nuget.org.
+- `Milvus.Client.V2` version `2.6.1` has been published to nuget.org.
 
 Connection settings use `MILVUS_URI` and `MILVUS_TOKEN`, defaulting to `localhost:19530` and
 `root:Milvus`.

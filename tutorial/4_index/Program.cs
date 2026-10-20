@@ -70,7 +70,7 @@ async Task<Exception?> DemonstrateIndexes(MilvusClientV2 client, string collecti
             CollectionName = collection,
             Indexes =
             [
-                new IndexParam("embedding", VECTOR_INDEX, IndexType.Hnsw, SimilarityMetricType.Cosine)
+                new IndexParam("embedding", VECTOR_INDEX, IndexType.Hnsw, MetricType.Cosine)
                 {
                     ExtraParams =
                     {
