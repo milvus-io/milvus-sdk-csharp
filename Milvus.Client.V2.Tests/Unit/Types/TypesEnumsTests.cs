@@ -67,6 +67,24 @@ public class TypesEnumsTests
     }
 
     [Fact]
+    public void RefreshExternalCollectionState_values_match_source()
+    {
+        Assert.Equal(0, (int)RefreshExternalCollectionState.Pending);
+        Assert.Equal(1, (int)RefreshExternalCollectionState.InProgress);
+        Assert.Equal(2, (int)RefreshExternalCollectionState.Completed);
+        Assert.Equal(3, (int)RefreshExternalCollectionState.Failed);
+    }
+
+    [Fact]
+    public void RefreshExternalCollectionState_maps_to_proto_one_to_one()
+    {
+        Assert.Equal(Grpc.RefreshExternalCollectionState.RefreshPending, (Grpc.RefreshExternalCollectionState)(int)RefreshExternalCollectionState.Pending);
+        Assert.Equal(Grpc.RefreshExternalCollectionState.RefreshInProgress, (Grpc.RefreshExternalCollectionState)(int)RefreshExternalCollectionState.InProgress);
+        Assert.Equal(Grpc.RefreshExternalCollectionState.RefreshCompleted, (Grpc.RefreshExternalCollectionState)(int)RefreshExternalCollectionState.Completed);
+        Assert.Equal(Grpc.RefreshExternalCollectionState.RefreshFailed, (Grpc.RefreshExternalCollectionState)(int)RefreshExternalCollectionState.Failed);
+    }
+
+    [Fact]
     public void IndexState_values_match_source()
     {
         Assert.Equal(0, (int)IndexState.None);

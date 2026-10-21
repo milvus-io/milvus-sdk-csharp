@@ -634,7 +634,7 @@ Privileges and privilege groups:
 | `TransferNodeAsync` | `TransferNodeReq` | — | Transfers a query node between resource groups |
 | `TransferReplicaAsync` | `TransferReplicaReq` | — | Transfers a replica between resource groups |
 
-### 4.12 Utility (20)
+### 4.12 Utility (23)
 
 | name | request | response | description |
 |---|---|---|---|
@@ -658,6 +658,9 @@ Privileges and privilege groups:
 | `AddFileResourceAsync` | `AddFileResourceReq` | — | Registers a named file resource |
 | `RemoveFileResourceAsync` | `RemoveFileResourceReq` | — | Removes a registered file resource |
 | `ListFileResourcesAsync` | `ListFileResourcesReq` | `ListFileResourcesResp` | Lists all registered file resources |
+| `RefreshExternalCollectionAsync` | `RefreshExternalCollectionReq` | `RefreshExternalCollectionResp` | Refreshes an external collection (async job) |
+| `GetRefreshExternalCollectionProgressAsync` | `GetRefreshExternalCollectionProgressReq` | `GetRefreshExternalCollectionProgressResp` | Queries a refresh-external-collection job's progress |
+| `ListRefreshExternalCollectionJobsAsync` | `ListRefreshExternalCollectionJobsReq` | `ListRefreshExternalCollectionJobsResp` | Lists refresh-external-collection jobs |
 
 #### Database scoping
 
@@ -763,10 +766,9 @@ SDKs; names are the parity unit). "In C# V2" marks whether the value is already 
 
 > `DEFAULT` (C++) and `INVALID`/`None` (Java) are sentinel/unset values, not real metrics.
 
-> Post-2.6 follow-ups (not in the 2.6 scope): snapshot/restore APIs, file resources, external
-> collection refresh, `Text` data type, BM25 analyzer params, and schema field/function-field
-> mutation APIs (`DropCollectionField`, `AddFunctionField`, `DropFunctionField`) that appear on
-> SDK `master` branches.
+> Post-2.6 follow-ups (not in the 2.6 scope): snapshot/restore APIs, file resources, `Text` data
+> type, BM25 analyzer params, and schema field/function-field mutation APIs (`DropCollectionField`,
+> `AddFunctionField`, `DropFunctionField`) that appear on SDK `master` branches.
 
 ## 5. Retry and Cache Mechanisms
 

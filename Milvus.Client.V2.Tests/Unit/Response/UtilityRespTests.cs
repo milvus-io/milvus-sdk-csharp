@@ -482,6 +482,102 @@ public class UtilityRespTests
     }
 
     [Fact]
+    public void RefreshExternalCollection_maps_job_id()
+    {
+        var grpc = new Grpc.RefreshExternalCollectionResponse { JobId = 42 };
+
+        RefreshExternalCollectionResp resp = RefreshExternalCollectionResp.FromGrpc(grpc);
+
+        Assert.Equal(42, resp.JobId);
+    }
+
+    [Fact]
+    public void RefreshExternalCollectionJobInfo_maps_all_fields()
+    {
+        var grpc = new Grpc.RefreshExternalCollectionJobInfo
+        {
+            JobId = 42,
+            CollectionName = "coll",
+            State = Grpc.RefreshExternalCollectionState.RefreshCompleted,
+            Progress = 100,
+            Reason = "",
+            ExternalSource = "s3://bucket/path",
+            StartTime = 1000,
+            EndTime = 2000,
+            ExternalSpec = "{\"k\":\"v\"}"
+        };
+
+        RefreshExternalCollectionJobInfo info = RefreshExternalCollectionJobInfo.FromGrpc(grpc);
+
+        Assert.Equal(42, info.JobId);
+        Assert.Equal("coll", info.CollectionName);
+        Assert.Equal(RefreshExternalCollectionState.Completed, info.State);
+        Assert.Equal(100, info.Progress);
+        Assert.Equal("", info.Reason);
+        Assert.Equal("s3://bucket/path", info.ExternalSource);
+        Assert.Equal(1000, info.StartTime);
+        Assert.Equal(2000, info.EndTime);
+        Assert.Equal("{\"k\":\"v\"}", info.ExternalSpec);
+    }
+
+    [Fact]
+    public void GetRefreshExternalCollectionProgress_maps_job_info()
+    {
+        var grpc = new Grpc.GetRefreshExternalCollectionProgressResponse
+        {
+            JobInfo = new Grpc.RefreshExternalCollectionJobInfo
+            {
+                JobId = 1,
+                CollectionName = "coll",
+                State = Grpc.RefreshExternalCollectionState.RefreshPending,
+                Progress = 0,
+                ExternalSource = "s3://bucket/path"
+            }
+        };
+
+        GetRefreshExternalCollectionProgressResp resp = GetRefreshExternalCollectionProgressResp.FromGrpc(grpc);
+
+        Assert.Equal(1, resp.JobInfo.JobId);
+        Assert.Equal("coll", resp.JobInfo.CollectionName);
+        Assert.Equal(RefreshExternalCollectionState.Pending, resp.JobInfo.State);
+        Assert.Equal(0, resp.JobInfo.Progress);
+    }
+
+    [Fact]
+    public void ListRefreshExternalCollectionJobs_maps_jobs()
+    {
+        var grpc = new Grpc.ListRefreshExternalCollectionJobsResponse();
+        grpc.Jobs.Add(new Grpc.RefreshExternalCollectionJobInfo { JobId = 1, CollectionName = "coll-1" });
+        grpc.Jobs.Add(new Grpc.RefreshExternalCollectionJobInfo
+        {
+            JobId = 2,
+            CollectionName = "coll-2",
+            State = Grpc.RefreshExternalCollectionState.RefreshFailed,
+            Reason = "boom"
+        });
+
+        ListRefreshExternalCollectionJobsResp resp = ListRefreshExternalCollectionJobsResp.FromGrpc(grpc);
+
+        Assert.Equal(2, resp.Jobs.Count);
+        Assert.Equal(1, resp.Jobs[0].JobId);
+        Assert.Equal("coll-1", resp.Jobs[0].CollectionName);
+        Assert.Equal(2, resp.Jobs[1].JobId);
+        Assert.Equal("coll-2", resp.Jobs[1].CollectionName);
+        Assert.Equal(RefreshExternalCollectionState.Failed, resp.Jobs[1].State);
+        Assert.Equal("boom", resp.Jobs[1].Reason);
+    }
+
+    [Fact]
+    public void ListRefreshExternalCollectionJobs_maps_empty_response()
+    {
+        var grpc = new Grpc.ListRefreshExternalCollectionJobsResponse();
+
+        ListRefreshExternalCollectionJobsResp resp = ListRefreshExternalCollectionJobsResp.FromGrpc(grpc);
+
+        Assert.Empty(resp.Jobs);
+    }
+
+    [Fact]
     public void UpdateReplicateConfiguration_builds_empty_response()
     {
         UpdateReplicateConfigurationResp resp = UpdateReplicateConfigurationResp.FromGrpc();
