@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text.Json;
 using Milvus.Client.V2.Types;
 using Milvus.Client.V2.Utils;
 namespace Milvus.Client.V2.Requests.Collection;
@@ -39,91 +37,7 @@ public sealed class AddCollectionFieldReq
                 "collection (Milvus rejects added fields with nullable=false and no default).", nameof(Field));
         }
 
-        var grpcField = new Grpc.FieldSchema
-        {
-            Name = Field.Name,
-            DataType = (Grpc.DataType)(int)Field.DataType,
-            ElementType = Field.ElementDataType is { } edt ? (Grpc.DataType)(int)edt : Grpc.DataType.None,
-            IsPrimaryKey = Field.IsPrimaryKey,
-            AutoID = Field.AutoId,
-            IsPartitionKey = Field.IsPartitionKey,
-            Description = Field.Description,
-            Nullable = Field.Nullable,
-            IsClusteringKey = Field.IsClusteringKey
-        };
-
-        if (Field.DefaultValue is not null)
-        {
-            grpcField.DefaultValue = CreateCollectionReq.ConvertToValueField(Field.DefaultValue, Field.DataType);
-        }
-
-        if (Field.EnableAnalyzer)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.EnableAnalyzer, Value = "true" });
-        }
-
-        if (Field.EnableMatch)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.EnableMatch, Value = "true" });
-        }
-
-        if (Field.AnalyzerParams is not null)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.AnalyzerParams,
-                Value = JsonSerializer.Serialize(Field.AnalyzerParams)
-            });
-        }
-
-        if (Field.MultiAnalyzerParams is not null)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.MultiAnalyzerParams,
-                Value = JsonSerializer.Serialize(Field.MultiAnalyzerParams)
-            });
-        }
-
-        if (Field.MaxLength is not null)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.VarcharMaxLength,
-                Value = Field.MaxLength.Value.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        if (Field.Dimension is not null)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.VectorDim,
-                Value = Field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        if (Field.MaxCapacity is not null)
-        {
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair
-            {
-                Key = Constants.MaxCapacity,
-                Value = Field.MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
-            });
-        }
-
-        // Mirror the C++ FieldSchema::SetTypeParams/AddTypeParam for added fields, skipping typed keys.
-        foreach (KeyValuePair<string, string> typeParam in Field.TypeParams)
-        {
-            if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
-                or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
-                or Constants.MultiAnalyzerParams)
-            {
-                continue;
-            }
-
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
-        }
+        var grpcField = CreateCollectionReq.ConvertToGrpcFieldSchema(Field);
 
         var request = new Grpc.AddCollectionFieldRequest { CollectionName = CollectionName, Schema = grpcField.ToByteString() };
         request.DbName = DatabaseName ?? "";

@@ -430,6 +430,11 @@ public class CollectionRespTests
                 new Grpc.StructArrayFieldSchema
                 {
                     Name = "st",
+                    Nullable = true,
+                    TypeParams =
+                    {
+                        new Grpc.KeyValuePair { Key = "warmup", Value = "WarmUpAfterIndexBuild" }
+                    },
                     Fields =
                     {
                         new Grpc.FieldSchema
@@ -452,6 +457,8 @@ public class CollectionRespTests
 
         StructFieldSchema structField = Assert.Single(schema.StructFields);
         Assert.Equal(8, structField.MaxCapacity);
+        Assert.True(structField.Nullable);
+        Assert.Equal("WarmUpAfterIndexBuild", structField.TypeParams["warmup"]);
         Assert.Single(structField.Fields);
         Assert.Equal("a", structField.Fields[0].Name);
     }

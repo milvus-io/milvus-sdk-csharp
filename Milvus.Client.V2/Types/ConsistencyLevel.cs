@@ -36,5 +36,11 @@ public enum ConsistencyLevel
     /// <summary>
     /// In this consistency level, users pass their own guarantee timestamp.
     /// </summary>
+    /// <remarks>
+    /// Deprecated: the Java and C++ V2 SDKs no longer expose a Customized level, and the guarantee timestamp is
+    /// expected to be derived from the other four levels. This member is kept for compatibility and may be removed
+    /// in a future release.
+    /// </remarks>
+    [Obsolete("The Customized consistency level is deprecated to match the Java/C++ SDKs; prefer Strong, Session, BoundedStaleness or Eventually.")]
     Customized = 4
 }

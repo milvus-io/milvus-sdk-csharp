@@ -4,6 +4,11 @@ namespace Milvus.Client.V2.Requests.Collection;
 /// <summary>
 /// Represents a request to drop a function from an existing collection.
 /// </summary>
+/// <remarks>
+/// Deprecated: Milvus 3.0 expects the function and its output field to be dropped together. Use
+/// <see cref="DropFunctionFieldReq" /> instead, which drops the function together with its output fields.
+/// </remarks>
+[Obsolete("DropCollectionFunction is deprecated because Milvus 3.0 drops a function together with its output field; use DropFunctionFieldAsync instead.")]
 public sealed class DropCollectionFunctionReq
 {
     /// <summary>

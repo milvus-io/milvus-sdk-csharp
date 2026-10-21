@@ -23,5 +23,15 @@ public enum FunctionType
     /// <summary>
     /// A reranking function.
     /// </summary>
-    Rerank = 3
+    Rerank = 3,
+
+    /// <summary>
+    /// A MinHash LSH function that hashes text into a binary signature.
+    /// </summary>
+    MinHash = 4,
+
+    /// <summary>
+    /// A molecular-fingerprint function.
+    /// </summary>
+    MolFingerprint = 5
 }
