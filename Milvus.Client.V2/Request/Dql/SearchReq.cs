@@ -96,6 +96,18 @@ public sealed class SearchReq
     /// </summary>
     public SearchParameters? Parameters { get; set; }
 
+    /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this search.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
     internal Grpc.PlaceholderValue ToPlaceholderValue()
     {
         if (SparseVectors is { Count: > 0 })

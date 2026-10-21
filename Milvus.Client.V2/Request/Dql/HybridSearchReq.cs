@@ -40,6 +40,18 @@ public sealed class HybridSearchReq
     /// </summary>
     public SearchParameters? Parameters { get; set; }
 
+    /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, it applies to every sub-search and
+    /// takes precedence over any per-sub-request RLS principal.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
     internal void Validate()
     {
         Verify.NotNullOrWhiteSpace(CollectionName);

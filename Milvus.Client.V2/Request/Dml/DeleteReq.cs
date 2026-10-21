@@ -35,6 +35,18 @@ public sealed class DeleteReq
     public string? PartitionName { get; set; }
 
     /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this delete.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
+    /// <summary>
     /// The consistency level to use for the delete. When set, the request carries an explicit consistency
     /// level on the wire (the delete proto has no guarantee-timestamp field). When <c>null</c>, the server
     /// applies the collection's configured level.
@@ -103,6 +115,17 @@ public sealed class DeleteReq
         }
 
         request.DbName = DatabaseName ?? "";
+
+        if (!string.IsNullOrEmpty(RlsPrincipal))
+        {
+            request.RlsPrincipal = RlsPrincipal;
+        }
+
+        if (SkipRls is not null)
+        {
+            request.SkipRls = SkipRls.Value;
+        }
+
         return request;
     }
 }

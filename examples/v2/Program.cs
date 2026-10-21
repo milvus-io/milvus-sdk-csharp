@@ -23,6 +23,7 @@ internal static class Program
             [nameof(UpsertExample)] = UpsertExample.Run,
             [nameof(GroupByExample)] = GroupByExample.Run,
             [nameof(RBACExample)] = RBACExample.Run,
+            [nameof(RLSExample)] = RLSExample.Run,
             [nameof(PartitionKeyExample)] = PartitionKeyExample.Run,
             [nameof(DynamicFieldExample)] = DynamicFieldExample.Run,
             [nameof(NullableFieldExample)] = NullableFieldExample.Run,

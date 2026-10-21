@@ -46,6 +46,18 @@ public sealed class UpsertReq
     public string? PartitionName { get; set; }
 
     /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this upsert.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
+    /// <summary>
     /// When true, only the specified fields are updated while the other fields of existing rows remain unchanged.
     /// </summary>
     public bool PartialUpdate { get; set; }
@@ -169,6 +181,17 @@ public sealed class UpsertReq
         }
 
         request.DbName = DatabaseName ?? "";
+
+        if (!string.IsNullOrEmpty(RlsPrincipal))
+        {
+            request.RlsPrincipal = RlsPrincipal;
+        }
+
+        if (SkipRls is not null)
+        {
+            request.SkipRls = SkipRls.Value;
+        }
+
         return request;
     }
 }

@@ -43,6 +43,18 @@ public sealed class GetReq
     public ConsistencyLevel? ConsistencyLevel { get; set; }
 
     /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this fetch.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
+    /// <summary>
     /// The fields to return. Empty means all fields.
     /// </summary>
     public IReadOnlyList<string>? OutputFields { get; set; }
@@ -95,6 +107,17 @@ public sealed class GetReq
         }
 
         request.DbName = DatabaseName ?? "";
+
+        if (!string.IsNullOrEmpty(RlsPrincipal))
+        {
+            request.RlsPrincipal = RlsPrincipal;
+        }
+
+        if (SkipRls is not null)
+        {
+            request.SkipRls = SkipRls.Value;
+        }
+
         return request;
     }
 }

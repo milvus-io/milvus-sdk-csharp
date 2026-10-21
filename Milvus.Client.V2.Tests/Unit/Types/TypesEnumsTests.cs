@@ -257,4 +257,47 @@ public class TypesEnumsTests
     {
         Assert.Equal(expected, metricType.ToWireString());
     }
+
+    [Fact]
+    public void RowPolicyAction_values_match_source()
+    {
+        Assert.Equal(-1, (int)RowPolicyAction.Unknown);
+        Assert.Equal(0, (int)RowPolicyAction.Query);
+        Assert.Equal(1, (int)RowPolicyAction.Search);
+        Assert.Equal(2, (int)RowPolicyAction.Insert);
+        Assert.Equal(3, (int)RowPolicyAction.Delete);
+        Assert.Equal(4, (int)RowPolicyAction.Upsert);
+        Assert.Equal(5, (int)RowPolicyAction.QueryIterator);
+        Assert.Equal(6, (int)RowPolicyAction.SearchIterator);
+        Assert.Equal(7, (int)RowPolicyAction.HybridSearch);
+    }
+
+    [Fact]
+    public void RowPolicyAction_maps_to_proto_one_to_one()
+    {
+        Assert.Equal(Grpc.RowPolicyAction.Query, (Grpc.RowPolicyAction)(int)RowPolicyAction.Query);
+        Assert.Equal(Grpc.RowPolicyAction.Search, (Grpc.RowPolicyAction)(int)RowPolicyAction.Search);
+        Assert.Equal(Grpc.RowPolicyAction.Insert, (Grpc.RowPolicyAction)(int)RowPolicyAction.Insert);
+        Assert.Equal(Grpc.RowPolicyAction.Delete, (Grpc.RowPolicyAction)(int)RowPolicyAction.Delete);
+        Assert.Equal(Grpc.RowPolicyAction.Upsert, (Grpc.RowPolicyAction)(int)RowPolicyAction.Upsert);
+        Assert.Equal(Grpc.RowPolicyAction.QueryIterator, (Grpc.RowPolicyAction)(int)RowPolicyAction.QueryIterator);
+        Assert.Equal(Grpc.RowPolicyAction.SearchIterator, (Grpc.RowPolicyAction)(int)RowPolicyAction.SearchIterator);
+        Assert.Equal(Grpc.RowPolicyAction.HybridSearch, (Grpc.RowPolicyAction)(int)RowPolicyAction.HybridSearch);
+    }
+
+    [Fact]
+    public void RowPolicyType_values_match_source()
+    {
+        Assert.Equal(0, (int)RowPolicyType.Unknown);
+        Assert.Equal(1, (int)RowPolicyType.Permissive);
+        Assert.Equal(2, (int)RowPolicyType.Restrictive);
+    }
+
+    [Fact]
+    public void RowPolicyType_maps_to_proto_one_to_one()
+    {
+        Assert.Equal(Grpc.RowPolicyType.Unknown, (Grpc.RowPolicyType)(int)RowPolicyType.Unknown);
+        Assert.Equal(Grpc.RowPolicyType.Permissive, (Grpc.RowPolicyType)(int)RowPolicyType.Permissive);
+        Assert.Equal(Grpc.RowPolicyType.Restrictive, (Grpc.RowPolicyType)(int)RowPolicyType.Restrictive);
+    }
 }

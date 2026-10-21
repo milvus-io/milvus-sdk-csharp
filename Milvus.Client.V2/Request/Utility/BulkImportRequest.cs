@@ -86,6 +86,18 @@ public sealed class BulkImportRequest
     /// </summary>
     public IDictionary<string, string> Options { get; } = new Dictionary<string, string>();
 
+    /// <summary>
+    /// The row-level security (RLS) principal for the import. When set, Milvus applies the row policies of
+    /// the collection to the imported rows.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the import should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
     internal Dictionary<string, object?> ToBody()
     {
         Verify.NotNullOrWhiteSpace(CollectionName);
@@ -172,9 +184,23 @@ public sealed class BulkImportRequest
             payload["dataPaths"] = DataPaths.Select(g => g.ToArray()).ToArray();
         }
 
-        if (Options.Count > 0)
+        if (Options.Count > 0 || !string.IsNullOrEmpty(RlsPrincipal) || SkipRls is not null)
         {
-            payload["options"] = Options;
+            // Row-level security context for the import is carried in the request options, mirroring pymilvus'
+            // gRPC ImportRequest.options key-value pairs and the Java SDK's BulkImportUtils.addRlsOptions. The
+            // user's Options dictionary is copied so the request object is not mutated by the conversion.
+            Dictionary<string, object?> options = Options.ToDictionary(p => p.Key, p => (object?)p.Value);
+            if (!string.IsNullOrEmpty(RlsPrincipal))
+            {
+                options["rls_principal"] = RlsPrincipal;
+            }
+
+            if (SkipRls is not null)
+            {
+                options["skip_rls"] = SkipRls.Value ? "true" : "false";
+            }
+
+            payload["options"] = options;
         }
 
         return payload;
