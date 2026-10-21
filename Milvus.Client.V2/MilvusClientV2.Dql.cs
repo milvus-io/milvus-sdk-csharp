@@ -95,6 +95,16 @@ public sealed partial class MilvusClientV2
             Value = request.Limit.ToString(System.Globalization.CultureInfo.InvariantCulture)
         });
 
+        if (!string.IsNullOrEmpty(request.RlsPrincipal))
+        {
+            grpcRequest.RlsPrincipal = request.RlsPrincipal;
+        }
+
+        if (request.SkipRls is not null)
+        {
+            grpcRequest.SkipRls = request.SkipRls.Value;
+        }
+
         SearchParameters? parameters = request.Parameters;
         if (parameters is not null)
         {
@@ -386,6 +396,16 @@ public sealed partial class MilvusClientV2
             Expr = expr,
             DbName = databaseName
         };
+
+        if (!string.IsNullOrEmpty(request.RlsPrincipal))
+        {
+            grpcRequest.RlsPrincipal = request.RlsPrincipal;
+        }
+
+        if (request.SkipRls is not null)
+        {
+            grpcRequest.SkipRls = request.SkipRls.Value;
+        }
 
         QueryParameters? parameters = request.Parameters;
         if (parameters is not null)
@@ -739,7 +759,9 @@ public sealed partial class MilvusClientV2
             EmbeddingLists = request.EmbeddingLists,
             MetricType = metricType,
             Limit = request.BatchSize,
-            Parameters = request.Parameters
+            Parameters = request.Parameters,
+            RlsPrincipal = request.RlsPrincipal,
+            SkipRls = request.SkipRls
         };
 
         Grpc.SearchRequest grpcRequest = BuildSearchRequest(subRequest);
@@ -1335,6 +1357,16 @@ public sealed partial class MilvusClientV2
         if (request.MetricType != MetricType.Invalid)
         {
             grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = "metric_type", Value = request.MetricType.ToWireString() });
+        }
+
+        if (!string.IsNullOrEmpty(request.RlsPrincipal))
+        {
+            grpcRequest.RlsPrincipal = request.RlsPrincipal;
+        }
+
+        if (request.SkipRls is not null)
+        {
+            grpcRequest.SkipRls = request.SkipRls.Value;
         }
 
         return grpcRequest;

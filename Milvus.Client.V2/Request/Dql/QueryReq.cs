@@ -31,6 +31,18 @@ public sealed class QueryReq
     public string Expression { get; set; } = "";
 
     /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this query.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
+    /// <summary>
     /// The optional query parameters.
     /// </summary>
     public QueryParameters? Parameters { get; set; }
@@ -182,6 +194,17 @@ public sealed class QueryReq
         }
 
         request.DbName = DatabaseName ?? "";
+
+        if (!string.IsNullOrEmpty(RlsPrincipal))
+        {
+            request.RlsPrincipal = RlsPrincipal;
+        }
+
+        if (SkipRls is not null)
+        {
+            request.SkipRls = SkipRls.Value;
+        }
+
         return request;
     }
 }

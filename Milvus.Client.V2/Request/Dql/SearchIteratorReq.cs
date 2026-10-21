@@ -95,6 +95,18 @@ public sealed class SearchIteratorReq
     public int BatchSize { get; set; } = 1000;
 
     /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this search iterator.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
+    /// <summary>
     /// An optional client-side per-page filter, mirroring the Java SDK's <c>SearchIteratorReqV2.externalFilterFunc</c>
     /// and the C++ SDK's <c>SetExternalFilterFunc</c>. The function receives a page's <see cref="SingleResult" />
     /// and returns the 0-based row indices to keep (in the desired order). Rows not listed are dropped from the

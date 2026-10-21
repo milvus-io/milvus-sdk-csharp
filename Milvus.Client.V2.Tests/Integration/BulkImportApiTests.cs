@@ -134,6 +134,63 @@ public class BulkImportApiTests
     }
 
     [Fact]
+    public async Task Import_sends_rls_options()
+    {
+        string? capturedBody = null;
+        BulkImport.HttpMessageHandler = new CapturingHandler(
+            req => { capturedBody = req.Content!.ReadAsStringAsync().Result; },
+            "{\"code\":0,\"data\":{\"jobId\":\"job-1\"}}");
+        try
+        {
+            using BulkImport client = new(new BulkImportConfig { Url = "http://localhost:19530" });
+            using BulkImportResp response = await client.BulkImportAsync(
+                new BulkImportRequest
+                {
+                    CollectionName = "coll",
+                    Files = [new[] { "file1" }],
+                    Options = { ["format"] = "json" },
+                    RlsPrincipal = "alice",
+                    SkipRls = true
+                },
+                TestContext.Current.CancellationToken);
+            Assert.Contains("\"rls_principal\":\"alice\"", capturedBody);
+            Assert.Contains("\"skip_rls\":\"true\"", capturedBody);
+            Assert.Contains("\"format\":\"json\"", capturedBody);
+            Assert.Equal("job-1", response.JobId);
+        }
+        finally
+        {
+            BulkImport.HttpMessageHandler = null;
+        }
+    }
+
+    [Fact]
+    public async Task Import_omits_rls_options_when_unset()
+    {
+        string? capturedBody = null;
+        BulkImport.HttpMessageHandler = new CapturingHandler(
+            req => { capturedBody = req.Content!.ReadAsStringAsync().Result; },
+            "{\"code\":0,\"data\":{\"jobId\":\"job-1\"}}");
+        try
+        {
+            using BulkImport client = new(new BulkImportConfig { Url = "http://localhost:19530" });
+            using BulkImportResp response = await client.BulkImportAsync(
+                new BulkImportRequest
+                {
+                    CollectionName = "coll",
+                    Files = [new[] { "file1" }]
+                },
+                TestContext.Current.CancellationToken);
+            Assert.DoesNotContain("rls_principal", capturedBody);
+            Assert.DoesNotContain("skip_rls", capturedBody);
+        }
+        finally
+        {
+            BulkImport.HttpMessageHandler = null;
+        }
+    }
+
+    [Fact]
     public async Task Import_rejects_empty_files()
     {
         BulkImport.HttpMessageHandler = new CapturingHandler(

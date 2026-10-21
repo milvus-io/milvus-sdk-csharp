@@ -646,4 +646,98 @@ public class DmlReqTests
         var request = new GetReq { CollectionName = "book" };
         Assert.Throws<ArgumentException>(() => request.ToGrpcQueryRequest("id"));
     }
+
+    [Fact]
+    public void Insert_forwards_rls_principal_and_skip_rls()
+    {
+        var request = new InsertReq
+        {
+            CollectionName = "book",
+            ColumnsData = new[] { FieldData.Create("id", new long[] { 1 }) },
+            RlsPrincipal = "alice",
+            SkipRls = true
+        };
+
+        Grpc.InsertRequest grpc = request.ToGrpcInsertRequest();
+
+        Assert.Equal("alice", grpc.RlsPrincipal);
+        Assert.True(grpc.SkipRls);
+    }
+
+    [Fact]
+    public void Insert_omits_rls_fields_when_unset()
+    {
+        var request = new InsertReq
+        {
+            CollectionName = "book",
+            ColumnsData = new[] { FieldData.Create("id", new long[] { 1 }) }
+        };
+
+        Grpc.InsertRequest grpc = request.ToGrpcInsertRequest();
+
+        Assert.Equal("", grpc.RlsPrincipal);
+        Assert.False(grpc.SkipRls);
+    }
+
+    [Fact]
+    public void Upsert_forwards_rls_principal_and_skip_rls()
+    {
+        var request = new UpsertReq
+        {
+            CollectionName = "book",
+            ColumnsData = new[] { FieldData.Create("id", new long[] { 1 }) },
+            RlsPrincipal = "alice",
+            SkipRls = true
+        };
+
+        Grpc.UpsertRequest grpc = request.ToGrpcUpsertRequest();
+
+        Assert.Equal("alice", grpc.RlsPrincipal);
+        Assert.True(grpc.SkipRls);
+    }
+
+    [Fact]
+    public void Delete_forwards_rls_principal_and_skip_rls()
+    {
+        var request = new DeleteReq
+        {
+            CollectionName = "book",
+            Expression = "id > 0",
+            RlsPrincipal = "alice",
+            SkipRls = false
+        };
+
+        Grpc.DeleteRequest grpc = request.ToGrpcDeleteRequest();
+
+        Assert.Equal("alice", grpc.RlsPrincipal);
+        Assert.False(grpc.SkipRls);
+    }
+
+    [Fact]
+    public void Delete_omits_rls_fields_when_unset()
+    {
+        var request = new DeleteReq { CollectionName = "book", Expression = "id > 0" };
+
+        Grpc.DeleteRequest grpc = request.ToGrpcDeleteRequest();
+
+        Assert.Equal("", grpc.RlsPrincipal);
+        Assert.False(grpc.SkipRls);
+    }
+
+    [Fact]
+    public void Get_forwards_rls_principal_and_skip_rls()
+    {
+        var request = new GetReq
+        {
+            CollectionName = "book",
+            Ids = new object[] { 1L },
+            RlsPrincipal = "alice",
+            SkipRls = true
+        };
+
+        Grpc.QueryRequest grpc = request.ToGrpcQueryRequest("id");
+
+        Assert.Equal("alice", grpc.RlsPrincipal);
+        Assert.True(grpc.SkipRls);
+    }
 }

@@ -1459,6 +1459,93 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return Task.FromResult(NextStatus());
     }
 
+    /// <summary>
+    /// The policies returned by <c>ListRowPolicies</c>.
+    /// </summary>
+    public List<RowPolicy> RowPolicies { get; } = new();
+
+    /// <summary>
+    /// The principals returned by <c>ListRLSPrincipals</c>.
+    /// </summary>
+    public List<string> PrincipalNames { get; } = new();
+
+    /// <summary>
+    /// The JSON tags returned by <c>GetRLSPrincipalTags</c>.
+    /// </summary>
+    public string PrincipalTagsJson { get; set; } = "";
+
+    public override Task<Grpc.Status> CreateRowPolicy(CreateRowPolicyRequest request, ServerCallContext context)
+    {
+        Record(nameof(CreateRowPolicy), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<Grpc.Status> DropRowPolicy(DropRowPolicyRequest request, ServerCallContext context)
+    {
+        Record(nameof(DropRowPolicy), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<Grpc.Status> UpdateRowPolicy(UpdateRowPolicyRequest request, ServerCallContext context)
+    {
+        Record(nameof(UpdateRowPolicy), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<ListRowPoliciesResponse> ListRowPolicies(ListRowPoliciesRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListRowPolicies), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        var response = new ListRowPoliciesResponse { Status = NextStatus(), DbName = request.DbName };
+        response.Policies.AddRange(RowPolicies);
+        response.CollectionName = request.CollectionName;
+        return Task.FromResult(response);
+    }
+
+    public override Task<Grpc.Status> SetRLSPrincipalTags(SetRLSPrincipalTagsRequest request, ServerCallContext context)
+    {
+        Record(nameof(SetRLSPrincipalTags), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<GetRLSPrincipalTagsResponse> GetRLSPrincipalTags(
+        GetRLSPrincipalTagsRequest request, ServerCallContext context)
+    {
+        Record(nameof(GetRLSPrincipalTags), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(new GetRLSPrincipalTagsResponse
+        {
+            Status = NextStatus(),
+            Tags = PrincipalTagsJson,
+            DbName = request.DbName,
+            CollectionName = request.CollectionName,
+            PrincipalName = request.PrincipalName
+        });
+    }
+
+    public override Task<ListRLSPrincipalsResponse> ListRLSPrincipals(
+        ListRLSPrincipalsRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListRLSPrincipals), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        var response = new ListRLSPrincipalsResponse { Status = NextStatus(), DbName = request.DbName };
+        response.PrincipalNames.AddRange(PrincipalNames);
+        response.CollectionName = request.CollectionName;
+        response.PrincipalCnt = PrincipalNames.Count;
+        return Task.FromResult(response);
+    }
+
+    public override Task<Grpc.Status> DeleteRLSPrincipalTags(DeleteRLSPrincipalTagsRequest request, ServerCallContext context)
+    {
+        Record(nameof(DeleteRLSPrincipalTags), request);
+        LastRequestDbName = context.RequestHeaders.GetValue("dbname");
+        return Task.FromResult(NextStatus());
+    }
+
     private static readonly Milvus.Client.Grpc.Status OkStatus = new() { Code = 0, Reason = "Success" };
 
     private static bool IsVectorType(Milvus.Client.V2.Types.DataType dataType)

@@ -47,6 +47,18 @@ public sealed class InsertReq
     public string? PartitionName { get; set; }
 
     /// <summary>
+    /// The row-level security (RLS) principal for the operation. When set, Milvus applies the row policies of
+    /// the collection to this insert.
+    /// </summary>
+    public string? RlsPrincipal { get; set; }
+
+    /// <summary>
+    /// Whether the operation should skip row-level security (RLS) enforcement. When <c>null</c>, the server
+    /// default applies.
+    /// </summary>
+    public bool? SkipRls { get; set; }
+
+    /// <summary>
     /// The timestamp of the collection schema used to encode the data, sent as <c>schema_timestamp</c>.
     /// When non-zero, the server can detect a stale schema and return <c>SchemaMismatch</c>, letting the
     /// client refresh its cache and retry. Mirrors the Java SDK's <c>setSchemaTimestamp</c>.
@@ -146,6 +158,17 @@ public sealed class InsertReq
         }
 
         request.DbName = DatabaseName ?? "";
+
+        if (!string.IsNullOrEmpty(RlsPrincipal))
+        {
+            request.RlsPrincipal = RlsPrincipal;
+        }
+
+        if (SkipRls is not null)
+        {
+            request.SkipRls = SkipRls.Value;
+        }
+
         return request;
     }
 }

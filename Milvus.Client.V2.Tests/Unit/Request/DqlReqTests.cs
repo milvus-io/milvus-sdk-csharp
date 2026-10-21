@@ -660,4 +660,32 @@ public class DqlReqTests
         Assert.Equal(Grpc.PlaceholderType.Int8Vector, placeholder.Type);
         Assert.Equal(new byte[] { 0x01, 0xFE }, Assert.Single(placeholder.Values).ToByteArray());
     }
+
+    [Fact]
+    public void QueryReq_forwards_rls_principal_and_skip_rls()
+    {
+        var request = new QueryReq
+        {
+            CollectionName = "book",
+            Expression = "id > 0",
+            RlsPrincipal = "alice",
+            SkipRls = true
+        };
+
+        Grpc.QueryRequest grpc = request.ToGrpcQueryRequest("id");
+
+        Assert.Equal("alice", grpc.RlsPrincipal);
+        Assert.True(grpc.SkipRls);
+    }
+
+    [Fact]
+    public void QueryReq_omits_rls_fields_when_unset()
+    {
+        var request = new QueryReq { CollectionName = "book", Expression = "id > 0" };
+
+        Grpc.QueryRequest grpc = request.ToGrpcQueryRequest("id");
+
+        Assert.Equal("", grpc.RlsPrincipal);
+        Assert.False(grpc.SkipRls);
+    }
 }
