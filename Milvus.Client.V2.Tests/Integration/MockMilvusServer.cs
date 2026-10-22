@@ -1192,7 +1192,24 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         GetCompactionPlansRequest request, ServerCallContext context)
     {
         Record(nameof(GetCompactionStateWithPlans), request);
-        return Task.FromResult(new GetCompactionPlansResponse { Status = NextStatus(), State = Grpc.CompactionState.Completed });
+        var response = new GetCompactionPlansResponse { Status = NextStatus(), State = Grpc.CompactionState.Completed };
+        var info = new Milvus.Client.Grpc.CompactionMergeInfo
+        {
+            PlanId = 11,
+            TriggerId = 12,
+            CollectionId = 13,
+            PartitionId = 14,
+            Channel = "by-dev-rootcoord-dml_0",
+            Type = Grpc.CompactionType.Major,
+            State = Grpc.CompactionTaskState.Completed,
+            FailureReason = "",
+            Target = 20
+        };
+        info.Sources.Add(1);
+        info.Sources.Add(2);
+        info.Targets.Add(20);
+        response.MergeInfos.Add(info);
+        return Task.FromResult(response);
     }
 
     public override Task<FlushResponse> Flush(FlushRequest request, ServerCallContext context)

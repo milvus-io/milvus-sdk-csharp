@@ -159,6 +159,44 @@ public class UtilityMoreReqTests
     }
 
     [Fact]
+    public void GetCompactionPlans_throws_when_compaction_id_not_positive()
+    {
+        // A default-constructed or non-positive CompactionId would be forwarded as compactionID<=0 and fail
+        // only with an opaque server-side error; reject it up front like the V1 SDK and sibling request DTOs.
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GetCompactionPlansReq { CompactionId = 0 }.ToGrpcGetCompactionPlansRequest());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GetCompactionPlansReq { CompactionId = -1 }.ToGrpcGetCompactionPlansRequest());
+    }
+
+    [Fact]
+    public void ListCompactionTasks_maps_collection_name_and_database()
+    {
+        var request = new ListCompactionTasksReq { DatabaseName = "db1", CollectionName = "coll" };
+
+        Grpc.GetCompactionPlansRequest grpc = request.ToGrpcGetCompactionPlansRequest();
+
+        Assert.Equal("coll", grpc.CollectionName);
+        Assert.Equal("db1", grpc.DbName);
+    }
+
+    [Fact]
+    public void ListCompactionTasks_leaves_database_blank_when_not_specified()
+    {
+        var request = new ListCompactionTasksReq { CollectionName = "coll" };
+
+        Grpc.GetCompactionPlansRequest grpc = request.ToGrpcGetCompactionPlansRequest();
+
+        Assert.Equal("coll", grpc.CollectionName);
+        Assert.Equal("", grpc.DbName);
+    }
+
+    [Fact]
+    public void ListCompactionTasks_throws_when_collection_name_blank()
+    {
+        var request = new ListCompactionTasksReq { CollectionName = " " };
+        Assert.Throws<ArgumentException>(() => request.ToGrpcGetCompactionPlansRequest());
+    }
+
+    [Fact]
     public void GetCompactionState_maps_compaction_id()
     {
         var request = new GetCompactionStateReq { CompactionId = 88 };
