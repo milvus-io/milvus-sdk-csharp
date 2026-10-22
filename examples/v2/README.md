@@ -88,6 +88,7 @@ underlying feature.
 | `FullTextSearchExample` | BM25 full-text search: a BM25 function over a VARCHAR field, searching with plain text and a `TEXT_MATCH` keyword filter. |
 | `HybridSearchExample`   | Hybrid search: dense + sparse ANN sub-requests fused with a weighted reranker. |
 | `RankerExample`         | Function-score rerankers (boost/decay) applied to search results.          |
+| `FunctionChainExample`  | A function chain at the L2 rerank stage: round scores, sort descending, limit. |
 | `IteratorExample`       | Server-side query/search iterators: page over large result sets with `await foreach`. |
 | `DefaultValueExample`   | Field default values: rows that omit a field get its default filled in.    |
 | `FilterTemplateExample` | Filter templates: `{alias}` placeholders in expressions, values supplied separately. |

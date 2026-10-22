@@ -49,6 +49,39 @@ public class CollectionRespTests
     }
 
     [Fact]
+    public void DescribeCollection_maps_schema_version_and_external_fields()
+    {
+        var response = new Grpc.DescribeCollectionResponse
+        {
+            CollectionID = 100,
+            Schema = new Grpc.CollectionSchema
+            {
+                Name = "book",
+                Version = 7,
+                ExternalSource = "s3://bucket/path",
+                ExternalSpec = "{\"format\":\"parquet\"}"
+            }
+        };
+
+        DescribeCollectionResp resp = DescribeCollectionResp.FromGrpc(response);
+
+        Assert.Equal(7, resp.SchemaVersion);
+        Assert.Equal("s3://bucket/path", resp.Schema.ExternalSource);
+        Assert.Equal("{\"format\":\"parquet\"}", resp.Schema.ExternalSpec);
+    }
+
+    [Fact]
+    public void DescribeCollection_schema_version_is_null_when_schema_missing()
+    {
+        var response = new Grpc.DescribeCollectionResponse { CollectionID = 100, CollectionName = "book" };
+
+        DescribeCollectionResp resp = DescribeCollectionResp.FromGrpc(response);
+
+        Assert.Null(resp.SchemaVersion);
+        Assert.Null(resp.Schema.ExternalSource);
+    }
+
+    [Fact]
     public void ConvertSchema_restores_field_properties_and_type_params()
     {
         var grpcSchema = new Grpc.CollectionSchema

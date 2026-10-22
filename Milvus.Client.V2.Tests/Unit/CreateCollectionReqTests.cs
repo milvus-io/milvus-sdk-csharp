@@ -371,4 +371,67 @@ public class CreateCollectionReqTests
         };
         Assert.Throws<ArgumentException>(() => withAnalyzerParams.ToGrpcCreateCollectionRequest());
     }
+
+    [Fact]
+    public void ToGrpc_maps_external_source_and_spec()
+    {
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "ext",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                ExternalSource = "s3://bucket/path",
+                ExternalSpec = "{\"format\":\"parquet\"}"
+            }
+        };
+
+        Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        Grpc.CollectionSchema schema = Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Assert.Equal("s3://bucket/path", schema.ExternalSource);
+        Assert.Equal("{\"format\":\"parquet\"}", schema.ExternalSpec);
+    }
+
+    [Fact]
+    public void ToGrpc_normalizes_mmap_enabled_to_mmap_dot_enabled()
+    {
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "coll",
+            Schema = new CollectionSchema
+            {
+                Fields =
+                {
+                    new FieldSchema("title", DataType.VarChar)
+                    {
+                        TypeParams = { ["mmap_enabled"] = "true" }
+                    }
+                },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        TypeParams = { ["mmap_enabled"] = "false" },
+                        Fields =
+                        {
+                            new FieldSchema("txt", DataType.VarChar)
+                            {
+                                TypeParams = { ["mmap_enabled"] = "true" }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        Grpc.CollectionSchema schema = Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Assert.Equal("true", schema.Fields.Single(f => f.Name == "title").TypeParams.Single(p => p.Key == "mmap.enabled").Value);
+        Grpc.StructArrayFieldSchema structField = schema.StructArrayFields.Single(s => s.Name == "st");
+        Assert.Equal("false", structField.TypeParams.Single(p => p.Key == "mmap.enabled").Value);
+        Assert.Equal("true", structField.Fields.Single(f => f.Name == "txt").TypeParams.Single(p => p.Key == "mmap.enabled").Value);
+    }
 }

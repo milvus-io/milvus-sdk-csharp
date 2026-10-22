@@ -33,6 +33,7 @@ internal static class Program
             [nameof(FullTextSearchExample)] = FullTextSearchExample.Run,
             [nameof(HybridSearchExample)] = HybridSearchExample.Run,
             [nameof(RankerExample)] = RankerExample.Run,
+            [nameof(FunctionChainExample)] = FunctionChainExample.Run,
             [nameof(IteratorExample)] = IteratorExample.Run,
             [nameof(DefaultValueExample)] = DefaultValueExample.Run,
             [nameof(FilterTemplateExample)] = FilterTemplateExample.Run,

@@ -14,7 +14,7 @@ public sealed class DescribeCollectionResp
         long collectionId, string collectionName, CollectionSchema schema, int shardsNum,
         ConsistencyLevel consistencyLevel, ulong createdTimestamp, ulong updateTimestamp,
         IReadOnlyList<string> aliases, IReadOnlyDictionary<string, string> properties,
-        string databaseName, long? numPartitions, ulong createdUtcTimestamp)
+        string databaseName, long? numPartitions, ulong createdUtcTimestamp, int? schemaVersion)
     {
         CollectionId = collectionId;
         CollectionName = collectionName;
@@ -28,6 +28,7 @@ public sealed class DescribeCollectionResp
         DatabaseName = databaseName;
         NumPartitions = numPartitions;
         CreatedUtcTimestamp = createdUtcTimestamp;
+        SchemaVersion = schemaVersion;
     }
 
     internal static DescribeCollectionResp FromGrpc(Grpc.DescribeCollectionResponse response)
@@ -55,7 +56,10 @@ public sealed class DescribeCollectionResp
             properties,
             response.DbName,
             response.NumPartitions == 0 ? null : response.NumPartitions,
-            response.CreatedUtcTimestamp);
+            response.CreatedUtcTimestamp,
+            // schema.version is 0 when the collection was created before 2.6.5 (or never altered since);
+            // expose it only when the server actually stamped it.
+            response.Schema is null ? null : (int?)response.Schema.Version);
     }
 
     /// <summary>
@@ -111,6 +115,13 @@ public sealed class DescribeCollectionResp
     public ulong CreatedUtcTimestamp { get; }
 
     /// <summary>
+    /// The version of the collection's schema, incremented by the server on every schema update
+    /// (e.g. a field or property change), and <c>0</c> when the collection was created before the version was
+    /// tracked. Mirrors the Java SDK's <c>schemaVersion</c> / pymilvus's <c>schema_version</c>.
+    /// </summary>
+    public int? SchemaVersion { get; }
+
+    /// <summary>
     /// The aliases of the collection.
     /// </summary>
     public IReadOnlyList<string> Aliases { get; }
@@ -133,7 +144,9 @@ public sealed class DescribeCollectionResp
         {
             Name = grpcSchema.Name,
             Description = string.IsNullOrEmpty(grpcSchema.Description) ? null : grpcSchema.Description,
-            EnableDynamicFields = grpcSchema.EnableDynamicField
+            EnableDynamicFields = grpcSchema.EnableDynamicField,
+            ExternalSource = string.IsNullOrEmpty(grpcSchema.ExternalSource) ? null : grpcSchema.ExternalSource,
+            ExternalSpec = string.IsNullOrEmpty(grpcSchema.ExternalSpec) ? null : grpcSchema.ExternalSpec
         };
 
         foreach (Grpc.KeyValuePair property in grpcSchema.Properties)

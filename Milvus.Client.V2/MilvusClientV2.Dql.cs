@@ -105,6 +105,14 @@ public sealed partial class MilvusClientV2
             grpcRequest.SkipRls = request.SkipRls.Value;
         }
 
+        if (request.FunctionChains is { Count: > 0 })
+        {
+            foreach (FunctionChain chain in request.FunctionChains)
+            {
+                grpcRequest.FunctionChains.Add(chain.ToGrpc());
+            }
+        }
+
         SearchParameters? parameters = request.Parameters;
         if (parameters is not null)
         {
@@ -1330,6 +1338,19 @@ public sealed partial class MilvusClientV2
                     + (request.Int8Vectors?.Count ?? 0)
                     + (request.Texts?.Count ?? 0);
 
+        if (request.SearchAggregation is not null)
+        {
+            grpcRequest.SearchAggregation = request.SearchAggregation.ToGrpc();
+        }
+
+        if (request.FunctionChains is { Count: > 0 })
+        {
+            foreach (FunctionChain chain in request.FunctionChains)
+            {
+                grpcRequest.FunctionChains.Add(chain.ToGrpc());
+            }
+        }
+
         if (searchByIds)
         {
             grpcRequest.Ids = ToGrpcIds(request.Ids!);
@@ -1571,6 +1592,14 @@ public sealed partial class MilvusClientV2
         if (subRequest.MetricType != MetricType.Invalid)
         {
             request.SearchParams.Add(new Grpc.KeyValuePair { Key = "metric_type", Value = subRequest.MetricType.ToWireString() });
+        }
+
+        if (subRequest.FunctionChains is { Count: > 0 })
+        {
+            foreach (FunctionChain chain in subRequest.FunctionChains)
+            {
+                request.FunctionChains.Add(chain.ToGrpc());
+            }
         }
 
         return request;
