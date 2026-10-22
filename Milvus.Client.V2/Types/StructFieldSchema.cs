@@ -40,6 +40,14 @@ public sealed class StructFieldSchema
     public int MaxCapacity { get; set; }
 
     /// <summary>
+    /// Additional per-struct <c>type_params</c> to send on the wire, mirroring the Java SDK's
+    /// <c>StructFieldSchema.typeParams</c> / pymilvus struct params. Supported keys include <c>warmup</c> and
+    /// <c>mmap.enabled</c> (pymilvus accepts <c>mmap_enabled</c> and normalizes it to <c>mmap.enabled</c>; the C#
+    /// SDK passes wire keys verbatim, like <see cref="FieldSchema.TypeParams" />).
+    /// </summary>
+    public IDictionary<string, string> TypeParams { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>
     /// The sub-fields of the struct. Sub-fields cannot be primary/partition/clustering keys, cannot be
     /// auto-id, nullable, or have a default value.
     /// </summary>
