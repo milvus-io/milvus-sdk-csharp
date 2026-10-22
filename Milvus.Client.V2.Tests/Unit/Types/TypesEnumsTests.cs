@@ -25,6 +25,72 @@ public class TypesEnumsTests
     }
 
     [Fact]
+    public void CompactionTaskState_values_match_source()
+    {
+        Assert.Equal(0, (int)CompactionTaskState.Unknown);
+        Assert.Equal(1, (int)CompactionTaskState.Executing);
+        Assert.Equal(2, (int)CompactionTaskState.Pipelining);
+        Assert.Equal(3, (int)CompactionTaskState.Completed);
+        Assert.Equal(4, (int)CompactionTaskState.Failed);
+        Assert.Equal(5, (int)CompactionTaskState.Timeout);
+        Assert.Equal(6, (int)CompactionTaskState.Analyzing);
+        Assert.Equal(7, (int)CompactionTaskState.Indexing);
+        Assert.Equal(8, (int)CompactionTaskState.Cleaned);
+        Assert.Equal(9, (int)CompactionTaskState.MetaSaved);
+        Assert.Equal(10, (int)CompactionTaskState.Statistic);
+    }
+
+    [Fact]
+    public void CompactionTaskState_maps_to_proto_one_to_one()
+    {
+        Assert.Equal(Grpc.CompactionTaskState.Unknown, (Grpc.CompactionTaskState)(int)CompactionTaskState.Unknown);
+        Assert.Equal(Grpc.CompactionTaskState.Executing, (Grpc.CompactionTaskState)(int)CompactionTaskState.Executing);
+        Assert.Equal(Grpc.CompactionTaskState.Pipelining, (Grpc.CompactionTaskState)(int)CompactionTaskState.Pipelining);
+        Assert.Equal(Grpc.CompactionTaskState.Completed, (Grpc.CompactionTaskState)(int)CompactionTaskState.Completed);
+        Assert.Equal(Grpc.CompactionTaskState.Failed, (Grpc.CompactionTaskState)(int)CompactionTaskState.Failed);
+        Assert.Equal(Grpc.CompactionTaskState.Timeout, (Grpc.CompactionTaskState)(int)CompactionTaskState.Timeout);
+        Assert.Equal(Grpc.CompactionTaskState.Analyzing, (Grpc.CompactionTaskState)(int)CompactionTaskState.Analyzing);
+        Assert.Equal(Grpc.CompactionTaskState.Indexing, (Grpc.CompactionTaskState)(int)CompactionTaskState.Indexing);
+        Assert.Equal(Grpc.CompactionTaskState.Cleaned, (Grpc.CompactionTaskState)(int)CompactionTaskState.Cleaned);
+        Assert.Equal(Grpc.CompactionTaskState.MetaSaved, (Grpc.CompactionTaskState)(int)CompactionTaskState.MetaSaved);
+        Assert.Equal(Grpc.CompactionTaskState.Statistic, (Grpc.CompactionTaskState)(int)CompactionTaskState.Statistic);
+    }
+
+    [Fact]
+    public void CompactionType_values_match_source()
+    {
+        Assert.Equal(0, (int)CompactionType.Undefined);
+        Assert.Equal(2, (int)CompactionType.Merge);
+        Assert.Equal(3, (int)CompactionType.Mix);
+        Assert.Equal(4, (int)CompactionType.Single);
+        Assert.Equal(5, (int)CompactionType.Minor);
+        Assert.Equal(6, (int)CompactionType.Major);
+        Assert.Equal(7, (int)CompactionType.Level0Delete);
+        Assert.Equal(8, (int)CompactionType.Clustering);
+        Assert.Equal(9, (int)CompactionType.Sort);
+        Assert.Equal(10, (int)CompactionType.PartitionKeySort);
+        Assert.Equal(11, (int)CompactionType.ClusteringPartitionKeySort);
+        Assert.Equal(12, (int)CompactionType.BumpSchemaVersion);
+    }
+
+    [Fact]
+    public void CompactionType_maps_to_proto_one_to_one()
+    {
+        Assert.Equal(Grpc.CompactionType.Undefined, (Grpc.CompactionType)(int)CompactionType.Undefined);
+        Assert.Equal(Grpc.CompactionType.Merge, (Grpc.CompactionType)(int)CompactionType.Merge);
+        Assert.Equal(Grpc.CompactionType.Mix, (Grpc.CompactionType)(int)CompactionType.Mix);
+        Assert.Equal(Grpc.CompactionType.Single, (Grpc.CompactionType)(int)CompactionType.Single);
+        Assert.Equal(Grpc.CompactionType.Minor, (Grpc.CompactionType)(int)CompactionType.Minor);
+        Assert.Equal(Grpc.CompactionType.Major, (Grpc.CompactionType)(int)CompactionType.Major);
+        Assert.Equal(Grpc.CompactionType.Level0Delete, (Grpc.CompactionType)(int)CompactionType.Level0Delete);
+        Assert.Equal(Grpc.CompactionType.Clustering, (Grpc.CompactionType)(int)CompactionType.Clustering);
+        Assert.Equal(Grpc.CompactionType.Sort, (Grpc.CompactionType)(int)CompactionType.Sort);
+        Assert.Equal(Grpc.CompactionType.PartitionKeySort, (Grpc.CompactionType)(int)CompactionType.PartitionKeySort);
+        Assert.Equal(Grpc.CompactionType.ClusteringPartitionKeySort, (Grpc.CompactionType)(int)CompactionType.ClusteringPartitionKeySort);
+        Assert.Equal(Grpc.CompactionType.BumpSchemaVersion, (Grpc.CompactionType)(int)CompactionType.BumpSchemaVersion);
+    }
+
+    [Fact]
     public void FunctionType_values_match_source()
     {
         Assert.Equal(0, (int)FunctionType.Unknown);

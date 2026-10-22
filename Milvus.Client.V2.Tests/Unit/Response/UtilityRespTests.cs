@@ -142,9 +142,54 @@ public class UtilityRespTests
     {
         var grpc = new Grpc.GetCompactionPlansResponse { State = Grpc.CompactionState.Completed };
 
-        GetCompactionPlansResp resp = GetCompactionPlansResp.FromGrpc(grpc);
+        GetCompactionPlansResp resp = GetCompactionPlansResp.FromGrpc(77, null, grpc);
 
+        Assert.Equal(77, resp.CompactionId);
+        Assert.Null(resp.CollectionName);
         Assert.Equal(CompactionState.Completed, resp.State);
+        Assert.Empty(resp.MergeInfos);
+    }
+
+    [Fact]
+    public void ListCompactionTasks_maps_collection_name_and_merge_infos()
+    {
+        var grpc = new Grpc.GetCompactionPlansResponse { State = Grpc.CompactionState.Completed };
+        var info = new Grpc.CompactionMergeInfo
+        {
+            PlanId = 11,
+            TriggerId = 12,
+            CollectionId = 13,
+            PartitionId = 14,
+            Channel = "by-dev-rootcoord-dml_0",
+            Type = Grpc.CompactionType.Major,
+            State = Grpc.CompactionTaskState.Completed,
+            FailureReason = "",
+            Target = 20,
+        };
+        info.Sources.Add(1);
+        info.Sources.Add(2);
+        info.Targets.Add(20);
+        info.Targets.Add(21);
+        grpc.MergeInfos.Add(info);
+
+        GetCompactionPlansResp resp = GetCompactionPlansResp.FromGrpc(null, "book", grpc);
+
+        Assert.Null(resp.CompactionId);
+        Assert.Equal("book", resp.CollectionName);
+        Assert.Equal(CompactionState.Completed, resp.State);
+
+        CompactionMergeInfo merge = Assert.Single(resp.MergeInfos);
+        Assert.Equal(new[] { 1L, 2L }, merge.Sources);
+        Assert.Equal(20, merge.Target);
+        Assert.Equal(new[] { 20L, 21L }, merge.Targets);
+        Assert.Equal(11, merge.PlanId);
+        Assert.Equal(12, merge.TriggerId);
+        Assert.Equal(13, merge.CollectionId);
+        Assert.Equal(14, merge.PartitionId);
+        Assert.Equal("by-dev-rootcoord-dml_0", merge.Channel);
+        Assert.Equal(CompactionType.Major, merge.CompactionType);
+        Assert.Equal(CompactionTaskState.Completed, merge.State);
+        Assert.Equal("", merge.FailureReason);
     }
 
     [Fact]

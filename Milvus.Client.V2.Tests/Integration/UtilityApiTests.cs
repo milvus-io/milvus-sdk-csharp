@@ -141,6 +141,44 @@ public class UtilityApiTests
         var request = (Milvus.Client.Grpc.GetCompactionPlansRequest)server.Service.Requests["GetCompactionStateWithPlans"];
         Assert.Equal(7, request.CompactionID);
         Assert.Equal(CompactionState.Completed, response.State);
+        Assert.Equal(7, response.CompactionId);
+    }
+
+    [Fact]
+    public async Task ListCompactionTasks_forwards_request()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.UseDatabaseAsync(
+            new UseDatabaseReq { DatabaseName = "db1" },
+            TestContext.Current.CancellationToken);
+
+        GetCompactionPlansResp response = await client.ListCompactionTasksAsync(
+            new ListCompactionTasksReq
+            {
+                CollectionName = "coll",
+                DatabaseName = "db1"
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = (Milvus.Client.Grpc.GetCompactionPlansRequest)server.Service.Requests["GetCompactionStateWithPlans"];
+        Assert.Equal("coll", request.CollectionName);
+        Assert.Equal("db1", request.DbName);
+        Assert.Equal("coll", response.CollectionName);
+        Assert.Null(response.CompactionId);
+        Assert.Equal(CompactionState.Completed, response.State);
+
+        CompactionMergeInfo merge = Assert.Single(response.MergeInfos);
+        Assert.Equal(new[] { 1L, 2L }, merge.Sources);
+        Assert.Equal(20, merge.Target);
+        Assert.Equal(11, merge.PlanId);
+        Assert.Equal(12, merge.TriggerId);
+        Assert.Equal(13, merge.CollectionId);
+        Assert.Equal(14, merge.PartitionId);
+        Assert.Equal("by-dev-rootcoord-dml_0", merge.Channel);
+        Assert.Equal(CompactionType.Major, merge.CompactionType);
+        Assert.Equal(CompactionTaskState.Completed, merge.State);
     }
 
     [Fact]

@@ -59,7 +59,29 @@ public sealed partial class MilvusClientV2
         Grpc.GetCompactionPlansRequest grpcRequest = request.ToGrpcGetCompactionPlansRequest();
         Grpc.GetCompactionPlansResponse response = await InvokeAsync(
             GrpcClient.GetCompactionStateWithPlansAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
-        return GetCompactionPlansResp.FromGrpc(response);
+        return GetCompactionPlansResp.FromGrpc(request.CompactionId, null, response);
+    }
+
+    /// <summary>
+    /// Lists all compaction tasks still retained for the specified collection, whether automatically or
+    /// manually triggered. Terminal tasks are subject to server-side garbage collection and are not an
+    /// audit log.
+    /// </summary>
+    /// <remarks>
+    /// The aggregate <see cref="GetCompactionPlansResp.State" /> collapses to <see cref="CompactionState.Executing" />
+    /// or <see cref="CompactionState.Completed" /> only: a task that failed or timed out must be detected per plan
+    /// via <see cref="CompactionMergeInfo.State" /> / <see cref="CompactionMergeInfo.FailureReason" />, not from the
+    /// aggregate state.
+    /// </remarks>
+    public async Task<GetCompactionPlansResp> ListCompactionTasksAsync(
+        ListCompactionTasksReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.GetCompactionPlansRequest grpcRequest = request.ToGrpcGetCompactionPlansRequest();
+        Grpc.GetCompactionPlansResponse response = await InvokeAsync(
+            GrpcClient.GetCompactionStateWithPlansAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return GetCompactionPlansResp.FromGrpc(null, request.CollectionName, response);
     }
 
     /// <summary>
