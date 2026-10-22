@@ -207,6 +207,41 @@ public class CreateCollectionReqTests
     }
 
     [Fact]
+    public void ToGrpc_stamps_struct_type_params()
+    {
+        // Struct-level type_params (warmup, mmap.enabled) ride along on the wire, mirroring the Java SDK's
+        // StructFieldSchema.typeParams and pymilvus struct params.
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        TypeParams =
+                        {
+                            ["warmup"] = "WarmUpAfterIndexBuild",
+                            ["mmap.enabled"] = "true"
+                        },
+                        Fields = { new FieldSchema("x", DataType.Int32) }
+                    }
+                }
+            }
+        };
+
+        Milvus.Client.Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        var schema = Milvus.Client.Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Milvus.Client.Grpc.StructArrayFieldSchema structField = Assert.Single(schema.StructArrayFields);
+        Assert.Equal("WarmUpAfterIndexBuild", structField.TypeParams.Single(p => p.Key == "warmup").Value);
+        Assert.Equal("true", structField.TypeParams.Single(p => p.Key == "mmap.enabled").Value);
+    }
+
+    [Fact]
     public void ToGrpc_rejects_struct_without_max_capacity_or_sub_fields()
     {
         var withoutCapacity = new CreateCollectionReq

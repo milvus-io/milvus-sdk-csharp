@@ -1553,6 +1553,9 @@ public sealed partial class MilvusClientV2
         }
     }
 
+    // ConsistencyLevel.Customized is [Obsolete] but the user-supplied guarantee timestamp path is still
+    // supported; suppress CS0618 here so the deprecation does not break the build.
+#pragma warning disable CS0618
     internal static ulong CalculateGuaranteeTimestamp(
         string endpoint, string database, string collectionName, ConsistencyLevel consistencyLevel, ulong? userProvidedGuaranteeTimestamp)
     {
@@ -1577,4 +1580,5 @@ public sealed partial class MilvusClientV2
             _ => throw new ArgumentOutOfRangeException(nameof(consistencyLevel), consistencyLevel, null)
         };
     }
+#pragma warning restore CS0618
 }

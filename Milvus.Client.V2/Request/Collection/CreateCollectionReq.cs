@@ -233,6 +233,13 @@ public sealed class CreateCollectionReq
                 Description = structField.Description
             };
 
+            // Struct-level type_params (e.g. warmup, mmap.enabled) ride along verbatim, matching the Java SDK's
+            // StructFieldSchema.typeParams and the FieldSchema.TypeParams convention in this repo.
+            foreach (KeyValuePair<string, string> typeParam in structField.TypeParams)
+            {
+                grpcStruct.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+            }
+
             foreach (FieldSchema subField in structField.Fields)
             {
                 if (subField.IsPrimaryKey || subField.IsPartitionKey || subField.IsClusteringKey || subField.AutoId
