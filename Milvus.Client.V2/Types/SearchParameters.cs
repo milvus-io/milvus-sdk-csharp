@@ -25,6 +25,7 @@ public sealed class SearchParameters
     /// <summary>
     /// If set, guarantee that the search is performed after any updates up to the provided timestamp.
     /// </summary>
+    [Obsolete("The Customized consistency level was removed to match the Java/C++ SDKs; this property is no longer honored. Use ConsistencyLevel instead.")]
     public ulong? GuaranteeTimestamp { get; set; }
 
     /// <summary>

@@ -31,10 +31,5 @@ public enum ConsistencyLevel
     /// no further write operations are done. Under this level, replicas start working on read requests with the latest
     /// updated values. Eventually consistent is the weakest of the four consistency levels.
     /// </summary>
-    Eventually = 3,
-
-    /// <summary>
-    /// In this consistency level, users pass their own guarantee timestamp.
-    /// </summary>
-    Customized = 4
+    Eventually = 3
 }

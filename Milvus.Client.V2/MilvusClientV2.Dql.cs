@@ -184,21 +184,21 @@ public sealed partial class MilvusClientV2
             {
                 grpcRequest.ConsistencyLevel = (Grpc.ConsistencyLevel)(int)cl;
                 grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                    _endpoint, databaseName, request.CollectionName, cl, parameters.GuaranteeTimestamp);
+                    _endpoint, databaseName, request.CollectionName, cl);
             }
             else
             {
                 // Same Session-style guarantee as plain Search when consistency is unset (see BuildSearchRequest).
                 grpcRequest.UseDefaultConsistency = true;
                 grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                    _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session, null);
+                    _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session);
             }
         }
         else
         {
             grpcRequest.UseDefaultConsistency = true;
             grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session, null);
+                _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session);
         }
 
         Grpc.SearchResults response = await InvokeAsync(
@@ -253,8 +253,7 @@ public sealed partial class MilvusClientV2
         Grpc.QueryRequest grpcRequest = request.ToGrpcQueryRequest(primaryKeyField);
         grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
             _endpoint, databaseName, request.CollectionName,
-            request.Parameters?.ConsistencyLevel ?? ConsistencyLevel.Session,
-            request.Parameters?.GuaranteeTimestamp);
+            request.Parameters?.ConsistencyLevel ?? ConsistencyLevel.Session);
         Grpc.QueryResults response = await InvokeAsync(
                 GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
             .ConfigureAwait(false);
@@ -300,7 +299,7 @@ public sealed partial class MilvusClientV2
         Grpc.QueryRequest grpcRequest = request.ToGrpcQueryRequest(primaryKey.Name);
         grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
             _endpoint, databaseName, request.CollectionName,
-            request.ConsistencyLevel ?? ConsistencyLevel.Session, null);
+            request.ConsistencyLevel ?? ConsistencyLevel.Session);
         Grpc.QueryResults response = await InvokeAsync(
                 GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
             .ConfigureAwait(false);
@@ -452,7 +451,7 @@ public sealed partial class MilvusClientV2
             {
                 grpcRequest.ConsistencyLevel = (Grpc.ConsistencyLevel)(int)cl;
                 grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                    _endpoint, databaseName, request.CollectionName, cl, parameters.GuaranteeTimestamp);
+                    _endpoint, databaseName, request.CollectionName, cl);
             }
             else
             {
@@ -468,8 +467,8 @@ public sealed partial class MilvusClientV2
         // Establish a snapshot on the first page: a request-level guarantee_timestamp of 0 makes the proxy
         // take a snapshot at its request time and return it as SessionTs, which we pin for all later pages so
         // the pk-cursor paging runs on a fixed MVCC snapshot. When the caller pinned an explicit consistency
-        // level (Strong/BoundedStaleness/Customized + GuaranteeTimestamp), honor that value instead of
-        // clobbering it with a fresh request-time snapshot.
+        // level (Strong/BoundedStaleness/etc.), honor that value instead of clobbering it with a fresh
+        // request-time snapshot.
         if (grpcRequest.UseDefaultConsistency)
         {
             grpcRequest.GuaranteeTimestamp = 0;
@@ -1296,25 +1295,24 @@ public sealed partial class MilvusClientV2
             {
                 grpcRequest.ConsistencyLevel = (Grpc.ConsistencyLevel)(int)cl;
                 grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                    _endpoint, databaseName, request.CollectionName, cl, parameters.GuaranteeTimestamp);
+                    _endpoint, databaseName, request.CollectionName, cl);
             }
             else
             {
                 // Unset consistency falls back to the collection's configured level (server default), but the
                 // request still carries a Session-style guarantee timestamp so an insert-then-search honors the
                 // read-your-writes guarantee, matching the C++ SDK (DeduceGuaranteeTimestamp on NONE) and the
-                // design doc §4.6 ("reads CollectionTsCache for Session consistency"). An explicitly set
-                // GuaranteeTimestamp without a Customized level fails fast here exactly like QueryAsync.
+                // design doc §4.6 ("reads CollectionTsCache for Session consistency").
                 grpcRequest.UseDefaultConsistency = true;
                 grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                    _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session, parameters.GuaranteeTimestamp);
+                    _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session);
             }
         }
         else
         {
             grpcRequest.UseDefaultConsistency = true;
             grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
-                _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session, null);
+                _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session);
         }
 
         // The server derives nq when omitted, but Java/C++ set it explicitly from the vector/ids count.
@@ -1585,15 +1583,14 @@ public sealed partial class MilvusClientV2
         }
     }
 
+    // Deduces the request guarantee timestamp for a DQL request from its consistency level, matching the
+    // Java/C++ SDKs (getGuaranteeTimestamp / DeduceGuaranteeTimestamp): Strong -> 0, Session -> the cached
+    // collection timestamp (or 1 when absent), BoundedStaleness -> 2 (server picks the bound), Eventually -> 1.
+    // The Customized level (user-supplied guarantee timestamp) was removed from the public API to match
+    // Java/C++.
     internal static ulong CalculateGuaranteeTimestamp(
-        string endpoint, string database, string collectionName, ConsistencyLevel consistencyLevel, ulong? userProvidedGuaranteeTimestamp)
+        string endpoint, string database, string collectionName, ConsistencyLevel consistencyLevel)
     {
-        if (userProvidedGuaranteeTimestamp is not null && consistencyLevel != ConsistencyLevel.Customized)
-        {
-            throw new ArgumentException(
-                $"A guarantee timestamp can only be specified with consistency level {ConsistencyLevel.Customized}");
-        }
-
         return consistencyLevel switch
         {
             ConsistencyLevel.Strong => (ulong)Constants.GuaranteeStrongTs,
@@ -1603,9 +1600,6 @@ public sealed partial class MilvusClientV2
                     : (ulong)Constants.GuaranteeEventuallyTs,
             ConsistencyLevel.BoundedStaleness => (ulong)2,
             ConsistencyLevel.Eventually => (ulong)Constants.GuaranteeEventuallyTs,
-            ConsistencyLevel.Customized => userProvidedGuaranteeTimestamp
-                ?? throw new ArgumentException(
-                    $"A guarantee timestamp is required with consistency level {ConsistencyLevel.Customized}"),
             _ => throw new ArgumentOutOfRangeException(nameof(consistencyLevel), consistencyLevel, null)
         };
     }
