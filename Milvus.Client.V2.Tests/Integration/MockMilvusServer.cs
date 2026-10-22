@@ -817,6 +817,20 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return Task.FromResult(NextStatus());
     }
 
+    public override Task<Grpc.Status> AddCollectionStructField(
+        AddCollectionStructFieldRequest request, ServerCallContext context)
+    {
+        Record(nameof(AddCollectionStructField), request);
+        return Task.FromResult(NextStatus());
+    }
+
+    public override Task<AlterCollectionSchemaResponse> AlterCollectionSchema(
+        AlterCollectionSchemaRequest request, ServerCallContext context)
+    {
+        Record(nameof(AlterCollectionSchema), request);
+        return Task.FromResult(new AlterCollectionSchemaResponse { AlterStatus = NextStatus() });
+    }
+
     public override Task<Grpc.Status> AlterCollectionField(AlterCollectionFieldRequest request, ServerCallContext context)
     {
         Record(nameof(AlterCollectionField), request);

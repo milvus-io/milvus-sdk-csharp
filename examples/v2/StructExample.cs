@@ -2,6 +2,7 @@ using Milvus.Client.V2;
 using Milvus.Client.V2.Requests.Collection;
 using Milvus.Client.V2.Requests.Dml;
 using Milvus.Client.V2.Requests.Dql;
+using Milvus.Client.V2.Responses.Collection;
 using Milvus.Client.V2.Responses.Dql;
 using Milvus.Client.V2.Requests.Index;
 using Milvus.Client.V2.Types;
@@ -20,6 +21,7 @@ namespace Milvus.Examples;
 /// <see cref="EmbeddingList" /> and a MAX_SIM metric).</para>
 /// <para><b>APIs used:</b> <c>CreateCollectionAsync</c> (StructFields),
 /// <c>InsertAsync</c>, <c>CreateIndexAsync</c>, <c>SearchAsync</c> with <c>EmbeddingLists</c>,
+/// <c>AddCollectionStructFieldAsync</c>, <c>DescribeCollectionAsync</c>, <c>QueryAsync</c>,
 /// <c>DropCollectionAsync</c>.</para>
 /// <para><b>Expected output:</b> "Struct search returned N hits", then "Done.".</para>
 /// </remarks>
@@ -135,6 +137,82 @@ public static class StructExample
         });
         Console.WriteLine($"Struct search returned {results.Ids.LongIds?.Count ?? 0} hits; top score = {results.Scores.FirstOrDefault():F4}");
         ExampleHelpers.PrintSearchHits(results);
+
+        #region Snippet:MilvusStruct_AddStructField
+        // A struct field can also be added to an existing collection; it must be nullable.
+        var extraStructField = new StructFieldSchema("extra_struct", "additional metadata")
+        {
+            MaxCapacity = 8,
+            Nullable = true
+        };
+        extraStructField.Fields.Add(new FieldSchema("rating", DataType.Int32));
+        extraStructField.Fields.Add(FieldSchema.CreateVarchar("tag", maxLength: 128));
+        await client.AddCollectionStructFieldAsync(new AddCollectionStructFieldReq
+        {
+            CollectionName = collectionName,
+            StructField = extraStructField
+        });
+        #endregion
+
+        Console.WriteLine("Adding struct field 'extra_struct'...");
+        DescribeCollectionResp description = await client.DescribeCollectionAsync(
+            new DescribeCollectionReq { CollectionName = collectionName });
+        Console.WriteLine($"{description.Schema.StructFields.Count} struct fields in collection after add");
+
+        // Existing rows carry null for the newly added struct field; query one to confirm.
+        QueryResp existingRow = await client.QueryAsync(new QueryReq
+        {
+            CollectionName = collectionName,
+            Expression = "id == 1",
+            Parameters = new QueryParameters
+            {
+                OutputFields = { "id", "extra_struct" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            }
+        });
+        Console.WriteLine("Existing row after AddCollectionStructFieldAsync - new field is null");
+        ExampleHelpers.PrintQueryRows(existingRow);
+
+        // Insert a new row that carries values for the added struct field.
+        await client.InsertAsync(new InsertReq
+        {
+            CollectionName = collectionName,
+            RowsData =
+            [
+                new Dictionary<string, object?>
+                {
+                    ["id"] = 3L,
+                    ["clips"] = new object[]
+                    {
+                        new Dictionary<string, object?>
+                        {
+                            ["int32"] = 4,
+                            ["varchar"] = "clip-d",
+                            ["vector"] = new[] { 0.5f, 0.5f, 0.5f, 0.5f }
+                        }
+                    },
+                    ["extra_struct"] = new object[]
+                    {
+                        new Dictionary<string, object?> { ["rating"] = 5, ["tag"] = "favorite" },
+                        new Dictionary<string, object?> { ["rating"] = 4, ["tag"] = "classic" }
+                    }
+                }
+            ]
+        });
+
+        // Query the new row, including the projected sub-fields of the added struct.
+        QueryResp newRow = await client.QueryAsync(new QueryReq
+        {
+            CollectionName = collectionName,
+            Expression = "id == 3",
+            Parameters = new QueryParameters
+            {
+                OutputFields = { "id", "extra_struct", "extra_struct[rating]", "extra_struct[tag]" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            }
+        });
+        Console.WriteLine("New row with the added struct field");
+        ExampleHelpers.PrintQueryRows(newRow);
 
         await client.DropCollectionAsync(new DropCollectionReq { CollectionName = collectionName });
         Console.WriteLine("Done.");

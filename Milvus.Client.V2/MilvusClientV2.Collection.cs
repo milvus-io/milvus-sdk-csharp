@@ -459,6 +459,12 @@ public sealed partial class MilvusClientV2
     /// <summary>
     /// Adds a function (e.g. BM25) to a collection's schema.
     /// </summary>
+    /// <remarks>
+    /// Deprecated: Milvus 3.0 expects the function and its output field to be added together. Use
+    /// <see cref="AddFunctionFieldAsync" /> instead.
+    /// </remarks>
+    [Obsolete("AddCollectionFunction is deprecated because Milvus 3.0 adds a function together with its output field; use AddFunctionFieldAsync instead.")]
+#pragma warning disable CS0618 // AddCollectionFunctionReq is [Obsolete] but remains supported on this facade.
     public async Task AddCollectionFunctionAsync(AddCollectionFunctionReq request, CancellationToken cancellationToken = default)
     {
         Verify.NotNull(request);
@@ -468,6 +474,7 @@ public sealed partial class MilvusClientV2
         await InvokeAsync(GrpcClient.AddCollectionFunctionAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
         InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
     }
+#pragma warning restore CS0618
 
     /// <summary>
     /// Alters a function in a collection's schema.
@@ -485,6 +492,12 @@ public sealed partial class MilvusClientV2
     /// <summary>
     /// Drops a function from a collection's schema.
     /// </summary>
+    /// <remarks>
+    /// Deprecated: Milvus 3.0 expects the function and its output field to be dropped together. Use
+    /// <see cref="DropFunctionFieldAsync" /> instead.
+    /// </remarks>
+    [Obsolete("DropCollectionFunction is deprecated because Milvus 3.0 drops a function together with its output field; use DropFunctionFieldAsync instead.")]
+#pragma warning disable CS0618 // DropCollectionFunctionReq is [Obsolete] but remains supported on this facade.
     public async Task DropCollectionFunctionAsync(DropCollectionFunctionReq request, CancellationToken cancellationToken = default)
     {
         Verify.NotNull(request);
@@ -492,6 +505,80 @@ public sealed partial class MilvusClientV2
         DescribeCollectionResp description = await DescribeCollectionAsync(new DescribeCollectionReq { DatabaseName = request.DatabaseName, CollectionName = request.CollectionName }, cancellationToken).ConfigureAwait(false);
         Grpc.DropCollectionFunctionRequest grpcRequest = request.ToGrpcDropCollectionFunctionRequest(description.CollectionId);
         await InvokeAsync(GrpcClient.DropCollectionFunctionAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
+        InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
+    }
+#pragma warning restore CS0618
+
+    /// <summary>
+    /// Adds a struct field to an existing collection's schema.
+    /// </summary>
+    /// <param name="request">The request containing the collection name and the struct field to add.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    public async Task AddCollectionStructFieldAsync(
+        AddCollectionStructFieldReq request,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        Grpc.AddCollectionStructFieldRequest grpcRequest = request.ToGrpcAddCollectionStructFieldRequest();
+        await InvokeAsync(GrpcClient.AddCollectionStructFieldAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
+
+        InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
+    }
+
+    /// <summary>
+    /// Drops a field from a collection's schema, identified by either a field name or a field id.
+    /// </summary>
+    /// <param name="request">The request containing the collection name and the field to drop.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    public async Task DropCollectionFieldAsync(
+        DropCollectionFieldReq request,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        Grpc.AlterCollectionSchemaRequest grpcRequest = request.ToGrpcAlterCollectionSchemaRequest();
+        await InvokeAsync(GrpcClient.AlterCollectionSchemaAsync, grpcRequest, static r => r.AlterStatus, cancellationToken).ConfigureAwait(false);
+
+        InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
+    }
+
+    /// <summary>
+    /// Adds a function output field (e.g. a BM25 sparse vector) together with its bound index to an existing
+    /// collection's schema.
+    /// </summary>
+    /// <param name="request">The request containing the collection name, the function and its output field.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    public async Task AddFunctionFieldAsync(
+        AddFunctionFieldReq request,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        Grpc.AlterCollectionSchemaRequest grpcRequest = request.ToGrpcAlterCollectionSchemaRequest();
+        await InvokeAsync(GrpcClient.AlterCollectionSchemaAsync, grpcRequest, static r => r.AlterStatus, cancellationToken).ConfigureAwait(false);
+
+        InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
+    }
+
+    /// <summary>
+    /// Drops a function and its output fields from a collection's schema.
+    /// </summary>
+    /// <param name="request">The request containing the collection name and the function to drop.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    public async Task DropFunctionFieldAsync(
+        DropFunctionFieldReq request,
+        CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+
+        Grpc.AlterCollectionSchemaRequest grpcRequest = request.ToGrpcAlterCollectionSchemaRequest();
+        await InvokeAsync(GrpcClient.AlterCollectionSchemaAsync, grpcRequest, static r => r.AlterStatus, cancellationToken).ConfigureAwait(false);
+
         InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
     }
 

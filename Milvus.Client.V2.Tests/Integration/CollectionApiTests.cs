@@ -153,6 +153,7 @@ public class CollectionApiForwardingTests
     }
 
     [Fact]
+#pragma warning disable CS0618 // AddCollectionFunctionAsync/AddCollectionFunctionReq are deprecated but still exercised here.
     public async Task AddCollectionFunction_forwards_request()
     {
         using var server = new MockMilvusServer();
@@ -171,6 +172,7 @@ public class CollectionApiForwardingTests
             Assert.IsType<Grpc.AddCollectionFunctionRequest>(server.Service.Requests["AddCollectionFunction"]);
         Assert.Equal("add_func_coll", request.CollectionName);
         Assert.Equal("bm25_func", request.FunctionSchema.Name);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -442,6 +444,7 @@ public class CollectionApiForwardingTests
     }
 
     [Fact]
+#pragma warning disable CS0618 // DropCollectionFunctionAsync/DropCollectionFunctionReq are deprecated but still exercised here.
     public async Task DropCollectionFunction_forwards_request()
     {
         using var server = new MockMilvusServer();
@@ -460,6 +463,7 @@ public class CollectionApiForwardingTests
             Assert.IsType<Grpc.DropCollectionFunctionRequest>(server.Service.Requests["DropCollectionFunction"]);
         Assert.Equal("drop_func_coll", request.CollectionName);
         Assert.Equal("bm25_func", request.FunctionName);
+#pragma warning restore CS0618
     }
 
     [Fact]
@@ -779,5 +783,190 @@ public class CollectionApiForwardingTests
         Grpc.TruncateCollectionRequest request =
             Assert.IsType<Grpc.TruncateCollectionRequest>(server.Service.Requests["TruncateCollection"]);
         Assert.Equal("truncate_coll", request.CollectionName);
+    }
+
+    [Fact]
+    public async Task AddCollectionStructField_forwards_request()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        var structField = new StructFieldSchema("extra_meta")
+        {
+            MaxCapacity = 8,
+            Nullable = true,
+            Fields =
+            {
+                new FieldSchema("int32", DataType.Int32),
+                FieldSchema.CreateVarchar("tag", maxLength: 16)
+            }
+        };
+        await client.AddCollectionStructFieldAsync(
+            new AddCollectionStructFieldReq
+            {
+                CollectionName = "add_struct_field_coll",
+                StructField = structField
+            },
+            TestContext.Current.CancellationToken);
+
+        Grpc.AddCollectionStructFieldRequest request =
+            Assert.IsType<Grpc.AddCollectionStructFieldRequest>(server.Service.Requests["AddCollectionStructField"]);
+        Assert.Equal("add_struct_field_coll", request.CollectionName);
+        Assert.Equal("extra_meta", request.StructArrayFieldSchema.Name);
+        Assert.True(request.StructArrayFieldSchema.Nullable);
+        Assert.Equal(2, request.StructArrayFieldSchema.Fields.Count);
+    }
+
+    [Fact]
+    public async Task DropCollectionField_forwards_request_by_name()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.DropCollectionFieldAsync(
+            new DropCollectionFieldReq { CollectionName = "drop_field_coll", FieldName = "title" },
+            TestContext.Current.CancellationToken);
+
+        Grpc.AlterCollectionSchemaRequest request =
+            Assert.IsType<Grpc.AlterCollectionSchemaRequest>(server.Service.Requests["AlterCollectionSchema"]);
+        Assert.Equal("drop_field_coll", request.CollectionName);
+        Assert.Equal(Grpc.AlterCollectionSchemaRequest.Types.DropRequest.IdentifierOneofCase.FieldName,
+            request.Action.DropRequest.IdentifierCase);
+        Assert.Equal("title", request.Action.DropRequest.FieldName);
+        Assert.False(request.Action.DropRequest.DropFunctionOutputFields);
+    }
+
+    [Fact]
+    public async Task DropCollectionField_forwards_request_by_id()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.DropCollectionFieldAsync(
+            new DropCollectionFieldReq { CollectionName = "drop_field_coll", FieldId = 101 },
+            TestContext.Current.CancellationToken);
+
+        Grpc.AlterCollectionSchemaRequest request =
+            Assert.IsType<Grpc.AlterCollectionSchemaRequest>(server.Service.Requests["AlterCollectionSchema"]);
+        Assert.Equal(101L, request.Action.DropRequest.FieldId);
+    }
+
+    [Fact]
+    public async Task AddFunctionField_forwards_request()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.AddFunctionFieldAsync(
+            new AddFunctionFieldReq
+            {
+                CollectionName = "add_func_field_coll",
+                Field = FieldSchema.CreateSparseFloatVector("sparse"),
+                Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+                IndexParam = new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, MetricType.Bm25)
+            },
+            TestContext.Current.CancellationToken);
+
+        Grpc.AlterCollectionSchemaRequest request =
+            Assert.IsType<Grpc.AlterCollectionSchemaRequest>(server.Service.Requests["AlterCollectionSchema"]);
+        Assert.Equal("add_func_field_coll", request.CollectionName);
+        Grpc.AlterCollectionSchemaRequest.Types.FieldInfo fieldInfo =
+            Assert.Single(request.Action.AddRequest.FieldInfos);
+        Assert.Equal("sparse", fieldInfo.FieldSchema.Name);
+        Assert.True(fieldInfo.FieldSchema.IsFunctionOutput);
+        Assert.Equal("sparse_idx", fieldInfo.IndexName);
+        Assert.Equal("SPARSE_INVERTED_INDEX", fieldInfo.ExtraParams.Single(p => p.Key == "index_type").Value);
+        Assert.Equal("bm25_fn", Assert.Single(request.Action.AddRequest.FuncSchema).Name);
+    }
+
+    [Fact]
+    public async Task DropFunctionField_forwards_request()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.DropFunctionFieldAsync(
+            new DropFunctionFieldReq { CollectionName = "drop_func_field_coll", FunctionName = "bm25_fn" },
+            TestContext.Current.CancellationToken);
+
+        Grpc.AlterCollectionSchemaRequest request =
+            Assert.IsType<Grpc.AlterCollectionSchemaRequest>(server.Service.Requests["AlterCollectionSchema"]);
+        Assert.Equal("drop_func_field_coll", request.CollectionName);
+        Assert.Equal("bm25_fn", request.Action.DropRequest.FunctionName);
+        Assert.True(request.Action.DropRequest.DropFunctionOutputFields);
+    }
+
+    [Fact]
+    public async Task Schema_enhance_operations_invalidate_cached_schema()
+    {
+        SchemaCache.Instance.Clear();
+        try
+        {
+            using var server = new MockMilvusServer();
+            server.Service.DescribeSchema = new CollectionSchema
+            {
+                Name = "schema_evolve_coll",
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) }
+            };
+            using MilvusClientV2 client = server.CreateClient();
+
+            // Populate the schema cache.
+            await client.DescribeCollectionAsync(
+                new DescribeCollectionReq { CollectionName = "schema_evolve_coll" },
+                TestContext.Current.CancellationToken);
+            Assert.Equal(1, server.Service.DescribeCollectionCount);
+
+            // Each schema-enhancement DDL must invalidate the cached schema so the next describe re-issues RPCs.
+            await client.AddCollectionStructFieldAsync(new AddCollectionStructFieldReq
+            {
+                CollectionName = "schema_evolve_coll",
+                StructField = new StructFieldSchema("st")
+                {
+                    MaxCapacity = 4,
+                    Nullable = true,
+                    Fields = { new FieldSchema("x", DataType.Int32) }
+                }
+            }, TestContext.Current.CancellationToken);
+            await client.DescribeCollectionAsync(
+                new DescribeCollectionReq { CollectionName = "schema_evolve_coll" },
+                TestContext.Current.CancellationToken);
+            Assert.Equal(2, server.Service.DescribeCollectionCount);
+
+            await client.DropCollectionFieldAsync(new DropCollectionFieldReq
+            {
+                CollectionName = "schema_evolve_coll",
+                FieldName = "st"
+            }, TestContext.Current.CancellationToken);
+            await client.DescribeCollectionAsync(
+                new DescribeCollectionReq { CollectionName = "schema_evolve_coll" },
+                TestContext.Current.CancellationToken);
+            Assert.Equal(3, server.Service.DescribeCollectionCount);
+
+            await client.AddFunctionFieldAsync(new AddFunctionFieldReq
+            {
+                CollectionName = "schema_evolve_coll",
+                Field = FieldSchema.CreateSparseFloatVector("sparse"),
+                Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+                IndexParam = new IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Bm25)
+            }, TestContext.Current.CancellationToken);
+            await client.DescribeCollectionAsync(
+                new DescribeCollectionReq { CollectionName = "schema_evolve_coll" },
+                TestContext.Current.CancellationToken);
+            Assert.Equal(4, server.Service.DescribeCollectionCount);
+
+            await client.DropFunctionFieldAsync(new DropFunctionFieldReq
+            {
+                CollectionName = "schema_evolve_coll",
+                FunctionName = "bm25_fn"
+            }, TestContext.Current.CancellationToken);
+            await client.DescribeCollectionAsync(
+                new DescribeCollectionReq { CollectionName = "schema_evolve_coll" },
+                TestContext.Current.CancellationToken);
+            Assert.Equal(5, server.Service.DescribeCollectionCount);
+        }
+        finally
+        {
+            SchemaCache.Instance.Clear();
+        }
     }
 }

@@ -197,6 +197,7 @@ public class CollectionReqTests
     }
 
     [Fact]
+#pragma warning disable CS0618 // AddCollectionFunctionReq/DropCollectionFunctionReq are deprecated but their conversions are still exercised here.
     public void AddCollectionFunction_maps_function_and_collection_id()
     {
         var request = new AddCollectionFunctionReq
@@ -227,6 +228,7 @@ public class CollectionReqTests
 
         Assert.Throws<ArgumentException>(() => request.ToGrpcAddCollectionFunctionRequest(42));
     }
+#pragma warning restore CS0618
 
     [Fact]
     public void AlterCollectionFunction_maps_function_name_and_schema()
@@ -280,6 +282,7 @@ public class CollectionReqTests
     }
 
     [Fact]
+#pragma warning disable CS0618 // DropCollectionFunctionReq is deprecated but its conversion is still exercised here.
     public void DropCollectionFunction_maps_function_name_and_collection_id()
     {
         var request = new DropCollectionFunctionReq { CollectionName = "book", FunctionName = "bm25_fn" };
@@ -297,6 +300,7 @@ public class CollectionReqTests
         var request = new DropCollectionFunctionReq { CollectionName = "book", FunctionName = " " };
         Assert.Throws<ArgumentException>(() => request.ToGrpcDropCollectionFunctionRequest(42));
     }
+#pragma warning restore CS0618
 
     [Fact]
     public void DropCollection_maps_collection_name()
@@ -444,5 +448,437 @@ public class CollectionReqTests
     {
         var request = new RenameCollectionReq { CollectionName = "old_book", NewCollectionName = " " };
         Assert.Throws<ArgumentException>(() => request.ToGrpcRenameCollectionRequest());
+    }
+
+    [Fact]
+    public void AddCollectionStructField_maps_struct_field_and_nullable()
+    {
+        var structField = new StructFieldSchema("extra_meta", "additional metadata")
+        {
+            MaxCapacity = 8,
+            Nullable = true,
+            Fields =
+            {
+                new FieldSchema("int32", DataType.Int32),
+                new FieldSchema("tag", DataType.VarChar) { MaxLength = 16 },
+                new FieldSchema("vector", DataType.FloatVector) { Dimension = 4 }
+            }
+        };
+
+        var request = new AddCollectionStructFieldReq
+        {
+            CollectionName = "book",
+            StructField = structField
+        };
+
+        Grpc.AddCollectionStructFieldRequest grpc = request.ToGrpcAddCollectionStructFieldRequest();
+
+        Assert.Equal("book", grpc.CollectionName);
+        Grpc.StructArrayFieldSchema grpcStruct = grpc.StructArrayFieldSchema;
+        Assert.Equal("extra_meta", grpcStruct.Name);
+        Assert.Equal("additional metadata", grpcStruct.Description);
+        Assert.True(grpcStruct.Nullable);
+        Assert.Equal(3, grpcStruct.Fields.Count);
+
+        // Scalar sub-field encoded as Array with the real type in element_type, the struct's max_capacity as a
+        // type param, and the struct's nullable applied to every sub-field.
+        Grpc.FieldSchema intSub = grpcStruct.Fields[0];
+        Assert.Equal(Grpc.DataType.Array, intSub.DataType);
+        Assert.Equal(Grpc.DataType.Int32, intSub.ElementType);
+        Assert.True(intSub.Nullable);
+        Assert.Contains(intSub.TypeParams, p => p.Key == "max_capacity" && p.Value == "8");
+
+        Grpc.FieldSchema varcharSub = grpcStruct.Fields[1];
+        Assert.Contains(varcharSub.TypeParams, p => p.Key == "max_length" && p.Value == "16");
+
+        // Vector sub-field encoded as ArrayOfVector with dim.
+        Grpc.FieldSchema vectorSub = grpcStruct.Fields[2];
+        Assert.Equal(Grpc.DataType.ArrayOfVector, vectorSub.DataType);
+        Assert.Equal(Grpc.DataType.FloatVector, vectorSub.ElementType);
+        Assert.Contains(vectorSub.TypeParams, p => p.Key == "dim" && p.Value == "4");
+    }
+
+    [Fact]
+    public void AddCollectionStructField_throws_when_collection_blank()
+    {
+        var request = new AddCollectionStructFieldReq
+        {
+            CollectionName = " ",
+            StructField = new StructFieldSchema("st") { Nullable = true, MaxCapacity = 4 }
+        };
+        Assert.Throws<ArgumentException>(() => request.ToGrpcAddCollectionStructFieldRequest());
+    }
+
+    [Fact]
+    public void AddCollectionStructField_throws_when_struct_null()
+    {
+        var request = new AddCollectionStructFieldReq { CollectionName = "book", StructField = null! };
+        Assert.Throws<ArgumentNullException>(() => request.ToGrpcAddCollectionStructFieldRequest());
+    }
+
+    [Fact]
+    public void AddCollectionStructField_rejects_non_nullable_struct()
+    {
+        var request = new AddCollectionStructFieldReq
+        {
+            CollectionName = "book",
+            StructField = new StructFieldSchema("st")
+            {
+                MaxCapacity = 4,
+                Fields = { new FieldSchema("x", DataType.Int32) }
+            }
+        };
+
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => request.ToGrpcAddCollectionStructFieldRequest());
+        Assert.Contains("must be nullable", ex.Message);
+    }
+
+    [Fact]
+    public void AddCollectionStructField_nullable_struct_with_nullable_sub_field_inherits_nullable()
+    {
+        // AddCollectionStructField requires the struct to be nullable, so the "sub-field nullable without a
+        // nullable struct" rejection is not reachable on this API (the struct-level check fires first). A
+        // nullable struct accepts a nullable sub-field and propagates the struct's nullable to it on the wire.
+        var request = new AddCollectionStructFieldReq
+        {
+            CollectionName = "book",
+            StructField = new StructFieldSchema("st")
+            {
+                MaxCapacity = 4,
+                Nullable = true,
+                Fields = { new FieldSchema("x", DataType.Int32) { Nullable = true } }
+            }
+        };
+
+        Grpc.AddCollectionStructFieldRequest grpc = request.ToGrpcAddCollectionStructFieldRequest();
+
+        Assert.True(grpc.StructArrayFieldSchema.Nullable);
+        Assert.True(grpc.StructArrayFieldSchema.Fields.Single().Nullable);
+    }
+
+    [Fact]
+    public void AddCollectionStructField_carries_struct_type_params()
+    {
+        var request = new AddCollectionStructFieldReq
+        {
+            CollectionName = "book",
+            StructField = new StructFieldSchema("extra_meta")
+            {
+                MaxCapacity = 8,
+                Nullable = true,
+                TypeParams =
+                {
+                    ["warmup"] = "WarmUpAfterIndexBuild",
+                    ["mmap.enabled"] = "true"
+                },
+                Fields = { new FieldSchema("rating", DataType.Int32) }
+            }
+        };
+
+        Grpc.AddCollectionStructFieldRequest grpc = request.ToGrpcAddCollectionStructFieldRequest();
+
+        Assert.Equal("WarmUpAfterIndexBuild", grpc.StructArrayFieldSchema.TypeParams.Single(p => p.Key == "warmup").Value);
+        Assert.Equal("true", grpc.StructArrayFieldSchema.TypeParams.Single(p => p.Key == "mmap.enabled").Value);
+    }
+
+    [Fact]
+    public void DropCollectionField_maps_field_name()
+    {
+        var request = new DropCollectionFieldReq { CollectionName = "book", FieldName = "title" };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Assert.Equal("book", grpc.CollectionName);
+        Assert.Equal(Grpc.AlterCollectionSchemaRequest.Types.DropRequest.IdentifierOneofCase.FieldName,
+            grpc.Action.DropRequest.IdentifierCase);
+        Assert.Equal("title", grpc.Action.DropRequest.FieldName);
+        Assert.False(grpc.Action.DropRequest.DropFunctionOutputFields);
+    }
+
+    [Fact]
+    public void DropCollectionField_maps_field_id()
+    {
+        var request = new DropCollectionFieldReq { CollectionName = "book", FieldId = 101 };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Assert.Equal(Grpc.AlterCollectionSchemaRequest.Types.DropRequest.IdentifierOneofCase.FieldId,
+            grpc.Action.DropRequest.IdentifierCase);
+        Assert.Equal(101L, grpc.Action.DropRequest.FieldId);
+    }
+
+    [Fact]
+    public void DropCollectionField_rejects_both_and_neither_selector()
+    {
+        var both = new DropCollectionFieldReq { CollectionName = "book", FieldName = "title", FieldId = 101 };
+        Assert.Throws<ArgumentException>(() => both.ToGrpcAlterCollectionSchemaRequest());
+
+        var neither = new DropCollectionFieldReq { CollectionName = "book" };
+        Assert.Throws<ArgumentException>(() => neither.ToGrpcAlterCollectionSchemaRequest());
+    }
+
+    [Fact]
+    public void DropCollectionField_rejects_non_positive_field_id()
+    {
+        // A provided but non-positive FieldId must fail with a clear message rather than masquerading as
+        // "no selector given" (the wire contract requires a positive field id).
+        var negativeId = new DropCollectionFieldReq { CollectionName = "book", FieldId = -1 };
+        ArgumentException negative = Assert.Throws<ArgumentException>(() => negativeId.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("positive", negative.Message);
+
+        var zeroId = new DropCollectionFieldReq { CollectionName = "book", FieldId = 0 };
+        ArgumentException zero = Assert.Throws<ArgumentException>(() => zeroId.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("positive", zero.Message);
+    }
+
+    [Fact]
+    public void AddFunctionField_maps_bm25_function_field_and_bound_index()
+    {
+        var index = new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, MetricType.Bm25);
+        index.ExtraParams["drop_ratio_build"] = "0.2";
+
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse", "bm25 scoring"),
+            IndexParam = index
+        };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Assert.Equal("book", grpc.CollectionName);
+        Grpc.AlterCollectionSchemaRequest.Types.AddRequest addRequest = grpc.Action.AddRequest;
+        Grpc.AlterCollectionSchemaRequest.Types.FieldInfo fieldInfo = Assert.Single(addRequest.FieldInfos);
+
+        Grpc.FieldSchema fieldSchema = fieldInfo.FieldSchema;
+        Assert.Equal("sparse", fieldSchema.Name);
+        Assert.Equal(Grpc.DataType.SparseFloatVector, fieldSchema.DataType);
+        Assert.True(fieldSchema.IsFunctionOutput);
+        Assert.Equal("sparse_idx", fieldInfo.IndexName);
+        Assert.Equal("SPARSE_INVERTED_INDEX", fieldInfo.ExtraParams.Single(p => p.Key == "index_type").Value);
+        Assert.Equal("BM25", fieldInfo.ExtraParams.Single(p => p.Key == "metric_type").Value);
+        Assert.Equal("0.2", fieldInfo.ExtraParams.Single(p => p.Key == "drop_ratio_build").Value);
+
+        Grpc.FunctionSchema function = Assert.Single(addRequest.FuncSchema);
+        Assert.Equal("bm25_fn", function.Name);
+        Assert.Equal(Grpc.FunctionType.Bm25, function.Type);
+        Assert.Equal("bm25 scoring", function.Description);
+    }
+
+    [Fact]
+    public void AddFunctionField_maps_minhash_function_field()
+    {
+        var index = new IndexParam("minhash_vec", "minhash_idx", IndexType.MinHashLsh, MetricType.MhJaccard);
+
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("minhash_vec", DataType.BinaryVector) { Dimension = 512 },
+            Function = new FunctionSchema("minhash_fn", FunctionType.MinHash,
+                new[] { "text" }, new[] { "minhash_vec" }),
+            IndexParam = index
+        };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Grpc.AlterCollectionSchemaRequest.Types.FieldInfo fieldInfo = Assert.Single(grpc.Action.AddRequest.FieldInfos);
+        Assert.Equal(Grpc.DataType.BinaryVector, fieldInfo.FieldSchema.DataType);
+        Assert.Equal("512", fieldInfo.FieldSchema.TypeParams.Single(p => p.Key == "dim").Value);
+        Assert.Equal("MINHASH_LSH", fieldInfo.ExtraParams.Single(p => p.Key == "index_type").Value);
+        Assert.Equal("MHJACCARD", fieldInfo.ExtraParams.Single(p => p.Key == "metric_type").Value);
+        Assert.Equal(Grpc.FunctionType.MinHash, Assert.Single(grpc.Action.AddRequest.FuncSchema).Type);
+    }
+
+    [Fact]
+    public void AddFunctionField_honors_raw_metric_type_when_typed_metric_unset()
+    {
+        // When the typed MetricType is left unset, a raw "metric_type" supplied only via ExtraParams must ride
+        // through (mirroring the Java SDK and the CreateIndexReq path), instead of being silently dropped.
+        var index = new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex);
+        index.ExtraParams["metric_type"] = "BM25";
+        index.ExtraParams["drop_ratio_build"] = "0.2";
+
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+            IndexParam = index
+        };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Grpc.AlterCollectionSchemaRequest.Types.FieldInfo fieldInfo = Assert.Single(grpc.Action.AddRequest.FieldInfos);
+        Assert.Equal("SPARSE_INVERTED_INDEX", fieldInfo.ExtraParams.Single(p => p.Key == "index_type").Value);
+        Assert.Equal("BM25", fieldInfo.ExtraParams.Single(p => p.Key == "metric_type").Value);
+        Assert.Equal("0.2", fieldInfo.ExtraParams.Single(p => p.Key == "drop_ratio_build").Value);
+    }
+
+    [Fact]
+    public void AddFunctionField_typed_metric_skips_raw_metric_type_duplicate()
+    {
+        // When the typed MetricType is set it wins: the raw "metric_type" duplicate is skipped so the request
+        // carries a single metric_type entry.
+        var index = new IndexParam("sparse", "sparse_idx", IndexType.SparseInvertedIndex, MetricType.Bm25);
+        index.ExtraParams["metric_type"] = "IP";
+
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+            IndexParam = index
+        };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Grpc.AlterCollectionSchemaRequest.Types.FieldInfo fieldInfo = Assert.Single(grpc.Action.AddRequest.FieldInfos);
+        Assert.Equal("BM25", fieldInfo.ExtraParams.Single(p => p.Key == "metric_type").Value);
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_unsupported_function_type()
+    {
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = new FunctionSchema("embed_fn", FunctionType.TextEmbedding,
+                new[] { "text" }, new[] { "sparse" }),
+            IndexParam = new IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Bm25)
+        };
+
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("only supports", ex.Message);
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_mismatched_output_type()
+    {
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateFloatVector("dense", 4),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "dense"),
+            IndexParam = new IndexParam("dense", null, IndexType.Flat, MetricType.Cosine)
+        };
+
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("requires a SparseFloatVector output field", ex.Message);
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_missing_bound_index_type()
+    {
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+            IndexParam = new IndexParam("sparse")
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_mismatched_index_field()
+    {
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+            IndexParam = new IndexParam("other", null, IndexType.SparseInvertedIndex, MetricType.Bm25)
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_missing_function_or_index()
+    {
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+            IndexParam = null!
+        };
+        Assert.Throws<ArgumentNullException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_analyzer_settings_on_output_field()
+    {
+        // Analyzers belong on the function's input text field, not on its vector output field; settings on the
+        // output field must be rejected client-side rather than forwarded for an opaque server error.
+        var outputField = new FieldSchema("sparse", DataType.SparseFloatVector) { EnableAnalyzer = true };
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = outputField,
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "sparse"),
+            IndexParam = new IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Bm25)
+        };
+
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("does not support text analyzers", ex.Message);
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_output_field_not_in_function_outputs()
+    {
+        // The added field must be one of the function's output fields; a mismatch is rejected client-side
+        // instead of failing with an opaque server error.
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = FieldSchema.CreateSparseFloatVector("sparse"),
+            Function = FunctionSchema.CreateBm25("bm25_fn", "text", "other_out"),
+            IndexParam = new IndexParam("sparse", null, IndexType.SparseInvertedIndex, MetricType.Bm25)
+        };
+
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("output field names", ex.Message);
+    }
+
+    [Fact]
+    public void AddFunctionField_rejects_binary_vector_dimension_not_multiple_of_8()
+    {
+        // MinHash output fields are BinaryVector; the dimension must be a multiple of 8 (and at least 8),
+        // matching the create-collection path validation.
+        var request = new AddFunctionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("minhash_vec", DataType.BinaryVector) { Dimension = 12 },
+            Function = new FunctionSchema("minhash_fn", FunctionType.MinHash,
+                new[] { "text" }, new[] { "minhash_vec" }),
+            IndexParam = new IndexParam("minhash_vec", null, IndexType.MinHashLsh, MetricType.MhJaccard)
+        };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => request.ToGrpcAlterCollectionSchemaRequest());
+    }
+
+    [Fact]
+    public void DropFunctionField_maps_function_name_and_drops_output_fields()
+    {
+        var request = new DropFunctionFieldReq { CollectionName = "book", FunctionName = "bm25_fn" };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+
+        Assert.Equal("book", grpc.CollectionName);
+        Assert.Equal(Grpc.AlterCollectionSchemaRequest.Types.DropRequest.IdentifierOneofCase.FunctionName,
+            grpc.Action.DropRequest.IdentifierCase);
+        Assert.Equal("bm25_fn", grpc.Action.DropRequest.FunctionName);
+        Assert.True(grpc.Action.DropRequest.DropFunctionOutputFields);
+    }
+
+    [Fact]
+    public void DropFunctionField_throws_when_function_name_blank()
+    {
+        var request = new DropFunctionFieldReq { CollectionName = "book", FunctionName = " " };
+        Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
     }
 }

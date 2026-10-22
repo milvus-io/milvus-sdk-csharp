@@ -69,7 +69,7 @@ underlying feature.
 |-------------------------|------------------------------------------------------------------------------|
 | `SimpleExample`         | End-to-end quickstart: connect, create a collection, create an index, insert, load, search, drop. |
 | `GeneralExample`        | A broader tour: schema with several field types, insert, query, search, upsert, delete. |
-| `AddFieldExample`       | Adding a new field to a collection's schema after creation, then inserting rows that include it. |
+| `AddFieldExample`       | Evolving a collection's schema after creation: add a field (`AddCollectionFieldAsync`), insert rows that include it, drop a field (`DropCollectionFieldAsync`), add/drop a BM25 function field (`AddFunctionFieldAsync`/`DropFunctionFieldAsync`). |
 | `ArrayFieldExample`     | Array fields: schema with an int-array field, insert array rows, query them back. |
 | `JsonFieldExample`      | JSON fields: schema with a JSON field, insert JSON rows, filter on a JSON key. |
 | `SparseVectorExample`   | Sparse vectors: insert `SparseVector` rows and search over them. |
@@ -96,7 +96,7 @@ underlying feature.
 | `MultiAnalyzerExample`  | Multi-analyzers on one VARCHAR field (per-language tokenizers), BM25 search. |
 | `TimestampExample`      | Timestamptz fields: insert ISO-8601 timestamps and query them in a timezone. |
 | `GeometryExample`       | Geometry fields: insert WKT geometries and filter with spatial predicates (ST_WITHIN, ...). |
-| `StructExample`         | Array-of-Struct fields: insert struct rows and search a nested vector sub-field via `EmbeddingList`. |
+| `StructExample`         | Array-of-Struct fields: insert struct rows and search a nested vector sub-field via `EmbeddingList`, and add a nullable struct field to an existing collection (`AddCollectionStructFieldAsync`). |
 | `OptimizeExample`       | Collection optimization (`OptimizeAsync`): major compaction to a target segment size. |
 | `CDCExample`            | Cross-cluster replication (CDC): configure replication topology between two clusters. |
 | `HighlighterExample`    | Lexical highlighting on BM25 full-text search results (pre/post tags, fragment size). |

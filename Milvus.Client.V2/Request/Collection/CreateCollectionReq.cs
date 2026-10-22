@@ -11,8 +11,9 @@ namespace Milvus.Client.V2.Requests.Collection;
 /// <remarks>
 /// <see cref="ConsistencyLevel" /> defaults to <see cref="ConsistencyLevel.BoundedStaleness" /> and
 /// <see cref="ShardsNum" /> to 1, matching the Java/C++ SDKs. <see cref="NumPartitions" /> is only used for a
-/// partition-key collection. Struct fields (<see cref="CollectionSchema.StructFields" />) can only be declared
-/// at creation time.
+/// partition-key collection. Struct fields (<see cref="CollectionSchema.StructFields" />) can be declared here
+/// at creation time or added to an existing collection via
+/// <see cref="Milvus.Client.V2.MilvusClientV2.AddCollectionStructFieldAsync" />.
 /// </remarks>
 public sealed class CreateCollectionReq
 {
@@ -120,94 +121,7 @@ public sealed class CreateCollectionReq
 
         foreach (FieldSchema field in Schema.Fields)
         {
-            Grpc.FieldSchema grpcField = new()
-            {
-                Name = field.Name,
-                DataType = (Grpc.DataType)(int)field.DataType,
-                ElementType = field.ElementDataType is { } edt ? (Grpc.DataType)(int)edt : Grpc.DataType.None,
-                IsPrimaryKey = field.IsPrimaryKey,
-                IsPartitionKey = field.IsPartitionKey,
-                AutoID = field.AutoId,
-                Description = field.Description,
-                Nullable = field.Nullable,
-                IsClusteringKey = field.IsClusteringKey
-            };
-
-            if (field.DefaultValue is not null)
-            {
-                grpcField.DefaultValue = ConvertToValueField(field.DefaultValue, field.DataType);
-            }
-
-            if (field.EnableAnalyzer)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.EnableAnalyzer, Value = "true" });
-            }
-
-            if (field.EnableMatch)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.EnableMatch, Value = "true" });
-            }
-
-            if (field.AnalyzerParams is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.AnalyzerParams,
-                    Value = JsonSerializer.Serialize(field.AnalyzerParams)
-                });
-            }
-
-            if (field.MultiAnalyzerParams is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.MultiAnalyzerParams,
-                    Value = JsonSerializer.Serialize(field.MultiAnalyzerParams)
-                });
-            }
-
-            if (field.MaxLength is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.VarcharMaxLength,
-                    Value = field.MaxLength.Value.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            if (field.Dimension is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.VectorDim,
-                    Value = field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            if (field.MaxCapacity is not null)
-            {
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair
-                {
-                    Key = Constants.MaxCapacity,
-                    Value = field.MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            // Mirror the C++ FieldSchema::SetTypeParams/AddTypeParam: any additional caller-supplied type params
-            // ride along, except keys that map to the typed properties already emitted above.
-            foreach (KeyValuePair<string, string> typeParam in field.TypeParams)
-            {
-                if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
-                    or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
-                    or Constants.MultiAnalyzerParams)
-                {
-                    continue;
-                }
-
-                grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
-            }
-
-            grpcSchema.Fields.Add(grpcField);
+            grpcSchema.Fields.Add(ConvertToGrpcFieldSchema(field));
         }
 
         // Struct fields: each sub-field is encoded as a proto FieldSchema whose data type is Array (scalar
@@ -215,93 +129,7 @@ public sealed class CreateCollectionReq
         // max capacity carried as a max_capacity type param. Mirrors the Java/C++ SDK struct encoding.
         foreach (StructFieldSchema structField in Schema.StructFields)
         {
-            if (structField.MaxCapacity <= 0)
-            {
-                throw new ArgumentException(
-                    $"Struct field '{structField.Name}' must have a positive MaxCapacity.", nameof(Schema));
-            }
-
-            if (structField.Fields.Count == 0)
-            {
-                throw new ArgumentException(
-                    $"Struct field '{structField.Name}' must have at least one sub-field.", nameof(Schema));
-            }
-
-            var grpcStruct = new Grpc.StructArrayFieldSchema
-            {
-                Name = structField.Name,
-                Description = structField.Description
-            };
-
-            foreach (FieldSchema subField in structField.Fields)
-            {
-                if (subField.IsPrimaryKey || subField.IsPartitionKey || subField.IsClusteringKey || subField.AutoId
-                    || subField.Nullable || subField.DefaultValue is not null)
-                {
-                    throw new ArgumentException(
-                        $"Struct sub-field '{structField.Name}.{subField.Name}' cannot be a primary/partition/" +
-                        "clustering key, auto-id, nullable, or have a default value.", nameof(Schema));
-                }
-
-                // Struct sub-fields are encoded as Array/ArrayOfVector FieldSchemas; the server does not accept
-                // text-analyzer configuration on them. Reject rather than silently dropping the settings so a
-                // caller's EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams cannot be lost.
-                if (subField.EnableAnalyzer || subField.EnableMatch
-                    || subField.AnalyzerParams is { Count: > 0 } || subField.MultiAnalyzerParams is { Count: > 0 })
-                {
-                    throw new ArgumentException(
-                        $"Struct sub-field '{structField.Name}.{subField.Name}' does not support text analyzers " +
-                        "(EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams).", nameof(Schema));
-                }
-
-                Grpc.FieldSchema grpcSubField = new()
-                {
-                    Name = subField.Name,
-                    Description = subField.Description,
-                    ElementType = (Grpc.DataType)(int)subField.DataType
-                };
-                // The server's ArrayOfVector validation only accepts fixed-dimension element types
-                // (IsFixDimVectorType); a sparse vector has no dimension and is always rejected server-side, so
-                // fail fast here instead of letting the caller hit an opaque server error.
-                if (subField.DataType == DataType.SparseFloatVector)
-                {
-                    throw new ArgumentException(
-                        $"Struct sub-field '{structField.Name}.{subField.Name}' does not support " +
-                        $"{nameof(DataType.SparseFloatVector)}: the server only accepts fixed-dimension vector " +
-                        "element types in a struct.", nameof(Schema));
-                }
-
-                bool isVector = IsVectorType(subField.DataType);
-                grpcSubField.DataType = isVector ? Grpc.DataType.ArrayOfVector : Grpc.DataType.Array;
-                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.MaxCapacity, Value = structField.MaxCapacity.ToString(CultureInfo.InvariantCulture) });
-
-                if (subField.MaxLength is { } maxLength)
-                {
-                    grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.VarcharMaxLength, Value = maxLength.ToString(CultureInfo.InvariantCulture) });
-                }
-
-                if (subField.Dimension is { } dimension)
-                {
-                    grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.VectorDim, Value = dimension.ToString(CultureInfo.InvariantCulture) });
-                }
-
-                // Mirror FieldSchema::TypeParams for struct sub-fields (C++ AddTypeParam), skipping typed keys.
-                foreach (KeyValuePair<string, string> typeParam in subField.TypeParams)
-                {
-                    if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
-                        or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
-                        or Constants.MultiAnalyzerParams)
-                    {
-                        continue;
-                    }
-
-                    grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
-                }
-
-                grpcStruct.Fields.Add(grpcSubField);
-            }
-
-            grpcSchema.StructArrayFields.Add(grpcStruct);
+            grpcSchema.StructArrayFields.Add(ConvertToGrpcStructFieldSchema(structField, structField.Nullable));
         }
 
         var result = new Grpc.CreateCollectionRequest
@@ -324,6 +152,235 @@ public sealed class CreateCollectionReq
 
         result.DbName = DatabaseName ?? "";
         return result;
+    }
+
+    // Encodes a field as a proto FieldSchema: the base properties plus the typed type params (analyzer,
+    // max_length, dim, max_capacity) and the caller-supplied TypeParams (skipping keys that map to a typed
+    // property). Shared by the create-collection path, AddCollectionField and AddFunctionField so the wire
+    // encoding stays in sync as FieldSchema evolves. When isFunctionOutput is set, the field is stamped as a
+    // function output field and text-analyzer configuration is rejected (analyzers belong on a function's
+    // input text field, not on its vector output field, matching the struct sub-field convention).
+    internal static Grpc.FieldSchema ConvertToGrpcFieldSchema(FieldSchema field, bool isFunctionOutput = false)
+    {
+        var grpcField = new Grpc.FieldSchema
+        {
+            Name = field.Name,
+            DataType = (Grpc.DataType)(int)field.DataType,
+            ElementType = field.ElementDataType is { } edt ? (Grpc.DataType)(int)edt : Grpc.DataType.None,
+            IsPrimaryKey = field.IsPrimaryKey,
+            IsPartitionKey = field.IsPartitionKey,
+            AutoID = field.AutoId,
+            Description = field.Description,
+            Nullable = field.Nullable,
+            IsClusteringKey = field.IsClusteringKey,
+            IsFunctionOutput = isFunctionOutput
+        };
+
+        if (isFunctionOutput && (field.EnableAnalyzer || field.EnableMatch
+            || field.AnalyzerParams is { Count: > 0 } || field.MultiAnalyzerParams is { Count: > 0 }))
+        {
+            throw new ArgumentException(
+                $"Function output field '{field.Name}' does not support text analyzers " +
+                "(EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams); analyzers belong on the " +
+                "function's input text field.", nameof(field));
+        }
+
+        if (field.DefaultValue is not null)
+        {
+            grpcField.DefaultValue = ConvertToValueField(field.DefaultValue, field.DataType);
+        }
+
+        if (field.EnableAnalyzer)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.EnableAnalyzer, Value = "true" });
+        }
+
+        if (field.EnableMatch)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.EnableMatch, Value = "true" });
+        }
+
+        if (field.AnalyzerParams is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.AnalyzerParams,
+                Value = JsonSerializer.Serialize(field.AnalyzerParams)
+            });
+        }
+
+        if (field.MultiAnalyzerParams is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.MultiAnalyzerParams,
+                Value = JsonSerializer.Serialize(field.MultiAnalyzerParams)
+            });
+        }
+
+        if (field.MaxLength is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.VarcharMaxLength,
+                Value = field.MaxLength.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        if (field.Dimension is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.VectorDim,
+                Value = field.Dimension.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        if (field.MaxCapacity is not null)
+        {
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.MaxCapacity,
+                Value = field.MaxCapacity.Value.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        // Mirror the C++ FieldSchema::SetTypeParams/AddTypeParam: any additional caller-supplied type params
+        // ride along, except keys that map to the typed properties already emitted above.
+        foreach (KeyValuePair<string, string> typeParam in field.TypeParams)
+        {
+            if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
+                or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
+                or Constants.MultiAnalyzerParams)
+            {
+                continue;
+            }
+
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+        }
+
+        return grpcField;
+    }
+
+    // Encodes a struct field as a proto StructArrayFieldSchema. Each sub-field becomes a proto FieldSchema
+    // whose data type is Array (scalar sub-fields) or ArrayOfVector (vector sub-fields), with the real type in
+    // element_type, the struct's max capacity carried as a max_capacity type param, and the struct's nullable
+    // flag applied to every sub-field (a struct is nullable as a whole). Mirrors the Java/C++/Rust SDK struct
+    // encoding. Shared by the create-collection path and AddCollectionStructField.
+    internal static Grpc.StructArrayFieldSchema ConvertToGrpcStructFieldSchema(StructFieldSchema structField, bool nullable)
+    {
+        if (structField.MaxCapacity <= 0)
+        {
+            throw new ArgumentException(
+                $"Struct field '{structField.Name}' must have a positive MaxCapacity.", nameof(structField));
+        }
+
+        if (structField.Fields.Count == 0)
+        {
+            throw new ArgumentException(
+                $"Struct field '{structField.Name}' must have at least one sub-field.", nameof(structField));
+        }
+
+        var grpcStruct = new Grpc.StructArrayFieldSchema
+        {
+            Name = structField.Name,
+            Description = structField.Description,
+            Nullable = nullable
+        };
+
+        // Struct-level type_params (e.g. warmup, mmap.enabled) ride along verbatim, matching the Java SDK's
+        // StructFieldSchema.typeParams and the FieldSchema.TypeParams convention in this repo.
+        foreach (KeyValuePair<string, string> typeParam in structField.TypeParams)
+        {
+            grpcStruct.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+        }
+
+        HashSet<string> names = new(StringComparer.Ordinal);
+        foreach (FieldSchema subField in structField.Fields)
+        {
+            if (subField.IsPrimaryKey || subField.IsPartitionKey || subField.IsClusteringKey || subField.AutoId
+                || subField.DefaultValue is not null)
+            {
+                throw new ArgumentException(
+                    $"Struct sub-field '{structField.Name}.{subField.Name}' cannot be a primary/partition/" +
+                    "clustering key, auto-id, or have a default value.", nameof(structField));
+            }
+
+            // A struct is nullable as a whole: a sub-field cannot be nullable independently of the struct.
+            if (subField.Nullable && !nullable)
+            {
+                throw new ArgumentException(
+                    $"Struct sub-field '{structField.Name}.{subField.Name}' cannot be nullable; set the " +
+                    "struct's Nullable instead.", nameof(structField));
+            }
+
+            if (!names.Add(subField.Name))
+            {
+                throw new ArgumentException(
+                    $"Struct field '{structField.Name}' contains duplicate sub-field name '{subField.Name}'.",
+                    nameof(structField));
+            }
+
+            // Struct sub-fields are encoded as Array/ArrayOfVector FieldSchemas; the server does not accept
+            // text-analyzer configuration on them. Reject rather than silently dropping the settings so a
+            // caller's EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams cannot be lost.
+            if (subField.EnableAnalyzer || subField.EnableMatch
+                || subField.AnalyzerParams is { Count: > 0 } || subField.MultiAnalyzerParams is { Count: > 0 })
+            {
+                throw new ArgumentException(
+                    $"Struct sub-field '{structField.Name}.{subField.Name}' does not support text analyzers " +
+                    "(EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams).", nameof(structField));
+            }
+
+            Grpc.FieldSchema grpcSubField = new()
+            {
+                Name = subField.Name,
+                Description = subField.Description,
+                ElementType = (Grpc.DataType)(int)subField.DataType,
+                Nullable = nullable
+            };
+            // The server's ArrayOfVector validation only accepts fixed-dimension element types
+            // (IsFixDimVectorType); a sparse vector has no dimension and is always rejected server-side, so
+            // fail fast here instead of letting the caller hit an opaque server error.
+            if (subField.DataType == DataType.SparseFloatVector)
+            {
+                throw new ArgumentException(
+                    $"Struct sub-field '{structField.Name}.{subField.Name}' does not support " +
+                    $"{nameof(DataType.SparseFloatVector)}: the server only accepts fixed-dimension vector " +
+                    "element types in a struct.", nameof(structField));
+            }
+
+            bool isVector = IsVectorType(subField.DataType);
+            grpcSubField.DataType = isVector ? Grpc.DataType.ArrayOfVector : Grpc.DataType.Array;
+            grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.MaxCapacity, Value = structField.MaxCapacity.ToString(CultureInfo.InvariantCulture) });
+
+            if (subField.MaxLength is { } maxLength)
+            {
+                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.VarcharMaxLength, Value = maxLength.ToString(CultureInfo.InvariantCulture) });
+            }
+
+            if (subField.Dimension is { } dimension)
+            {
+                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.VectorDim, Value = dimension.ToString(CultureInfo.InvariantCulture) });
+            }
+
+            // Mirror FieldSchema::TypeParams for struct sub-fields (C++ AddTypeParam), skipping typed keys.
+            foreach (KeyValuePair<string, string> typeParam in subField.TypeParams)
+            {
+                if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
+                    or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
+                    or Constants.MultiAnalyzerParams)
+                {
+                    continue;
+                }
+
+                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+            }
+
+            grpcStruct.Fields.Add(grpcSubField);
+        }
+
+        return grpcStruct;
     }
 
     internal static Grpc.ValueField ConvertToValueField(object value, DataType dataType)

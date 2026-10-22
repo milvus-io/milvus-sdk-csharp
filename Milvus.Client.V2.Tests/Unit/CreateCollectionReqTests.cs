@@ -207,6 +207,98 @@ public class CreateCollectionReqTests
     }
 
     [Fact]
+    public void ToGrpc_stamps_struct_nullable_and_inherits_to_sub_fields()
+    {
+        // A nullable struct is stamped on the wire and its nullable flag is applied to every sub-field (a struct
+        // is nullable as a whole), matching the Java/Rust SDK encoding.
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Nullable = true,
+                        Fields = { new FieldSchema("x", DataType.Int32) { Nullable = true } }
+                    }
+                }
+            }
+        };
+
+        Milvus.Client.Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        var schema = Milvus.Client.Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Milvus.Client.Grpc.StructArrayFieldSchema structField = Assert.Single(schema.StructArrayFields);
+        Assert.True(structField.Nullable);
+        Assert.True(structField.Fields.Single().Nullable);
+    }
+
+    [Fact]
+    public void ToGrpc_rejects_nullable_sub_field_on_non_nullable_struct()
+    {
+        // A struct that is not nullable cannot have an individually nullable sub-field; this is the only path
+        // (the create request) that reaches the sub-field-level rejection -- AddCollectionStructField requires a
+        // nullable struct and fails at the struct-level check first.
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields = { new FieldSchema("x", DataType.Int32) { Nullable = true } }
+                    }
+                }
+            }
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToGrpcCreateCollectionRequest());
+    }
+
+    [Fact]
+    public void ToGrpc_stamps_struct_type_params()
+    {
+        // Struct-level type_params (warmup, mmap.enabled) ride along on the wire, mirroring the Java SDK's
+        // StructFieldSchema.typeParams and pymilvus struct params.
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        TypeParams =
+                        {
+                            ["warmup"] = "WarmUpAfterIndexBuild",
+                            ["mmap.enabled"] = "true"
+                        },
+                        Fields = { new FieldSchema("x", DataType.Int32) }
+                    }
+                }
+            }
+        };
+
+        Milvus.Client.Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        var schema = Milvus.Client.Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Milvus.Client.Grpc.StructArrayFieldSchema structField = Assert.Single(schema.StructArrayFields);
+        Assert.Equal("WarmUpAfterIndexBuild", structField.TypeParams.Single(p => p.Key == "warmup").Value);
+        Assert.Equal("true", structField.TypeParams.Single(p => p.Key == "mmap.enabled").Value);
+    }
+
+    [Fact]
     public void ToGrpc_rejects_struct_without_max_capacity_or_sub_fields()
     {
         var withoutCapacity = new CreateCollectionReq

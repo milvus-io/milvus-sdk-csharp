@@ -229,7 +229,15 @@ public sealed class DescribeCollectionResp
         {
             var structField = new StructFieldSchema(
                 grpcStruct.Name,
-                string.IsNullOrEmpty(grpcStruct.Description) ? "" : grpcStruct.Description);
+                string.IsNullOrEmpty(grpcStruct.Description) ? "" : grpcStruct.Description)
+            {
+                Nullable = grpcStruct.Nullable
+            };
+
+            foreach (Grpc.KeyValuePair parameter in grpcStruct.TypeParams)
+            {
+                structField.TypeParams[parameter.Key] = parameter.Value;
+            }
 
             // Read the struct-level capacity once from the wire (every sub-field carries the same max_capacity
             // type param, but relying on that invariant would let the last sub-field win), parsing a single time.
