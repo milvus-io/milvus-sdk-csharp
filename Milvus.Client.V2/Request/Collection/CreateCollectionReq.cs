@@ -114,6 +114,16 @@ public sealed class CreateCollectionReq
             grpcSchema.Description = Schema.Description;
         }
 
+        if (Schema.ExternalSource is not null)
+        {
+            grpcSchema.ExternalSource = Schema.ExternalSource;
+        }
+
+        if (Schema.ExternalSpec is not null)
+        {
+            grpcSchema.ExternalSpec = Schema.ExternalSpec;
+        }
+
         foreach (FunctionSchema function in Schema.Functions)
         {
             grpcSchema.Functions.Add(function.ToGrpcFunctionSchema());
@@ -246,7 +256,8 @@ public sealed class CreateCollectionReq
         }
 
         // Mirror the C++ FieldSchema::SetTypeParams/AddTypeParam: any additional caller-supplied type params
-        // ride along, except keys that map to the typed properties already emitted above.
+        // ride along, except keys that map to the typed properties already emitted above. The wire key for a
+        // field/struct mmap setting is "mmap.enabled"; like pymilvus, also accept "mmap_enabled" and normalize it.
         foreach (KeyValuePair<string, string> typeParam in field.TypeParams)
         {
             if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
@@ -256,11 +267,15 @@ public sealed class CreateCollectionReq
                 continue;
             }
 
-            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+            grpcField.TypeParams.Add(new Grpc.KeyValuePair { Key = NormalizeTypeParamKey(typeParam.Key), Value = typeParam.Value });
         }
 
         return grpcField;
     }
+
+    // pymilvus accepts the field-level mmap key as either "mmap_enabled" (legacy) or "mmap.enabled" (wire) and
+    // normalizes it; mirror that so C# callers are not forced to write the dot-separated key by hand.
+    internal static string NormalizeTypeParamKey(string key) => key == "mmap_enabled" ? "mmap.enabled" : key;
 
     // Encodes a struct field as a proto StructArrayFieldSchema. Each sub-field becomes a proto FieldSchema
     // whose data type is Array (scalar sub-fields) or ArrayOfVector (vector sub-fields), with the real type in
@@ -288,11 +303,12 @@ public sealed class CreateCollectionReq
             Nullable = nullable
         };
 
-        // Struct-level type_params (e.g. warmup, mmap.enabled) ride along verbatim, matching the Java SDK's
-        // StructFieldSchema.typeParams and the FieldSchema.TypeParams convention in this repo.
+        // Struct-level type_params (e.g. warmup, mmap.enabled) ride along, matching the Java SDK's
+        // StructFieldSchema.typeParams and the FieldSchema.TypeParams convention in this repo; the legacy
+        // "mmap_enabled" key is normalized to "mmap.enabled" like pymilvus.
         foreach (KeyValuePair<string, string> typeParam in structField.TypeParams)
         {
-            grpcStruct.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+            grpcStruct.TypeParams.Add(new Grpc.KeyValuePair { Key = NormalizeTypeParamKey(typeParam.Key), Value = typeParam.Value });
         }
 
         HashSet<string> names = new(StringComparer.Ordinal);
@@ -374,7 +390,7 @@ public sealed class CreateCollectionReq
                     continue;
                 }
 
-                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = typeParam.Key, Value = typeParam.Value });
+                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = NormalizeTypeParamKey(typeParam.Key), Value = typeParam.Value });
             }
 
             grpcStruct.Fields.Add(grpcSubField);

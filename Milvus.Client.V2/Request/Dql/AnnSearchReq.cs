@@ -158,6 +158,13 @@ public sealed class AnnSearchReq
     /// </summary>
     public HighlightType? HighlightType { get; set; }
 
+    /// <summary>
+    /// Optional function chains applied to this leg's results (e.g. an L1 rerank plan for one recall source),
+    /// mirroring pymilvus's / the Java SDK's per-sub-request <c>function_chains</c> and the proto
+    /// <c>SubSearchRequest.function_chains</c>.
+    /// </summary>
+    public IList<FunctionChain> FunctionChains { get; } = new List<FunctionChain>();
+
     internal Grpc.PlaceholderValue ToPlaceholderValue()
     {
         if (SparseVectors is { Count: > 0 })

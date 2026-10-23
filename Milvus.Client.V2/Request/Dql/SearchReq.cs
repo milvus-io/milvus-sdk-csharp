@@ -108,6 +108,19 @@ public sealed class SearchReq
     /// </summary>
     public bool? SkipRls { get; set; }
 
+    /// <summary>
+    /// Optional function chains applied to this search (e.g. L1/L2 rerank plans), mirroring pymilvus's / the
+    /// Java SDK's <c>function_chains</c> and the proto <c>SearchRequest.function_chains</c>.
+    /// </summary>
+    public IList<FunctionChain> FunctionChains { get; } = new List<FunctionChain>();
+
+    /// <summary>
+    /// An optional group-by aggregation spec, mirroring pymilvus's / the Java SDK's
+    /// <c>search_aggregation</c> and the proto <c>SearchRequest.search_aggregation</c>. The aggregated buckets
+    /// are returned per query in <see cref="Responses.Dql.SearchResp.AggregationBuckets" />.
+    /// </summary>
+    public SearchAggregation? SearchAggregation { get; set; }
+
     internal Grpc.PlaceholderValue ToPlaceholderValue()
     {
         if (SparseVectors is { Count: > 0 })

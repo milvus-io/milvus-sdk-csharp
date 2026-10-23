@@ -43,4 +43,17 @@ public sealed class CollectionSchema
     /// Whether to enable dynamic fields for this schema. Defaults to <c>false</c>.
     /// </summary>
     public bool EnableDynamicFields { get; set; }
+
+    /// <summary>
+    /// The external data source of an external collection, e.g. <c>"s3://bucket/path"</c>. Set together with
+    /// <see cref="ExternalSpec" /> and the external-field mappings on <see cref="FieldSchema" /> to create an
+    /// external collection. Mirrors the Java/C++/Rust SDKs' <c>externalSource</c>.
+    /// </summary>
+    public string? ExternalSource { get; set; }
+
+    /// <summary>
+    /// The external file specification of an external collection (a JSON string), e.g. <c>"{\"format\":\"parquet\"}"</c>.
+    /// Mirrors the Java/C++/Rust SDKs' <c>externalSpec</c>.
+    /// </summary>
+    public string? ExternalSpec { get; set; }
 }

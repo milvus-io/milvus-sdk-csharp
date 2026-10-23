@@ -15,7 +15,8 @@ public sealed class SearchResp
         FieldData? groupByFieldValue, long? allSearchCount, ulong sessionTs,
         IReadOnlyList<float>? recalls, long cost, long scannedRemoteBytes, long scannedTotalBytes,
         float? cacheHitRatio, IReadOnlyList<SingleResult>? singleResults,
-        IReadOnlyList<HighlightResult>? highlightResults, IReadOnlyList<long>? elementIndices)
+        IReadOnlyList<HighlightResult>? highlightResults, IReadOnlyList<long>? elementIndices,
+        IReadOnlyList<IReadOnlyList<AggregationBucket>> aggregationBuckets)
     {
         CollectionName = collectionName;
         FieldsData = fieldsData;
@@ -35,6 +36,7 @@ public sealed class SearchResp
         SingleResults = singleResults;
         HighlightResults = highlightResults;
         ElementIndices = elementIndices;
+        AggregationBuckets = aggregationBuckets;
     }
 
     internal static SearchResp FromGrpc(Grpc.SearchResults response)
@@ -73,7 +75,8 @@ public sealed class SearchResp
             results is { HighlightResults.Count: > 0 }
                 ? results.HighlightResults.Select(HighlightResult.FromGrpc).ToList()
                 : null,
-            results is { ElementIndices.Data.Count: > 0 } ? results.ElementIndices.Data.ToList() : null);
+            results is { ElementIndices.Data.Count: > 0 } ? results.ElementIndices.Data.ToList() : null,
+            BuildAggregationBuckets(results));
     }
 
     // Slices the flat N*topk response into one SingleResult per query vector, using the per-query Topks.
@@ -243,4 +246,63 @@ public sealed class SearchResp
     /// array/struct fields. <c>null</c> when the server reported none.
     /// </summary>
     public IReadOnlyList<long>? ElementIndices { get; }
+
+    /// <summary>
+    /// The aggregation buckets returned by the search, when the request carried a
+    /// <see cref="SearchAggregation" />. The outer list follows the request's query order; each inner list
+    /// holds that query's buckets, and an empty inner list preserves query-index alignment for queries that
+    /// have no buckets. Mirrors the C++ SDK's <c>AggregationBuckets</c>.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<AggregationBucket>> AggregationBuckets { get; }
+
+    // Slices the flat agg_buckets list into one inner list per query using the per-query agg_topks counts,
+    // mirroring the C++ SDK's ConvertAggregationBuckets (including its validation: a negative per-query topk,
+    // a topk count that does not match the number of queries, or topk counts that do not account for exactly
+    // the returned buckets all fail instead of silently mis-slicing). An aggregation response includes an
+    // empty inner list for every query with no buckets, preserving query-index alignment.
+    private static IReadOnlyList<IReadOnlyList<AggregationBucket>> BuildAggregationBuckets(Grpc.SearchResultData? results)
+    {
+        if (results is null || (results.AggBuckets.Count == 0 && results.AggTopks.Count == 0))
+        {
+            return Array.Empty<IReadOnlyList<AggregationBucket>>();
+        }
+
+        if (results.NumQueries > int.MaxValue || results.AggTopks.Count != (int)results.NumQueries)
+        {
+            throw new MilvusException(
+                MilvusErrorCode.UnexpectedError,
+                "The search response's aggregation topk counts do not match the number of search queries.");
+        }
+
+        long totalBuckets = 0;
+        foreach (long topk in results.AggTopks)
+        {
+            if (topk < 0)
+            {
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError, "Aggregation bucket count cannot be negative.");
+            }
+
+            totalBuckets += topk;
+        }
+
+        if (totalBuckets != results.AggBuckets.Count)
+        {
+            throw new MilvusException(
+                MilvusErrorCode.UnexpectedError,
+                "The search response's aggregation topk counts do not account for every returned bucket.");
+        }
+
+        var buckets = new List<IReadOnlyList<AggregationBucket>>((int)results.NumQueries);
+        int offset = 0;
+        for (int i = 0; i < results.NumQueries; i++)
+        {
+            // Validated non-negative above, and the sum equals AggBuckets.Count (an int), so each fits int.
+            int take = (int)results.AggTopks[i];
+            buckets.Add(results.AggBuckets.Skip(offset).Take(take).Select(AggregationBucket.FromGrpc).ToArray());
+            offset += take;
+        }
+
+        return buckets;
+    }
 }

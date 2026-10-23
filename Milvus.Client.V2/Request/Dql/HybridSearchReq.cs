@@ -52,6 +52,14 @@ public sealed class HybridSearchReq
     /// </summary>
     public bool? SkipRls { get; set; }
 
+    /// <summary>
+    /// Optional top-level function chains applied after the sub-requests are fused (e.g. an L2 rerank plan),
+    /// mirroring pymilvus's / the Java SDK's top-level <c>function_chains</c> and the proto
+    /// <c>HybridSearchRequest.function_chains</c>. Per-leg chains are set on each
+    /// <see cref="AnnSearchReq.FunctionChains" />.
+    /// </summary>
+    public IList<FunctionChain> FunctionChains { get; } = new List<FunctionChain>();
+
     internal void Validate()
     {
         Verify.NotNullOrWhiteSpace(CollectionName);

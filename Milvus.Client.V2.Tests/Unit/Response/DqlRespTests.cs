@@ -312,6 +312,84 @@ public class DqlRespTests
     }
 
     [Fact]
+    public void Search_maps_aggregation_buckets()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData
+            {
+                NumQueries = 1,
+                TopK = 1,
+                PrimaryFieldName = "id"
+            }
+        };
+        var bucket = new Grpc.AggBucket { Count = 3 };
+        bucket.Key.Add(new Grpc.BucketKeyEntry { FieldId = 100, FieldName = "color", StringVal = "red" });
+        bucket.Metrics["avg_price"] = new Grpc.MetricValue { DoubleVal = 12.5 };
+        var hit = new Grpc.AggHit { IntPk = 42, Score = 0.9f };
+        hit.Fields.Add(new Grpc.AggHitField { FieldId = 200, FieldName = "title", StringVal = "book" });
+        bucket.Hits.Add(hit);
+        var sub = new Grpc.AggBucket { Count = 2 };
+        sub.Key.Add(new Grpc.BucketKeyEntry { FieldId = 300, FieldName = "size", IntVal = 5 });
+        bucket.SubGroups.Add(sub);
+        response.Results.AggBuckets.Add(bucket);
+        response.Results.AggTopks.Add(1);
+
+        SearchResp result = SearchResp.FromGrpc(response);
+
+        AggregationBucket single = Assert.Single(Assert.Single(result.AggregationBuckets));
+        Assert.Equal(3, single.Count);
+        AggregationBucketKey key = Assert.Single(single.Key);
+        Assert.Equal(100, key.FieldId);
+        Assert.Equal("color", key.FieldName);
+        Assert.Equal("red", key.Value);
+        Assert.Equal(12.5, Assert.IsType<double>(single.Metrics["avg_price"]));
+        AggregationHit aggregateHit = Assert.Single(single.Hits);
+        Assert.Equal(42L, aggregateHit.Id);
+        Assert.Equal(0.9f, aggregateHit.Score);
+        Assert.Equal("book", Assert.Single(aggregateHit.Fields).Value);
+        AggregationBucket subBucket = Assert.Single(single.SubGroups);
+        Assert.Equal(5L, Assert.Single(subBucket.Key).Value);
+    }
+
+    [Fact]
+    public void Search_aggregation_buckets_empty_without_results()
+    {
+        SearchResp result = SearchResp.FromGrpc(new Grpc.SearchResults());
+
+        Assert.Empty(result.AggregationBuckets);
+    }
+
+    [Fact]
+    public void Search_aggregation_rejects_negative_agg_topk()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData { NumQueries = 1, TopK = 1, PrimaryFieldName = "id" }
+        };
+        response.Results.AggBuckets.Add(new Grpc.AggBucket());
+        response.Results.AggTopks.Add(-1);
+
+        MilvusException ex = Assert.Throws<MilvusException>(() => SearchResp.FromGrpc(response));
+        Assert.Contains("cannot be negative", ex.Message);
+    }
+
+    [Fact]
+    public void Search_aggregation_rejects_bucket_count_mismatch()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData { NumQueries = 1, TopK = 1, PrimaryFieldName = "id" }
+        };
+        // One query declares two buckets but only one is returned.
+        response.Results.AggBuckets.Add(new Grpc.AggBucket());
+        response.Results.AggTopks.Add(2);
+
+        MilvusException ex = Assert.Throws<MilvusException>(() => SearchResp.FromGrpc(response));
+        Assert.Contains("do not account for every returned bucket", ex.Message);
+    }
+
+    [Fact]
     public void Search_preserves_zero_all_search_count()
     {
         var response = new Grpc.SearchResults

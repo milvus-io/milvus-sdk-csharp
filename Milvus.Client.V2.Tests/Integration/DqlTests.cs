@@ -231,6 +231,93 @@ public class DqlTests
     }
 
     [Fact]
+    public async Task Search_forwards_function_chains_and_search_aggregation()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.SearchAsync(
+            new SearchReq
+            {
+                CollectionName = "coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
+                MetricType = MetricType.L2,
+                Limit = 2,
+                FunctionChains =
+                {
+                    new FunctionChain
+                    {
+                        Stage = FunctionChainStage.L2Rerank,
+                        Name = "rerank",
+                        Ops = { FunctionChainOp.Limit(10) }
+                    }
+                },
+                SearchAggregation = new SearchAggregation
+                {
+                    Fields = { "color" },
+                    Size = 10
+                }
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = Assert.IsType<Milvus.Client.Grpc.SearchRequest>(server.Service.Requests["Search"]);
+        Grpc.FunctionChain chain = Assert.Single(request.FunctionChains);
+        Assert.Equal(Grpc.FunctionChainStage.L2Rerank, chain.Stage);
+        Assert.Equal("rerank", chain.Name);
+        Assert.Equal("limit", Assert.Single(chain.Ops).Op);
+        Assert.Equal(new[] { "color" }, request.SearchAggregation.Fields);
+        Assert.Equal(10, request.SearchAggregation.Size);
+    }
+
+    [Fact]
+    public async Task HybridSearch_forwards_top_level_and_leg_function_chains()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.HybridSearchAsync(
+            new HybridSearchReq
+            {
+                CollectionName = "coll",
+                Limit = 10,
+                SearchRequests =
+                [
+                    new AnnSearchReq
+                    {
+                        VectorFieldName = "embedding",
+                        Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
+                        Limit = 10,
+                        FunctionChains =
+                        {
+                            new FunctionChain
+                            {
+                                Stage = FunctionChainStage.L1Rerank,
+                                Ops = { FunctionChainOp.Sort("$score", desc: true) }
+                            }
+                        }
+                    }
+                ],
+                FunctionChains =
+                {
+                    new FunctionChain
+                    {
+                        Stage = FunctionChainStage.L2Rerank,
+                        Ops = { FunctionChainOp.Limit(10) }
+                    }
+                }
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = Assert.IsType<Milvus.Client.Grpc.HybridSearchRequest>(server.Service.Requests["HybridSearch"]);
+        Grpc.FunctionChain top = Assert.Single(request.FunctionChains);
+        Assert.Equal(Grpc.FunctionChainStage.L2Rerank, top.Stage);
+        Grpc.FunctionChain leg = Assert.Single(request.Requests[0].FunctionChains);
+        Assert.Equal(Grpc.FunctionChainStage.L1Rerank, leg.Stage);
+        Assert.Equal("sort", Assert.Single(leg.Ops).Op);
+    }
+
+    [Fact]
     public async Task Search_rejects_Rerank_as_having_no_wire_representation()
     {
         using var server = new MockMilvusServer();
