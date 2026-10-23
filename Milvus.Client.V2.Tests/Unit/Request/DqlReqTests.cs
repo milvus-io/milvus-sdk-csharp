@@ -688,4 +688,68 @@ public class DqlReqTests
         Assert.Equal("", grpc.RlsPrincipal);
         Assert.False(grpc.SkipRls);
     }
+
+    [Fact]
+    public void SearchParameters_exposes_typed_index_params()
+    {
+        var parameters = new SearchParameters
+        {
+            Ef = 64,
+            Nprobe = 8,
+            DropRatioSearch = 0.5,
+            AnalyzerName = "english",
+            Hints = "L2HINT:True",
+            JsonPath = "$.price",
+            JsonType = "Int64",
+            PageRetainOrder = true
+        };
+
+        var byKey = parameters.TypedIndexParams.ToDictionary(p => p.Key, p => p.Value);
+
+        Assert.Equal(64, byKey["ef"]);
+        Assert.Equal(8, byKey["nprobe"]);
+        Assert.Equal(0.5, byKey["drop_ratio_search"]);
+        Assert.Equal("english", byKey["analyzer_name"]);
+        Assert.Equal("L2HINT:True", byKey["hints"]);
+        Assert.Equal("$.price", byKey["json_path"]);
+        Assert.Equal("Int64", byKey["json_type"]);
+        Assert.Equal(true, byKey["page_retain_order"]);
+    }
+
+    [Fact]
+    public void SearchParameters_validate_rejects_out_of_range_round_decimal()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SearchParameters { RoundDecimal = -2 }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SearchParameters { RoundDecimal = 7 }.Validate());
+        // -1 (disable) and 0..6 are valid.
+        new SearchParameters { RoundDecimal = -1 }.Validate();
+        new SearchParameters { RoundDecimal = 6 }.Validate();
+    }
+
+    [Fact]
+    public void SearchParameters_validate_rejects_bad_drop_ratio()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SearchParameters { DropRatioSearch = 1 }.Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SearchParameters { DropRatioSearch = -0.1 }.Validate());
+        new SearchParameters { DropRatioSearch = 0.5 }.Validate();
+    }
+
+    [Fact]
+    public void SearchParameters_validate_rejects_unknown_json_type()
+    {
+        Assert.Throws<ArgumentException>(() => new SearchParameters { JsonType = "Float" }.Validate());
+        new SearchParameters { JsonType = "VarChar" }.Validate();
+    }
+
+    [Fact]
+    public void SearchParameters_validate_rejects_dual_supplied_key()
+    {
+        // A key set through both the typed property and ExtraParameters would be sent twice with disagreeing
+        // flat/JSON values; pymilvus rejects exactly this dual supply ("expect just one").
+        var parameters = new SearchParameters { Ef = 64 };
+        parameters.ExtraParameters["ef"] = "128";
+
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => parameters.Validate());
+        Assert.Contains("provide it only once", ex.Message);
+    }
 }

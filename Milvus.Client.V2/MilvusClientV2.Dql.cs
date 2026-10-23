@@ -62,6 +62,7 @@ public sealed partial class MilvusClientV2
     {
         Verify.NotNull(request);
         request.Validate();
+        request.Parameters?.Validate();
 
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
 
@@ -117,15 +118,20 @@ public sealed partial class MilvusClientV2
         if (parameters is not null)
         {
             // These parameters have no wire representation at the hybrid-search level (HybridSearchRequest
-            // has no dsl/highlighter field); they belong on each SearchReq sub-request. Reject them here so a
-            // caller following the plain-Search pattern fails fast instead of having them silently dropped.
+            // has no dsl/highlighter/search-params bag); they belong on each SearchReq sub-request. Reject
+            // them here so a caller following the plain-Search pattern fails fast instead of having them
+            // silently dropped. The typed index params (Ef/Nprobe/etc.) have no hybrid-level wire slot either
+            // (java/pymilvus put them on each AnnSearchRequest leg); set them via AnnSearchReq.ExtraParameters.
             if (parameters.Expression is not null || parameters.Radius is not null || parameters.RangeFilter is not null
                 || parameters.FilterTemplates.Count > 0 || parameters.Highlighter.Count > 0
-                || parameters.HighlightType is not null || parameters.FunctionScoreReranker is not null)
+                || parameters.HighlightType is not null || parameters.FunctionScoreReranker is not null
+                || parameters.TypedIndexParams.Count > 0)
             {
                 throw new ArgumentException(
                     "HybridSearchReq.Parameters does not support Expression/Radius/RangeFilter/FilterTemplates/" +
-                    "Highlighter/HighlightType/FunctionScoreReranker; set them on each SearchReq in SearchRequests instead.",
+                    "Highlighter/HighlightType/FunctionScoreReranker or the typed index params (Ef/Nprobe/" +
+                    "DropRatioSearch/AnalyzerName/Hints/JsonPath/JsonType/PageRetainOrder); set them on each " +
+                    "SearchReq in SearchRequests instead.",
                     nameof(request));
             }
 
@@ -732,9 +738,21 @@ public sealed partial class MilvusClientV2
         }
 
         // For an HNSW index the C++ SDK rejects an `ef` that is smaller than the batch size (CheckInput).
-        if (request.Parameters?.ExtraParameters.TryGetValue("ef", out string? efValue) == true
+        // Mirror the guard for both supply surfaces (the typed Ef and the raw ExtraParameters["ef"] key),
+        // matching pymilvus's SearchIteratorV2 check which reads ef from its params bag.
+        int? effectiveEf = null;
+        if (request.Parameters?.Ef is { } typedEf)
+        {
+            effectiveEf = typedEf;
+        }
+        else if (request.Parameters?.ExtraParameters.TryGetValue("ef", out string? efValue) == true
             && int.TryParse(efValue, System.Globalization.NumberStyles.Integer,
-                System.Globalization.CultureInfo.InvariantCulture, out int ef))
+                System.Globalization.CultureInfo.InvariantCulture, out int extraEf))
+        {
+            effectiveEf = extraEf;
+        }
+
+        if (effectiveEf is { } ef)
         {
             ListIndexesResp indexes = await ListIndexesAsync(
                 new ListIndexesReq
@@ -1189,6 +1207,8 @@ public sealed partial class MilvusClientV2
             }
         }
 
+        request.Parameters?.Validate();
+
         var grpcRequest = new Grpc.SearchRequest
         {
             CollectionName = request.CollectionName,
@@ -1298,6 +1318,20 @@ public sealed partial class MilvusClientV2
             foreach (KeyValuePair<string, string> parameter in parameters.ExtraParameters)
             {
                 grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = parameter.Key, Value = parameter.Value });
+            }
+            foreach (KeyValuePair<string, object?> parameter in parameters.TypedIndexParams)
+            {
+                grpcRequest.SearchParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = parameter.Key,
+                    Value = parameter.Value switch
+                    {
+                        bool b => b ? "true" : "false",
+                        // Invariant formatting (like java String.valueOf / pymilvus str()), so the flat value
+                        // always matches the params JSON on any locale.
+                        _ => Convert.ToString(parameter.Value, System.Globalization.CultureInfo.InvariantCulture)!
+                    }
+                });
             }
 
             if (parameters.ConsistencyLevel is { } cl)
@@ -1415,6 +1449,13 @@ public sealed partial class MilvusClientV2
             if (parameters.RangeFilter is not null)
             {
                 json["range_filter"] = ParseRangeNumber(parameters.RangeFilter, nameof(SearchParameters.RangeFilter));
+            }
+
+            // Typed index/search params (ef, nprobe, drop_ratio_search, analyzer_name, hints, json_path,
+            // json_type, page_retain_order) ride in the "params" JSON with their native types, like pymilvus.
+            foreach (KeyValuePair<string, object?> parameter in parameters.TypedIndexParams)
+            {
+                json[parameter.Key] = parameter.Value;
             }
         }
 
