@@ -42,9 +42,59 @@ public sealed class SearchParameters
     /// The number of decimal places to round the scores to.
     /// </summary>
     /// <remarks>
-    /// Must be between 0 and 6; the server rounds every returned score.
+    /// Must be between -1 and 6: <c>-1</c> (the server default) disables rounding, <c>0</c> rounds to integer,
+    /// and positive values round to that many decimals. The server rejects values outside this range.
     /// </remarks>
     public long? RoundDecimal { get; set; }
+
+    /// <summary>
+    /// The HNSW index's candidate list size (<c>ef</c>) for the search, trading recall against speed. Sent as
+    /// the <c>"ef"</c> search param, matching pymilvus's <c>search_params={"ef": ...}</c>.
+    /// </summary>
+    public int? Ef { get; set; }
+
+    /// <summary>
+    /// The number of IVF clusters to probe during the search. Sent as the <c>"nprobe"</c> search param, matching
+    /// pymilvus's <c>search_params={"nprobe": ...}</c>.
+    /// </summary>
+    public int? Nprobe { get; set; }
+
+    /// <summary>
+    /// The fraction of results to drop for the search (used by hybrid/rerank-aware paths), a value in [0, 1).
+    /// Sent as the <c>"drop_ratio_search"</c> search param.
+    /// </summary>
+    public double? DropRatioSearch { get; set; }
+
+    /// <summary>
+    /// The analyzer name to use for BM25/analyzer-based text searches. Sent as the <c>"analyzer_name"</c>
+    /// search param.
+    /// </summary>
+    public string? AnalyzerName { get; set; }
+
+    /// <summary>
+    /// The hints for the search (e.g. <c>"L2HINT:True"</c> to run on second-tier resources). Sent as the
+    /// <c>"hints"</c> search param.
+    /// </summary>
+    public string? Hints { get; set; }
+
+    /// <summary>
+    /// The JSON path used to extract and search a value inside a JSON field. Sent as the <c>"json_path"</c>
+    /// search param.
+    /// </summary>
+    public string? JsonPath { get; set; }
+
+    /// <summary>
+    /// The JSON type to cast the JSON field value to before matching: one of <c>"Int8"</c>, <c>"Int16"</c>,
+    /// <c>"Int32"</c>, <c>"Int64"</c>, <c>"Bool"</c> or <c>"VarChar"</c>. Sent as the <c>"json_type"</c> search
+    /// param, mirroring pymilvus's json_type validation.
+    /// </summary>
+    public string? JsonType { get; set; }
+
+    /// <summary>
+    /// Whether to preserve the JSON array element order when retrieving elements by <see cref="JsonPath" />.
+    /// Sent as the <c>"page_retain_order"</c> search param, mirroring pymilvus's boolean check.
+    /// </summary>
+    public bool? PageRetainOrder { get; set; }
 
     /// <summary>
     /// Additional search parameters passed through to the server.
@@ -139,6 +189,97 @@ public sealed class SearchParameters
     /// applies its default (lexical).
     /// </summary>
     public HighlightType? HighlightType { get; set; }
+
+    /// <summary>
+    /// The typed index/search parameters as wire key-value pairs, mirroring pymilvus's <c>search_params</c> bag.
+    /// The values keep their CLR types so the "params" JSON can serialize numbers/bools correctly.
+    /// </summary>
+    internal IReadOnlyList<KeyValuePair<string, object?>> TypedIndexParams
+    {
+        get
+        {
+            var list = new List<KeyValuePair<string, object?>>();
+            if (Ef is { } ef)
+            {
+                list.Add(new KeyValuePair<string, object?>("ef", ef));
+            }
+
+            if (Nprobe is { } nprobe)
+            {
+                list.Add(new KeyValuePair<string, object?>("nprobe", nprobe));
+            }
+
+            if (DropRatioSearch is { } dropRatio)
+            {
+                list.Add(new KeyValuePair<string, object?>("drop_ratio_search", dropRatio));
+            }
+
+            if (AnalyzerName is not null)
+            {
+                list.Add(new KeyValuePair<string, object?>("analyzer_name", AnalyzerName));
+            }
+
+            if (Hints is not null)
+            {
+                list.Add(new KeyValuePair<string, object?>("hints", Hints));
+            }
+
+            if (JsonPath is not null)
+            {
+                list.Add(new KeyValuePair<string, object?>("json_path", JsonPath));
+            }
+
+            if (JsonType is not null)
+            {
+                list.Add(new KeyValuePair<string, object?>("json_type", JsonType));
+            }
+
+            if (PageRetainOrder is { } retainOrder)
+            {
+                list.Add(new KeyValuePair<string, object?>("page_retain_order", retainOrder));
+            }
+
+            return list;
+        }
+    }
+
+    /// <summary>
+    /// Validates the typed index/search parameters against the server-accepted ranges, mirroring pymilvus's
+    /// client-side checks (round_decimal range, drop_ratio_search in [0, 1), json_type cast set).
+    /// </summary>
+    internal void Validate()
+    {
+        if (RoundDecimal is { } roundDecimal && (roundDecimal < -1 || roundDecimal > 6))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(RoundDecimal), roundDecimal, "RoundDecimal must be between -1 and 6 (the server range; -1 disables rounding).");
+        }
+
+        if (DropRatioSearch is { } dropRatio && (dropRatio < 0 || dropRatio >= 1))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(DropRatioSearch), dropRatio, "DropRatioSearch must be in [0, 1).");
+        }
+
+        if (JsonType is { } jsonType and not ("Int8" or "Int16" or "Int32" or "Int64" or "Bool" or "VarChar"))
+        {
+            throw new ArgumentException(
+                "JsonType must be one of Int8, Int16, Int32, Int64, Bool, VarChar.", nameof(JsonType));
+        }
+
+        // A key supplied through both the typed property and ExtraParameters would be sent twice (the flat
+        // keys disagreeing with the params JSON), mirroring pymilvus's "expect just one" rejection for
+        // dual-supplied search parameters.
+        foreach (KeyValuePair<string, object?> parameter in TypedIndexParams)
+        {
+            if (ExtraParameters.ContainsKey(parameter.Key))
+            {
+                throw new ArgumentException(
+                    $"The search parameter '{parameter.Key}' is set both via its typed property and via " +
+                    "ExtraParameters; provide it only once.", parameter.Key);
+            }
+        }
+    }
 }
 
 /// <summary>

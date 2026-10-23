@@ -303,6 +303,12 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     /// </summary>
     public bool DescribeIndexNotFound { get; set; }
 
+    /// <summary>
+    /// When true, DescribeIndex reports an HNSW index on the requested field, letting the search-iterator
+    /// <c>ef</c> guard (which lists indexes via the DescribeIndex RPC) exercise its HNSW check.
+    /// </summary>
+    public bool DescribeIndexHnsw { get; set; }
+
     public override Task<ConnectResponse> Connect(ConnectRequest request, ServerCallContext context)
     {
         Record(nameof(Connect), request);
@@ -952,12 +958,27 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         }
 
         var response = new DescribeIndexResponse { Status = NextStatus() };
-        response.IndexDescriptions.Add(new Milvus.Client.Grpc.IndexDescription
+        var indexDescription = new Milvus.Client.Grpc.IndexDescription
         {
             IndexName = "idx",
             FieldName = request.FieldName,
             State = Milvus.Client.Grpc.IndexState.Finished
-        });
+        };
+        if (DescribeIndexHnsw)
+        {
+            // Serve an HNSW vector index so the search-iterator `ef` guard (ListIndexesAsync reuses the
+            // DescribeIndex RPC) can reject a typed/raw Ef smaller than the batch size. The guard's
+            // ListIndexesReq carries no field name, so report the conventional "embedding" vector field; the
+            // index type is carried in the params, which IndexDesc.FromGrpc parses via ToWireString().
+            indexDescription.FieldName = "embedding";
+            indexDescription.Params.Add(new Milvus.Client.Grpc.KeyValuePair
+            {
+                Key = "index_type",
+                Value = "HNSW"
+            });
+        }
+
+        response.IndexDescriptions.Add(indexDescription);
         return Task.FromResult(response);
     }
 

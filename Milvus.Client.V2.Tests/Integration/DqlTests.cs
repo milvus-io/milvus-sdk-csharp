@@ -271,6 +271,111 @@ public class DqlTests
     }
 
     [Fact]
+    public async Task Search_forwards_typed_index_params()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.SearchAsync(
+            new SearchReq
+            {
+                CollectionName = "coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
+                MetricType = MetricType.Cosine,
+                Limit = 2,
+                Parameters = new SearchParameters
+                {
+                    Ef = 64,
+                    Nprobe = 8,
+                    DropRatioSearch = 0.5,
+                    AnalyzerName = "english",
+                    Hints = "L2HINT:True",
+                    JsonPath = "$.price",
+                    JsonType = "Int64",
+                    PageRetainOrder = true
+                }
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = Assert.IsType<Milvus.Client.Grpc.SearchRequest>(server.Service.Requests["Search"]);
+        var flat = request.SearchParams.ToDictionary(p => p.Key, p => p.Value);
+
+        // The typed params ride as flat search_params keys (mirroring ExtraParameters) ...
+        Assert.Equal("64", flat["ef"]);
+        Assert.Equal("8", flat["nprobe"]);
+        Assert.Equal("L2HINT:True", flat["hints"]);
+        Assert.Equal("Int64", flat["json_type"]);
+        Assert.Equal("true", flat["page_retain_order"]);
+
+        // ... and are embedded in the "params" JSON with their native types.
+        using var doc = System.Text.Json.JsonDocument.Parse(flat["params"]);
+        Assert.Equal(64, doc.RootElement.GetProperty("ef").GetInt32());
+        Assert.Equal(8, doc.RootElement.GetProperty("nprobe").GetInt32());
+        Assert.Equal(0.5, doc.RootElement.GetProperty("drop_ratio_search").GetDouble());
+        Assert.Equal("english", doc.RootElement.GetProperty("analyzer_name").GetString());
+        Assert.Equal("$.price", doc.RootElement.GetProperty("json_path").GetString());
+        Assert.True(doc.RootElement.GetProperty("page_retain_order").GetBoolean());
+    }
+
+    [Fact]
+    public async Task HybridSearch_rejects_typed_index_params_on_top_level()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // The typed index params have no wire slot at the hybrid top level (java/pymilvus put them on each
+        // AnnSearchRequest leg); they must fail fast instead of being silently dropped.
+        await Assert.ThrowsAsync<ArgumentException>(async () => await client.HybridSearchAsync(
+            new HybridSearchReq
+            {
+                CollectionName = "coll",
+                Limit = 10,
+                SearchRequests =
+                [
+                    new AnnSearchReq
+                    {
+                        VectorFieldName = "embedding",
+                        Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
+                        Limit = 10
+                    }
+                ],
+                Parameters = new SearchParameters { Ef = 64 }
+            },
+            TestContext.Current.CancellationToken));
+
+        Assert.DoesNotContain("HybridSearch", server.Service.Requests.Keys);
+    }
+
+    [Fact]
+    public async Task SearchIterator_typed_ef_guard_rejects_ef_smaller_than_batch_size()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // The HNSW ef guard must apply to the typed Ef too, not only ExtraParameters["ef"] (pymilvus reads
+        // ef from its params bag regardless of surface).
+        server.Service.DescribeIndexHnsw = true;
+        var iterator = client.SearchIteratorAsync(new SearchIteratorReq
+        {
+            CollectionName = "coll",
+            VectorFieldName = "embedding",
+            Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
+            MetricType = MetricType.L2,
+            Limit = 100,
+            BatchSize = 100,
+            Parameters = new SearchParameters { Ef = 10 }
+        });
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await foreach (var _ in iterator.WithCancellation(TestContext.Current.CancellationToken))
+            {
+            }
+        });
+    }
+
+    [Fact]
     public async Task HybridSearch_forwards_top_level_and_leg_function_chains()
     {
         using var server = new MockMilvusServer();
