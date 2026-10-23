@@ -1,5 +1,41 @@
 # Changelog
 
+## milvus-sdk-csharp 3.0.0 (2026-10-23)
+
+### Feature
+
+- Snapshot management: `CreateSnapshotAsync` / `DropSnapshotAsync` / `ListSnapshotsAsync` /
+  `DescribeSnapshotAsync` / `RestoreSnapshotAsync` / `GetRestoreSnapshotStateAsync` /
+  `ListRestoreSnapshotJobsAsync` / `PinSnapshotDataAsync` / `UnpinSnapshotDataAsync`
+- Row-level security (RLS): row policies (create/update/drop/list) and principal tags
+  (set/get/list/delete)
+- External file resource management APIs: `AddFileResourceAsync` / `RemoveFileResourceAsync` /
+  `ListFileResourcesAsync`
+- External collections: create/describe with `external_source` / `external_spec`, refresh, and
+  refresh progress/jobs
+- Schema enhancement: `AddCollectionStructFieldAsync` / `DropCollectionFieldAsync` /
+  `AddFunctionFieldAsync` / `DropFunctionFieldAsync`, with `AddCollectionFunctionAsync` /
+  `DropCollectionFunctionAsync` marked `[Obsolete]`
+- `ListCompactionTasksAsync`: list retained compaction tasks per collection; `GetCompactionPlansAsync`
+  now exposes the full per-task metadata (`CompactionMergeInfo` plan/trigger/collection/partition ids,
+  channel, compaction type, task state, failure reason, targets)
+- Function chains (`FunctionChain` / `FunctionChainOp` / `FunctionChainExpr` / `FunctionChainArg` /
+  `FunctionParamValue`) on search and hybrid search (top-level and per-leg), plus the
+  `FunctionChainExample`
+- Search aggregation (`SearchAggregation` input and `AggregationBucket` output) on search
+- Typed index search parameters (`ef`, `nprobe`, `drop_ratio_search`, `analyzer_name`, `hints`,
+  `json_path`, `json_type`, `page_retain_order`) on `SearchParameters`, with client-side validation
+- `mmap_enabled` → `mmap.enabled` normalization on field/struct type params
+
+### Improvement
+
+- `describe_collection` exposes `schema_version` and the collection's `external_source` / `external_spec`
+- Align `FunctionChain` behavior with Java/PyMilvus: required names and stage, exactly-one argument,
+  recursive `FunctionParamValue.From`, and culture-invariant wire serialization
+- Validate `round_decimal` ([-1, 6]), `drop_ratio_search` ([0, 1)), and `json_type`, and reject
+  parameters supplied through both a typed property and `ExtraParameters`
+- Align `agg_buckets` parsing with the C++ SDK (negative or mismatched topk counts fail loudly)
+
 ## milvus-sdk-csharp 2.6.1 (2026-10-20)
 
 ### Breaking Change
