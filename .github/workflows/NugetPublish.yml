@@ -28,7 +28,7 @@ jobs:
     name: Validate release commit
     if: github.repository == 'milvus-io/milvus-sdk-csharp'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout release tag and history
@@ -39,8 +39,10 @@ jobs:
 
       # A release tag must point at a commit that is already on some remote branch (main, 2.6, 3.0, ...) with a
       # green CI run on that commit, so a tag can never publish code that did not pass the required checks
-      # (mirrors the Rust SDK's publish-release flow).
-      - name: Verify tag ancestry and completed CI
+      # (mirrors the Rust SDK's publish-release flow). The required checks are polled until they reach a
+      # terminal conclusion: a tag is usually pushed right after the merge, so the CI runs may still be
+      # in_progress when this workflow starts, and a one-shot query would spuriously fail on that race.
+      - name: Verify tag ancestry and wait for CI
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_SHA: ${{ github.sha }}
@@ -55,22 +57,105 @@ jobs:
           fi
           echo "Release commit is contained in a remote branch."
 
-          check_runs="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG_SHA}/check-runs?per_page=100")"
-          if ! jq -e --arg name "${{ env.CI_V2_CHECK }}" --arg sha "${TAG_SHA}" \
-            '[.check_runs[] | select(.name == $name and .head_sha == $sha and .conclusion == "success")] | length > 0' <<<"${check_runs}" >/dev/null; then
-            echo "No successful ${{ env.CI_V2_CHECK }} check was found for ${TAG_SHA}." >&2
+          # Poll the check-runs API until each required CI check on the tagged commit reaches a terminal
+          # conclusion, then require success. A release tag is usually pushed right after the merge, so the
+          # CI runs may still be in_progress when this workflow starts; a one-shot query would fail on that
+          # race.
+          #
+          # - Only the LATEST run per check name/leg decides the outcome: a stale success from an earlier
+          #   attempt must not mask a newer failed run, and a stale failure must not fail the wait while a
+          #   newer run is still queued/in_progress.
+          # - Exact-name checks (V2, V2 on Windows): the latest run must be terminal and successful.
+          # - Prefix checks (V1 matrix): every matching leg's latest run must be terminal and successful
+          #   (all legs pass), consistent with the mergify all-legs gate.
+          # - Any terminal non-success conclusion (failure/cancelled/timed_out/action_required/skipped/
+          #   neutral/stale) fails fast instead of spinning to the deadline.
+          # - A transient check-runs API error is logged and retried; 5 consecutive failures abort with the
+          #   underlying error instead of silently retrying to the deadline.
+          wait_for_ci() {
+            local label="$1" name="$2" prefix="${3:-}"
+            local consecutive_errors=0
+            while (( SECONDS < wait_deadline )); do
+              local check_runs api_err state started in_progress green legs all_terminal all_green
+              if ! check_runs="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG_SHA}/check-runs?per_page=100" 2>/tmp/gh_api_err.$$)"; then
+                api_err="$(cat /tmp/gh_api_err.$$ 2>/dev/null || true)"
+                consecutive_errors=$((consecutive_errors + 1))
+                echo "check-runs API error (${consecutive_errors} consecutive): ${api_err}" >&2
+                if (( consecutive_errors >= 5 )); then
+                  echo "Persistent check-runs API failure after ${consecutive_errors} consecutive errors; aborting." >&2
+                  exit 1
+                fi
+                sleep 20
+                continue
+              fi
+              consecutive_errors=0
+
+              if [[ -n "${prefix}" ]]; then
+                state="$(jq -r --arg prefix "${prefix}" --arg sha "${TAG_SHA}" '
+                  [.check_runs[] | select((.name | startswith($prefix)) and .head_sha == $sha)]
+                  | group_by(.name)
+                  | { legs: length,
+                      all_terminal: (all(.[]; all(.[]; .status == "completed"))),
+                      all_green: (all(.[]; (max_by(.started_at) | .conclusion == "success"))) }
+                ' <<<"${check_runs}")"
+                legs="$(jq -r '.legs' <<<"${state}")"
+                all_terminal="$(jq -r '.all_terminal' <<<"${state}")"
+                all_green="$(jq -r '.all_green' <<<"${state}")"
+                if (( legs == 0 )); then
+                  echo "No ${label} check has started on ${TAG_SHA} (${SECONDS}s elapsed)..."
+                  sleep 20
+                  continue
+                fi
+                if [[ "${all_terminal}" != "true" ]]; then
+                  echo "${label} check still running on ${TAG_SHA} (${SECONDS}s elapsed)..."
+                  sleep 20
+                  continue
+                fi
+                if [[ "${all_green}" == "true" ]]; then
+                  echo "${label} check passed on ${TAG_SHA}."
+                  return 0
+                fi
+                echo "A ${label} check failed on ${TAG_SHA}." >&2
+                exit 1
+              else
+                state="$(jq -r --arg name "${name}" --arg sha "${TAG_SHA}" '
+                  [.check_runs[] | select(.name == $name and .head_sha == $sha)]
+                  | { started: (length > 0),
+                      in_progress: (any(.[]; .status != "completed")),
+                      green: ((length > 0) and (all(.[]; .status == "completed")) and ((max_by(.started_at) | .conclusion) == "success")) }
+                ' <<<"${check_runs}")"
+                started="$(jq -r '.started' <<<"${state}")"
+                in_progress="$(jq -r '.in_progress' <<<"${state}")"
+                green="$(jq -r '.green' <<<"${state}")"
+                if [[ "${started}" != "true" ]]; then
+                  echo "No ${label} check has started on ${TAG_SHA} (${SECONDS}s elapsed)..."
+                  sleep 20
+                  continue
+                fi
+                if [[ "${in_progress}" == "true" ]]; then
+                  echo "${label} check still running on ${TAG_SHA} (${SECONDS}s elapsed)..."
+                  sleep 20
+                  continue
+                fi
+                if [[ "${green}" == "true" ]]; then
+                  echo "${label} check passed on ${TAG_SHA}."
+                  return 0
+                fi
+                echo "A ${label} check failed on ${TAG_SHA}." >&2
+                exit 1
+              fi
+            done
+            echo "Timed out waiting for the ${label} check to complete on ${TAG_SHA}." >&2
             exit 1
-          fi
-          if ! jq -e --arg name "${{ env.CI_V2_WINDOWS_CHECK }}" --arg sha "${TAG_SHA}" \
-            '[.check_runs[] | select(.name == $name and .head_sha == $sha and .conclusion == "success")] | length > 0' <<<"${check_runs}" >/dev/null; then
-            echo "No successful ${{ env.CI_V2_WINDOWS_CHECK }} check was found for ${TAG_SHA}." >&2
-            exit 1
-          fi
-          if ! jq -e --arg prefix "${{ env.CI_V1_CHECK_PREFIX }}" --arg sha "${TAG_SHA}" \
-            '[.check_runs[] | select((.name | startswith($prefix)) and .head_sha == $sha and .conclusion == "success")] | length > 0' <<<"${check_runs}" >/dev/null; then
-            echo "No successful V1 matrix check was found for ${TAG_SHA}." >&2
-            exit 1
-          fi
+          }
+
+          # A single shared 40-minute budget across all three required checks (within the 45-minute job
+          # timeout): three sequential per-call 40-minute deadlines would overrun the job and get killed.
+          wait_deadline=$((SECONDS + 2400))
+
+          wait_for_ci "${{ env.CI_V2_CHECK }}" "${{ env.CI_V2_CHECK }}"
+          wait_for_ci "${{ env.CI_V2_WINDOWS_CHECK }}" "${{ env.CI_V2_WINDOWS_CHECK }}"
+          wait_for_ci "${{ env.CI_V1_CHECK_PREFIX }}" "" "${{ env.CI_V1_CHECK_PREFIX }}"
           echo "Required post-merge checks passed for ${TAG_SHA}."
 
   publish:
