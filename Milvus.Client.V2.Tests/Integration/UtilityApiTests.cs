@@ -389,4 +389,46 @@ public class UtilityApiTests
         Assert.Equal("db1", server.Service.LastRequestDbName);
     }
 
+    [Fact]
+    public async Task GetClientTelemetry_forwards_request_and_maps_response()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        var telemetryClient = new Milvus.Client.Grpc.ClientTelemetry
+        {
+            ClientInfo = new Milvus.Client.Grpc.ClientInfo { SdkType = "CSharp", SdkVersion = "3.0.0" },
+            LastHeartbeatTime = 42,
+            Status = "healthy"
+        };
+        telemetryClient.Databases.Add("default");
+        server.TelemetryService.Response = new Milvus.Client.Grpc.GetClientTelemetryResponse
+        {
+            Status = new Milvus.Client.Grpc.Status(),
+            Aggregated = new Milvus.Client.Grpc.Metrics { RequestCount = 7, SuccessCount = 7 }
+        };
+        server.TelemetryService.Response.Clients.Add(telemetryClient);
+
+        GetClientTelemetryResp response = await client.GetClientTelemetryAsync(
+            new GetClientTelemetryReq
+            {
+                Database = "default",
+                ClientId = "client-1",
+                IncludeMetrics = true
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = (Milvus.Client.Grpc.GetClientTelemetryRequest)server.TelemetryService.Requests["GetClientTelemetry"];
+        Assert.Equal("default", request.Database);
+        Assert.Equal("client-1", request.ClientId);
+        Assert.True(request.IncludeMetrics);
+
+        Assert.Equal(7, response.Aggregated.RequestCount);
+        ClientTelemetryInfo info = Assert.Single(response.Clients);
+        Assert.Equal("CSharp", info.ClientInfo.SdkType);
+        Assert.Equal("3.0.0", info.ClientInfo.SdkVersion);
+        Assert.Equal("healthy", info.Status);
+        Assert.Equal(new[] { "default" }, info.Databases);
+    }
+
 }
