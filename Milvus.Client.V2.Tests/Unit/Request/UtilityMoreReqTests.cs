@@ -283,4 +283,34 @@ public class UtilityMoreReqTests
         var request = new GetServerVersionReq { Detail = true };
         Assert.True(request.Detail);
     }
+
+    [Fact]
+    public void GetClientTelemetry_maps_request()
+    {
+        var request = new GetClientTelemetryReq
+        {
+            Database = "db1",
+            ClientId = "client-1",
+            IncludeMetrics = true,
+            CommandId = "cmd-1"
+        };
+
+        Grpc.GetClientTelemetryRequest grpc = request.ToGrpcGetClientTelemetryRequest();
+
+        Assert.Equal("db1", grpc.Database);
+        Assert.Equal("client-1", grpc.ClientId);
+        Assert.True(grpc.IncludeMetrics);
+        Assert.Equal("cmd-1", grpc.CommandId);
+    }
+
+    [Fact]
+    public void GetClientTelemetry_leaves_optional_fields_blank_when_unset()
+    {
+        Grpc.GetClientTelemetryRequest grpc = new GetClientTelemetryReq().ToGrpcGetClientTelemetryRequest();
+
+        Assert.Equal("", grpc.Database);
+        Assert.Equal("", grpc.ClientId);
+        Assert.Equal("", grpc.CommandId);
+        Assert.False(grpc.IncludeMetrics);
+    }
 }

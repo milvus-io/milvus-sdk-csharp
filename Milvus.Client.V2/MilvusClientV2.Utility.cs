@@ -285,6 +285,28 @@ public sealed partial class MilvusClientV2
     }
 
     /// <summary>
+    /// Retrieves the server-side client-telemetry report for the connected SDK clients, via the proto
+    /// <c>ClientTelemetryService.GetClientTelemetry</c> RPC. This is a server-side read of the telemetry the
+    /// server has collected from clients that registered their <c>ClientInfo</c> on connect and are still
+    /// heartbeating; it is distinct from the client-side telemetry managers in the Java/C++/Rust V2 SDKs,
+    /// which push heartbeats/metrics and handle commands but do not expose this read.
+    /// </summary>
+    /// <remarks>
+    /// When authorization is enabled, the server requires the calling user to be the <c>root</c> user
+    /// (<c>checkTelemetryAdmin</c>); a non-root caller receives a permission <see cref="MilvusException" />.
+    /// </remarks>
+    public async Task<GetClientTelemetryResp> GetClientTelemetryAsync(
+        GetClientTelemetryReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.GetClientTelemetryRequest grpcRequest = request.ToGrpcGetClientTelemetryRequest();
+        Grpc.GetClientTelemetryResponse response = await InvokeAsync(
+            TelemetryGrpcClient.GetClientTelemetryAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return GetClientTelemetryResp.FromGrpc(response);
+    }
+
+    /// <summary>
     /// Registers a named file resource for external-table workflows.
     /// </summary>
     public async Task AddFileResourceAsync(

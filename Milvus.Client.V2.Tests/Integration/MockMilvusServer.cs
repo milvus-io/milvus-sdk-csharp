@@ -1609,6 +1609,63 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
 /// <summary>
 /// Hosts a <see cref="MockMilvusService" /> in an in-process TestServer and hands out clients bound to it.
 /// </summary>
+internal sealed class MockClientTelemetryService : Grpc.ClientTelemetryService.ClientTelemetryServiceBase
+{
+    /// <summary>
+    /// The most recent request received by each RPC, keyed by the RPC method name.
+    /// </summary>
+    public Dictionary<string, object> Requests { get; } = new();
+
+    /// <summary>
+    /// The response returned by <c>GetClientTelemetry</c>; defaults to a success response with no clients.
+    /// </summary>
+    public Grpc.GetClientTelemetryResponse? Response { get; set; }
+
+    /// <summary>
+    /// The heartbeat requests received, in order.
+    /// </summary>
+    public List<Grpc.ClientHeartbeatRequest> Heartbeats { get; } = new();
+
+    /// <summary>
+    /// When set, every heartbeat response includes a command of this type (used to exercise command processing).
+    /// </summary>
+    public string? HeartbeatCommandType { get; set; }
+
+    /// <summary>
+    /// When set together with <see cref="HeartbeatCommandType"/>, the payload carried by the pushed command.
+    /// </summary>
+    public string? HeartbeatCommandPayload { get; set; }
+
+    public override Task<Grpc.GetClientTelemetryResponse> GetClientTelemetry(
+        Grpc.GetClientTelemetryRequest request, ServerCallContext context)
+    {
+        Requests[nameof(GetClientTelemetry)] = request;
+        return Task.FromResult(Response ?? new Grpc.GetClientTelemetryResponse { Status = new Grpc.Status() });
+    }
+
+    public override Task<Grpc.ClientHeartbeatResponse> ClientHeartbeat(
+        Grpc.ClientHeartbeatRequest request, ServerCallContext context)
+    {
+        Requests[nameof(ClientHeartbeat)] = request;
+        Heartbeats.Add(request);
+        var response = new Grpc.ClientHeartbeatResponse { Status = new Grpc.Status() };
+        if (HeartbeatCommandType is { } commandType)
+        {
+            response.Commands.Add(new Grpc.ClientCommand
+            {
+                CommandId = $"cmd-{Heartbeats.Count}",
+                CommandType = commandType,
+                CreateTime = Heartbeats.Count,
+                Payload = HeartbeatCommandPayload is { } payload
+                    ? Google.Protobuf.ByteString.CopyFromUtf8(payload)
+                    : Google.Protobuf.ByteString.Empty
+            });
+        }
+
+        return Task.FromResult(response);
+    }
+}
+
 internal sealed class MockMilvusServer : IDisposable
 {
     private readonly IHost _host;
@@ -1631,23 +1688,34 @@ internal sealed class MockMilvusServer : IDisposable
                     .ConfigureServices(services =>
                     {
                         services.AddSingleton<MockMilvusService>();
+                        services.AddSingleton<MockClientTelemetryService>();
                         services.AddGrpc();
                     })
                     .Configure(app =>
                     {
                         app.UseRouting();
-                        app.UseEndpoints(endpoints => endpoints.MapGrpcService<MockMilvusService>());
+                        app.UseEndpoints(endpoints =>
+                        {
+                            endpoints.MapGrpcService<MockMilvusService>();
+                            endpoints.MapGrpcService<MockClientTelemetryService>();
+                        });
                     });
             })
             .Start();
 
         Service = _host.Services.GetRequiredService<MockMilvusService>();
+        TelemetryService = _host.Services.GetRequiredService<MockClientTelemetryService>();
     }
 
     /// <summary>
     /// The mock service whose state the tests control.
     /// </summary>
     public MockMilvusService Service { get; }
+
+    /// <summary>
+    /// The mock client-telemetry service whose state the tests control.
+    /// </summary>
+    public MockClientTelemetryService TelemetryService { get; }
 
     /// <summary>
     /// The URI of the mock server.

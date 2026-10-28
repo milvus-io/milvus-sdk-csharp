@@ -54,7 +54,17 @@ public sealed partial class MilvusClientV2 : IDisposable
         }
 
         _grpcChannel = CreateDefaultChannel(config);
+        _endpoint = TryGetEndpoint(config.Uri);
         GrpcClient = new Grpc.MilvusService.MilvusServiceClient(_grpcChannel);
+        TelemetryGrpcClient = new Grpc.ClientTelemetryService.ClientTelemetryServiceClient(_grpcChannel);
+        _telemetry = new ClientTelemetryManager(
+            config.Telemetry ?? new TelemetryConfig(),
+            TelemetryGrpcClient,
+            () => _username ?? "",
+            () => ResolveDatabaseName(null),
+            () => typeof(MilvusClientV2).Assembly.GetName().Version?.ToString() ?? "unknown",
+            CreateCallOptions,
+            () => _endpoint);
 
         string? authorization = config.Username is null
             ? config.ApiKey
@@ -91,7 +101,6 @@ public sealed partial class MilvusClientV2 : IDisposable
         _password = config.Password ?? "";
         _retryConfig = config.Retry ?? new RetryConfig();
         _retryConfig.Validate();
-        _endpoint = TryGetEndpoint(config.Uri);
         _database = string.IsNullOrWhiteSpace(config.Database) ? "default" : config.Database!;
     }
 
@@ -194,6 +203,9 @@ public sealed partial class MilvusClientV2 : IDisposable
             {
                 throw new MilvusException(code, response.Status.Reason);
             }
+
+            // Start the client-side telemetry heartbeat once connected.
+            _telemetry.Start();
         }
         catch (RpcException ex)
         {
@@ -279,6 +291,16 @@ public sealed partial class MilvusClientV2 : IDisposable
         => typeof(MilvusClientV2).Assembly.GetName().Version?.ToString() ?? "unknown";
 
     /// <summary>
+    /// Gets the client-side telemetry manager that records operation metrics, reports them to the server over a
+    /// heartbeat loop, and handles server-pushed commands. Mirrors the Java SDK's <c>getTelemetry</c> / the C++
+    /// SDK's <c>GetTelemetry</c>.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1024:UsePropertiesWhereAppropriate",
+        Justification = "Method for API parity with java getTelemetry / cpp GetTelemetry.")]
+    public ClientTelemetryManager GetTelemetry()
+        => _telemetry;
+
+    /// <summary>
     /// Gets the Milvus server version.
     /// </summary>
     /// <param name="request">The request specifying whether to return detailed version information.</param>
@@ -313,6 +335,7 @@ public sealed partial class MilvusClientV2 : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        _telemetry.Dispose();
         _grpcChannel.Dispose();
         _connectLock.Dispose();
     }
@@ -361,6 +384,11 @@ public sealed partial class MilvusClientV2 : IDisposable
     private string _database;
     private string? _authorizationHeader;
 
+    // Depth of the enclosing logical telemetry operation (e.g. a schema-mismatch retry that re-enters the
+    // facade). InvokeAsync records only at depth 0 so a logical Insert/Upsert is recorded exactly once, while
+    // the facade wrapper records the final outcome (Java logicalOperationDepth, C++ InvokeWithTelemetry).
+    private static readonly AsyncLocal<int> LogicalOperationDepth = new();
+
     private CallOptions _callOptions;
 
     private readonly SemaphoreSlim _connectLock = new(1, 1);
@@ -384,6 +412,10 @@ public sealed partial class MilvusClientV2 : IDisposable
         => string.IsNullOrEmpty(requestDatabaseName) ? CurrentDatabase : requestDatabaseName!;
 
     internal Grpc.MilvusService.MilvusServiceClient GrpcClient { get; }
+
+    internal Grpc.ClientTelemetryService.ClientTelemetryServiceClient TelemetryGrpcClient { get; }
+
+    private readonly ClientTelemetryManager _telemetry;
 
     // Server-streaming calls that can outlive the connect timeout (e.g. an unbounded DumpMessages stream with
     // EndTimetick=0) must not inherit the per-call ConnectTimeout deadline, which is intended for unary calls.
@@ -468,53 +500,164 @@ public sealed partial class MilvusClientV2 : IDisposable
                 ? new { credential = "redacted" }
                 : request);
 
+        // Record the logical operation (Insert/Delete/Upsert/Search/HybridSearch/Query/RunAnalyzer) with the
+        // whole retried call's latency and outcome, mirroring the Java/C++/Rust telemetry managers. When an
+        // enclosing logical operation is active (LogicalOperationDepth > 0, e.g. a schema-mismatch retry that
+        // re-enters the facade), skip per-attempt recording; the facade wrapper records the final outcome once.
+        string? telemetryOperation = LogicalOperationDepth.Value == 0 ? ToTelemetryOperation(callerName) : null;
+        string? telemetryCollection = telemetryOperation is null ? null : TryGetTelemetryCollection(request);
+        System.Diagnostics.Stopwatch? telemetryStopwatch = telemetryOperation is null ? null : System.Diagnostics.Stopwatch.StartNew();
+
         try
         {
-            return await RetryPolicy.ExecuteAsync(
-                async innerCt =>
-                {
-                    TResponse response = await func(request, CreateCallOptions(innerCt)).ConfigureAwait(false);
-                    Grpc.Status status = getStatus(response);
-                    var code = (MilvusErrorCode)status.Code;
-
-                    // Pre-2.4 servers populate only the legacy error_code field (code stays 0); fall back to it
-                    // so their non-success responses are not silently swallowed as Success.
-#pragma warning disable CS0612 // ErrorCode is [deprecated] but required for pre-2.4 server compatibility.
-                    if (code == MilvusErrorCode.Success && status.ErrorCode != Grpc.ErrorCode.Success)
+            try
+            {
+                TResponse response = await RetryPolicy.ExecuteAsync(
+                    async innerCt =>
                     {
-                        code = (MilvusErrorCode)(int)status.ErrorCode;
-                    }
+                        TResponse innerResponse = await func(request, CreateCallOptions(innerCt)).ConfigureAwait(false);
+                        Grpc.Status status = getStatus(innerResponse);
+                        var code = (MilvusErrorCode)status.Code;
+
+                        // Pre-2.4 servers populate only the legacy error_code field (code stays 0); fall back to it
+                        // so their non-success responses are not silently swallowed as Success.
+#pragma warning disable CS0612 // ErrorCode is [deprecated] but required for pre-2.4 server compatibility.
+                        if (code == MilvusErrorCode.Success && status.ErrorCode != Grpc.ErrorCode.Success)
+                        {
+                            code = (MilvusErrorCode)(int)status.ErrorCode;
+                        }
 #pragma warning restore CS0612
 
-                    if (code != MilvusErrorCode.Success)
+                        if (code != MilvusErrorCode.Success)
+                        {
+                            _log.OperationFailed(callerName, code, status.Reason);
+
+                            throw new MilvusException(code, status.Reason);
+                        }
+
+                        return innerResponse;
+                    },
+                    _retryConfig,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (telemetryStopwatch is not null)
+                {
+#pragma warning disable CA1031 // Telemetry must never throw into the caller; the RPC result is authoritative.
+                    try
                     {
-                        _log.OperationFailed(callerName, code, status.Reason);
-
-                        throw new MilvusException(code, status.Reason);
+                        _telemetry.RecordOperation(telemetryOperation!, telemetryCollection, telemetryStopwatch.Elapsed.TotalMilliseconds * 1000, true, null, null);
                     }
+                    catch (Exception)
+                    {
+                    }
+#pragma warning restore CA1031
+                }
 
-                    return response;
-                },
-                _retryConfig,
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (RpcException ex)
-        {
-            // A caller-cancelled unary call surfaces as RpcException(Cancelled) via Grpc.Net.Client; surface it
-            // as OperationCanceledException so standard `catch (OperationCanceledException)` callers are not
-            // surprised, matching the streaming DumpMessages path. Only map when the caller's token was actually
-            // cancelled: a server/transport-initiated CANCELLED must stay a MilvusException so `catch
-            // (MilvusException)` callers do not miss it.
-            if (ex.StatusCode == StatusCode.Cancelled && cancellationToken.IsCancellationRequested)
+                return response;
+            }
+            catch (RpcException ex)
             {
-                throw new OperationCanceledException(ex.Status.Detail, ex, cancellationToken);
+                // A caller-cancelled unary call surfaces as RpcException(Cancelled) via Grpc.Net.Client; surface it
+                // as OperationCanceledException so standard `catch (OperationCanceledException)` callers are not
+                // surprised, matching the streaming DumpMessages path. Only map when the caller's token was actually
+                // cancelled: a server/transport-initiated CANCELLED must stay a MilvusException so `catch
+                // (MilvusException)` callers do not miss it.
+                if (ex.StatusCode == StatusCode.Cancelled && cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(ex.Status.Detail, ex, cancellationToken);
+                }
+
+                // Transport-level failures surface as RpcException; wrap them into MilvusException for a
+                // consistent public error surface (design doc §3.4), preserving the original gRPC status code.
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError, $"RPC failed: {ex.StatusCode} {ex.Status.Detail}",
+                    ex.StatusCode, ex);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (telemetryStopwatch is not null)
+            {
+#pragma warning disable CA1031 // Telemetry must never throw into the caller; the RPC result is authoritative.
+                try
+                {
+                    _telemetry.RecordOperation(telemetryOperation!, telemetryCollection, telemetryStopwatch.Elapsed.TotalMilliseconds * 1000, false, ex.Message, Guid.NewGuid().ToString("N"));
+                }
+                catch (Exception)
+                {
+                }
+#pragma warning restore CA1031
             }
 
-            // Transport-level failures surface as RpcException; wrap them into MilvusException for a
-            // consistent public error surface (design doc §3.4), preserving the original gRPC status code.
-            throw new MilvusException(
-                MilvusErrorCode.UnexpectedError, $"RPC failed: {ex.StatusCode} {ex.Status.Detail}",
-                ex.StatusCode, ex);
+            throw;
         }
     }
+
+    private static string? ToTelemetryOperation(string callerName)
+        => callerName switch
+        {
+            "InsertAsync" => "Insert",
+            "DeleteAsync" => "Delete",
+            "UpsertAsync" => "Upsert",
+            "SearchAsync" => "Search",
+            "HybridSearchAsync" => "HybridSearch",
+            "QueryAsync" => "Query",
+            "RunAnalyzerAsync" => "RunAnalyzer",
+            _ => null
+        };
+
+    // Runs a logical DML/DQL operation (which may internally re-enter the facade, e.g. a schema-mismatch
+    // retry) and records exactly one telemetry metric for its final outcome, mirroring the Java
+    // recordLogicalOperation / C++ InvokeWithTelemetry wrappers. InvokeAsync suppresses per-attempt records
+    // while LogicalOperationDepth > 0.
+    private async Task<T> RecordLogicalOperationAsync<T>(
+        string operation, string? collection, Func<Task<T>> supplier)
+    {
+        LogicalOperationDepth.Value++;
+        System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            T result = await supplier().ConfigureAwait(false);
+            RecordTelemetry(operation, collection, stopwatch, true, null);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            RecordTelemetry(operation, collection, stopwatch, false, ex.Message);
+            throw;
+        }
+        finally
+        {
+            LogicalOperationDepth.Value--;
+        }
+    }
+
+    private void RecordTelemetry(
+        string operation, string? collection, System.Diagnostics.Stopwatch stopwatch, bool success, string? errorMessage)
+    {
+#pragma warning disable CA1031 // Telemetry must never throw into the caller; the RPC result is authoritative.
+        try
+        {
+            _telemetry.RecordOperation(
+                operation, collection, stopwatch.Elapsed.TotalMilliseconds * 1000, success, errorMessage,
+                success ? null : Guid.NewGuid().ToString("N"));
+        }
+        catch (Exception)
+        {
+        }
+#pragma warning restore CA1031
+    }
+
+    private static string? TryGetTelemetryCollection(object request)
+        => request switch
+        {
+            Grpc.InsertRequest r => r.CollectionName,
+            Grpc.DeleteRequest r => r.CollectionName,
+            Grpc.UpsertRequest r => r.CollectionName,
+            Grpc.SearchRequest r => r.CollectionName,
+            Grpc.HybridSearchRequest r => r.CollectionName,
+            Grpc.QueryRequest r => r.CollectionName,
+            Grpc.RunAnalyzerRequest r => r.CollectionName,
+            _ => null
+        };
 }
