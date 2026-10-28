@@ -73,6 +73,21 @@ public class DqlReqTests
     }
 
     [Fact]
+    public void QueryIterator_accepts_offset_and_limit_beyond_server_bound()
+    {
+        // Unlike a one-shot query/search, the iterator seeks an arbitrary offset by paging through
+        // primary-key-cursor batches (the C++ QueryIteratorImpl::seek supports offset > 16384), so a large
+        // offset+limit sum must not be rejected. Mirrors the C++/Java iterator examples.
+        var request = new QueryIteratorReq
+        {
+            CollectionName = "book",
+            Parameters = new QueryParameters { Offset = 25000, Limit = 100000 }
+        };
+
+        request.Validate(); // should not throw
+    }
+
+    [Fact]
     public void QueryIterator_accepts_defaults()
     {
         var request = new QueryIteratorReq { CollectionName = "book" };

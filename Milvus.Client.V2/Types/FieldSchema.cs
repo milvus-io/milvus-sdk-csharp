@@ -209,6 +209,14 @@ public sealed class FieldSchema
     public bool IsDynamic { get; internal set; }
 
     /// <summary>
+    /// The external field name mapping used by external (federated) collections, carried on the wire as the
+    /// proto <c>schema.FieldSchema.external_field</c>. When set on a field of an external collection, the
+    /// field's data is served from the external source named here. Also populated when the schema is read
+    /// back via <c>DescribeCollection</c>.
+    /// </summary>
+    public string? ExternalField { get; set; }
+
+    /// <summary>
     /// The server-assigned field id, populated when the schema is read back via <c>DescribeCollection</c>.
     /// </summary>
     public long FieldId { get; internal set; }

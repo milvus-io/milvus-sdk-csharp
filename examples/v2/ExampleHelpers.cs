@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Milvus.Client.V2.Responses.Dql;
 using Milvus.Client.V2.Types;
 
@@ -107,6 +109,22 @@ internal static class ExampleHelpers
         }
     }
 
+    /// <summary>
+    /// Dumps a single row of a column-oriented result (one <see cref="FieldData" /> per output column) as a
+    /// <c>field=value</c> list, mirroring the C++ SDK examples' row dump (<c>row.dump()</c>). Used by the query
+    /// iterator examples to print the first/last row of each page.
+    /// </summary>
+    public static string FormatRow(IReadOnlyList<FieldData> fields, int rowIndex)
+    {
+        var parts = new List<string>(fields.Count);
+        foreach (FieldData field in fields)
+        {
+            parts.Add($"{field.FieldName}={FormatValue(GetFieldValue(field, rowIndex))}");
+        }
+
+        return string.Join(", ", parts);
+    }
+
     private static object? GetFieldValue(FieldData field, int index)
         => field switch
         {
@@ -125,6 +143,7 @@ internal static class ExampleHelpers
             FieldData<bool> bools => bools.Data[index],
             FieldData<bool?> bools => bools.Data[index],
             FieldData<string> strings => strings.Data[index],
+            StructFieldData structs => JsonSerializer.Serialize(structs.Data[index]),
             FloatVectorFieldData floatVector => floatVector.Data[index],
             Float16VectorFieldData fp16 => fp16.Data[index],
             BFloat16VectorFieldData bf16 => bf16.Data[index],

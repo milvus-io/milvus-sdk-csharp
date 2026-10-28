@@ -9,7 +9,7 @@ namespace Milvus.Client.V2.Requests.Collection;
 /// Represents a request to create a collection.
 /// </summary>
 /// <remarks>
-/// <see cref="ConsistencyLevel" /> defaults to <see cref="ConsistencyLevel.BoundedStaleness" /> and
+/// <see cref="ConsistencyLevel" /> defaults to <see cref="ConsistencyLevel.Bounded" /> and
 /// <see cref="ShardsNum" /> to 1, matching the Java/C++ SDKs. <see cref="NumPartitions" /> is only used for a
 /// partition-key collection. Struct fields (<see cref="CollectionSchema.StructFields" />) can be declared here
 /// at creation time or added to an existing collection via
@@ -34,10 +34,10 @@ public sealed class CreateCollectionReq
     public CollectionSchema? Schema { get; set; }
 
     /// <summary>
-    /// The consistency level to be used by the collection. Defaults to <see cref="ConsistencyLevel.BoundedStaleness" />,
+    /// The consistency level to be used by the collection. Defaults to <see cref="ConsistencyLevel.Bounded" />,
     /// matching the Java and C++ SDKs.
     /// </summary>
-    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.BoundedStaleness;
+    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.Bounded;
 
     /// <summary>
     /// Number of the shards for the collection to create.
@@ -183,7 +183,8 @@ public sealed class CreateCollectionReq
             Description = field.Description,
             Nullable = field.Nullable,
             IsClusteringKey = field.IsClusteringKey,
-            IsFunctionOutput = isFunctionOutput
+            IsFunctionOutput = isFunctionOutput,
+            ExternalField = field.ExternalField ?? ""
         };
 
         if (isFunctionOutput && (field.EnableAnalyzer || field.EnableMatch

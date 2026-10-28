@@ -90,7 +90,8 @@ underlying feature.
 | `RankerExample`         | Function-score rerankers (boost/decay) applied to search results.          |
 | `FunctionChainExample`  | A function chain at the L2 rerank stage: round scores, sort descending, limit. |
 | `TelemetryExample`      | Client-side telemetry: the heartbeat-managed operation metrics exposed via `GetTelemetry()`. |
-| `IteratorExample`       | Server-side query/search iterators: page over large result sets with `await foreach`. |
+| `IteratorQueryExample`  | Server-side query iterator: page over rows, resume from a cursor, iterate `element_filter` matches. |
+| `IteratorSearchExample` | Server-side search iterator: page over top-K hits, prune pages with `ExternalFilterFunc`. |
 | `DefaultValueExample`   | Field default values: rows that omit a field get its default filled in.    |
 | `FilterTemplateExample` | Filter templates: `{alias}` placeholders in expressions, values supplied separately. |
 | `DBExample`             | Databases: create/list/describe/drop, `UseDatabaseAsync`, request-level `DatabaseName`. |
