@@ -121,6 +121,12 @@ internal static class Constants
     internal const string DefaultIndexName = "_default_idx";
 
     /// <summary>
+    /// Key name in search/query/rank parameters. Routes a DQL request to a target cluster in a
+    /// global-cluster (Zilliz Cloud) deployment; set by <c>MilvusClientV2Session</c>.
+    /// </summary>
+    internal const string ClusterId = "cluster_id";
+
+    /// <summary>
     /// Key name in load parameters.
     /// </summary>
     internal const string LoadPriority = "load_priority";

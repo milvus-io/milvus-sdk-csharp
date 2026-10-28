@@ -24,15 +24,17 @@ public sealed class SearchIterator : IAsyncEnumerable<SingleResult>
 {
     private readonly MilvusClientV2 _client;
     private readonly SearchIteratorReq _request;
+    private readonly string? _clusterId;
 
-    internal SearchIterator(MilvusClientV2 client, SearchIteratorReq request)
+    internal SearchIterator(MilvusClientV2 client, SearchIteratorReq request, string? clusterId = null)
     {
         _client = client;
         _request = request;
+        _clusterId = clusterId;
     }
 
     /// <inheritdoc />
     public IAsyncEnumerator<SingleResult> GetAsyncEnumerator(
         CancellationToken cancellationToken = default)
-        => _client.SearchIteratorCoreAsync(_request, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        => _client.SearchIteratorCoreAsync(_request, _clusterId, cancellationToken).GetAsyncEnumerator(cancellationToken);
 }

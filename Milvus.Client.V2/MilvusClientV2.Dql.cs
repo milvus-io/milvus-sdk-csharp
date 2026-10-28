@@ -35,17 +35,23 @@ public sealed partial class MilvusClientV2
     /// </example>
     /// <param name="request">The search request.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    public async Task<SearchResp> SearchAsync(
+    public Task<SearchResp> SearchAsync(
         SearchReq request,
         CancellationToken cancellationToken = default)
+        => SearchCoreAsync(request, clusterId: null, cancellationToken);
+
+    internal async Task<SearchResp> SearchCoreAsync(
+        SearchReq request,
+        string? clusterId,
+        CancellationToken cancellationToken)
     {
         Verify.NotNull(request);
 
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
 
-        Grpc.SearchRequest grpcRequest = BuildSearchRequest(request);
+        Grpc.SearchRequest grpcRequest = BuildSearchRequest(request, clusterId);
         Grpc.SearchResults response = await InvokeAsync(
-                GrpcClient.SearchAsync, grpcRequest, static r => r.Status, cancellationToken)
+                GrpcClient.SearchAsync, grpcRequest, static r => r.Status, cancellationToken, nameof(SearchAsync))
             .ConfigureAwait(false);
 
         return SearchResp.FromGrpc(response);
@@ -56,9 +62,15 @@ public sealed partial class MilvusClientV2
     /// </summary>
     /// <param name="request">The hybrid search request.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    public async Task<SearchResp> HybridSearchAsync(
+    public Task<SearchResp> HybridSearchAsync(
         HybridSearchReq request,
         CancellationToken cancellationToken = default)
+        => HybridSearchCoreAsync(request, clusterId: null, cancellationToken);
+
+    internal async Task<SearchResp> HybridSearchCoreAsync(
+        HybridSearchReq request,
+        string? clusterId,
+        CancellationToken cancellationToken)
     {
         Verify.NotNull(request);
         request.Validate();
@@ -77,7 +89,7 @@ public sealed partial class MilvusClientV2
         foreach (AnnSearchReq subRequest in request.SearchRequests)
         {
             subRequest.Validate();
-            grpcRequest.Requests.Add(BuildHybridSearchSubRequest(subRequest, request.CollectionName));
+            grpcRequest.Requests.Add(BuildHybridSearchSubRequest(subRequest, request.CollectionName, clusterId));
         }
 
         if (request.Reranker.ToFunctionScore() is { } functionScore)
@@ -215,8 +227,12 @@ public sealed partial class MilvusClientV2
                 _endpoint, databaseName, request.CollectionName, ConsistencyLevel.Session, null);
         }
 
+        // Route the hybrid search to the session's target cluster (Zilliz Cloud global-cluster deployments).
+        // Replaces any caller-supplied cluster_id rank param, mirroring the C++/Java SDKs.
+        InjectClusterId(grpcRequest.RankParams, clusterId);
+
         Grpc.SearchResults response = await InvokeAsync(
-                GrpcClient.HybridSearchAsync, grpcRequest, static r => r.Status, cancellationToken)
+                GrpcClient.HybridSearchAsync, grpcRequest, static r => r.Status, cancellationToken, nameof(HybridSearchAsync))
             .ConfigureAwait(false);
 
         return SearchResp.FromGrpc(response);
@@ -238,9 +254,15 @@ public sealed partial class MilvusClientV2
     /// </example>
     /// <param name="request">The query request.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    public async Task<QueryResp> QueryAsync(
+    public Task<QueryResp> QueryAsync(
         QueryReq request,
         CancellationToken cancellationToken = default)
+        => QueryCoreAsync(request, clusterId: null, cancellationToken);
+
+    internal async Task<QueryResp> QueryCoreAsync(
+        QueryReq request,
+        string? clusterId,
+        CancellationToken cancellationToken)
     {
         Verify.NotNull(request);
 
@@ -269,8 +291,13 @@ public sealed partial class MilvusClientV2
             _endpoint, databaseName, request.CollectionName,
             request.Parameters?.ConsistencyLevel ?? ConsistencyLevel.Session,
             request.Parameters?.GuaranteeTimestamp);
+
+        // Route the query to the session's target cluster (Zilliz Cloud global-cluster deployments). Replaces
+        // any caller-supplied cluster_id query param, mirroring the C++/Java SDKs.
+        InjectClusterId(grpcRequest.QueryParams, clusterId);
+
         Grpc.QueryResults response = await InvokeAsync(
-                GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
+                GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken, nameof(QueryAsync))
             .ConfigureAwait(false);
 
         return QueryResp.FromGrpc(response);
@@ -281,9 +308,15 @@ public sealed partial class MilvusClientV2
     /// </summary>
     /// <param name="request">The get request.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    public async Task<GetResp> GetAsync(
+    public Task<GetResp> GetAsync(
         GetReq request,
         CancellationToken cancellationToken = default)
+        => GetCoreAsync(request, clusterId: null, cancellationToken);
+
+    internal async Task<GetResp> GetCoreAsync(
+        GetReq request,
+        string? clusterId,
+        CancellationToken cancellationToken)
     {
         Verify.NotNull(request);
 
@@ -315,8 +348,13 @@ public sealed partial class MilvusClientV2
         grpcRequest.GuaranteeTimestamp = CalculateGuaranteeTimestamp(
             _endpoint, databaseName, request.CollectionName,
             request.ConsistencyLevel ?? ConsistencyLevel.Session, null);
+
+        // Get travels on the Query wire; route it to the session's target cluster the same way (replacing any
+        // caller-supplied cluster_id query param, mirroring the C++/Java SDKs).
+        InjectClusterId(grpcRequest.QueryParams, clusterId);
+
         Grpc.QueryResults response = await InvokeAsync(
-                GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
+                GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken, nameof(GetAsync))
             .ConfigureAwait(false);
 
         return GetResp.FromGrpc(response);
@@ -345,10 +383,13 @@ public sealed partial class MilvusClientV2
     /// </example>
     /// <param name="request">The query iterator request.</param>
     public QueryIterator QueryIteratorAsync(QueryIteratorReq request)
+        => CreateQueryIterator(request, clusterId: null);
+
+    internal QueryIterator CreateQueryIterator(QueryIteratorReq request, string? clusterId)
     {
         Verify.NotNull(request);
         request.Validate();
-        return new QueryIterator(this, request);
+        return new QueryIterator(this, request, clusterId);
     }
 
     /// <summary>
@@ -361,14 +402,18 @@ public sealed partial class MilvusClientV2
     /// </remarks>
     /// <param name="request">The search iterator request.</param>
     public SearchIterator SearchIteratorAsync(SearchIteratorReq request)
+        => CreateSearchIterator(request, clusterId: null);
+
+    internal SearchIterator CreateSearchIterator(SearchIteratorReq request, string? clusterId)
     {
         Verify.NotNull(request);
         request.Validate();
-        return new SearchIterator(this, request);
+        return new SearchIterator(this, request, clusterId);
     }
 
     internal async IAsyncEnumerable<IReadOnlyList<FieldData>> QueryIteratorCoreAsync(
         QueryIteratorReq request,
+        string? clusterId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
@@ -478,6 +523,10 @@ public sealed partial class MilvusClientV2
         {
             grpcRequest.UseDefaultConsistency = true;
         }
+
+        // Route the iterator to the session's target cluster (Zilliz Cloud global-cluster deployments). The
+        // cluster_id query param is pinned for every page alongside the iterator params.
+        InjectClusterId(grpcRequest.QueryParams, clusterId);
 
         // Establish a snapshot on the first page: a request-level guarantee_timestamp of 0 makes the proxy
         // take a snapshot at its request time and return it as SessionTs, which we pin for all later pages so
@@ -697,6 +746,7 @@ public sealed partial class MilvusClientV2
 
     internal async IAsyncEnumerable<SingleResult> SearchIteratorCoreAsync(
         SearchIteratorReq request,
+        string? clusterId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
@@ -790,7 +840,7 @@ public sealed partial class MilvusClientV2
             SkipRls = request.SkipRls
         };
 
-        Grpc.SearchRequest grpcRequest = BuildSearchRequest(subRequest);
+        Grpc.SearchRequest grpcRequest = BuildSearchRequest(subRequest, clusterId);
         grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = "collection_id", Value = collectionId.ToString(CultureInfo.InvariantCulture) });
         grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = "iterator", Value = "True" });
         grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = "search_iter_v2", Value = "True" });
@@ -1172,7 +1222,20 @@ public sealed partial class MilvusClientV2
         }
     }
 
-    private Grpc.SearchRequest BuildSearchRequest(SearchReq request)
+    // Routes a DQL request to a target cluster by pinning the "cluster_id" parameter on the wire (Zilliz
+    // Cloud global-cluster deployments). A null/empty cluster id leaves the request untouched; otherwise any
+    // caller-supplied cluster_id entry is replaced so the session's cluster wins, matching the C++/Java SDKs.
+    private static void InjectClusterId(RepeatedField<Grpc.KeyValuePair> collection, string? clusterId)
+    {
+        if (string.IsNullOrEmpty(clusterId))
+        {
+            return;
+        }
+
+        ReplaceKeyValueItems(collection, new Grpc.KeyValuePair { Key = Constants.ClusterId, Value = clusterId });
+    }
+
+    private Grpc.SearchRequest BuildSearchRequest(SearchReq request, string? clusterId = null)
     {
         Verify.NotNullOrWhiteSpace(request.CollectionName);
         Verify.NotNullOrWhiteSpace(request.VectorFieldName);
@@ -1317,6 +1380,15 @@ public sealed partial class MilvusClientV2
             }
             foreach (KeyValuePair<string, string> parameter in parameters.ExtraParameters)
             {
+                // When a session routes this search (clusterId non-null), cluster_id is reserved for the
+                // session: skip a caller-supplied copy so the session's value (injected below) is the single
+                // wire value. Outside a session, manual cluster_id routing via ExtraParameters remains
+                // supported, matching Java/pymilvus (the C++ SDK instead erases it unconditionally).
+                if (clusterId is not null && parameter.Key == Constants.ClusterId)
+                {
+                    continue;
+                }
+
                 grpcRequest.SearchParams.Add(new Grpc.KeyValuePair { Key = parameter.Key, Value = parameter.Value });
             }
             foreach (KeyValuePair<string, object?> parameter in parameters.TypedIndexParams)
@@ -1402,9 +1474,13 @@ public sealed partial class MilvusClientV2
                 new Grpc.KeyValuePair
                 {
                     Key = "params",
-                    Value = Combine(parameters)
+                    Value = Combine(parameters, clusterId)
                 }
             });
+
+        // Route the search to the session's target cluster (Zilliz Cloud global-cluster deployments). Replaces
+        // any caller-supplied cluster_id search param, mirroring the C++/Java SDKs.
+        InjectClusterId(grpcRequest.SearchParams, clusterId);
 
         // metric_type defaults to MetricType.Invalid (enum 0), which maps to the literal string
         // "INVALID"; the proxy fails metric resolution on that value instead of inferring it from the index.
@@ -1427,13 +1503,21 @@ public sealed partial class MilvusClientV2
         return grpcRequest;
     }
 
-    private static string Combine(SearchParameters? parameters)
+    private static string Combine(SearchParameters? parameters, string? clusterId = null)
     {
         var json = new Dictionary<string, object?>();
         if (parameters is not null)
         {
             foreach (KeyValuePair<string, string> parameter in parameters.ExtraParameters)
             {
+                // With a session cluster id (clusterId non-null) the value is emitted as a flat search param
+                // (see InjectClusterId), so it is never embedded in the params JSON. Without a session the
+                // caller-supplied cluster_id is left untouched (manual routing stays supported).
+                if (clusterId is not null && parameter.Key == Constants.ClusterId)
+                {
+                    continue;
+                }
+
                 json[parameter.Key] = parameter.Value;
             }
 
@@ -1491,7 +1575,8 @@ public sealed partial class MilvusClientV2
 #pragma warning restore CA1307
     }
 
-    private static Grpc.SearchRequest BuildHybridSearchSubRequest(AnnSearchReq subRequest, string collectionName)
+    private static Grpc.SearchRequest BuildHybridSearchSubRequest(
+        AnnSearchReq subRequest, string collectionName, string? clusterId = null)
     {
         Verify.NotNullOrWhiteSpace(subRequest.VectorFieldName);
 
@@ -1520,6 +1605,14 @@ public sealed partial class MilvusClientV2
         var combineParams = new SearchParameters();
         foreach (KeyValuePair<string, string> parameter in subRequest.ExtraParameters)
         {
+            // Same cluster_id handling as the top-level search path: with a session cluster id the value is
+            // pinned at the hybrid level (rank_params), so a caller-supplied sub-request copy is dropped
+            // (matching the C++ SDK, which skips CLUSTER_ID in SetExtraParams for sub-requests).
+            if (clusterId is not null && parameter.Key == Constants.ClusterId)
+            {
+                continue;
+            }
+
             combineParams.ExtraParameters[parameter.Key] = parameter.Value;
         }
         combineParams.Radius = subRequest.Radius;
@@ -1592,6 +1685,11 @@ public sealed partial class MilvusClientV2
             }
             foreach (KeyValuePair<string, string> parameter in subRequest.ExtraParameters)
             {
+                if (clusterId is not null && parameter.Key == Constants.ClusterId)
+                {
+                    continue;
+                }
+
                 request.SearchParams.Add(new Grpc.KeyValuePair { Key = parameter.Key, Value = parameter.Value });
             }
             foreach (KeyValuePair<string, object> template in subRequest.FilterTemplates)
@@ -1626,7 +1724,7 @@ public sealed partial class MilvusClientV2
             {
                 new Grpc.KeyValuePair { Key = "anns_field", Value = subRequest.VectorFieldName },
                 new Grpc.KeyValuePair { Key = "topk", Value = subRequest.Limit.ToString(System.Globalization.CultureInfo.InvariantCulture) },
-                new Grpc.KeyValuePair { Key = "params", Value = Combine(combineParams) }
+                new Grpc.KeyValuePair { Key = "params", Value = Combine(combineParams, clusterId) }
             });
 
         // Same as BuildSearchRequest: omit metric_type when it is unset (Invalid) so the proxy infers it.

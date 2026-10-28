@@ -1,10 +1,10 @@
 # Milvus C# SDK (V2)
 
-> **文档目录约定**
+> **Documentation layout**
 >
-> - `docs/v1/` — 第一代 SDK（`Milvus.Client`）的原有文档（api reference / user guide / notebooks 等）。
-> - `docs/design/` — 设计文档。本文 `v2_design.md` 是 V2 SDK 的设计说明。
-> - `docs/v2/` — 第二代 SDK（`Milvus.Client.V2`）的 API reference 等文档，后续 V2 的 reference 请放到此目录。
+> - `docs/v1/` — legacy first-generation SDK (`Milvus.Client`) docs (api reference / user guide / notebooks etc.).
+> - `docs/design/` — design documents; this `v2_design.md` describes the V2 SDK design.
+> - `docs/v2/` — second-generation SDK (`Milvus.Client.V2`) API reference and docs; new V2 reference docs belong here.
 
 ## 0. Why V2 — limitations of V1 (`Milvus.Client`)
 
@@ -119,6 +119,7 @@ Milvus.Client.V2/
 ├── MilvusClientV2.Index.cs           # Index domain facade       (§4.3)
 ├── MilvusClientV2.Dml.cs             # DML facade                (§4.5)
 ├── MilvusClientV2.Dql.cs             # DQL facade (incl. iterators)(§4.6)
+├── MilvusClientV2.Session.cs         # Session: cluster-scoped DQL view (§4.6)
 ├── MilvusClientV2.Partition.cs       # Partition domain facade   (§4.7)
 ├── MilvusClientV2.Database.cs        # Database domain facade    (§4.8)
 ├── MilvusClientV2.Alias.cs           # Alias domain facade       (§4.9)
@@ -130,6 +131,7 @@ Milvus.Client.V2/
 │
 ├── MilvusErrorCode.cs                # Public error codes
 ├── MilvusException.cs                # Public exception type
+├── ClientTelemetry.cs                # Client-side telemetry manager (§4.12)
 │
 ├── Request/<Domain>/*Req.cs          # Per-operation request DTOs + ToGrpc*() conversion
 │   # Domains mirror the facade areas: Collection, Index, Dml, Dql, Partition, Database,
@@ -304,17 +306,18 @@ the C++ SDK splits implementations. The facade files map one-to-one onto the Fea
 
 | Facade file | Feature Scope area | Sample methods |
 |---|---|---|
-| `MilvusClientV2.cs` | §4.1 Connection / utility (infrastructure) | ctor, `HealthAsync`, `GetServerVersionAsync`, `Dispose`, `InvokeAsync` |
+| `MilvusClientV2.cs` | §4.1 Connection / utility (infrastructure) | ctor, `HealthAsync`, `GetServerVersionAsync`, `GetTelemetry`, `Dispose`, `InvokeAsync` |
 | `MilvusClientV2.Collection.cs` | §4.2 Collection & schema | `CreateCollectionAsync`, `HasCollectionAsync`, `DescribeCollectionAsync` |
 | `MilvusClientV2.Index.cs` | §4.3 Index | `CreateIndexAsync`, `DropIndexAsync`, `DescribeIndexAsync` |
 | `MilvusClientV2.Dml.cs` | §4.5 DML | `InsertAsync`, `UpsertAsync`, `DeleteAsync` |
 | `MilvusClientV2.Dql.cs` | §4.6 DQL | `SearchAsync`, `QueryAsync`, `HybridSearchAsync`, iterators |
+| `MilvusClientV2.Session.cs` | §4.6 DQL (session) | `Session`, `MilvusClientV2Session` (cluster-scoped DQL view) |
 | `MilvusClientV2.Partition.cs` | §4.7 Partition | `CreatePartitionAsync`, `LoadPartitionsAsync` |
 | `MilvusClientV2.Database.cs` | §4.8 Database | `CreateDatabaseAsync`, `ListDatabasesAsync` |
 | `MilvusClientV2.Alias.cs` | §4.9 Alias | `CreateAliasAsync`, `ListAliasesAsync` |
 | `MilvusClientV2.Rbac.cs` | §4.10 RBAC | `CreateUserAsync`, `GrantPrivilegeAsync`, privilege groups |
 | `MilvusClientV2.ResourceGroup.cs` | §4.11 Resource group | `CreateResourceGroupAsync`, `TransferReplicaAsync` |
-| `MilvusClientV2.Utility.cs` | §4.12 Utility | `FlushAsync`, `CompactAsync`, `RunAnalyzerAsync` |
+| `MilvusClientV2.Utility.cs` | §4.12 Utility | `FlushAsync`, `CompactAsync`, `RunAnalyzerAsync`, `GetClientTelemetryAsync` |
 | `MilvusClientV2.Snapshot.cs` | §4.13 Snapshot | `CreateSnapshotAsync`, `RestoreSnapshotAsync`, `PinSnapshotDataAsync` |
 | `BulkImport.cs` | §4.14 BulkImport | `BulkImportConfig` + `BulkImport` REST client (`BulkImportAsync`, `GetImportProgressAsync`, `ListImportJobsAsync`) |
 
@@ -363,7 +366,7 @@ the facade + its DTOs only; everything that supports them is internal**.
 
 | Visibility | Contents |
 |---|---|
-| **public** | `MilvusClientV2` (facade), `*Req` / `*Resp` DTOs, `Types` (config & data model: `ConnectConfig`, `RetryConfig`, `DataType`, `IndexType`, `MetricType`, `FieldSchema`, `CollectionSchema`, `FieldSchema`, `HealthState`, ...), `MilvusException`, `MilvusErrorCode`, `MilvusTimestampUtils`, the FP16 utility, and `CollectionTsCache` (process-wide singleton kept public for parity with the Java/C++ static caches; see §5.1.2) |
+| **public** | `MilvusClientV2` (facade), `MilvusClientV2Session` (cluster-scoped DQL view, §4.6), `ClientTelemetryManager` + telemetry types (`TelemetryConfig`, `TelemetrySnapshot`, `TelemetryError`, `ClientTelemetryCommand`, `ClientTelemetryCommandReply`, `MetricsInfo`, `ClientInfo`, §4.12), `*Req` / `*Resp` DTOs, `Types` (config & data model: `ConnectConfig`, `RetryConfig`, `DataType`, `IndexType`, `MetricType`, `FieldSchema`, `CollectionSchema`, `FieldSchema`, `HealthState`, ...), `MilvusException`, `MilvusErrorCode`, `MilvusTimestampUtils`, the FP16 utility, and `CollectionTsCache` (process-wide singleton kept public for parity with the Java/C++ static caches; see §5.1.2) |
 | **internal** | `Milvus.Client.Grpc.*` (generated proto), `InvokeAsync`, the gRPC client, `ToGrpc*()` / `FromGrpc()`, `Utils` helpers (`Verify`, `Constants`, `LoggingExtensions`), caches (`SchemaCache`), `RetryPolicy`, `RestfulClient` |
 | `InternalsVisibleTo("Milvus.Client.V2.Tests")` | tests only |
 
@@ -466,6 +469,8 @@ Convenience factories mirror V1: `FieldData.Create(name, IReadOnlyList<T>)`,
 | `ConnectAsync` | — | — | Sends the `Connect` RPC registering client info; recommended before other APIs, but the first API call connects lazily if skipped |
 | `HealthAsync` | — | `HealthState` | Checks the health of the Milvus server |
 | `GetServerVersionAsync` | `GetServerVersionReq` | `GetServerVersionResp` | Gets the Milvus server version; `Detail=true` also returns build info |
+| `Session` | `string clusterId` | `MilvusClientV2Session` | Creates a cluster-scoped session; every DQL request issued through it is routed to the target cluster (Zilliz Cloud, §4.6) |
+| `GetTelemetry` | — | `ClientTelemetryManager` | Returns the client-side telemetry manager that records operation metrics and heartbeats to the server (§4.12) |
 | `Dispose` | — | — | Releases the gRPC channel and other resources |
 
 ### 4.2 Collection & schema (21)
@@ -555,6 +560,30 @@ await foreach (IReadOnlyList<FieldData> batch in collection.QueryIteratorAsync(e
 ANN request) — same shape as Java `RrfReranker`/`WeightedReranker` (field definitions per the §4
 field-level source of truth).
 
+**Cluster sessions** (`Session`): Zilliz Cloud (global-cluster) only. `MilvusClientV2.Session(clusterId)`
+returns a `MilvusClientV2Session` — a lightweight, cluster-scoped view of the client exposing **only the
+DQL query interfaces**, mirroring the Java `MilvusClientV2Session`, C++ `MilvusClientV2Session` and
+PyMilvus `MilvusClientSession`:
+
+| member | description |
+|---|---|
+| `ClusterId` | The identifier of the cluster the session is bound to |
+| `SearchAsync` / `HybridSearchAsync` / `QueryAsync` / `GetAsync` | DQL facades, routed to the bound cluster |
+| `QueryIteratorAsync` / `SearchIteratorAsync` | Iterator factories, routed to the bound cluster on every page |
+| `Close()` | Marks the session closed; any later call throws `MilvusException("MilvusClient session is closed")` |
+
+- Every DQL request issued through the session carries the bound cluster id on the wire as the
+  `cluster_id` search/query/rank parameter, which the proxy uses to route the request to the target
+  cluster. `Get` travels on the Query wire, so its cluster id lands in `query_params`; the query and
+  search iterators pin it for every page (including the seek phase of a query iterator with an offset).
+- The session's cluster id **replaces** any caller-supplied `cluster_id` (via `ExtraParameters` on a
+  search/query or on a hybrid sub-request) when the session is present, so the session binding cannot be
+  bypassed; it is never embedded in the search `params` JSON bag. Outside a session, manual
+  `cluster_id` routing via `ExtraParameters` remains supported (matching Java/pymilvus).
+- The session shares the parent client's connection and caches; `Close()` only makes the session
+  unusable and does not disconnect the parent client. Implemented via internal `*CoreAsync` facade
+  overloads that carry the cluster id (the public DQL methods delegate with `clusterId: null`).
+
 ### 4.7 Partition (7)
 
 | name | request | response | description |
@@ -634,7 +663,7 @@ Privileges and privilege groups:
 | `TransferNodeAsync` | `TransferNodeReq` | — | Transfers a query node between resource groups |
 | `TransferReplicaAsync` | `TransferReplicaReq` | — | Transfers a replica between resource groups |
 
-### 4.12 Utility (23)
+### 4.12 Utility (24)
 
 | name | request | response | description |
 |---|---|---|---|
@@ -661,6 +690,7 @@ Privileges and privilege groups:
 | `RefreshExternalCollectionAsync` | `RefreshExternalCollectionReq` | `RefreshExternalCollectionResp` | Refreshes an external collection (async job) |
 | `GetRefreshExternalCollectionProgressAsync` | `GetRefreshExternalCollectionProgressReq` | `GetRefreshExternalCollectionProgressResp` | Queries a refresh-external-collection job's progress |
 | `ListRefreshExternalCollectionJobsAsync` | `ListRefreshExternalCollectionJobsReq` | `ListRefreshExternalCollectionJobsResp` | Lists refresh-external-collection jobs |
+| `GetClientTelemetryAsync` | `GetClientTelemetryReq` | `GetClientTelemetryResp` | Lists the clients currently reporting telemetry to the server (root only when auth is enabled) |
 
 #### Database scoping
 
@@ -678,6 +708,27 @@ Request-level `DatabaseName` therefore lets a single client operate on several d
 while `UseDatabaseAsync` remains the way to change the default database. The schema and session-timestamp
 caches key by the **resolved** database (`DatabaseName ?? current`), so cross-database operations never
 collide in the caches.
+
+#### Client telemetry
+
+Client-side telemetry mirrors the Java/C++/Rust V2 SDKs' `TelemetryConfig` / telemetry managers.
+
+- **Configuration** — `ConnectConfig.Telemetry` (`TelemetryConfig`): `Enabled` (default `true`),
+  `HeartbeatIntervalMs` (default 10000), `SamplingRate` in [0, 1] (default 1.0), `ErrorMaxCount`
+  (default 100) and an optional stable `ClientId`.
+- **Manager** — `MilvusClientV2.GetTelemetry()` returns the client-side `ClientTelemetryManager`. It
+  records per-operation metrics (`Insert`, `Delete`, `Upsert`, `Search`, `HybridSearch`, `Query`,
+  `RunAnalyzer`) inside `InvokeAsync` (latency, collection, success/failure, request id), starts a
+  heartbeat loop on the `ClientTelemetryService.ClientHeartbeat` RPC after `ConnectAsync`, and
+  auto-disables itself once the server reports `UNIMPLEMENTED` (`IsSupported` becomes `false`).
+- **Server-pushed commands** — the heartbeat responses may carry commands; default handlers cover
+  `push_config`, `collection_metrics`, `show_errors`, `show_latency_history` and `get_config`, and
+  `RegisterCommandHandler(commandType, handler)` installs custom ones. Reading views:
+  `MetricsSnapshots()`, `RecentErrors(maxCount)`, plus `Config`, `ClientId`, `IsReady`, `IsSupported`.
+- **Server-side read** — `GetClientTelemetryAsync` (`GetClientTelemetryReq`/`GetClientTelemetryResp`)
+  lists every connected client that registered its `ClientInfo` on connect and is still heartbeating,
+  with its `MetricsInfo`. When authorization is enabled the server requires the caller to be the `root`
+  user (`checkTelemetryAdmin`); a non-root caller gets a permission `MilvusException`.
 
 ### 4.13 Snapshot (9)
 
