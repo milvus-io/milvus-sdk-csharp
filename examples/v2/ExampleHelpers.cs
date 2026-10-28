@@ -12,11 +12,12 @@ internal static class ExampleHelpers
     /// Creates a <see cref="Milvus.Client.V2.MilvusClientV2" /> from a "host:port" URI, using the token
     /// (username:password) from <paramref name="defaultToken" /> when <c>MILVUS_TOKEN</c> is not set.
     /// </summary>
-    public static Milvus.Client.V2.MilvusClientV2 CreateClient(string uri, string? defaultToken = null)
+    public static Milvus.Client.V2.MilvusClientV2 CreateClient(
+        string uri, string? defaultToken = null, Milvus.Client.V2.Types.TelemetryConfig? telemetry = null)
     {
         string? token = Environment.GetEnvironmentVariable("MILVUS_TOKEN") ?? defaultToken;
 
-        var config = new Milvus.Client.V2.Types.ConnectConfig { Uri = uri };
+        var config = new Milvus.Client.V2.Types.ConnectConfig { Uri = uri, Telemetry = telemetry };
 
         if (token is not null)
         {

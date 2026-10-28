@@ -628,4 +628,67 @@ public class UtilityRespTests
         UpdateReplicateConfigurationResp resp = UpdateReplicateConfigurationResp.FromGrpc();
         Assert.NotNull(resp);
     }
+
+    [Fact]
+    public void GetClientTelemetry_maps_clients_and_metrics()
+    {
+        var grpc = new Grpc.GetClientTelemetryResponse
+        {
+            Aggregated = new Grpc.Metrics
+            {
+                RequestCount = 100,
+                SuccessCount = 90,
+                ErrorCount = 10,
+                AvgLatencyMs = 1.5,
+                P99LatencyMs = 5.0,
+                MaxLatencyMs = 10.0
+            }
+        };
+        var client = new Grpc.ClientTelemetry
+        {
+            ClientInfo = new Grpc.ClientInfo
+            {
+                SdkType = "CSharp",
+                SdkVersion = "3.0.0",
+                LocalTime = "2026-10-23T00:00:00Z",
+                User = "root",
+                Host = "localhost"
+            },
+            LastHeartbeatTime = 123,
+            Status = "healthy"
+        };
+        client.Databases.Add("db1");
+        var opMetrics = new Grpc.OperationMetrics { Operation = "Search", Global = new Grpc.Metrics { RequestCount = 5, SuccessCount = 5 } };
+        opMetrics.CollectionMetrics["coll1"] = new Grpc.Metrics { RequestCount = 3, SuccessCount = 3 };
+        client.Metrics.Add(opMetrics);
+        grpc.Clients.Add(client);
+
+        GetClientTelemetryResp resp = GetClientTelemetryResp.FromGrpc(grpc);
+
+        Assert.Equal(100, resp.Aggregated.RequestCount);
+        Assert.Equal(5.0, resp.Aggregated.P99LatencyMs);
+
+        ClientTelemetryInfo info = Assert.Single(resp.Clients);
+        Assert.Equal("CSharp", info.ClientInfo.SdkType);
+        Assert.Equal("3.0.0", info.ClientInfo.SdkVersion);
+        Assert.Equal("root", info.ClientInfo.User);
+        Assert.Equal("localhost", info.ClientInfo.Host);
+        Assert.Equal(123, info.LastHeartbeatTime);
+        Assert.Equal("healthy", info.Status);
+        Assert.Equal(new[] { "db1" }, info.Databases);
+
+        OperationMetricsInfo op = Assert.Single(info.Metrics);
+        Assert.Equal("Search", op.Operation);
+        Assert.Equal(5, op.Global.RequestCount);
+        Assert.Equal(3, op.CollectionMetrics["coll1"].RequestCount);
+    }
+
+    [Fact]
+    public void GetClientTelemetry_maps_empty_response()
+    {
+        GetClientTelemetryResp resp = GetClientTelemetryResp.FromGrpc(new Grpc.GetClientTelemetryResponse());
+
+        Assert.Empty(resp.Clients);
+        Assert.Equal(0, resp.Aggregated.RequestCount);
+    }
 }

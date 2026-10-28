@@ -45,7 +45,12 @@ public sealed partial class MilvusClientV2
     public Task<MutationResp> InsertAsync(
         InsertReq request,
         CancellationToken cancellationToken = default)
-        => InsertAsync(request, allowRetry: true, cancellationToken);
+    {
+        Verify.NotNull(request);
+        return RecordLogicalOperationAsync(
+            "Insert", request.CollectionName,
+            () => InsertAsync(request, allowRetry: true, cancellationToken));
+    }
 
     private async Task<MutationResp> InsertAsync(
         InsertReq request,
@@ -116,7 +121,12 @@ public sealed partial class MilvusClientV2
     public Task<MutationResp> UpsertAsync(
         UpsertReq request,
         CancellationToken cancellationToken = default)
-        => UpsertAsync(request, allowRetry: true, cancellationToken);
+    {
+        Verify.NotNull(request);
+        return RecordLogicalOperationAsync(
+            "Upsert", request.CollectionName,
+            () => UpsertAsync(request, allowRetry: true, cancellationToken));
+    }
 
     private async Task<MutationResp> UpsertAsync(
         UpsertReq request,

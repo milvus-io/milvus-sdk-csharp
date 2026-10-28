@@ -89,6 +89,7 @@ underlying feature.
 | `HybridSearchExample`   | Hybrid search: dense + sparse ANN sub-requests fused with a weighted reranker. |
 | `RankerExample`         | Function-score rerankers (boost/decay) applied to search results.          |
 | `FunctionChainExample`  | A function chain at the L2 rerank stage: round scores, sort descending, limit. |
+| `TelemetryExample`      | Client-side telemetry: the heartbeat-managed operation metrics exposed via `GetTelemetry()`. |
 | `IteratorExample`       | Server-side query/search iterators: page over large result sets with `await foreach`. |
 | `DefaultValueExample`   | Field default values: rows that omit a field get its default filled in.    |
 | `FilterTemplateExample` | Filter templates: `{alias}` placeholders in expressions, values supplied separately. |

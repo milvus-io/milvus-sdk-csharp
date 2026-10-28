@@ -82,4 +82,9 @@ public sealed class ConnectConfig
     /// The retry policy applied to RPC calls. When <c>null</c>, a default <see cref="RetryConfig" /> is used.
     /// </summary>
     public RetryConfig? Retry { get; set; }
+
+    /// <summary>
+    /// The client-side telemetry configuration. When <c>null</c>, telemetry is enabled with default settings.
+    /// </summary>
+    public TelemetryConfig? Telemetry { get; set; }
 }
