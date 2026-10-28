@@ -453,6 +453,12 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public List<SearchRequest> SearchRequests { get; } = new();
 
     /// <summary>
+    /// Every <c>Query</c> request received, in order (the shared <see cref="Requests" /> dictionary keeps only
+    /// the last one, so iterator seek/page assertions use this list).
+    /// </summary>
+    public List<QueryRequest> QueryRequests { get; } = new();
+
+    /// <summary>
     /// Every <c>CreateIndex</c> request received, in call order (the <see cref="Requests" /> dictionary keeps
     /// only the last call per RPC name, so multi-index creates need this list).
     /// </summary>
@@ -571,6 +577,7 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public override Task<QueryResults> Query(QueryRequest request, ServerCallContext context)
     {
         Record(nameof(Query), request);
+        QueryRequests.Add(request);
         LastQueriedCollection = request.CollectionName;
         LastQueryExpression = request.Expr;
         LastQueryGuaranteeTimestamp = request.GuaranteeTimestamp;

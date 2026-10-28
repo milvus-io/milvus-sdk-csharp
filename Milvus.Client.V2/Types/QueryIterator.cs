@@ -20,15 +20,17 @@ public sealed class QueryIterator : IAsyncEnumerable<IReadOnlyList<FieldData>>
 {
     private readonly MilvusClientV2 _client;
     private readonly QueryIteratorReq _request;
+    private readonly string? _clusterId;
 
-    internal QueryIterator(MilvusClientV2 client, QueryIteratorReq request)
+    internal QueryIterator(MilvusClientV2 client, QueryIteratorReq request, string? clusterId = null)
     {
         _client = client;
         _request = request;
+        _clusterId = clusterId;
     }
 
     /// <inheritdoc />
     public IAsyncEnumerator<IReadOnlyList<FieldData>> GetAsyncEnumerator(
         CancellationToken cancellationToken = default)
-        => _client.QueryIteratorCoreAsync(_request, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        => _client.QueryIteratorCoreAsync(_request, _clusterId, cancellationToken).GetAsyncEnumerator(cancellationToken);
 }
