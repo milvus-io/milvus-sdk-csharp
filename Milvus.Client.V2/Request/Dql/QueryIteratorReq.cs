@@ -53,6 +53,12 @@ public sealed class QueryIteratorReq
     /// </summary>
     public bool? SkipRls { get; set; }
 
+    /// <summary>
+    /// An optional cursor from a previous <see cref="MilvusClientV2.QueryIteratorAsync" /> (captured via
+    /// <see cref="QueryIterator.GetCursor" />). When set, the iterator resumes from that position on the
+    /// captured MVCC snapshot, skipping the offset seek.
+    /// </summary>
+    public QueryIteratorCursor? Cursor { get; set; }
     internal void Validate()
     {
         Verify.NotNullOrWhiteSpace(CollectionName);
@@ -80,6 +86,22 @@ public sealed class QueryIteratorReq
         {
             throw new ArgumentOutOfRangeException(nameof(Parameters), Parameters.Offset,
                 $"The sum of Offset and Limit must not exceed 16384 (got {(long)offset + limit}).");
+        }
+
+        // The iterator pages by a primary-key cursor (`pk > lastPk`), which assumes primary-key-ordered,
+        // non-grouped output; arbitrary ordering/grouping would silently produce inconsistent pages. The
+        // Reject them up front instead of
+        // emitting the params on every page -- both the typed properties and the raw ExtraParameters escape
+        // hatch (which is forwarded verbatim onto every page).
+        if (Parameters is { OrderByFields.Count: > 0 } or { GroupByFields.Count: > 0 }
+            || Parameters?.ExtraParameters.ContainsKey(Constants.OrderByFields) == true
+            || Parameters?.ExtraParameters.ContainsKey(Constants.GroupByFields) == true)
+        {
+            throw new ArgumentException(
+                "OrderByFields and GroupByFields (typed or via ExtraParameters) are not supported with a " +
+                "query iterator: pk-cursor paging requires primary-key-ordered, non-grouped output " +
+                "(matching the Java/PyMilvus query iterators).",
+                nameof(Parameters));
         }
     }
 }

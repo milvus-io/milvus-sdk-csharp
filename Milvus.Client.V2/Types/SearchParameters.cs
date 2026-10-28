@@ -112,6 +112,11 @@ public sealed class SearchParameters
     public string? GroupByField { get; set; }
 
     /// <summary>
+    /// The ordered list of fields to sort the search results by, carried on the wire <c>order_by_fields</c> key.
+    /// </summary>
+    public IList<OrderByField> OrderByFields { get; } = new List<OrderByField>();
+
+    /// <summary>
     /// The maximum number of results per group when grouping is used.
     /// </summary>
     public int? GroupSize { get; set; }
@@ -278,6 +283,16 @@ public sealed class SearchParameters
                     $"The search parameter '{parameter.Key}' is set both via its typed property and via " +
                     "ExtraParameters; provide it only once.", parameter.Key);
             }
+        }
+
+        // Same "provide it only once" rule for the typed order-by list: the proxy's parseOrderByFields keeps
+        // the first order_by_fields match, so a caller-supplied ExtraParameters copy would silently win and
+        // the typed list would be ignored.
+        if (OrderByFields.Count > 0 && ExtraParameters.ContainsKey(Constants.OrderByFields))
+        {
+            throw new ArgumentException(
+                "order_by_fields is set both via OrderByFields and via ExtraParameters; provide it only once.",
+                nameof(OrderByFields));
         }
     }
 }

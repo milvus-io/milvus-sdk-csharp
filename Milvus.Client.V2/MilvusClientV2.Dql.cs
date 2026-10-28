@@ -137,11 +137,13 @@ public sealed partial class MilvusClientV2
             if (parameters.Expression is not null || parameters.Radius is not null || parameters.RangeFilter is not null
                 || parameters.FilterTemplates.Count > 0 || parameters.Highlighter.Count > 0
                 || parameters.HighlightType is not null || parameters.FunctionScoreReranker is not null
+                || parameters.OrderByFields.Count > 0 || parameters.ExtraParameters.ContainsKey(Constants.OrderByFields)
                 || parameters.TypedIndexParams.Count > 0)
             {
                 throw new ArgumentException(
                     "HybridSearchReq.Parameters does not support Expression/Radius/RangeFilter/FilterTemplates/" +
-                    "Highlighter/HighlightType/FunctionScoreReranker or the typed index params (Ef/Nprobe/" +
+                    "Highlighter/HighlightType/FunctionScoreReranker, OrderByFields, or the typed index params " +
+                    "(Ef/Nprobe/" +
                     "DropRatioSearch/AnalyzerName/Hints/JsonPath/JsonType/PageRetainOrder); set them on each " +
                     "SearchReq in SearchRequests instead.",
                     nameof(request));
@@ -414,6 +416,7 @@ public sealed partial class MilvusClientV2
     internal async IAsyncEnumerable<IReadOnlyList<FieldData>> QueryIteratorCoreAsync(
         QueryIteratorReq request,
         string? clusterId,
+        QueryIteratorPosition position,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
@@ -436,10 +439,47 @@ public sealed partial class MilvusClientV2
                 $"Collection '{request.CollectionName}' has no primary key field.");
         }
 
+        // Resume from a previously captured cursor: skip the offset seek, continue from the captured key on
+        // the captured MVCC snapshot, and pin the cursor's session timestamp instead of establishing a fresh
+        // snapshot. The position is
+        // seeded from the cursor so the first resumed page already carries the pk (and element-offset) resume
+        // state.
+        QueryIteratorCursor? resumeCursor = request.Cursor;
+        if (resumeCursor is { } resume && !ResumeCursorMatchesPk(resume, pkField))
+        {
+            throw new ArgumentException(
+                $"The cursor's primary key type does not match collection '{request.CollectionName}' " +
+                $"primary key '{pkField.Name}' ({pkField.DataType}).", nameof(request));
+        }
+
+        if (resumeCursor is not null)
+        {
+            position.SessionTs = resumeCursor.SessionTs;
+            position.IntPk = resumeCursor.IntPk;
+            position.StrPk = resumeCursor.StrPk;
+            position.LastElementOffset = resumeCursor.LastElementOffset;
+        }
+
         bool userRequestedOutputFields = request.Parameters?.OutputFieldsInternal is { Count: > 0 };
         bool isUserRequestPkField = userRequestedOutputFields && request.Parameters!.OutputFieldsInternal!.Contains(pkField.Name);
         string? userExpression = request.Expression;
+
+        // An element_filter expression (e.g. element_filter(ArrayContains('clips', ...))) pages by matched
+        // elements inside array-of-struct vector fields: the server returns element_indices per entity and
+        // caps pages by element count, and the cursor resumes with an element offset. Detected case-
+        // insensitively from the expression.
+        bool isElementFilter = userExpression?.IndexOf("element_filter", StringComparison.OrdinalIgnoreCase) >= 0 == true;
         int userLimit = request.Parameters?.Limit ?? int.MaxValue;
+
+        // The element-offset column added to element-filter pages; deduplicate against any column the server
+        // can return with the same name -- either a user-selected output field or a schema field of that name
+        // (when output fields are unset the server returns every schema field).
+        string elementOffsetColumn = "offset";
+        if ((userRequestedOutputFields && request.Parameters!.OutputFieldsInternal!.Contains(elementOffsetColumn))
+            || description.Schema.Fields.Any(f => f.Name == elementOffsetColumn))
+        {
+            elementOffsetColumn = "_offset";
+        }
 
         // Establish the starting expression for the first page. With no user expression an empty filter
         // returns every row; the C++/Java iterators likewise start from the full range without a min bound.
@@ -447,12 +487,51 @@ public sealed partial class MilvusClientV2
         // special-case the int64-min unary-minus boundary, which older 2.6.x servers did not -- see milvus#46075.)
         // Normalize a whitespace-only expression to "" like QueryReq, so it means fetch-all instead of failing
         // the server parser.
-        string expr = string.IsNullOrWhiteSpace(userExpression) ? "" : userExpression!;
+        string userFilter = string.IsNullOrWhiteSpace(userExpression) ? "" : userExpression!;
+        string initialExpr = userFilter;
+
+        // When resuming from a cursor, start the pk cursor at the captured key instead of the full range. An
+        // element-filter cursor resumes inclusively (`pk >= lastPk`); a keyless cursor (no pk) resumes from
+        // the beginning of the collection on the pinned snapshot, so it adds no pk predicate.
+        if (resumeCursor is not null && (resumeCursor.IntPk is not null || resumeCursor.StrPk is not null))
+        {
+            string resumeExpr = BuildPkCursorExpression(pkField, resumeCursor,
+                resumeCursor.LastElementOffset is not null);
+            initialExpr = string.IsNullOrEmpty(initialExpr) ? resumeExpr : $"{resumeExpr} and ({initialExpr})";
+        }
+
+        // Rebuilds the page filter from the current position: `pk >= lastPk` (inclusive) when the element
+        // cursor is active, otherwise `pk > lastPk`, combined with the user expression.
+        string BuildPositionExpression(FieldSchema pkField, QueryIteratorPosition position, bool inclusive)
+        {
+            string op = inclusive ? ">=" : ">";
+            string pkPredicate = pkField.DataType == DataType.VarChar
+                ? $"{pkField.Name} {op} '{EscapeStringLiteral(position.StrPk!)}'"
+                : $"{pkField.Name} {op} {position.IntPk!.Value}";
+            return string.IsNullOrEmpty(userFilter) ? pkPredicate : $"{pkPredicate} and ({userFilter})";
+        }
+
+        // Sets (or clears) the element-filter resume params for the next page: query_iter_last_pk +
+        // query_iter_last_element_offset, sent only while an element cursor is active.
+        void SetElementCursorParams(RepeatedField<Grpc.KeyValuePair> queryParams, bool elementCursor, QueryIteratorPosition position)
+        {
+            RemoveKeyValueItems(queryParams, "query_iter_last_pk", "query_iter_last_element_offset");
+            if (elementCursor)
+            {
+                string lastPk = position.StrPk ?? position.IntPk!.Value.ToString(CultureInfo.InvariantCulture);
+                queryParams.Add(new Grpc.KeyValuePair { Key = "query_iter_last_pk", Value = lastPk });
+                queryParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = "query_iter_last_element_offset",
+                    Value = position.LastElementOffset!.Value.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+        }
 
         var grpcRequest = new Grpc.QueryRequest
         {
             CollectionName = request.CollectionName,
-            Expr = expr,
+            Expr = initialExpr,
             DbName = databaseName
         };
 
@@ -531,9 +610,15 @@ public sealed partial class MilvusClientV2
         // Establish a snapshot on the first page: a request-level guarantee_timestamp of 0 makes the proxy
         // take a snapshot at its request time and return it as SessionTs, which we pin for all later pages so
         // the pk-cursor paging runs on a fixed MVCC snapshot. When the caller pinned an explicit consistency
-        // level (Strong/BoundedStaleness/Customized + GuaranteeTimestamp), honor that value instead of
-        // clobbering it with a fresh request-time snapshot.
-        if (grpcRequest.UseDefaultConsistency)
+        // level (Strong/Bounded/Customized + GuaranteeTimestamp), honor that value instead of
+        // clobbering it with a fresh request-time snapshot. When resuming from a cursor, reuse the captured
+        // session timestamp so the resumed pages run on the original MVCC snapshot; a cursor whose sessionTs
+        // is zero does not pin a snapshot, and the server picks its own per page.
+        if (resumeCursor is { SessionTs: > 0 })
+        {
+            grpcRequest.GuaranteeTimestamp = resumeCursor.SessionTs;
+        }
+        else if (grpcRequest.UseDefaultConsistency)
         {
             grpcRequest.GuaranteeTimestamp = 0;
         }
@@ -566,68 +651,123 @@ public sealed partial class MilvusClientV2
         // Seek past the requested offset before yielding, matching the C++ QueryIteratorImpl::seek: the
         // cursor (pk-based filter) is advanced by consuming batches of rows without returning them. Each
         // seek batch is capped at the remaining offset and runs as a plain query (iterator/reduce flags off)
-        // so the server never over-delivers surplus rows that would be silently dropped.
-        long seekRemaining = request.Parameters?.Offset ?? 0;
-        while (seekRemaining > 0)
+        // so the server never over-delivers surplus rows that would be silently dropped. Skipped entirely when
+        // resuming from a cursor (the cursor already encodes the position).
+        //
+        // The MVCC snapshot is pinned once for the whole iteration (fresh or resumed) and every subsequent
+        // page runs on it. A fresh default-consistency iterator
+        // starts unpinned: its first request carries guarantee_timestamp 0 so the proxy snapshots at request
+        // time, and the returned SessionTs is captured and reused for all later pages (including seek
+        // batches). A resumed iterator, or one with an explicit consistency level, is already pinned.
+        bool snapshotPinned = resumeCursor is { SessionTs: > 0 } || !grpcRequest.UseDefaultConsistency;
+        if (resumeCursor is null)
         {
-            int seekBatchSize = (int)Math.Min(seekRemaining, request.BatchSize);
-            ReplaceKeyValueItems(grpcRequest.QueryParams,
-                new Grpc.KeyValuePair { Key = "iterator", Value = "False" },
-                new Grpc.KeyValuePair { Key = "reduce_stop_for_best", Value = "False" },
-                new Grpc.KeyValuePair { Key = "batch_size", Value = seekBatchSize.ToString(CultureInfo.InvariantCulture) },
-                new Grpc.KeyValuePair { Key = "offset", Value = "0" },
-                new Grpc.KeyValuePair { Key = "limit", Value = seekBatchSize.ToString(CultureInfo.InvariantCulture) });
-
-            Grpc.QueryResults seekResponse = await InvokeAsync(
-                    GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (seekResponse.SessionTs > 0)
+            long seekRemaining = request.Parameters?.Offset ?? 0;
+            while (seekRemaining > 0)
             {
-                grpcRequest.GuaranteeTimestamp = seekResponse.SessionTs;
-            }
-            else if (grpcRequest.GuaranteeTimestamp == 0)
-            {
-                grpcRequest.GuaranteeTimestamp = (ulong)((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1000) << 18);
-            }
+                int seekBatchSize = (int)Math.Min(seekRemaining, request.BatchSize);
+                ReplaceKeyValueItems(grpcRequest.QueryParams,
+                    new Grpc.KeyValuePair { Key = "iterator", Value = "False" },
+                    new Grpc.KeyValuePair { Key = "reduce_stop_for_best", Value = "False" },
+                    new Grpc.KeyValuePair { Key = "batch_size", Value = seekBatchSize.ToString(CultureInfo.InvariantCulture) },
+                    new Grpc.KeyValuePair { Key = "offset", Value = "0" },
+                    new Grpc.KeyValuePair { Key = "limit", Value = seekBatchSize.ToString(CultureInfo.InvariantCulture) });
 
-            Grpc.FieldData? seekPkFieldData = seekResponse.FieldsData.FirstOrDefault(f => f.FieldName == pkField.Name);
-            int seekPageRowCount = seekPkFieldData is null
-                ? 0
-                : seekPkFieldData.Scalars.DataCase switch
+                Grpc.QueryResults seekResponse = await InvokeAsync(
+                        GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!snapshotPinned)
                 {
-                    Grpc.ScalarField.DataOneofCase.StringData => seekPkFieldData.Scalars.StringData.Data.Count,
-                    Grpc.ScalarField.DataOneofCase.IntData => seekPkFieldData.Scalars.IntData.Data.Count,
-                    Grpc.ScalarField.DataOneofCase.LongData => seekPkFieldData.Scalars.LongData.Data.Count,
-                    _ => 0
-                };
+                    if (seekResponse.SessionTs > 0)
+                    {
+                        grpcRequest.GuaranteeTimestamp = seekResponse.SessionTs;
+                    }
+                    else if (grpcRequest.GuaranteeTimestamp == 0)
+                    {
+                        grpcRequest.GuaranteeTimestamp = (ulong)((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1000) << 18);
+                    }
 
-            if (seekPageRowCount == 0)
-            {
-                // The seek drained all matched rows; nothing remains to iterate.
-                break;
+                    snapshotPinned = true;
+                }
+
+                Grpc.FieldData? seekPkFieldData = seekResponse.FieldsData.FirstOrDefault(f => f.FieldName == pkField.Name);
+                int seekEntityRowCount = seekPkFieldData is null
+                    ? 0
+                    : seekPkFieldData.Scalars.DataCase switch
+                    {
+                        Grpc.ScalarField.DataOneofCase.StringData => seekPkFieldData.Scalars.StringData.Data.Count,
+                        Grpc.ScalarField.DataOneofCase.IntData => seekPkFieldData.Scalars.IntData.Data.Count,
+                        Grpc.ScalarField.DataOneofCase.LongData => seekPkFieldData.Scalars.LongData.Data.Count,
+                        _ => 0
+                    };
+
+                // The seek offset is element-based for element-filter iterators,
+                // so count the matched elements when the server reports element_indices.
+                long seekPageCount = seekEntityRowCount;
+                long? seekLastElementOffset = null;
+                if (isElementFilter && seekResponse.ElementIndices.Count > 0)
+                {
+                    if (seekResponse.ElementIndices.Count != seekEntityRowCount)
+                    {
+                        throw new MilvusException(MilvusErrorCode.UnexpectedError,
+                            $"Query iterator element_indices count ({seekResponse.ElementIndices.Count}) does not " +
+                            $"match the entity row count ({seekEntityRowCount}).");
+                    }
+
+                    seekPageCount = 0;
+                    foreach (Grpc.ElementIndices elementIndices in seekResponse.ElementIndices)
+                    {
+                        foreach (long elementOffset in elementIndices.Indices.Data)
+                        {
+                            seekPageCount++;
+                            seekLastElementOffset = elementOffset;
+                        }
+                    }
+                }
+
+                if (seekPageCount == 0)
+                {
+                    // The seek drained all matched rows; nothing remains to iterate.
+                    break;
+                }
+
+                object seekPkLastValue = GetPkValue(seekPkFieldData!, seekEntityRowCount - 1);
+
+                // Record the seek end as the iterator position so the main loop resumes the cursor from it
+                // (including the element offset for element-filter iterators).
+                position.SessionTs = grpcRequest.GuaranteeTimestamp;
+                if (pkField.DataType == DataType.VarChar)
+                {
+                    position.IntPk = null;
+                    position.StrPk = (string)seekPkLastValue;
+                }
+                else
+                {
+                    position.StrPk = null;
+                    position.IntPk = Convert.ToInt64(seekPkLastValue, CultureInfo.InvariantCulture);
+                }
+
+                position.LastElementOffset = seekLastElementOffset;
+
+                // The seek runs with iterator=false, still sending the query_iter_last_pk / query_iter_last_element_offset
+                // params with the inclusive `>=` operator between element-filter seek batches, so a batch that
+                // ends mid-entity resumes at the exact element instead of silently dropping the un-read tail
+                // (the first batch starts from the full-range expression with no element cursor yet).
+                SetElementCursorParams(grpcRequest.QueryParams,
+                    isElementFilter && position.LastElementOffset is not null, position);
+
+                bool seekElementCursor = isElementFilter && position.LastElementOffset is not null;
+                string seekExpression = (position.IntPk is not null || position.StrPk is not null)
+                    ? BuildPositionExpression(pkField, position, seekElementCursor)
+                    : initialExpr;
+                grpcRequest.Expr = seekExpression;
+                seekRemaining -= seekPageCount;
             }
-
-            object seekPkLastValue = GetPkValue(seekPkFieldData!, seekPageRowCount - 1);
-            string seekExpression = pkField.DataType switch
-            {
-                DataType.VarChar => $"{pkField.Name} > '{EscapeStringLiteral(seekPkLastValue as string)}'",
-                DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > {seekPkLastValue}",
-                _ => throw new MilvusException(MilvusErrorCode.UnexpectedError,
-                    $"Unsupported data type '{pkField.DataType}' for primary key field '{pkField.Name}'.")
-            };
-
-            if (!string.IsNullOrWhiteSpace(userExpression))
-            {
-                seekExpression += $" and ({userExpression})";
-            }
-
-            grpcRequest.Expr = seekExpression;
-            seekRemaining -= seekPageRowCount;
         }
 
         // Restore the iterator paging parameters for the main loop after the seek phase.
-        if ((request.Parameters?.Offset ?? 0) > 0)
+        if (resumeCursor is null && (request.Parameters?.Offset ?? 0) > 0)
         {
             ReplaceKeyValueItems(grpcRequest.QueryParams,
                 new Grpc.KeyValuePair { Key = "iterator", Value = "True" },
@@ -640,19 +780,38 @@ public sealed partial class MilvusClientV2
         int processedItemsCount = 0;
         while (true)
         {
+            // Rebuild the pk-cursor expression from the current position on every page: an element-filter
+            // iterator with a captured element offset resumes inclusively and sends the element resume params,
+            // while a plain cursor advances exclusively. Until a pk is captured the initial expression (full
+            // range, or the resume cursor's bound) applies.
+            bool hasPositionPk = position.IntPk is not null || position.StrPk is not null;
+            bool elementCursor = isElementFilter && position.LastElementOffset is not null;
+            grpcRequest.Expr = hasPositionPk
+                ? BuildPositionExpression(pkField, position, elementCursor)
+                : initialExpr;
+            SetElementCursorParams(grpcRequest.QueryParams, elementCursor, position);
+
             Grpc.QueryResults response = await InvokeAsync(
                     GrpcClient.QueryAsync, grpcRequest, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (response.SessionTs > 0)
+            // Pin the MVCC snapshot once (from the first page of a fresh iterator; a resumed or explicit-
+            // consistency iterator is already pinned) and reuse it for every later page, matching the
+            // instead of letting the server's SessionTs advance the view.
+            if (!snapshotPinned)
             {
-                grpcRequest.GuaranteeTimestamp = response.SessionTs;
-            }
-            else if (grpcRequest.GuaranteeTimestamp == 0)
-            {
-                // Server did not return a snapshot timestamp; pin a client-side timestamp instead so
-                // subsequent pages still run on a fixed MVCC snapshot.
-                grpcRequest.GuaranteeTimestamp = (ulong)((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1000) << 18);
+                if (response.SessionTs > 0)
+                {
+                    grpcRequest.GuaranteeTimestamp = response.SessionTs;
+                }
+                else if (grpcRequest.GuaranteeTimestamp == 0)
+                {
+                    // Server did not return a snapshot timestamp; pin a client-side timestamp instead so
+                    // subsequent pages still run on a fixed MVCC snapshot.
+                    grpcRequest.GuaranteeTimestamp = (ulong)((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1000) << 18);
+                }
+
+                snapshotPinned = true;
             }
 
             Grpc.FieldData? pkFieldData = response.FieldsData.FirstOrDefault(f => f.FieldName == pkField.Name);
@@ -662,7 +821,7 @@ public sealed partial class MilvusClientV2
                     $"Query iterator response did not contain primary key field '{pkField.Name}'.");
             }
 
-            int pageRowCount = pkFieldData.Scalars.DataCase switch
+            int entityRowCount = pkFieldData.Scalars.DataCase switch
             {
                 Grpc.ScalarField.DataOneofCase.StringData => pkFieldData.Scalars.StringData.Data.Count,
                 Grpc.ScalarField.DataOneofCase.IntData => pkFieldData.Scalars.IntData.Data.Count,
@@ -670,32 +829,94 @@ public sealed partial class MilvusClientV2
                 _ => 0
             };
 
-            if (pageRowCount == 0)
+            // Element-filter pages carry element_indices (one entry per entity): count and expand by matched
+            // elements so the yielded page holds one row per element plus an element-offset column.
+            long pageCount = entityRowCount;
+            List<int>? expandedIndices = null;
+            List<long>? elementOffsets = null;
+            if (isElementFilter && response.ElementIndices.Count > 0)
+            {
+                if (response.ElementIndices.Count != entityRowCount)
+                {
+                    throw new MilvusException(MilvusErrorCode.UnexpectedError,
+                        $"Query iterator element_indices count ({response.ElementIndices.Count}) does not " +
+                        $"match the entity row count ({entityRowCount}).");
+                }
+
+                pageCount = 0;
+                expandedIndices = new List<int>(entityRowCount);
+                elementOffsets = new List<long>(entityRowCount);
+                for (int i = 0; i < response.ElementIndices.Count; i++)
+                {
+                    foreach (long elementOffset in response.ElementIndices[i].Indices.Data)
+                    {
+                        expandedIndices.Add(i);
+                        elementOffsets.Add(elementOffset);
+                        pageCount++;
+                    }
+                }
+            }
+
+            if (pageCount == 0)
             {
                 yield break;
             }
 
             // With ReduceStopForBest enabled the server may return more rows than the requested limit on a
-            // page. Cap the yielded page to the remaining limit and advance the pk cursor only to the last
-            // *yielded* row, so the surplus rows are re-delivered on the next page instead of being dropped
-            // (matching the C++ QueryIteratorImpl's copyResults trimming).
+            // page (more elements for element-filter iterators). Cap the yielded page to the remaining limit
+            // and advance the cursor only to the last *yielded* row/element, so the surplus is re-delivered on
+            // the next page instead of being dropped.
             int yieldCount = userLimit == int.MaxValue
-                ? pageRowCount
-                : Math.Min(pageRowCount, userLimit - processedItemsCount);
+                ? (int)pageCount
+                : (int)Math.Min(pageCount, userLimit - processedItemsCount);
             if (yieldCount <= 0)
             {
                 yield break;
             }
 
+            // Record the iterator position up front so GetCursor() can capture a resumable cursor even on the
+            // final page: the pinned MVCC snapshot, the last yielded primary key and, for element-filter
+            // pages, the last matched element offset.
+            object pkLastValue = expandedIndices is not null
+                ? GetPkValue(pkFieldData, expandedIndices[yieldCount - 1])
+                : GetPkValue(pkFieldData, yieldCount - 1);
+            position.SessionTs = grpcRequest.GuaranteeTimestamp;
+            if (pkField.DataType == DataType.VarChar)
+            {
+                position.IntPk = null;
+                position.StrPk = (string)pkLastValue;
+            }
+            else
+            {
+                position.StrPk = null;
+                position.IntPk = Convert.ToInt64(pkLastValue, CultureInfo.InvariantCulture);
+            }
+
+            position.LastElementOffset = expandedIndices is not null ? elementOffsets![yieldCount - 1] : null;
+
             // Remove the extra primary key field only when we added it ourselves (user requested a
             // non-empty output-field list that did not include the pk); otherwise return everything.
             IReadOnlyList<FieldData> fields = DqlConversions.ProcessReturnedFieldData(response.FieldsData);
+            if (expandedIndices is not null)
+            {
+                // Expand each column from entities to elements by repeating entity i's value once per matched
+                // element, then append the element-offset column.
+                var expanded = new List<FieldData>(fields.Count + 1);
+                foreach (FieldData field in fields)
+                {
+                    expanded.Add(field.SelectRows(expandedIndices));
+                }
+
+                expanded.Add(new FieldData<long>(elementOffsetColumn, elementOffsets!));
+                fields = expanded;
+            }
+
             if (userRequestedOutputFields && !isUserRequestPkField)
             {
                 fields = fields.Where(f => f.FieldName != pkField.Name).ToList();
             }
 
-            if (yieldCount < pageRowCount)
+            if (yieldCount < pageCount)
             {
                 fields = DqlConversions.TakeRows(fields, 0, yieldCount);
             }
@@ -708,29 +929,12 @@ public sealed partial class MilvusClientV2
                 yield break;
             }
 
-            object pkLastValue = GetPkValue(pkFieldData, yieldCount - 1);
-
             ReplaceKeyValueItems(grpcRequest.QueryParams,
                 new Grpc.KeyValuePair
                 {
                     Key = "limit",
                     Value = Math.Min(request.BatchSize, userLimit - processedItemsCount).ToString(CultureInfo.InvariantCulture)
                 });
-
-            string nextExpression = pkField.DataType switch
-            {
-                DataType.VarChar => $"{pkField.Name} > '{EscapeStringLiteral(pkLastValue as string)}'",
-                DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} > {pkLastValue}",
-                _ => throw new MilvusException(MilvusErrorCode.UnexpectedError,
-                    $"Unsupported data type '{pkField.DataType}' for primary key field '{pkField.Name}'.")
-            };
-
-            if (!string.IsNullOrWhiteSpace(userExpression))
-            {
-                nextExpression += $" and ({userExpression})";
-            }
-
-            grpcRequest.Expr = nextExpression;
         }
     }
 
@@ -743,6 +947,26 @@ public sealed partial class MilvusClientV2
             _ => throw new MilvusException(MilvusErrorCode.UnexpectedError,
                 $"Unsupported primary key scalar case '{pkFieldData.Scalars.DataCase}'.")
         };
+
+    // Builds the lower-bound expression that resumes a query iterator from a captured cursor's last primary
+    // key. An element-filter cursor resumes inclusively (`>=`) so the
+    // server re-reads the captured entity and resumes at the captured element offset.
+    private static string BuildPkCursorExpression(FieldSchema pkField, QueryIteratorCursor cursor, bool inclusive = false)
+        => pkField.DataType switch
+        {
+            DataType.VarChar => $"{pkField.Name} {(inclusive ? ">=" : ">")} '{EscapeStringLiteral(cursor.StrPk!)}'",
+            DataType.Int8 or DataType.Int16 or DataType.Int32 or DataType.Int64 => $"{pkField.Name} {(inclusive ? ">=" : ">")} {cursor.IntPk!.Value}",
+            _ => throw new MilvusException(MilvusErrorCode.UnexpectedError,
+                $"Unsupported data type '{pkField.DataType}' for primary key field '{pkField.Name}'.")
+        };
+
+    // Rejects a resume cursor whose primary key family (integer vs string) does not match the collection's
+    // primary key type, so a mismatched cursor fails fast instead of producing a bogus expression. A keyless
+    // cursor (no pk) is always accepted: it resumes from the beginning of the collection on the pinned
+    // snapshot.
+    private static bool ResumeCursorMatchesPk(QueryIteratorCursor cursor, FieldSchema pkField)
+        => (cursor.IntPk is null && cursor.StrPk is null)
+           || (pkField.DataType == DataType.VarChar ? cursor.StrPk is not null : cursor.IntPk is not null);
 
     internal async IAsyncEnumerable<SingleResult> SearchIteratorCoreAsync(
         SearchIteratorReq request,
@@ -852,6 +1076,10 @@ public sealed partial class MilvusClientV2
             grpcRequest.GuaranteeTimestamp = 0;
         }
 
+        // A fresh default-consistency iterator captures the snapshot on its first probe; a resumed or
+        // explicit-consistency iterator is already pinned.
+        bool snapshotPinned = !grpcRequest.UseDefaultConsistency;
+
         string? token = null;
         float? lastBound = null;
 
@@ -890,14 +1118,22 @@ public sealed partial class MilvusClientV2
                     GrpcClient.SearchAsync, grpcRequest, static r => r.Status, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (response.SessionTs > 0)
+            // Pin the MVCC snapshot once (from the first probe of a fresh iterator; an explicit-consistency
+            // iterator is already pinned) and reuse it for every later page instead of letting the server's
+            // SessionTs advance the view.
+            if (!snapshotPinned)
             {
-                grpcRequest.GuaranteeTimestamp = response.SessionTs;
-            }
-            else if (grpcRequest.GuaranteeTimestamp == 0)
-            {
-                // Server did not return a snapshot timestamp; pin a client-side timestamp instead.
-                grpcRequest.GuaranteeTimestamp = (ulong)((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1000) << 18);
+                if (response.SessionTs > 0)
+                {
+                    grpcRequest.GuaranteeTimestamp = response.SessionTs;
+                }
+                else if (grpcRequest.GuaranteeTimestamp == 0)
+                {
+                    // Server did not return a snapshot timestamp; pin a client-side timestamp instead.
+                    grpcRequest.GuaranteeTimestamp = (ulong)((DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1000) << 18);
+                }
+
+                snapshotPinned = true;
             }
 
             Grpc.SearchIteratorV2Results? iteratorInfo = response.Results?.SearchIteratorV2Results;
@@ -1222,6 +1458,17 @@ public sealed partial class MilvusClientV2
         }
     }
 
+    // Removes every key-value pair whose key is in the given set, leaving the others untouched.
+    private static void RemoveKeyValueItems(
+        RepeatedField<Grpc.KeyValuePair> collection, params string[] keys)
+    {
+        Grpc.KeyValuePair[] obsoleteParameters = collection.Where(x => keys.Contains(x.Key)).ToArray();
+        foreach (Grpc.KeyValuePair field in obsoleteParameters)
+        {
+            collection.Remove(field);
+        }
+    }
+
     // Routes a DQL request to a target cluster by pinning the "cluster_id" parameter on the wire (Zilliz
     // Cloud global-cluster deployments). A null/empty cluster id leaves the request untouched; otherwise any
     // caller-supplied cluster_id entry is replaced so the session's cluster wins, matching the C++/Java SDKs.
@@ -1481,6 +1728,16 @@ public sealed partial class MilvusClientV2
         // Route the search to the session's target cluster (Zilliz Cloud global-cluster deployments). Replaces
         // any caller-supplied cluster_id search param, mirroring the C++/Java SDKs.
         InjectClusterId(grpcRequest.SearchParams, clusterId);
+
+        // Typed order-by fields ride the order_by_fields search param as "field:asc,field:desc".
+        if (parameters is { OrderByFields.Count: > 0 })
+        {
+            grpcRequest.SearchParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.OrderByFields,
+                Value = string.Join(",", parameters.OrderByFields.Select(f => f.ToWireString()))
+            });
+        }
 
         // metric_type defaults to MetricType.Invalid (enum 0), which maps to the literal string
         // "INVALID"; the proxy fails metric resolution on that value instead of inferring it from the index.
@@ -1772,7 +2029,7 @@ public sealed partial class MilvusClientV2
                 => (ulong)CollectionTsCache.Instance.Get(endpoint, database, collectionName) is { } ts && ts != 0
                     ? (ulong)ts
                     : (ulong)Constants.GuaranteeEventuallyTs,
-            ConsistencyLevel.BoundedStaleness => (ulong)2,
+            ConsistencyLevel.Bounded => (ulong)2,
             ConsistencyLevel.Eventually => (ulong)Constants.GuaranteeEventuallyTs,
             ConsistencyLevel.Customized => userProvidedGuaranteeTimestamp
                 ?? throw new ArgumentException(

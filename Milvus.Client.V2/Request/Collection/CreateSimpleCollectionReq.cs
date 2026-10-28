@@ -48,9 +48,9 @@ public sealed class CreateSimpleCollectionReq
     public int Dimension { get; set; }
 
     /// <summary>
-    /// The consistency level of the collection. Defaults to <see cref="ConsistencyLevel.BoundedStaleness" />.
+    /// The consistency level of the collection. Defaults to <see cref="ConsistencyLevel.Bounded" />.
     /// </summary>
-    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.BoundedStaleness;
+    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.Bounded;
 
     /// <summary>
     /// The metric type used for the vector index and search. Defaults to <see cref="MetricType.Cosine" />.
