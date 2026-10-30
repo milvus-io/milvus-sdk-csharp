@@ -193,5 +193,17 @@ public sealed class SearchIteratorReq
         {
             throw new ArgumentException("Offset is not supported with a search iterator.", nameof(Parameters));
         }
+
+        // The search iterator uses the search_iter_v2 token protocol, which pages independently of ordering;
+        // reject an order-by up front instead of emitting the params on every page -- both the typed property
+        // and the raw ExtraParameters escape hatch.
+        if (Parameters?.OrderByFields.Count > 0 || Parameters?.ExtraParameters.ContainsKey(Constants.OrderByFields) == true)
+        {
+            throw new ArgumentException(
+                "OrderByFields (typed or via ExtraParameters) is not supported with a search iterator (the " +
+                "search_iter_v2 token protocol pages independently of ordering, matching the Rust SDK's " +
+                "rejection and the Java/C++ search iterators).",
+                nameof(Parameters));
+        }
     }
 }

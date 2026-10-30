@@ -28,7 +28,7 @@ public class CollectionRespTests
         Assert.Equal("book", resp.CollectionName);
         Assert.Equal("book", resp.Schema.Name);
         Assert.Equal(2, resp.ShardsNum);
-        Assert.Equal(ConsistencyLevel.BoundedStaleness, resp.ConsistencyLevel);
+        Assert.Equal(ConsistencyLevel.Bounded, resp.ConsistencyLevel);
         Assert.Equal(12345678UL, resp.CreatedTimestamp);
         Assert.Equal(new[] { "book_alias", "books" }, resp.Aliases);
         Assert.Equal("3600", resp.Properties["collection.ttl.seconds"]);

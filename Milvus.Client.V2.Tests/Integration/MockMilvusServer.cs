@@ -312,6 +312,7 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public override Task<ConnectResponse> Connect(ConnectRequest request, ServerCallContext context)
     {
         Record(nameof(Connect), request);
+        ConnectCalls++;
         LastConnectClientInfo = request.ClientInfo;
         var response = new ConnectResponse { Status = NextStatus() };
         response.ServerInfo = new ServerInfo { BuildTags = ServerVersion };
@@ -323,6 +324,11 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         Record(nameof(GetVersion), request);
         return Task.FromResult(new GetVersionResponse { Status = NextStatus(), Version = ServerVersion });
     }
+
+    /// <summary>
+    /// The number of <c>Connect</c> RPCs received (used to assert connection resets).
+    /// </summary>
+    public int ConnectCalls { get; private set; }
 
     /// <summary>
     /// The server version reported by <c>GetVersion</c> and <c>Connect</c>.
@@ -574,6 +580,13 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     /// </summary>
     public IReadOnlyList<string>? QueryIteratorStringPkValues { get; set; }
 
+    /// <summary>
+    /// When set, the mock <c>Query</c> returns exactly <c>QueryElementIndices.Count</c> entities (pks 0..N-1),
+    /// each carrying the configured element indices, simulating an <c>element_filter</c> iterator page. The pk
+    /// cursor is ignored so the test controls which requests the client makes.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<long>>? QueryElementIndices { get; set; }
+
     public override Task<QueryResults> Query(QueryRequest request, ServerCallContext context)
     {
         Record(nameof(Query), request);
@@ -588,6 +601,38 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         // Report a snapshot timestamp (advancing per call) so the query-iterator's SessionTs pinning branch is
         // exercised; a 0 value falls back to the client-side snapshot as before.
         results.SessionTs = NextQuerySessionTs++;
+
+        if (QueryElementIndices is { } elementPattern)
+        {
+            // element-filter iterator: the server caps pages by element count, so return whole entities (pks
+            // 0..N-1, cycled from the pattern) until the requested limit's element budget is met.
+            int elementLimit = ParseQueryParamLimit(request) ?? int.MaxValue;
+            int entityCount = 0;
+            long totalElements = 0;
+            while (entityCount < elementPattern.Count && totalElements < elementLimit)
+            {
+                totalElements += elementPattern[entityCount].Count;
+                entityCount++;
+            }
+
+            var pkField = new Grpc.FieldData { FieldName = "id", Type = Grpc.DataType.Int64 };
+            pkField.Scalars = new Grpc.ScalarField { LongData = new Grpc.LongArray() };
+            for (int i = 0; i < entityCount; i++)
+            {
+                pkField.Scalars.LongData.Data.Add(i);
+            }
+
+            results.FieldsData.Add(pkField);
+            for (int i = 0; i < entityCount; i++)
+            {
+                // ElementIndices.Indices is a nullable message field with no lazy init, so assign it first.
+                var elementIndices = new Grpc.ElementIndices { Indices = new Grpc.LongArray() };
+                elementIndices.Indices.Data.AddRange(elementPattern[i]);
+                results.ElementIndices.Add(elementIndices);
+            }
+
+            return Task.FromResult(results);
+        }
 
         if (QueryIteratorStringPkRows is { } stringRows)
         {
@@ -639,6 +684,7 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
 
     private static long ParsePkLowerBound(string expr)
     {
+        bool inclusive = false;
         int idx = expr.IndexOf("id > ", StringComparison.Ordinal);
         if (idx < 0)
         {
@@ -648,6 +694,8 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
                 return 0;
             }
 
+            // An inclusive `id >= N` bound (used by element-filter resumes) starts at N itself.
+            inclusive = true;
             idx += "id >= ".Length;
         }
         else
@@ -664,7 +712,7 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         long parsed = long.Parse(expr.AsSpan(idx, end - idx), System.Globalization.CultureInfo.InvariantCulture);
         // The iterator's initial expression is "id >= <min int64>"; normalize that to a start from 0 so the mock
         // returns a small, countable row sequence.
-        return parsed == long.MinValue ? 0 : parsed + 1;
+        return parsed == long.MinValue ? 0 : (inclusive ? parsed : parsed + 1);
     }
 
     private static string ParsePkStringLowerBound(string expr)

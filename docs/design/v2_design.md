@@ -194,7 +194,7 @@ public sealed class CreateCollectionReq
 {
     public string CollectionName { get; set; } = "";
     public CollectionSchema? Schema { get; set; }
-    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.BoundedStaleness;
+    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.Bounded;
     public int ShardsNum { get; set; } = 1;
 
     internal Grpc.CreateCollectionRequest ToGrpcCreateCollectionRequest() { ... }
@@ -280,11 +280,14 @@ public sealed class ConnectConfig
 }
 ```
 
-**Connection model — explicit `ConnectAsync` with lazy fallback.** Unlike the Java/C++ SDKs (which
-connect eagerly in the constructor), the C# constructor is lightweight and performs **no network
-I/O** (consistent with AWS/Azure/.NET convention). Connection is established via
-`MilvusClientV2.ConnectAsync`, which sends the `MilvusService.Connect` RPC registering the SDK info
-(type/version/user/host/time):
+**Connection model — explicit `ConnectAsync` with lazy fallback.** The C# constructor is lightweight
+and performs **no network I/O** (consistent with AWS/Azure/.NET convention). This matches the C++ SDK's
+`MilvusClientV2::Create()`, which only constructs an empty client and requires a separate explicit
+`Connect(ConnectParam)`; an unconnected C++ client fails any RPC fast with `NOT_CONNECTED`
+(`ConnectionHandler.h`), so C++ has **no lazy fallback**. It differs from Java's
+`MilvusClientV2(ConnectConfig)`, which calls `connect` in the constructor. In C#, connection is
+established via `MilvusClientV2.ConnectAsync`, which sends the `MilvusService.Connect` RPC registering
+the SDK info (type/version/user/host/time):
 
 - **Recommended**: call `await client.ConnectAsync(ct)` before other APIs so connection/
   authentication failures surface up front.
@@ -443,10 +446,13 @@ Convenience factories mirror V1: `FieldData.Create(name, IReadOnlyList<T>)`,
 
 ## 4. Feature Scope (implementation roadmap)
 
-> **Goal**: the V2 first-phase feature set is aligned with the **2.6 branches** of the Java
-> (`MilvusClientV2`), C++ (`MilvusClientV2`) and PyMilvus (`MilvusClient`) SDKs. Features in the
-> tables below follow those branches; anything added after 2.6 is a follow-up iteration (see the
-> note at the end of this section).
+> **Goal**: the V2 feature set is a mix of **2.6-branch parity** and a **master subset**. The baseline
+> is aligned with the **2.6 branches** of the Java (`MilvusClientV2`), C++ (`MilvusClientV2`) and
+> PyMilvus (`MilvusClient`) SDKs, but C# V2 also ships several features that exist only on the SDK
+> **master** branches (snapshot/restore, file resources, external-collection refresh, BM25 analyzers,
+> struct fields, function-field mutation — flagged where they apply). Features in the tables below
+> either follow the 2.6 branches or are already-implemented master additions; anything not yet
+> implemented is a follow-up iteration (see the note at the end of this section).
 >
 > "Implemented" = present in the current codebase; "Planned" = on the roadmap.
 >
@@ -579,7 +585,10 @@ PyMilvus `MilvusClientSession`:
 - The session's cluster id **replaces** any caller-supplied `cluster_id` (via `ExtraParameters` on a
   search/query or on a hybrid sub-request) when the session is present, so the session binding cannot be
   bypassed; it is never embedded in the search `params` JSON bag. Outside a session, manual
-  `cluster_id` routing via `ExtraParameters` remains supported (matching Java/pymilvus).
+  `cluster_id` routing via `ExtraParameters` remains supported (matching Java/pymilvus). **C++ differs**:
+  it unconditionally strips a caller-supplied `cluster_id` (`extra_params.erase(CLUSTER_ID)` /
+  `continue` in `DqlUtils.cpp`) and injects one only from a session, so C++ has no manual-routing
+  escape hatch; C# deliberately follows Java/pymilvus here.
 - The session shares the parent client's connection and caches; `Close()` only makes the session
   unusable and does not disconnect the parent client. Implemented via internal `*CoreAsync` facade
   overloads that carry the cluster id (the public DQL methods delegate with `clusterId: null`).
@@ -817,9 +826,11 @@ SDKs; names are the parity unit). "In C# V2" marks whether the value is already 
 
 > `DEFAULT` (C++) and `INVALID`/`None` (Java) are sentinel/unset values, not real metrics.
 
-> Post-2.6 follow-ups (not in the 2.6 scope): snapshot/restore APIs, file resources, `Text` data
-> type, BM25 analyzer params, and schema field/function-field mutation APIs (`DropCollectionField`,
-> `AddFunctionField`, `DropFunctionField`) that appear on SDK `master` branches.
+> The tables above mix 2.6-branch parity with **master-only** features: snapshot/restore APIs, file
+> resources, external-collection refresh, `Text`, BM25 analyzer params, struct fields, and schema
+> field/function-field mutation APIs (`DropCollectionField`, `AddFunctionField`, `DropFunctionField`)
+> exist on the SDK `master` branches (not on 2.6) and are listed because C# V2 already ships them;
+> anything not yet implemented remains a follow-up iteration.
 
 ## 5. Retry and Cache Mechanisms
 
@@ -871,7 +882,7 @@ and C++ `DqlUtils.DeduceGuaranteeTimestamp`):
 |---|---|---|
 | `Strong` | `0` | wait until **all** DML has finished (`GuaranteeStrongTs`) |
 | `Session` | `CollectionTsCache.Get(...)`; `1` when absent | wait until **this client's** last DML is visible |
-| `BoundedStaleness` | `2` | let the server decide the bounded staleness window |
+| `Bounded` | `2` | let the server decide the bounded staleness window (`BoundedStaleness` is a deprecated alias) |
 | `Eventually` | `1` | execute immediately (`GuaranteeEventuallyTs`) |
 | *(unspecified)* | `Session` | an unset `ConsistencyLevel` defaults to `Session`, sending the client's `CollectionTsCache` timestamp |
 
@@ -1009,6 +1020,13 @@ public sealed class RetryConfig
 
 Wired through `ConnectConfig.Retry` (default: a default `RetryConfig`).
 
+> **Retry scope — unified client-level policy (Java/C++/Rust parity, not PyMilvus).** Retry is configured
+> once per client via `ConnectConfig.Retry` and applied uniformly inside `InvokeAsync` to every operation
+> (DML/DQL/DDL alike). C# deliberately exposes **no per-call retry knobs**: unlike PyMilvus, whose methods
+> accept per-call `retry_times` / `retry_on_rate_limit` / `timeout`, C# follows the Java (`RpcUtils` +
+> client `RetryConfig`) / C++ (per-connection `RetryParam`) / Rust (`set_retry_param`) model, where the retry
+> policy is client/connection scoped only.
+
 #### 5.2.2 `RetryPolicy`
 
 Internal helper applied inside `InvokeAsync`:
@@ -1100,12 +1118,20 @@ Design points:
 
 The retry decision is based on **two layers of error codes**, matching the Java/C++/PyMilvus SDKs:
 
-1. **gRPC transport error code** (`RpcException.StatusCode`) — an identical 8-code blacklist is
-   shared by all three SDKs; those are **never** retried:
+1. **gRPC transport error code** (`RpcException.StatusCode`) — Java/C++/PyMilvus share a **7-code**
+   blacklist (`DeadlineExceeded`, `PermissionDenied`, `Unauthenticated`, `InvalidArgument`,
+   `AlreadyExists`, `ResourceExhausted`, `Unimplemented`); those are **never** retried. **`CANCELLED` is
+   not in the Java/C++/PyMilvus blacklists** (C++ `RpcUtils.cpp`, Java `RpcUtils.isNonRetryableRpcError`,
+   PyMilvus `IGNORE_RETRY_CODES` in `decorators.py`); it still ends up non-retried there because their
+   status-conversion path treats a cancelled transport status as a non-retryable server-code-0 result.
+   **C# deliberately widens the blacklist to 8 codes with `Cancelled`**: Grpc.Net.Client surfaces a
+   caller-cancelled RPC as `RpcException(Cancelled)`, and caller-initiated cancellation must not be
+   retried.
 
    | gRPC code | Retry? |
    |---|---|
-   | `Cancelled`, `DeadlineExceeded`, `PermissionDenied`, `Unauthenticated`, `InvalidArgument`, `AlreadyExists`, `ResourceExhausted`, `Unimplemented` | **No** (fail immediately; `Cancelled` is caller-initiated) |
+   | `DeadlineExceeded`, `PermissionDenied`, `Unauthenticated`, `InvalidArgument`, `AlreadyExists`, `ResourceExhausted`, `Unimplemented` | **No** — all SDKs |
+   | `Cancelled` | **No** — C# only (caller-initiated); not blacklisted in Java/C++/PyMilvus, which still do not retry it |
    | every other code, notably `Unavailable`, `Unknown`, `Internal`, `NotFound`, ... | **Yes** |
 
 2. **Milvus server error code** (`MilvusException.ErrorCode`, from `common.Status`) — only the
@@ -1118,11 +1144,11 @@ Cross-SDK verification (read from source):
 
 | Behavior | Java `rpcUtils.retry` | C++ `RpcUtils::Retry` | PyMilvus `retry_on_rpc_failure` |
 |---|---|---|---|
-| gRPC blacklist (8 codes) | identical | identical | identical (`IGNORE_RETRY_CODES`) |
+| gRPC blacklist | 7 codes (no `CANCELLED`) | 7 codes (no `CANCELLED`; inline check in `RpcUtils.cpp`, no `IGNORE_RETRY_CODES` constant) | 7 codes (no `CANCELLED`; `IGNORE_RETRY_CODES` in `decorators.py`) | C#: 8 codes (`Cancelled` added) |
 | `Unavailable` (transport) | **retries** | **does not retry** (server code 0 falls into `else if (!IsOk) return`) | **retries** |
 | server RateLimit (8 / legacy 49) | retries | retries | retries |
 | other server errors | no | no | no |
-| global-cluster / connection recovery | `handleGlobalConnectionError` / `handleGlobalRoutingError` (topology refresh) | — | `_on_rpc_error` (e.g. REPLICATE_VIOLATION) |
+| global-cluster / connection recovery | `handleGlobalConnectionError` / `handleGlobalRoutingError` (topology refresh) | `TriggerGlobalRefresh()` on gRPC `UNAVAILABLE` / `STREAMING_CODE_REPLICATE_VIOLATION`, reconnecting to a new primary (`ConnectionHandler.h`) — **master only**; 2.6 has none | `_on_rpc_error` (e.g. REPLICATE_VIOLATION) |
 
 **C# decision**: follow **PyMilvus** semantics — `Unavailable` and other non-blacklist gRPC codes
 are retried, since PyMilvus (the reference client) and Java both retry them; only the 8 blacklisted

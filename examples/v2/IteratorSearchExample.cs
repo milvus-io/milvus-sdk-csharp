@@ -1,32 +1,28 @@
 using Milvus.Client.V2;
 using Milvus.Client.V2.Requests.Collection;
 using Milvus.Client.V2.Requests.Dml;
-using Milvus.Client.V2.Responses.Dml;
 using Milvus.Client.V2.Requests.Dql;
-using Milvus.Client.V2.Responses.Dql;
 using Milvus.Client.V2.Requests.Index;
+using Milvus.Client.V2.Responses.Dql;
 using Milvus.Client.V2.Types;
 
 namespace Milvus.Examples;
 
 /// <summary>
-/// Demonstrates server-side iterators: page over all rows of a query, or all nearest
-/// neighbours of a search, in <c>BatchSize</c>-sized batches via <c>await foreach</c>,
-/// including a client-side page filter (<c>ExternalFilterFunc</c>) that prunes hits before
-/// they are yielded. Mirrors cpp examples/src/v2/iterator_query.cpp and iterator_search.cpp,
-/// and java IteratorExample.
+/// Demonstrates the server-side search iterator: page over the top-K nearest neighbours of a
+/// search in <c>BatchSize</c>-sized batches via <c>await foreach</c>, including a client-side
+/// page filter (<c>ExternalFilterFunc</c>) that prunes hits before they are yielded.
+/// Mirrors cpp examples/src/v2/iterator_search.cpp.
 /// </summary>
 /// <remarks>
-/// <para><b>Purpose:</b> show how to consume a large result set without loading it at once:
-/// <c>QueryIteratorAsync</c> (primary-key-ordered) and <c>SearchIteratorAsync</c>
-/// (top-K ordered). Both are <see cref="IAsyncEnumerable{T}" />.</para>
+/// <para><b>Purpose:</b> show how to consume a large search result set without loading it at
+/// once. The search iterator is top-K ordered and yields one <c>SingleResult</c> per page.</para>
 /// <para><b>APIs used:</b> <c>CreateCollectionAsync</c>, <c>CreateIndexAsync</c>,
-/// <c>InsertAsync</c>, <c>QueryIteratorAsync</c>, <c>SearchIteratorAsync</c>,
-/// <c>SearchIteratorReq.ExternalFilterFunc</c>, <c>DropCollectionAsync</c>.</para>
-/// <para><b>Expected output:</b> a row count per query-iterator page, a hit count per
-/// search-iterator page, then "Done.".</para>
+/// <c>InsertAsync</c>, <c>SearchIteratorAsync</c>, <c>SearchIteratorReq.ExternalFilterFunc</c>,
+/// <c>DropCollectionAsync</c>.</para>
+/// <para><b>Expected output:</b> a hit count per search-iterator page, then "Done.".</para>
 /// </remarks>
-public static class IteratorExample
+public static class IteratorSearchExample
 {
     public static async Task Run(string uri)
     {
@@ -34,7 +30,9 @@ public static class IteratorExample
         Console.WriteLine("Connecting...");
         await client.ConnectAsync();
 
-        const string collectionName = "iterator_example";
+        const string collectionName = "iterator_search_example";
+        const string ageField = "age";
+        const string vectorField = "vector";
         const int dimension = 4;
         const int rowCount = 100;
 
@@ -49,8 +47,8 @@ public static class IteratorExample
                 Fields =
                 {
                     new FieldSchema("id", DataType.Int64, isPrimaryKey: true),
-                    new FieldSchema("age", DataType.Int8),
-                    FieldSchema.CreateFloatVector("vector", dimension: dimension)
+                    new FieldSchema(ageField, DataType.Int8),
+                    FieldSchema.CreateFloatVector(vectorField, dimension: dimension)
                 }
             }
         });
@@ -59,7 +57,7 @@ public static class IteratorExample
         await client.CreateIndexAsync(new CreateIndexReq
         {
             CollectionName = collectionName,
-            Indexes = [new IndexParam("vector", null, IndexType.Flat, MetricType.L2)]
+            Indexes = [new IndexParam(vectorField, null, IndexType.Flat, MetricType.L2)]
         });
 
         var vectors = Enumerable.Range(0, rowCount)
@@ -73,59 +71,22 @@ public static class IteratorExample
             ColumnsData =
             [
                 FieldData.Create("id", Enumerable.Range(0, rowCount).Select(i => (long)i).ToArray()),
-                FieldData.Create("age", Enumerable.Range(0, rowCount).Select(i => (sbyte)(i % 10)).ToArray()),
-                FieldData.CreateFloatVector("vector", vectors)
+                FieldData.Create(ageField, Enumerable.Range(0, rowCount).Select(i => (sbyte)(i % 10)).ToArray()),
+                FieldData.CreateFloatVector(vectorField, vectors)
             ]
         });
 
         Console.WriteLine("Loading collection...");
         await client.LoadCollectionAsync(new LoadCollectionReq { CollectionName = collectionName });
 
-        #region Snippet:MilvusIterator_Query
-        Console.WriteLine("Query iterator (batch size 10):");
-        int queryRows = 0;
-        await foreach (IReadOnlyList<FieldData> batch in client.QueryIteratorAsync(
-            new QueryIteratorReq
-            {
-                CollectionName = collectionName,
-                BatchSize = 10,
-                Parameters = new QueryParameters { Limit = 50 }
-            }))
-        {
-            Console.WriteLine($"  page of {batch.FirstOrDefault()?.RowCount ?? 0} rows");
-            queryRows += batch.FirstOrDefault()?.RowCount ?? 0;
-        }
-
-        Console.WriteLine($"  total rows iterated: {queryRows}");
-        #endregion
-
-        #region Snippet:MilvusIterator_Query_Filtered
-        Console.WriteLine("Query iterator with filter and offset (batch size 10):");
-        int filteredRows = 0;
-        await foreach (IReadOnlyList<FieldData> batch in client.QueryIteratorAsync(
-            new QueryIteratorReq
-            {
-                CollectionName = collectionName,
-                BatchSize = 10,
-                Expression = "id >= 10",
-                Parameters = new QueryParameters { Limit = 40, Offset = 10 }
-            }))
-        {
-            Console.WriteLine($"  page of {batch.FirstOrDefault()?.RowCount ?? 0} rows");
-            filteredRows += batch.FirstOrDefault()?.RowCount ?? 0;
-        }
-
-        Console.WriteLine($"  total rows iterated with filter and offset: {filteredRows}");
-        #endregion
-
-        #region Snippet:MilvusIterator_Search
+        #region Snippet:MilvusIteratorSearch_Search
         Console.WriteLine("Search iterator (batch size 10):");
         int searchHits = 0;
         await foreach (SingleResult batch in client.SearchIteratorAsync(
             new SearchIteratorReq
             {
                 CollectionName = collectionName,
-                VectorFieldName = "vector",
+                VectorFieldName = vectorField,
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.5f, 0.5f, 0.5f, 0.5f }) },
                 MetricType = MetricType.L2,
                 BatchSize = 10,
@@ -139,31 +100,30 @@ public static class IteratorExample
         Console.WriteLine($"  total hits iterated: {searchHits}");
         #endregion
 
-        #region Snippet:MilvusIterator_Search_ExternalFilter
+        #region Snippet:MilvusIteratorSearch_ExternalFilter
         Console.WriteLine("Search iterator with client-side page filter (keep even ages only):");
         int filteredHits = 0;
         await foreach (SingleResult batch in client.SearchIteratorAsync(
             new SearchIteratorReq
             {
                 CollectionName = collectionName,
-                VectorFieldName = "vector",
+                VectorFieldName = vectorField,
                 Vectors = new[] { new ReadOnlyMemory<float>(new[] { 0.5f, 0.5f, 0.5f, 0.5f }) },
                 MetricType = MetricType.L2,
                 BatchSize = 10,
                 Limit = 50,
-                Parameters = new SearchParameters { OutputFields = { "id", "age" } },
-                // Mirror cpp examples/src/v2/iterator_search.cpp iterateWithExternalFilter:
-                // the callback receives each fetched page and returns the 0-based row indices to
-                // keep. Here we drop every hit whose "age" output field is odd.
+                Parameters = new SearchParameters { OutputFields = { "id", ageField } },
+                // The callback receives each fetched page and returns the 0-based row indices to keep.
+                // Here we drop every hit whose "age" output field is odd.
                 ExternalFilterFunc = page =>
                 {
-                    FieldData? ageField = page.OutputFields.FirstOrDefault(f => f.FieldName == "age");
-                    if (ageField is null)
+                    FieldData? ageFieldData = page.OutputFields.FirstOrDefault(f => f.FieldName == ageField);
+                    if (ageFieldData is null)
                     {
                         throw new ArgumentException("age output field missing in search result");
                     }
 
-                    var ages = (FieldData<sbyte>)ageField;
+                    var ages = (FieldData<sbyte>)ageFieldData;
                     return Enumerable.Range(0, ages.Data.Count)
                         .Where(i => ages.Data[i] % 2 == 0)
                         .ToList();
@@ -173,7 +133,7 @@ public static class IteratorExample
             Console.WriteLine($"  page of {batch.Scores.Count} hits");
             foreach (int i in Enumerable.Range(0, batch.Scores.Count))
             {
-                if (((sbyte)batch.GetRow(i)["age"]!) % 2 != 0)
+                if (((sbyte)batch.GetRow(i)[ageField]!) % 2 != 0)
                 {
                     Console.WriteLine("  ERROR: a row with odd age slipped through the external filter");
                 }

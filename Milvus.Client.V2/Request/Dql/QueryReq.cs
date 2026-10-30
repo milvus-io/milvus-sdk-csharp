@@ -177,6 +177,13 @@ public sealed class QueryReq
             {
                 request.QueryParams.Add(new Grpc.KeyValuePair { Key = extra.Key, Value = extra.Value });
             }
+
+            // Typed order-by/group-by fields ride the query params as "field:asc,field:desc" and
+            // "field1,field2".
+            foreach (KeyValuePair<string, string> orderGroupBy in Parameters.ToOrderAndGroupByParams())
+            {
+                request.QueryParams.Add(new Grpc.KeyValuePair { Key = orderGroupBy.Key, Value = orderGroupBy.Value });
+            }
             if (Parameters.ConsistencyLevel is { } cl)
             {
                 request.ConsistencyLevel = (Grpc.ConsistencyLevel)(int)cl;

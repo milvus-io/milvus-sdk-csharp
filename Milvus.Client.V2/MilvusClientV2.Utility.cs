@@ -195,35 +195,34 @@ public sealed partial class MilvusClientV2
 
         FlushAllResp result = FlushAllResp.FromGrpc(response);
 
-        // When WaitFlushedMs is set, poll GetFlushAllState until the flush completes or the window expires,
-        // mirroring the C++ SDK's wait_for_status loop.
-        if (request.WaitFlushedMs > 0)
+        // Poll GetFlushAllState until the flush completes or the wait window expires. A WaitFlushedMs of 0
+        // (the default) waits until completion with no timeout.
+        DateTime? deadline = request.WaitFlushedMs > 0
+            ? DateTime.UtcNow + TimeSpan.FromMilliseconds(request.WaitFlushedMs)
+            : null;
+        while (true)
         {
-            DateTime deadline = DateTime.UtcNow + TimeSpan.FromMilliseconds(request.WaitFlushedMs);
-            while (true)
+            GetFlushAllStateResp state = await GetFlushAllStateAsync(
+                new GetFlushAllStateReq
+                {
+                    DatabaseName = request.DatabaseName,
+                    FlushAllTimestamp = result.FlushAllTimestamp,
+                    FlushAllTss = result.FlushAllTss
+                },
+                cancellationToken).ConfigureAwait(false);
+            if (state.Flushed)
             {
-                GetFlushAllStateResp state = await GetFlushAllStateAsync(
-                    new GetFlushAllStateReq
-                    {
-                        DatabaseName = request.DatabaseName,
-                        FlushAllTimestamp = result.FlushAllTimestamp,
-                        FlushAllTss = result.FlushAllTss
-                    },
-                    cancellationToken).ConfigureAwait(false);
-                if (state.Flushed)
-                {
-                    break;
-                }
-
-                if (DateTime.UtcNow >= deadline)
-                {
-                    throw new MilvusException(
-                        MilvusErrorCode.UnexpectedError,
-                        $"Timed out waiting for flush-all to complete after {request.WaitFlushedMs} ms.");
-                }
-
-                await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                break;
             }
+
+            if (deadline is { } d && DateTime.UtcNow >= d)
+            {
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError,
+                    $"Timed out waiting for flush-all to complete after {request.WaitFlushedMs} ms.");
+            }
+
+            await Task.Delay(500, cancellationToken).ConfigureAwait(false);
         }
 
         return result;

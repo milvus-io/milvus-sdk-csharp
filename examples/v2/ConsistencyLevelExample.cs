@@ -36,7 +36,7 @@ public static class ConsistencyLevelExample
         await client.CreateCollectionAsync(new CreateCollectionReq
         {
             CollectionName = collectionName,
-            ConsistencyLevel = ConsistencyLevel.BoundedStaleness,
+            ConsistencyLevel = ConsistencyLevel.Bounded,
             Schema = new CollectionSchema
             {
                 Fields =
@@ -118,7 +118,7 @@ public static class ConsistencyLevelExample
             Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 0f }) },
             MetricType = MetricType.L2,
             Limit = 2,
-            Parameters = new SearchParameters { ConsistencyLevel = ConsistencyLevel.BoundedStaleness }
+            Parameters = new SearchParameters { ConsistencyLevel = ConsistencyLevel.Bounded }
         });
         Console.WriteLine($"Bounded-staleness search returned {boundedSearch.Ids.LongIds?.Count ?? 0} hits");
         ExampleHelpers.PrintSearchHits(boundedSearch);

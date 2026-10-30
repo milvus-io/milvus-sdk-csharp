@@ -1,3 +1,4 @@
+using Milvus.Client.V2.Types;
 using Milvus.Client.V2.Utils;
 namespace Milvus.Client.V2.Requests.Utility;
 
@@ -16,13 +17,26 @@ public sealed class GetPersistentSegmentInfoReq
     /// The name of the collection whose persistent segment info to retrieve.
     /// </summary>
     public string CollectionName { get; set; } = "";
+
+    /// <summary>
+    /// The optional segment states to filter by. When empty, the server returns persistent segments of every
+    /// state, preserving the legacy behavior.
+    /// </summary>
+    public IReadOnlyList<SegmentState>? States { get; set; }
+
     internal Grpc.GetPersistentSegmentInfoRequest ToGrpcGetPersistentSegmentInfoRequest()
     {
         Verify.NotNullOrWhiteSpace(CollectionName);
-        return new Grpc.GetPersistentSegmentInfoRequest
+        var request = new Grpc.GetPersistentSegmentInfoRequest
         {
             DbName = DatabaseName ?? "",
             CollectionName = CollectionName
         };
+        if (States is { Count: > 0 })
+        {
+            request.States.AddRange(States.Select(s => (Grpc.SegmentState)(int)s));
+        }
+
+        return request;
     }
 }

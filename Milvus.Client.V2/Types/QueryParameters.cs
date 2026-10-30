@@ -80,8 +80,38 @@ public sealed class QueryParameters
     public IReadOnlyList<object>? Ids { get; set; }
 
     /// <summary>
+    /// The ordered list of fields to sort the query results by, carried on the wire <c>order_by_fields</c> key.
+    /// </summary>
+    public IList<OrderByField> OrderByFields { get; } = new List<OrderByField>();
+
+    /// <summary>
+    /// The fields to group the query results by, carried on the wire <c>group_by_fields</c> key (a
+    /// comma-separated list of field names).
+    /// </summary>
+    public IList<string> GroupByFields { get; } = new List<string>();
+
+    /// <summary>
     /// Additional query parameters passed through to the server verbatim (e.g. <c>"advanced_query"</c>),
     /// mirroring the Java SDK's <c>QueryReq.queryParams</c> map.
     /// </summary>
     public IDictionary<string, string> ExtraParameters { get; } = new Dictionary<string, string>();
+
+    // Emits the typed order-by/group-by fields as query params (order_by_fields is "field:asc,field:desc",
+    // group_by_fields is "field1,field2"). A key that the caller
+    // already supplied verbatim through ExtraParameters is skipped so the two do not both reach the wire (the
+    // proxy keeps the first match, which would silently ignore the typed list).
+    internal IEnumerable<KeyValuePair<string, string>> ToOrderAndGroupByParams()
+    {
+        if (OrderByFields.Count > 0 && !ExtraParameters.ContainsKey(Constants.OrderByFields))
+        {
+            yield return new KeyValuePair<string, string>(
+                Constants.OrderByFields, string.Join(",", OrderByFields.Select(f => f.ToWireString())));
+        }
+
+        if (GroupByFields.Count > 0 && !ExtraParameters.ContainsKey(Constants.GroupByFields))
+        {
+            yield return new KeyValuePair<string, string>(
+                Constants.GroupByFields, string.Join(",", GroupByFields));
+        }
+    }
 }
