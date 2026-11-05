@@ -175,6 +175,7 @@ public sealed class DescribeCollectionResp
                 IsFunctionOutput = grpcField.IsFunctionOutput,
                 IsClusteringKey = grpcField.IsClusteringKey,
                 IsDynamic = grpcField.IsDynamic,
+                ExternalField = string.IsNullOrEmpty(grpcField.ExternalField) ? null : grpcField.ExternalField,
                 FieldId = grpcField.FieldID,
                 RawTypeParams = rawTypeParams
             };

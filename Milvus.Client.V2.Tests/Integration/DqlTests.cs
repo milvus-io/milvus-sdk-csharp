@@ -1343,6 +1343,89 @@ public class DqlTests
     }
 
     [Fact]
+    public async Task SearchIterator_external_filter_merges_output_columns_by_name_across_pages()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        SchemaCache.Instance.Clear();
+        server.Service.DescribeSchema = BuildIteratorSchema();
+        server.Service.SearchIteratorToken = "tok-1";
+
+        // The real server does not guarantee a stable output-column order across pages (observed:
+        // page 1 returned user_age,$meta,user_name while page 3 returned user_name,user_age,$meta), so the
+        // external-filter cache merge must pair columns by name rather than positionally. Return the columns
+        // in a different order per page to prove it; a positional zip would pair the Int8 "user_age" column
+        // with the VarChar "user_name" column and throw InvalidCastException.
+        string[] orders = { "user_age,user_name", "user_name,user_age", "user_age,user_name", "user_name,user_age" };
+        server.Service.SearchOutputFieldsForCall = callIndex =>
+        {
+            string order = orders[callIndex % orders.Length];
+            var fields = new List<Grpc.FieldData>();
+
+            Grpc.FieldData Age() => new()
+            {
+                FieldName = "user_age",
+                Type = Grpc.DataType.Int8,
+                Scalars = new Grpc.ScalarField
+                {
+                    IntData = new Grpc.IntArray { Data = { 10 + callIndex, 20 + callIndex } }
+                }
+            };
+
+            Grpc.FieldData Name() => new()
+            {
+                FieldName = "user_name",
+                Type = Grpc.DataType.VarChar,
+                Scalars = new Grpc.ScalarField
+                {
+                    StringData = new Grpc.StringArray { Data = { $"name-{callIndex}-a", $"name-{callIndex}-b" } }
+                }
+            };
+
+            foreach (string fieldName in order.Split(','))
+            {
+                fields.Add(fieldName == "user_age" ? Age() : Name());
+            }
+
+            return fields;
+        };
+
+        // Keep the first hit of each 2-hit page, so one row per page is cached and two pages must be merged
+        // into a full batch (BatchSize=2), exercising SingleResult.Merge across pages with shuffled columns.
+        var pages = new List<SingleResult>();
+        await foreach (SingleResult page in client
+            .SearchIteratorAsync(new SearchIteratorReq
+            {
+                CollectionName = "iter_coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f, 4f }) },
+                MetricType = MetricType.L2,
+                Limit = 4,
+                BatchSize = 2,
+                Parameters = new SearchParameters { OutputFields = { "user_age", "user_name" } },
+                ExternalFilterFunc = page => new[] { 0 }
+            })
+            .WithCancellation(TestContext.Current.CancellationToken))
+        {
+            pages.Add(page);
+        }
+
+        // Two full batches of 2 rows each, merged from 4 pages. Each merged page carries both output columns
+        // with the values of the two cached pages concatenated in the order the pages arrived.
+        Assert.Equal(2, pages.Count);
+        foreach (SingleResult page in pages)
+        {
+            Assert.Equal(new[] { "user_age", "user_name" }, page.OutputFields.Select(f => f.FieldName));
+
+            var age = Assert.IsType<FieldData<sbyte>>(page.OutputFields.First(f => f.FieldName == "user_age"));
+            var name = Assert.IsType<FieldData<string>>(page.OutputFields.First(f => f.FieldName == "user_name"));
+            Assert.Equal(2, age.Data.Count);
+            Assert.Equal(2, name.Data.Count);
+        }
+    }
+
+    [Fact]
     public async Task SearchIterator_external_filter_out_of_range_index_throws()
     {
         using var server = new MockMilvusServer();

@@ -142,6 +142,17 @@ internal static class Constants
     internal const string GroupByField = "group_by_field";
 
     /// <summary>
+    /// Key name in search/query params. Carries the typed order-by fields, serialized as
+    /// <c>"field:asc,field:desc"</c>.
+    /// </summary>
+    internal const string OrderByFields = "order_by_fields";
+
+    /// <summary>
+    /// Key name in query params. Carries the typed group-by fields, serialized as <c>"field1,field2"</c>.
+    /// </summary>
+    internal const string GroupByFields = "group_by_fields";
+
+    /// <summary>
     /// Key name.
     /// </summary>
     internal const string GroupSize = "group_size";
