@@ -448,7 +448,7 @@ public sealed partial class MilvusClientV2
         // Establish a snapshot on the first page: a request-level guarantee_timestamp of 0 makes the proxy
         // take a snapshot at its request time and return it as SessionTs, which we pin for all later pages so
         // the pk-cursor paging runs on a fixed MVCC snapshot. When the caller pinned an explicit consistency
-        // level (Strong/BoundedStaleness/Customized + GuaranteeTimestamp), honor that value instead of
+        // level (Strong/Bounded/Customized + GuaranteeTimestamp), honor that value instead of
         // clobbering it with a fresh request-time snapshot.
         if (grpcRequest.UseDefaultConsistency)
         {
@@ -1572,7 +1572,7 @@ public sealed partial class MilvusClientV2
                 => (ulong)CollectionTsCache.Instance.Get(endpoint, database, collectionName) is { } ts && ts != 0
                     ? (ulong)ts
                     : (ulong)Constants.GuaranteeEventuallyTs,
-            ConsistencyLevel.BoundedStaleness => (ulong)2,
+            ConsistencyLevel.Bounded => (ulong)2,
             ConsistencyLevel.Eventually => (ulong)Constants.GuaranteeEventuallyTs,
             ConsistencyLevel.Customized => userProvidedGuaranteeTimestamp
                 ?? throw new ArgumentException(

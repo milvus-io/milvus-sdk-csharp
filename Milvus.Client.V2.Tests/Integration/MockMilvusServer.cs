@@ -107,6 +107,11 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return request;
     }
 
+    /// <summary>
+    /// The value of the <c>authorization</c> header on the most recent request.
+    /// </summary>
+    public string? LastAuthorizationHeader { get; private set; }
+
     public string? LastCreatedCollectionName { get; private set; }
     public string? LastDroppedCollectionName { get; private set; }
     public string? LastCheckedCollectionName { get; private set; }
@@ -116,6 +121,11 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     /// </summary>
     public string? LastRequestDbName { get; private set; }
     public Milvus.Client.Grpc.ClientInfo? LastConnectClientInfo { get; private set; }
+
+    /// <summary>
+    /// The number of <c>Connect</c> RPCs received, i.e. how many times the client (re-)registered itself.
+    /// </summary>
+    public int ConnectCalls { get; private set; }
 
     public override Task<Milvus.Client.Grpc.Status> CreateCollection(
         CreateCollectionRequest request, ServerCallContext context)
@@ -306,6 +316,7 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public override Task<ConnectResponse> Connect(ConnectRequest request, ServerCallContext context)
     {
         Record(nameof(Connect), request);
+        ConnectCalls++;
         LastConnectClientInfo = request.ClientInfo;
         var response = new ConnectResponse { Status = NextStatus() };
         response.ServerInfo = new ServerInfo { BuildTags = ServerVersion };
@@ -315,6 +326,7 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public override Task<GetVersionResponse> GetVersion(GetVersionRequest request, ServerCallContext context)
     {
         Record(nameof(GetVersion), request);
+        LastAuthorizationHeader = context.RequestHeaders.GetValue("authorization");
         return Task.FromResult(new GetVersionResponse { Status = NextStatus(), Version = ServerVersion });
     }
 
@@ -1217,8 +1229,21 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public override Task<GetFlushAllStateResponse> GetFlushAllState(GetFlushAllStateRequest request, ServerCallContext context)
     {
         Record(nameof(GetFlushAllState), request);
-        return Task.FromResult(new GetFlushAllStateResponse { Status = NextStatus(), Flushed = true });
+        bool flushed = true;
+        if (FlushAllStateNotFlushedCalls > 0)
+        {
+            FlushAllStateNotFlushedCalls--;
+            flushed = false;
+        }
+
+        return Task.FromResult(new GetFlushAllStateResponse { Status = NextStatus(), Flushed = flushed });
     }
+
+    /// <summary>
+    /// When greater than zero, the next <c>GetFlushAllState</c> calls return <c>Flushed = false</c> this many
+    /// times before reporting success, used to exercise the flush-all wait loop.
+    /// </summary>
+    public int FlushAllStateNotFlushedCalls { get; set; }
 
     public override Task<GetQuerySegmentInfoResponse> GetQuerySegmentInfo(
         GetQuerySegmentInfoRequest request, ServerCallContext context)

@@ -9,6 +9,13 @@ namespace Milvus.Client.V2.Tests.Unit.Request;
 public class DqlReqTests
 {
     [Fact]
+    public void CalculateGuaranteeTimestamp_maps_bounded_to_two()
+    {
+        Assert.Equal(2UL, MilvusClientV2.CalculateGuaranteeTimestamp(
+            "endpoint", "db", "coll", ConsistencyLevel.Bounded, null));
+    }
+
+    [Fact]
     public void QueryReq_forwards_request_level_database_name()
     {
         var request = new QueryReq

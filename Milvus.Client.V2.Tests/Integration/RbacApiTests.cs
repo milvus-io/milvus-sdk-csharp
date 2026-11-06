@@ -2,7 +2,9 @@ using Xunit;
 
 using Milvus.Client.V2;
 using Milvus.Client.V2.Requests.Rbac;
+using Milvus.Client.V2.Requests.Utility;
 using Milvus.Client.V2.Responses.Rbac;
+using Milvus.Client.V2.Types;
 using Milvus.Client.Grpc;
 
 namespace Milvus.Client.V2.Tests.Integration;
@@ -53,6 +55,63 @@ public class RbacApiTests
         Assert.Equal("user1", request.Username);
         Assert.Equal(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("old")), request.OldPassword);
         Assert.Equal(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("new")), request.NewPassword);
+    }
+
+    [Fact]
+    public async Task UpdatePassword_reset_connection_reconnects()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // First RPC connects (the shared connect task is established).
+        await client.GetServerVersionAsync(new GetServerVersionReq(), TestContext.Current.CancellationToken);
+        Assert.Equal(1, server.Service.ConnectCalls);
+
+        await client.UpdatePasswordAsync(
+            new UpdatePasswordReq
+            {
+                UserName = "other_user",
+                OldPassword = "old",
+                NewPassword = "new",
+                ResetConnection = true
+            },
+            TestContext.Current.CancellationToken);
+
+        // resetConnection=true drops the shared connect task, so the next RPC reconnects and re-registers
+        // the client as the updated user.
+        await client.GetServerVersionAsync(new GetServerVersionReq(), TestContext.Current.CancellationToken);
+        Assert.Equal(2, server.Service.ConnectCalls);
+    }
+
+    [Fact]
+    public async Task UpdatePassword_refreshes_authorization_header_for_own_password_change()
+    {
+        using var server = new MockMilvusServer();
+        using var client = new MilvusClientV2(
+            new ConnectConfig
+            {
+                Uri = server.Uri,
+                ChannelOptions = server.ChannelOptions,
+                Username = "user1",
+                Password = "old"
+            });
+
+        // Updating the current client's own password without ResetConnection refreshes the authorization
+        // header so subsequent RPCs authenticate with the new password.
+        await client.UpdatePasswordAsync(
+            new UpdatePasswordReq
+            {
+                UserName = "user1",
+                OldPassword = "old",
+                NewPassword = "new"
+            },
+            TestContext.Current.CancellationToken);
+
+        // The next RPC still runs on the existing connection (no reconnect) with the refreshed credentials.
+        await client.GetServerVersionAsync(new GetServerVersionReq(), TestContext.Current.CancellationToken);
+        Assert.Equal(1, server.Service.ConnectCalls);
+        Assert.Equal(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("user1:new")),
+            server.Service.LastAuthorizationHeader);
     }
 
     [Fact]

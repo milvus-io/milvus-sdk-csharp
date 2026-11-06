@@ -578,6 +578,57 @@ public class DqlRespTests
     }
 
     [Fact]
+    public void SingleResult_Merge_pairs_columns_by_field_name_across_shuffled_pages()
+    {
+        // The server does not guarantee a stable column order across pages, so merging must pair columns by
+        // field name rather than positionally. Here page 1 orders id,age while page 2 orders age,id.
+        SingleResult first = SearchResp.FromGrpc(CreateShuffledSearchResults("id", "age")).SingleResults![0];
+        SingleResult second = SearchResp.FromGrpc(CreateShuffledSearchResults("age", "id")).SingleResults![0];
+
+        SingleResult merged = SingleResult.Merge(new[] { first, second });
+
+        Assert.Equal(2, merged.OutputFields.Count);
+        FieldData id = Assert.Single(merged.OutputFields, f => f.FieldName == "id");
+        FieldData age = Assert.Single(merged.OutputFields, f => f.FieldName == "age");
+        Assert.Equal(4, id.RowCount);
+        Assert.Equal(4, age.RowCount);
+        Assert.Equal(new[] { 1L, 2L, 1L, 2L }, ((Milvus.Client.V2.Types.FieldData<long>)id).Data);
+        Assert.Equal(new[] { 30, 40, 30, 40 }, ((Milvus.Client.V2.Types.FieldData<int>)age).Data);
+    }
+
+    private static Grpc.SearchResults CreateShuffledSearchResults(params string[] columnOrder)
+    {
+        var fields = new Dictionary<string, Grpc.FieldData>
+        {
+            ["id"] = new()
+            {
+                FieldName = "id",
+                Type = Grpc.DataType.Int64,
+                Scalars = new Grpc.ScalarField { LongData = new Grpc.LongArray { Data = { 1L, 2L } } }
+            },
+            ["age"] = new()
+            {
+                FieldName = "age",
+                Type = Grpc.DataType.Int32,
+                Scalars = new Grpc.ScalarField { IntData = new Grpc.IntArray { Data = { 30, 40 } } }
+            }
+        };
+
+        return new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData
+            {
+                NumQueries = 1,
+                TopK = 2,
+                Ids = new Grpc.IDs { IntId = new Grpc.LongArray { Data = { 1L, 2L } } },
+                Scores = { 0.9f, 0.8f },
+                Topks = { 2L },
+                FieldsData = { columnOrder.Select(name => fields[name]) }
+            }
+        };
+    }
+
+    [Fact]
     public void FieldData_SelectRows_and_Concat_preserve_concrete_vector_type()
     {
         var page = new SingleResult(
