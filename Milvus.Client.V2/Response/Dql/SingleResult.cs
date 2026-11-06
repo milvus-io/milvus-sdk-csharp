@@ -82,19 +82,15 @@ public sealed class SingleResult
                 continue;
             }
 
-            // The same search request drives every page, so the columns arrive in the same order with the
-            // same names; merge positionally and defensively fall back to name-matching.
-            if (outputFields.Count == page.OutputFields.Count)
-            {
-                outputFields = outputFields.Zip(page.OutputFields, static (l, r) => l.Concat(r)).ToList();
-            }
-            else
-            {
-                outputFields = outputFields.Select(l =>
-                    page.OutputFields.FirstOrDefault(r => r.FieldName == l.FieldName) is { } matched
-                        ? l.Concat(matched)
-                        : l).ToList();
-            }
+            // The server does not guarantee a stable column order across pages (confirmed against a real
+            // Milvus: page 1 arrived as user_age,$meta,user_name while page 3 arrived as user_name,user_age,
+            // $meta), so always pair columns by field name rather than positionally; a positional zip can
+            // pair an Int8 age column with a VarChar column and throw InvalidCastException in FieldData<T>.Concat.
+            // The nameless aggregated $meta column matches by its (empty) name, which is unique per page.
+            outputFields = outputFields.Select(l =>
+                page.OutputFields.FirstOrDefault(r => r.FieldName == l.FieldName) is { } matched
+                    ? l.Concat(matched)
+                    : l).ToList();
         }
 
         Ids ids = pages[0].Ids;

@@ -353,7 +353,7 @@ public sealed partial class MilvusClientV2 : IDisposable
 
     private readonly ILogger _log;
     private readonly GrpcChannel _grpcChannel;
-    private readonly string _username;
+    private string _username;
     private string _password;
     private readonly RetryConfig _retryConfig;
     private readonly string _endpoint;
@@ -418,14 +418,16 @@ public sealed partial class MilvusClientV2 : IDisposable
     // the C++ SDK's reconnect-with-new-credentials). No-op for ApiKey-based or a different user.
     internal void RefreshAuthorizationAfterPasswordChange(string changedUserName, string newPassword)
     {
-        if (_username.Length == 0 || !string.Equals(_username, changedUserName, StringComparison.Ordinal)
-            || newPassword is null)
-        {
-            return;
-        }
-
         lock (_connectLock)
         {
+            // The username check runs under the connect lock so a concurrent ResetConnectionAfterPasswordChange
+            // cannot interleave a stale read.
+            if (_username.Length == 0 || !string.Equals(_username, changedUserName, StringComparison.Ordinal)
+                || newPassword is null)
+            {
+                return;
+            }
+
             _password = newPassword;
 
             var metadata = new Metadata();
@@ -440,6 +442,34 @@ public sealed partial class MilvusClientV2 : IDisposable
             }
 
             _callOptions = _callOptions.WithHeaders(metadata);
+        }
+    }
+
+    // Explicitly resets the connection as the given user with the new password, authenticating subsequent
+    // RPCs as that user and forcing a reconnect so the server re-registers the client.
+    internal void ResetConnectionAfterPasswordChange(string userName, string newPassword)
+    {
+        lock (_connectLock)
+        {
+            _username = userName;
+            _password = newPassword;
+
+            var metadata = new Metadata();
+            string authorization = $"{_username}:{_password}";
+            _authorizationHeader = Convert.ToBase64String(Encoding.UTF8.GetBytes(authorization));
+            metadata.Add("authorization", _authorizationHeader);
+
+            // Preserve the selected database header across the password reset.
+            if (CurrentDatabase is { Length: > 0 } database)
+            {
+                metadata.Add("dbname", database);
+            }
+
+            _callOptions = _callOptions.WithHeaders(metadata);
+
+            // Drop the shared connect task so the next API call reconnects and registers the client info as
+            // the updated user.
+            _connectTask = null;
         }
     }
 

@@ -27,6 +27,14 @@ public sealed class UpdatePasswordReq
     /// </summary>
     public string? Description { get; set; }
 
+    /// <summary>
+    /// When <c>true</c>, the client's connection is reset with the new credentials after the password change,
+    /// so subsequent RPCs authenticate as the updated user. When <c>false</c> (default), the connection is
+    /// left untouched except that an own-password change for the current user refreshes the authorization
+    /// header automatically.
+    /// </summary>
+    public bool ResetConnection { get; set; }
+
     internal Grpc.UpdateCredentialRequest ToGrpcUpdateCredentialRequest()
     {
         Verify.NotNullOrWhiteSpace(UserName);

@@ -38,9 +38,18 @@ public sealed partial class MilvusClientV2
         Grpc.UpdateCredentialRequest grpcRequest = request.ToGrpcUpdateCredentialRequest();
         await InvokeAsync(GrpcClient.UpdateCredentialAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
 
-        // If the current client's own password changed, refresh the authorization header so subsequent
-        // RPCs authenticate with the new password (matching Java resetConnection / C++ reconnect).
-        RefreshAuthorizationAfterPasswordChange(request.UserName, request.NewPassword);
+        if (request.ResetConnection)
+        {
+            // Explicitly reset the connection with the new credentials, authenticating subsequent RPCs as the
+            // updated user and reconnecting so the server re-registers the client.
+            ResetConnectionAfterPasswordChange(request.UserName, request.NewPassword);
+        }
+        else
+        {
+            // If the current client's own password changed, refresh the authorization header so subsequent
+            // RPCs authenticate with the new password.
+            RefreshAuthorizationAfterPasswordChange(request.UserName, request.NewPassword);
+        }
     }
 
     /// <summary>

@@ -445,4 +445,11 @@ public class CollectionReqTests
         var request = new RenameCollectionReq { CollectionName = "old_book", NewCollectionName = " " };
         Assert.Throws<ArgumentException>(() => request.ToGrpcRenameCollectionRequest());
     }
+
+    [Fact]
+    public void CreateSimpleCollection_defaults_to_bounded_consistency()
+    {
+        var request = new CreateSimpleCollectionReq { CollectionName = "book", Dimension = 4 };
+        Assert.Equal(ConsistencyLevel.Bounded, request.ConsistencyLevel);
+    }
 }
