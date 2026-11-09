@@ -101,6 +101,46 @@ public class UtilityApiTests
     }
 
     [Fact]
+    public async Task FlushAll_default_waits_for_completion()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // The default WaitFlushedMs of 0 means wait until the flush-all completes (no timeout), so
+        // FlushAllAsync polls GetFlushAllState even without an explicit wait window.
+        await client.FlushAllAsync(new FlushAllReq(), TestContext.Current.CancellationToken);
+
+        Assert.Contains("FlushAll", server.Service.Requests.Keys);
+        Assert.Contains("GetFlushAllState", server.Service.Requests.Keys);
+    }
+
+    [Fact]
+    public async Task FlushAll_waits_until_completion_across_polls()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // GetFlushAllState reports not-yet-flushed twice before succeeding; the wait loop must keep
+        // polling instead of returning early.
+        server.Service.FlushAllStateNotFlushedCalls = 2;
+        await client.FlushAllAsync(new FlushAllReq(), TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task FlushAll_times_out_when_wait_window_expires()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        // The flush never completes, so a bounded WaitFlushedMs window must expire and throw.
+        server.Service.FlushAllStateNotFlushedCalls = 1000;
+        MilvusException exception = await Assert.ThrowsAsync<MilvusException>(async () =>
+            await client.FlushAllAsync(new FlushAllReq { WaitFlushedMs = 10 }, TestContext.Current.CancellationToken));
+
+        Assert.Contains("Timed out waiting for flush-all", exception.Message);
+    }
+
+    [Fact]
     public async Task Flush_forwards_request()
     {
         using var server = new MockMilvusServer();

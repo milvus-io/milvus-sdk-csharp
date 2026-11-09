@@ -191,7 +191,7 @@ public sealed class CreateCollectionReq
 {
     public string CollectionName { get; set; } = "";
     public CollectionSchema? Schema { get; set; }
-    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.BoundedStaleness;
+    public ConsistencyLevel ConsistencyLevel { get; set; } = ConsistencyLevel.Bounded;
     public int ShardsNum { get; set; } = 1;
 
     internal Grpc.CreateCollectionRequest ToGrpcCreateCollectionRequest() { ... }
@@ -799,7 +799,7 @@ and C++ `DqlUtils.DeduceGuaranteeTimestamp`):
 |---|---|---|
 | `Strong` | `0` | wait until **all** DML has finished (`GuaranteeStrongTs`) |
 | `Session` | `CollectionTsCache.Get(...)`; `1` when absent | wait until **this client's** last DML is visible |
-| `BoundedStaleness` | `2` | let the server decide the bounded staleness window |
+| `Bounded` | `2` | let the server decide the bounded staleness window (`BoundedStaleness` is a deprecated alias) |
 | `Eventually` | `1` | execute immediately (`GuaranteeEventuallyTs`) |
 | *(unspecified)* | `Session` | an unset `ConsistencyLevel` defaults to `Session`, sending the client's `CollectionTsCache` timestamp |
 
