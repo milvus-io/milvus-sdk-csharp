@@ -49,5 +49,11 @@ public enum MilvusErrorCode
     /// <summary>
     /// The index was not found.
     /// </summary>
-    IndexNotFound = 700
+    IndexNotFound = 700,
+
+    /// <summary>
+    /// The request was canceled by an operator via <c>CancelRequests</c> (or the server canceled it); returned to
+    /// the client of the canceled Search/HybridSearch/Query request, carrying the operator's reason.
+    /// </summary>
+    RequestCanceled = 3002
 }

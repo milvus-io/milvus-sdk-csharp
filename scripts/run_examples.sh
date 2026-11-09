@@ -33,12 +33,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT_DIR/examples/v2"
 
-# Discover example names from the dispatch dictionary in Program.cs. TLSExample and CDCExample are excluded
-# from the default 'run everything' list (TLSExample needs a TLS-enabled server, CDCExample needs a source
-# cluster), but remain runnable by naming them explicitly.
+# Discover example names from the dispatch dictionary in Program.cs. TLSExample, CDCExample and
+# RunningRequestsExample are excluded from the default 'run everything' list (TLSExample needs a TLS-enabled
+# server, CDCExample needs a source cluster, RunningRequestsExample needs the not-yet-released server-side
+# ListRunningRequests/CancelRequests support and does heavy work), but remain runnable by naming them explicitly.
 discover_examples() {
   sed -n 's/.*\[nameof(\([A-Za-z0-9]*\))\] = .*/\1/p' "$PROJECT/Program.cs" \
-    | grep -vE '^(TLSExample|CDCExample)$'
+    | grep -vE '^(TLSExample|CDCExample|RunningRequestsExample)$'
 }
 
 if [[ "${1:-}" == "--list" ]]; then

@@ -672,7 +672,7 @@ Privileges and privilege groups:
 | `TransferNodeAsync` | `TransferNodeReq` | — | Transfers a query node between resource groups |
 | `TransferReplicaAsync` | `TransferReplicaReq` | — | Transfers a replica between resource groups |
 
-### 4.12 Utility (24)
+### 4.12 Utility (26)
 
 | name | request | response | description |
 |---|---|---|---|
@@ -700,6 +700,8 @@ Privileges and privilege groups:
 | `GetRefreshExternalCollectionProgressAsync` | `GetRefreshExternalCollectionProgressReq` | `GetRefreshExternalCollectionProgressResp` | Queries a refresh-external-collection job's progress |
 | `ListRefreshExternalCollectionJobsAsync` | `ListRefreshExternalCollectionJobsReq` | `ListRefreshExternalCollectionJobsResp` | Lists refresh-external-collection jobs |
 | `GetClientTelemetryAsync` | `GetClientTelemetryReq` | `GetClientTelemetryResp` | Lists the clients currently reporting telemetry to the server (root only when auth is enabled) |
+| `ListRunningRequestsAsync` | `ListRunningRequestsReq` | `ListRunningRequestsResp` | Lists the Search/HybridSearch/Query requests running on every proxy, with per-proxy outcomes |
+| `CancelRequestsAsync` | `CancelRequestsReq` | `CancelRequestsResp` | Cancels running requests by id, reporting canceled / not-found / undetermined ids |
 
 #### Database scoping
 

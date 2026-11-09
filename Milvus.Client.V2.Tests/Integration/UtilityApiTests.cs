@@ -431,4 +431,249 @@ public class UtilityApiTests
         Assert.Equal(new[] { "default" }, info.Databases);
     }
 
+    [Fact]
+    public async Task ListRunningRequests_forwards_request_and_maps_response()
+    {
+        using var server = new MockMilvusServer
+        {
+            Service =
+            {
+                RunningRequests =
+                {
+                    new Milvus.Client.Grpc.RunningRequestInfo
+                    {
+                        RequestId = "25-to03zu-rs",
+                        ProxyId = 25,
+                        Type = "Search",
+                        DbName = "default",
+                        CollectionName = "docs",
+                        User = "alice",
+                        ClientAddr = "10.0.0.1:55000",
+                        Nq = 100,
+                        Topk = 10,
+                        Expr = "title like \"milvus\"",
+                        StartTimeMs = 1000,
+                        QueuedMs = 5,
+                        ElapsedMs = 42,
+                        State = "Running",
+                        TraceId = "trace-1",
+                        Cancellable = true
+                    },
+                    new Milvus.Client.Grpc.RunningRequestInfo
+                    {
+                        RequestId = "25-to03zu-rt",
+                        ProxyId = 25,
+                        Type = "Query",
+                        DbName = "default",
+                        CollectionName = "docs",
+                        User = "bob",
+                        ClientAddr = "10.0.0.2:55000",
+                        Nq = 0,
+                        Topk = 0,
+                        Expr = "",
+                        StartTimeMs = 2000,
+                        QueuedMs = 0,
+                        ElapsedMs = 10,
+                        State = "Queued"
+                    }
+                },
+                RunningRequestNodeResults =
+                {
+                    new Milvus.Client.Grpc.RunningRequestNodeResult
+                    {
+                        NodeId = 25,
+                        Status = new Milvus.Client.Grpc.Status()
+                    },
+                    new Milvus.Client.Grpc.RunningRequestNodeResult
+                    {
+                        NodeId = 26,
+                        Status = new Milvus.Client.Grpc.Status { Code = 65535, Reason = "timeout" }
+                    }
+                }
+            }
+        };
+        using MilvusClientV2 client = server.CreateClient();
+
+        ListRunningRequestsResp response = await client.ListRunningRequestsAsync(
+            new ListRunningRequestsReq
+            {
+                DatabaseName = "default",
+                CollectionName = "docs",
+                User = "alice",
+                MinElapsedMs = 5000
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = (Milvus.Client.Grpc.ListRunningRequestsRequest)server.Service.Requests["ListRunningRequests"];
+        Assert.Equal("default", request.DbName);
+        Assert.Equal("docs", request.CollectionName);
+        Assert.Equal("alice", request.User);
+        Assert.Equal(5000, request.MinElapsedMs);
+
+        Assert.Equal(2, response.Requests.Count);
+        RunningRequestInfo first = response.Requests[0];
+        Assert.Equal("25-to03zu-rs", first.RequestId);
+        Assert.Equal(25, first.ProxyId);
+        Assert.Equal("Search", first.Type);
+        Assert.Equal("default", first.DatabaseName);
+        Assert.Equal("docs", first.CollectionName);
+        Assert.Equal("alice", first.User);
+        Assert.Equal("10.0.0.1:55000", first.ClientAddr);
+        Assert.Equal(100, first.Nq);
+        Assert.Equal(10, first.TopK);
+        Assert.Equal("title like \"milvus\"", first.Expr);
+        Assert.Equal(1000, first.StartTimeMs);
+        Assert.Equal(5, first.QueuedMs);
+        Assert.Equal(42, first.ElapsedMs);
+        Assert.Equal("Running", first.State);
+        Assert.Empty(first.TaskIds);
+        Assert.Equal("trace-1", first.TraceId);
+        Assert.True(first.Cancellable);
+
+        RunningRequestInfo second = response.Requests[1];
+        Assert.Equal("25-to03zu-rt", second.RequestId);
+        Assert.Empty(second.TaskIds);
+        Assert.False(second.Cancellable);
+
+        Assert.Equal(2, response.NodeResults.Count);
+        Assert.Equal(25, response.NodeResults[0].NodeId);
+        Assert.True(response.NodeResults[0].IsSuccess);
+        Assert.Equal(0, response.NodeResults[0].ErrorCode);
+        Assert.False(response.NodeResults[0].Unimplemented);
+        Assert.Equal(26, response.NodeResults[1].NodeId);
+        Assert.Equal(65535, response.NodeResults[1].ErrorCode);
+        Assert.Equal("timeout", response.NodeResults[1].Reason);
+        Assert.False(response.NodeResults[1].IsSuccess);
+    }
+
+    [Fact]
+    public async Task ListRunningRequests_no_filters_forwards_empty_request()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.ListRunningRequestsAsync(new ListRunningRequestsReq(), TestContext.Current.CancellationToken);
+
+        var request = (Milvus.Client.Grpc.ListRunningRequestsRequest)server.Service.Requests["ListRunningRequests"];
+        Assert.Equal("", request.DbName);
+        Assert.Equal("", request.CollectionName);
+        Assert.Equal("", request.User);
+        Assert.Equal(0, request.MinElapsedMs);
+    }
+
+    [Fact]
+    public async Task CancelRequests_forwards_request_and_maps_response()
+    {
+        using var server = new MockMilvusServer
+        {
+            Service =
+            {
+                RunningRequests =
+                {
+                    new Milvus.Client.Grpc.RunningRequestInfo
+                    {
+                        RequestId = "25-to03zu-rs",
+                        ProxyId = 25,
+                        Type = "Search",
+                        DbName = "default",
+                        CollectionName = "docs",
+                        User = "alice",
+                        Nq = 100,
+                        Topk = 10,
+                        ElapsedMs = 42,
+                        State = "Running",
+                        Cancellable = true
+                    }
+                },
+                CancelNotFound = { "25-to03zu-xx" },
+                CancelUndetermined = { "25-to03zu-yy" },
+                RunningRequestNodeResults =
+                {
+                    new Milvus.Client.Grpc.RunningRequestNodeResult { NodeId = 25, Status = new Milvus.Client.Grpc.Status() }
+                }
+            }
+        };
+        using MilvusClientV2 client = server.CreateClient();
+
+        CancelRequestsResp response = await client.CancelRequestsAsync(
+            new CancelRequestsReq
+            {
+                RequestIds = new[] { "25-to03zu-rs", "25-to03zu-xx" },
+                Reason = "too heavy",
+                User = "alice"
+            },
+            TestContext.Current.CancellationToken);
+
+        var request = (Milvus.Client.Grpc.CancelRequestsRequest)server.Service.Requests["CancelRequests"];
+        Assert.Equal(new[] { "25-to03zu-rs", "25-to03zu-xx" }, request.RequestIds);
+        Assert.Equal("too heavy", request.Reason);
+        Assert.Equal("alice", request.User);
+
+        RunningRequestInfo canceled = Assert.Single(response.Canceled);
+        Assert.Equal("25-to03zu-rs", canceled.RequestId);
+        Assert.Equal(42, canceled.ElapsedMs);
+        Assert.Equal("Running", canceled.State);
+        Assert.Equal(new[] { "25-to03zu-xx" }, response.NotFound);
+        Assert.Equal(new[] { "25-to03zu-yy" }, response.Undetermined);
+        RunningRequestNodeResult nodeResult = Assert.Single(response.NodeResults);
+        Assert.Equal(25, nodeResult.NodeId);
+        Assert.True(nodeResult.IsSuccess);
+    }
+
+    [Fact]
+    public async Task CancelRequests_rejects_empty_id_list_without_an_rpc()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await client.CancelRequestsAsync(
+                new CancelRequestsReq { RequestIds = Array.Empty<string>() },
+                TestContext.Current.CancellationToken));
+
+        Assert.DoesNotContain("CancelRequests", server.Service.Requests.Keys);
+    }
+
+    [Fact]
+    public async Task CancelRequests_maps_unimplemented_node_result()
+    {
+        using var server = new MockMilvusServer
+        {
+            Service =
+            {
+                RunningRequests =
+                {
+                    new Milvus.Client.Grpc.RunningRequestInfo
+                    {
+                        RequestId = "25-to03zu-rs",
+                        ProxyId = 25,
+                        Type = "Search",
+                        Cancellable = true
+                    }
+                },
+                RunningRequestNodeResults =
+                {
+                    new Milvus.Client.Grpc.RunningRequestNodeResult
+                    {
+                        NodeId = 26,
+                        Status = new Milvus.Client.Grpc.Status { Code = 10, Reason = "not implemented" },
+                        Unimplemented = true
+                    }
+                }
+            }
+        };
+        using MilvusClientV2 client = server.CreateClient();
+
+        CancelRequestsResp response = await client.CancelRequestsAsync(
+            new CancelRequestsReq { RequestIds = new[] { "25-to03zu-rs" } },
+            TestContext.Current.CancellationToken);
+
+        RunningRequestNodeResult nodeResult = Assert.Single(response.NodeResults);
+        Assert.Equal(26, nodeResult.NodeId);
+        Assert.Equal(10, nodeResult.ErrorCode);
+        Assert.Equal("not implemented", nodeResult.Reason);
+        Assert.True(nodeResult.Unimplemented);
+        Assert.False(nodeResult.IsSuccess);
+    }
+
 }

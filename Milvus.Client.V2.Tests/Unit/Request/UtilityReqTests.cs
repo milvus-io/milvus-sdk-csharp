@@ -24,6 +24,63 @@ public class UtilityReqTests
     }
 
     [Fact]
+    public void ListRunningRequests_maps_filters()
+    {
+        var request = new ListRunningRequestsReq
+        {
+            DatabaseName = "db1",
+            CollectionName = "docs",
+            User = "alice",
+            MinElapsedMs = 5000
+        };
+
+        Grpc.ListRunningRequestsRequest grpc = request.ToGrpcListRunningRequestsRequest();
+
+        Assert.Equal("db1", grpc.DbName);
+        Assert.Equal("docs", grpc.CollectionName);
+        Assert.Equal("alice", grpc.User);
+        Assert.Equal(5000, grpc.MinElapsedMs);
+    }
+
+    [Fact]
+    public void ListRunningRequests_maps_unset_filters_to_defaults()
+    {
+        var request = new ListRunningRequestsReq();
+
+        Grpc.ListRunningRequestsRequest grpc = request.ToGrpcListRunningRequestsRequest();
+
+        Assert.Equal("", grpc.DbName);
+        Assert.Equal("", grpc.CollectionName);
+        Assert.Equal("", grpc.User);
+        Assert.Equal(0, grpc.MinElapsedMs);
+    }
+
+    [Fact]
+    public void CancelRequests_maps_ids_reason_and_user()
+    {
+        var request = new CancelRequestsReq
+        {
+            RequestIds = new[] { "25-to03zu-rs", "25-to03zu-rt" },
+            Reason = "too heavy",
+            User = "alice"
+        };
+
+        Grpc.CancelRequestsRequest grpc = request.ToGrpcCancelRequestsRequest();
+
+        Assert.Equal(new[] { "25-to03zu-rs", "25-to03zu-rt" }, grpc.RequestIds);
+        Assert.Equal("too heavy", grpc.Reason);
+        Assert.Equal("alice", grpc.User);
+    }
+
+    [Fact]
+    public void CancelRequests_rejects_empty_id_list()
+    {
+        var request = new CancelRequestsReq { RequestIds = Array.Empty<string>() };
+
+        Assert.Throws<ArgumentException>(() => request.Validate());
+    }
+
+    [Fact]
     public void UpdateReplicateConfiguration_maps_clusters_and_topology()
     {
         var request = new UpdateReplicateConfigurationReq
