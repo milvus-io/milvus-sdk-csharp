@@ -49,7 +49,8 @@ internal static class Program
             [nameof(CDCExample)] = CDCExample.Run,
             [nameof(SnapshotExample)] = SnapshotExample.Run,
             [nameof(HighlighterExample)] = HighlighterExample.Run,
-            [nameof(TLSExample)] = TLSExample.Run
+            [nameof(TLSExample)] = TLSExample.Run,
+            [nameof(RunningRequestsExample)] = RunningRequestsExample.Run
         };
 
         if (!examples.TryGetValue(example, out Func<string, Task>? runner))

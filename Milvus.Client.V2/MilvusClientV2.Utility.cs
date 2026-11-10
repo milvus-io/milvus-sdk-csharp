@@ -306,6 +306,49 @@ public sealed partial class MilvusClientV2
     }
 
     /// <summary>
+    /// Lists the Search, HybridSearch and Query requests running on every proxy of the cluster.
+    /// </summary>
+    /// <remarks>
+    /// The filters are combined with AND; an unset filter does not constrain the result. The call succeeds as long
+    /// as at least one proxy answered; a proxy that did not answer is reported in
+    /// <see cref="ListRunningRequestsResp.NodeResults" /> and its requests are missing from
+    /// <see cref="ListRunningRequestsResp.Requests" />. Listing other users' requests requires the
+    /// <c>ListRunningRequests</c> privilege; any user may list their own.
+    /// </remarks>
+    public async Task<ListRunningRequestsResp> ListRunningRequestsAsync(
+        ListRunningRequestsReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.ListRunningRequestsRequest grpcRequest = request.ToGrpcListRunningRequestsRequest();
+        Grpc.ListRunningRequestsResponse response = await InvokeAsync(
+            GrpcClient.ListRunningRequestsAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return ListRunningRequestsResp.FromGrpc(response);
+    }
+
+    /// <summary>
+    /// Cancels running requests by the ids returned by <see cref="ListRunningRequestsAsync" />.
+    /// </summary>
+    /// <remarks>
+    /// Cancellation is asynchronous: a canceled request stops at its next cancellation check. The client of a
+    /// canceled request gets a <see cref="MilvusException" /> whose <see cref="MilvusException.ErrorCode" /> is
+    /// <see cref="MilvusErrorCode.RequestCanceled" /> (<c>3002</c>), carrying the reason given here. Canceling
+    /// other users' requests requires the <c>CancelRequests</c> privilege; any user may cancel their own. The id
+    /// list must not be empty.
+    /// </remarks>
+    public async Task<CancelRequestsResp> CancelRequestsAsync(
+        CancelRequestsReq request, CancellationToken cancellationToken = default)
+    {
+        Verify.NotNull(request);
+        request.Validate();
+        await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+        Grpc.CancelRequestsRequest grpcRequest = request.ToGrpcCancelRequestsRequest();
+        Grpc.CancelRequestsResponse response = await InvokeAsync(
+            GrpcClient.CancelRequestsAsync, grpcRequest, static r => r.Status, cancellationToken).ConfigureAwait(false);
+        return CancelRequestsResp.FromGrpc(response);
+    }
+
+    /// <summary>
     /// Registers a named file resource for external-table workflows.
     /// </summary>
     public async Task AddFileResourceAsync(

@@ -1480,6 +1480,51 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         return Task.FromResult(new GetReplicateConfigurationResponse { Status = NextStatus() });
     }
 
+    // ---- Running requests ----
+
+    /// <summary>
+    /// The <c>RunningRequestInfo</c> rows returned by the mock <c>ListRunningRequests</c>.
+    /// </summary>
+    public List<Milvus.Client.Grpc.RunningRequestInfo> RunningRequests { get; } = new();
+
+    /// <summary>
+    /// The <c>RunningRequestNodeResult</c> entries returned by the mock <c>ListRunningRequests</c> and
+    /// <c>CancelRequests</c>.
+    /// </summary>
+    public List<Milvus.Client.Grpc.RunningRequestNodeResult> RunningRequestNodeResults { get; } = new();
+
+    /// <summary>
+    /// The ids returned in <c>not_found</c> by the mock <c>CancelRequests</c>.
+    /// </summary>
+    public List<string> CancelNotFound { get; } = new();
+
+    /// <summary>
+    /// The ids returned in <c>undetermined</c> by the mock <c>CancelRequests</c>.
+    /// </summary>
+    public List<string> CancelUndetermined { get; } = new();
+
+    public override Task<ListRunningRequestsResponse> ListRunningRequests(
+        ListRunningRequestsRequest request, ServerCallContext context)
+    {
+        Record(nameof(ListRunningRequests), request);
+        var response = new ListRunningRequestsResponse { Status = NextStatus() };
+        response.Requests.AddRange(RunningRequests);
+        response.NodeResults.AddRange(RunningRequestNodeResults);
+        return Task.FromResult(response);
+    }
+
+    public override Task<CancelRequestsResponse> CancelRequests(
+        CancelRequestsRequest request, ServerCallContext context)
+    {
+        Record(nameof(CancelRequests), request);
+        var response = new CancelRequestsResponse { Status = NextStatus() };
+        response.Canceled.AddRange(RunningRequests);
+        response.NotFound.AddRange(CancelNotFound);
+        response.Undetermined.AddRange(CancelUndetermined);
+        response.NodeResults.AddRange(RunningRequestNodeResults);
+        return Task.FromResult(response);
+    }
+
     /// <summary>
     /// When set, <c>DumpMessages</c> aborts the stream with a CANCELLED status. Combined with a caller token
     /// that is not cancelled this simulates a server-initiated abort, which must surface as a MilvusException

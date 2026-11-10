@@ -691,4 +691,145 @@ public class UtilityRespTests
         Assert.Empty(resp.Clients);
         Assert.Equal(0, resp.Aggregated.RequestCount);
     }
+
+    [Fact]
+    public void RunningRequestInfo_maps_every_row_field()
+    {
+        var grpc = new Grpc.RunningRequestInfo
+        {
+            RequestId = "25-to03zu-rs",
+            ProxyId = 25,
+            Type = "Search",
+            DbName = "default",
+            CollectionName = "docs",
+            User = "alice",
+            ClientAddr = "10.0.0.1:55000",
+            Nq = 100,
+            Topk = 10,
+            Expr = "title like \"milvus\"",
+            StartTimeMs = 1000,
+            QueuedMs = 5,
+            ElapsedMs = 42,
+            State = "Running",
+            TraceId = "trace-1",
+            Cancellable = true
+        };
+        grpc.TaskIds.Add(11);
+        grpc.TaskIds.Add(12);
+
+        RunningRequestInfo info = RunningRequestInfo.FromGrpc(grpc);
+
+        Assert.Equal("25-to03zu-rs", info.RequestId);
+        Assert.Equal(25, info.ProxyId);
+        Assert.Equal("Search", info.Type);
+        Assert.Equal("default", info.DatabaseName);
+        Assert.Equal("docs", info.CollectionName);
+        Assert.Equal("alice", info.User);
+        Assert.Equal("10.0.0.1:55000", info.ClientAddr);
+        Assert.Equal(100, info.Nq);
+        Assert.Equal(10, info.TopK);
+        Assert.Equal("title like \"milvus\"", info.Expr);
+        Assert.Equal(1000, info.StartTimeMs);
+        Assert.Equal(5, info.QueuedMs);
+        Assert.Equal(42, info.ElapsedMs);
+        Assert.Equal("Running", info.State);
+        Assert.Equal(new[] { 11L, 12L }, info.TaskIds);
+        Assert.Equal("trace-1", info.TraceId);
+        Assert.True(info.Cancellable);
+    }
+
+    [Fact]
+    public void ListRunningRequestsResp_maps_requests_and_node_results()
+    {
+        var grpc = new Grpc.ListRunningRequestsResponse();
+        grpc.Requests.Add(new Grpc.RunningRequestInfo
+        {
+            RequestId = "25-to03zu-rs",
+            Type = "Search",
+            Cancellable = true
+        });
+        grpc.Requests.Add(new Grpc.RunningRequestInfo
+        {
+            RequestId = "25-to03zu-rt",
+            Type = "Query",
+            Cancellable = false
+        });
+        grpc.NodeResults.Add(new Grpc.RunningRequestNodeResult { NodeId = 25, Status = new Grpc.Status() });
+        grpc.NodeResults.Add(new Grpc.RunningRequestNodeResult
+        {
+            NodeId = 26,
+            Status = new Grpc.Status { Code = 65535, Reason = "timeout" }
+        });
+
+        ListRunningRequestsResp resp = ListRunningRequestsResp.FromGrpc(grpc);
+
+        Assert.Equal(2, resp.Requests.Count);
+        Assert.Equal("25-to03zu-rs", resp.Requests[0].RequestId);
+        Assert.Equal("Search", resp.Requests[0].Type);
+        Assert.False(resp.Requests[1].Cancellable);
+
+        Assert.Equal(2, resp.NodeResults.Count);
+        Assert.Equal(25, resp.NodeResults[0].NodeId);
+        Assert.True(resp.NodeResults[0].IsSuccess);
+        Assert.Equal(26, resp.NodeResults[1].NodeId);
+        Assert.False(resp.NodeResults[1].IsSuccess);
+        Assert.Equal("timeout", resp.NodeResults[1].Reason);
+    }
+
+    [Fact]
+    public void CancelRequestsResp_maps_canceled_not_found_and_undetermined()
+    {
+        var grpc = new Grpc.CancelRequestsResponse();
+        grpc.Canceled.Add(new Grpc.RunningRequestInfo
+        {
+            RequestId = "25-to03zu-rs",
+            ElapsedMs = 42,
+            State = "Running",
+            Cancellable = true
+        });
+        grpc.NotFound.Add("25-to03zu-xx");
+        grpc.Undetermined.Add("25-to03zu-yy");
+        grpc.NodeResults.Add(new Grpc.RunningRequestNodeResult { NodeId = 25, Status = new Grpc.Status() });
+
+        CancelRequestsResp resp = CancelRequestsResp.FromGrpc(grpc);
+
+        RunningRequestInfo canceled = Assert.Single(resp.Canceled);
+        Assert.Equal("25-to03zu-rs", canceled.RequestId);
+        Assert.Equal(42, canceled.ElapsedMs);
+        Assert.Equal("Running", canceled.State);
+        Assert.Equal(new[] { "25-to03zu-xx" }, resp.NotFound);
+        Assert.Equal(new[] { "25-to03zu-yy" }, resp.Undetermined);
+        RunningRequestNodeResult nodeResult = Assert.Single(resp.NodeResults);
+        Assert.True(nodeResult.IsSuccess);
+    }
+
+    [Fact]
+    public void RunningRequestNodeResult_maps_unimplemented_and_falls_back_to_legacy_error_code()
+    {
+        var unimplemented = new Grpc.RunningRequestNodeResult
+        {
+            NodeId = 26,
+            Status = new Grpc.Status { Code = 10, Reason = "not implemented" },
+            Unimplemented = true
+        };
+        RunningRequestNodeResult mapped = RunningRequestNodeResult.FromGrpc(unimplemented);
+        Assert.Equal(26, mapped.NodeId);
+        Assert.Equal(10, mapped.ErrorCode);
+        Assert.Equal("not implemented", mapped.Reason);
+        Assert.True(mapped.Unimplemented);
+        Assert.False(mapped.IsSuccess);
+
+        // A pre-2.4 server populates only the legacy error_code field; code stays 0.
+#pragma warning disable CS0612 // ErrorCode is [deprecated] but required for the legacy fallback.
+        var legacy = new Grpc.RunningRequestNodeResult
+        {
+            NodeId = 27,
+            Status = new Grpc.Status { ErrorCode = Grpc.ErrorCode.UnexpectedError }
+        };
+#pragma warning restore CS0612
+        RunningRequestNodeResult legacyMapped = RunningRequestNodeResult.FromGrpc(legacy);
+        Assert.Equal(27, legacyMapped.NodeId);
+        Assert.Equal(1, legacyMapped.ErrorCode);
+        Assert.False(legacyMapped.IsSuccess);
+    }
 }
