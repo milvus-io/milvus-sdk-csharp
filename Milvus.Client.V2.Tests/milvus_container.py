@@ -40,7 +40,7 @@ import urllib.request
 import uuid
 
 
-DEFAULT_IMAGE = "milvusdb/milvus:v2.6.25"
+DEFAULT_IMAGE = "milvusdb/milvus:master-20261109-ab928c5a"
 DEFAULT_GRPC_PORT = 29630
 DEFAULT_HEALTH_PORT = 19191
 DEFAULT_TIMEOUT = 300
