@@ -4,7 +4,6 @@ using Milvus.Client.V2;
 using Milvus.Client.V2.Requests.Collection;
 using Milvus.Client.V2.Requests.Dml;
 using Milvus.Client.V2.Requests.Dql;
-using Milvus.Client.V2.Requests.Index;
 using Milvus.Client.V2.Requests.Utility;
 using Milvus.Client.V2.Responses.Dml;
 using Milvus.Client.V2.Responses.Utility;
@@ -22,8 +21,9 @@ namespace Milvus.Examples;
 /// deliberately heavy search (many query vectors, brute-force FLAT index) in a background thread, finds it with
 /// <c>ListRunningRequestsAsync</c>, cancels it with <c>CancelRequestsAsync</c>, and shows that the search's own
 /// client fails with error code 3002 (request canceled).</para>
-/// <para><b>APIs used:</b> <c>CreateCollectionAsync</c>, <c>CreateIndexAsync</c>, <c>InsertAsync</c>,
-/// <c>ListRunningRequestsAsync</c>, <c>CancelRequestsAsync</c>, <c>DropCollectionAsync</c>.</para>
+/// <para><b>APIs used:</b> <c>CreateCollectionAsync</c> (with an index, which auto-creates it and loads the
+/// collection), <c>InsertAsync</c>, <c>ListRunningRequestsAsync</c>, <c>CancelRequestsAsync</c>,
+/// <c>DropCollectionAsync</c>.</para>
 /// <para><b>Expected output:</b> the running requests and per-proxy outcomes, the found/canceled search, and the
 /// search client's 3002 error, then "Done.".</para>
 /// <para>Requires a Milvus server that supports <c>ListRunningRequests</c> / <c>CancelRequests</c> (Milvus 3.0+).
@@ -59,7 +59,8 @@ public static class RunningRequestsExample
         await ExampleHelpers.ResetCollectionAsync(client, CollectionName);
 
         // A FLAT index makes every search a brute-force scan, so a search with many query vectors runs long
-        // enough to be seen and canceled.
+        // enough to be seen and canceled. Passing the index in the create request auto-creates it and loads the
+        // collection, mirroring the Java example's quick-create.
         await client.CreateCollectionAsync(new CreateCollectionReq
         {
             CollectionName = CollectionName,
@@ -70,12 +71,7 @@ public static class RunningRequestsExample
                     new FieldSchema("id", DataType.Int64, isPrimaryKey: true),
                     FieldSchema.CreateFloatVector(VectorFieldName, dimension: Dimension)
                 }
-            }
-        });
-
-        await client.CreateIndexAsync(new CreateIndexReq
-        {
-            CollectionName = CollectionName,
+            },
             Indexes = [new IndexParam(VectorFieldName, null, IndexType.Flat, MetricType.L2)]
         });
 
@@ -187,7 +183,9 @@ public static class RunningRequestsExample
             await client.SearchAsync(new SearchReq
             {
                 CollectionName = CollectionName,
+                VectorFieldName = VectorFieldName,
                 Vectors = vectors,
+                MetricType = MetricType.L2,
                 Limit = 100
             });
             outcome.TrySetResult("the search finished before it was canceled");
