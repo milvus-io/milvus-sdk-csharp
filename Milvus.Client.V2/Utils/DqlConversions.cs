@@ -16,6 +16,14 @@ internal static class DqlConversions
         var results = new List<FieldData>(grpcFields.Count);
         foreach (Grpc.FieldData grpcField in grpcFields)
         {
+            if (grpcField.FieldCase == Grpc.FieldData.FieldOneofCase.None)
+            {
+                // Milvus can return schema-shaped placeholders for requested output fields when a
+                // search/query matches no rows. They have no typed payload to convert and no rows to
+                // represent, so omitting them preserves the empty-result contract.
+                continue;
+            }
+
             if (grpcField.IsDynamic)
             {
                 // Surface dynamic fields as their raw JSON metadata (the server-side "$meta" column)
@@ -42,6 +50,11 @@ internal static class DqlConversions
 
     internal static FieldData? ProcessGroupByFieldValue(Grpc.FieldData groupByFieldValue)
     {
+        if (groupByFieldValue.FieldCase == Grpc.FieldData.FieldOneofCase.None)
+        {
+            return null;
+        }
+
         if (groupByFieldValue.FieldName is { Length: > 0 })
         {
             return FromGrpcFieldData(groupByFieldValue);
