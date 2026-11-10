@@ -264,6 +264,54 @@ public class DqlRespTests
     }
 
     [Fact]
+    public void Search_maps_zero_hit_output_field_placeholders_to_empty_columns()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData
+            {
+                NumQueries = 1,
+                TopK = 0,
+                FieldsData =
+                {
+                    // Empty search responses can carry schema-shaped placeholders for requested
+                    // output fields. They have FieldCase None and zero rows.
+                    new Grpc.FieldData { FieldName = "title", Type = Grpc.DataType.VarChar }
+                },
+                Ids = new Grpc.IDs(),
+                Topks = { 0L }
+            }
+        };
+
+        SearchResp result = SearchResp.FromGrpc(response);
+
+        Assert.Empty(result.FieldsData);
+        Assert.Empty(result.Scores);
+        Assert.Equal(new[] { 0L }, result.Limits);
+        Assert.Single(result.SingleResults!);
+        Assert.Empty(result.SingleResults![0].OutputFields);
+    }
+
+    [Fact]
+    public void Search_ignores_zero_hit_group_by_value_placeholder()
+    {
+        var response = new Grpc.SearchResults
+        {
+            Results = new Grpc.SearchResultData
+            {
+                NumQueries = 1,
+                TopK = 0,
+                Topks = { 0L },
+                GroupByFieldValue = new Grpc.FieldData { FieldName = "tag" }
+            }
+        };
+
+        SearchResp result = SearchResp.FromGrpc(response);
+
+        Assert.Null(result.GroupByFieldValue);
+    }
+
+    [Fact]
     public void Search_maps_highlights_group_by_and_element_indices()
     {
         var response = new Grpc.SearchResults

@@ -1070,6 +1070,14 @@ public partial class MilvusCollection
 
         foreach (Grpc.FieldData grpcField in grpcFields)
         {
+            if (grpcField.FieldCase == Grpc.FieldData.FieldOneofCase.None)
+            {
+                // Milvus can return schema-shaped placeholders for requested output fields when a
+                // search/query matches no rows. They have no typed payload to convert and no rows to
+                // represent, so omitting them preserves the empty-result contract.
+                continue;
+            }
+
             if (grpcField.IsDynamic)
             {
                 if (metaFieldData is not null)

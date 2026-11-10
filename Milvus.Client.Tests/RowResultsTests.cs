@@ -132,16 +132,26 @@ public class RowResultsTests(SearchQueryTests.QueryCollectionFixture queryCollec
     public async Task SearchResults_GetHits_returns_empty_list_for_a_zero_hit_query()
     {
         // An Expression that matches nothing pins the empty-result contract: GetHits should return an
-        // empty list rather than throwing, even though Limits reports 0 hits for this query.
+        // empty list rather than throwing, even though Limits reports 0 hits for this query. Output
+        // fields are requested explicitly because Milvus may include zero-row placeholders for them.
         SearchResults results = await Collection.SearchAsync(
             "float_vector",
             new ReadOnlyMemory<float>[] { new[] { 3.5f, 4.5f } },
             SimilarityMetricType.L2,
             limit: 2,
-            parameters: new SearchParameters { Expression = "id == -1", ConsistencyLevel = ConsistencyLevel.Strong },
+            parameters: new SearchParameters
+            {
+                Expression = "id == -1",
+                OutputFields = { "varchar" },
+                ConsistencyLevel = ConsistencyLevel.Strong
+            },
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Empty(results.GetHits());
+
+        // Different server lines describe empty output fields differently: older versions may send
+        // untyped placeholders (which this SDK omits), while newer versions may send zero-row columns.
+        Assert.All(results.FieldsData, field => Assert.Equal(0, field.RowCount));
     }
 
     [Fact]
