@@ -72,10 +72,23 @@ internal static class RetryPolicy
     /// Executes <paramref name="call" />, retrying on retryable failures with exponential backoff, bounded by
     /// <see cref="RetryConfig.MaxRetryTimes" /> and, when set, <see cref="RetryConfig.MaxRetryTimeout" />.
     /// </summary>
+    /// <param name="call">The RPC to execute (and retry).</param>
+    /// <param name="config">The retry configuration.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <param name="extraRetryable">
+    /// An additional retryability check consulted when <see cref="IsRetryable" /> returns <c>false</c> (e.g. a
+    /// global-cluster routing error). <c>null</c> disables it.
+    /// </param>
+    /// <param name="onRetryableAttempt">
+    /// Invoked on each retryable attempt before the backoff sleep, mirroring the Java SDK's
+    /// <c>handleGlobalConnectionError</c> / <c>handleGlobalRoutingError</c> refresh triggers. <c>null</c> disables it.
+    /// </param>
     public static async Task<T> ExecuteAsync<T>(
         Func<CancellationToken, Task<T>> call,
         RetryConfig config,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<Exception, bool>? extraRetryable = null,
+        Action<Exception>? onRetryableAttempt = null)
     {
         if (config.MaxRetryTimes <= 1)
         {
@@ -106,7 +119,7 @@ internal static class RetryPolicy
             {
                 return await call(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (IsRetryable(ex, config)
+            catch (Exception ex) when ((IsRetryable(ex, config) || extraRetryable?.Invoke(ex) == true)
                                        // MaxRetryTimes counts the total number of attempts (first call + retries),
                                        // matching the C++ SDK's loop (max_retry_times=75 yields at most 75 calls).
                                        && attempt < config.MaxRetryTimes - 1
@@ -114,6 +127,7 @@ internal static class RetryPolicy
             {
                 lastError = ex;
                 attempt++;
+                onRetryableAttempt?.Invoke(ex);
                 TimeSpan delay = GetBackOff(config, attempt);
 
                 // Do not sleep past the overall deadline.

@@ -63,4 +63,57 @@ public class RetryPolicyTests
         Assert.Equal(MilvusErrorCode.UnexpectedError, exception.ErrorCode);
         Assert.Contains("Retry window", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_extraRetryable_retries_and_notifies_per_attempt()
+    {
+        const string marker = "STREAMING_CODE_REPLICATE_VIOLATION";
+        RetryConfig config = Config();
+        int attempts = 0;
+        int notified = 0;
+
+        // A global-cluster routing error (MilvusException with the marker) is not retryable by default; the
+        // extraRetryable predicate makes the retry loop treat it like the Java SDK does and fires
+        // onRetryableAttempt before each backoff.
+        int result = await RetryPolicy.ExecuteAsync<int>(
+            _ =>
+            {
+                attempts++;
+                if (attempts < 3)
+                {
+                    throw new MilvusException(MilvusErrorCode.UnexpectedError, $"routing {marker}");
+                }
+
+                return Task.FromResult(42);
+            },
+            config,
+            CancellationToken.None,
+            extraRetryable: ex => ex.Message.Contains(marker, StringComparison.Ordinal),
+            onRetryableAttempt: _ => notified++);
+
+        Assert.Equal(42, result);
+        Assert.Equal(3, attempts);
+        Assert.Equal(2, notified); // one notification per retried attempt
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_without_extraRetryable_does_not_retry_plain_server_error()
+    {
+        RetryConfig config = Config();
+        int attempts = 0;
+
+        // Without the predicate, a non-rate-limit server error is not retried and no notification fires.
+        await Assert.ThrowsAsync<MilvusException>(() =>
+            RetryPolicy.ExecuteAsync<int>(
+                _ =>
+                {
+                    attempts++;
+                    throw new MilvusException(MilvusErrorCode.UnexpectedError, "server error");
+                },
+                config,
+                CancellationToken.None,
+                onRetryableAttempt: _ => throw new Xunit.Sdk.XunitException("must not be notified")));
+
+        Assert.Equal(1, attempts);
+    }
 }

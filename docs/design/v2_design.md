@@ -593,6 +593,27 @@ PyMilvus `MilvusClientSession`:
   unusable and does not disconnect the parent client. Implemented via internal `*CoreAsync` facade
   overloads that carry the cluster id (the public DQL methods delegate with `clusterId: null`).
 
+**Global-cluster topology and failover**: Zilliz Cloud (global-cluster) only. A client whose URI hostname
+contains `global-cluster` treats the URI as a logical **global endpoint**: it does not build a channel to that
+address, but instead fetches the member-cluster topology from the global endpoint's REST
+`/global-cluster/topology` API and connects to the **primary** (writable) cluster's gRPC endpoint. The topology
+is re-fetched on a fixed 5-minute interval and reactively on connectivity failures — gRPC `UNAVAILABLE` errors
+and server-side global-cluster routing errors (`STREAMING_CODE_REPLICATE_VIOLATION`, which the retry loop also
+treats as retryable for a global-cluster client) — each debounced to 5 s and raised inside the retry loop on
+every attempt, mirroring the Java `RpcUtils`. Refreshes are serialized so the timer and a probe cannot
+interleave. A newer topology whose primary differs rebuilds the gRPC channel (and both clients plus the
+telemetry transport) to the new primary, under a lock and with the version compare-and-set applied in the same
+critical section, so concurrent update paths (timer, probe, initial-fetch watcher) cannot regress the version or
+half-apply a swap; the old channel is retired and disposed at client `Dispose` (a swap that fails mid-way rolls
+back to the previous channel/stubs), never while an in-flight call may reference it. Only a topology version
+strictly newer than the last applied one is applied, so a stale answer landing after a newer one cannot flip the
+client back to a previous primary. The primary endpoint is normalized like the Java `GlobalStub` (scheme
+inherited from the config, default ports 443/19530). Topology API authentication failures (HTTP 401/403) fail
+fast without retry and surface as a `MilvusException` on connect. The cache-key endpoint stays the logical
+global endpoint, matching the Java SDK, so schema/timestamp caches survive a failover. Mirrors the Java
+`GlobalStub`/`TopologyRefresher`/`GlobalClusterUtils`/`RpcUtils`, PyMilvus `global_topology`, and the Rust
+`global_cluster` module.
+
 ### 4.7 Partition (7)
 
 | name | request | response | description |

@@ -425,10 +425,16 @@ public class BulkImportApiTests
 internal sealed class CapturingHandler : HttpMessageHandler
 {
     private readonly Action<HttpRequestMessage> _onRequest;
-    private readonly string _response;
+    private readonly Func<string> _response;
     private readonly System.Net.HttpStatusCode _statusCode;
 
     public CapturingHandler(Action<HttpRequestMessage> onRequest, string response,
+        System.Net.HttpStatusCode statusCode = System.Net.HttpStatusCode.OK)
+        : this(onRequest, () => response, statusCode)
+    {
+    }
+
+    public CapturingHandler(Action<HttpRequestMessage> onRequest, Func<string> response,
         System.Net.HttpStatusCode statusCode = System.Net.HttpStatusCode.OK)
     {
         _onRequest = onRequest;
@@ -441,7 +447,7 @@ internal sealed class CapturingHandler : HttpMessageHandler
         _onRequest(request);
         var response = new HttpResponseMessage(_statusCode)
         {
-            Content = new StringContent(_response, System.Text.Encoding.UTF8, "application/json")
+            Content = new StringContent(_response(), System.Text.Encoding.UTF8, "application/json")
         };
         return Task.FromResult(response);
     }

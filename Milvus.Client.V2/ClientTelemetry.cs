@@ -217,7 +217,7 @@ public sealed class ClientTelemetryManager : IDisposable
     private readonly TelemetryConfig _config;
     private readonly string _clientId;
     private readonly bool _clientIdStable;
-    private readonly Grpc.ClientTelemetryService.ClientTelemetryServiceClient? _grpcClient;
+    private volatile Grpc.ClientTelemetryService.ClientTelemetryServiceClient? _grpcClient;
     private readonly Func<string> _username;
     private readonly Func<string> _database;
     private readonly Func<string> _sdkVersion;
@@ -383,6 +383,13 @@ public sealed class ClientTelemetryManager : IDisposable
 
         _handlers[commandType] = handler ?? throw new ArgumentNullException(nameof(handler));
     }
+
+    /// <summary>
+    /// Re-targets the telemetry transport to a new gRPC client, used by global-cluster failover when the primary
+    /// cluster changes. The existing heartbeat loop (if any) picks up the new client on its next tick.
+    /// </summary>
+    internal void Retarget(Grpc.ClientTelemetryService.ClientTelemetryServiceClient grpcClient)
+        => _grpcClient = grpcClient;
 
     internal void Start()
     {

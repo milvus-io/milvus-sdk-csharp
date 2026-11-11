@@ -3,6 +3,9 @@
     <PackageVersion Include="Google.Protobuf" Version="3.36.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.83.0" />
     <PackageVersion Include="Grpc.Tools" Version="2.83.0" />
+    <!-- Global-cluster topology discovery resolves ha-manager seeds via _grpc._tcp SRV records
+         (DnsClient.NET: the .NET standard library has no SRV query support). -->
+    <PackageVersion Include="DnsClient" Version="1.8.0" />
     <!-- Test -->
     <PackageVersion Include="Grpc.AspNetCore" Version="2.83.0" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.30" />
