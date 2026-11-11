@@ -178,7 +178,8 @@ public sealed class SearchResp
 
     /// <summary>
     /// The group-by field value for each returned row, populated when the search used
-    /// <see cref="SearchParameters.GroupByField" />.
+    /// <see cref="SearchParameters.GroupByField" />. This is <see langword="null" /> when the search
+    /// matched no rows, even if <see cref="SearchParameters.GroupByField" /> was set.
     /// </summary>
     public FieldData? GroupByFieldValue { get; }
 

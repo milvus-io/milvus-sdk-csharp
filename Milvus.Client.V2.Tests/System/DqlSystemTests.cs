@@ -98,6 +98,71 @@ public class DqlSystemTests : SystemTestBase
     }
 
     [Fact]
+    public async Task Search_with_zero_hits_and_output_fields_returns_empty_results()
+    {
+        const string collectionName = nameof(Search_with_zero_hits_and_output_fields_returns_empty_results);
+
+        await ResetCollectionAsync(collectionName);
+
+        await Client.CreateCollectionAsync(new CreateCollectionReq
+        {
+            CollectionName = collectionName,
+            Schema = new CollectionSchema
+            {
+                Fields =
+                {
+                    new FieldSchema("id", DataType.Int64, isPrimaryKey: true),
+                    FieldSchema.CreateVarchar("title", maxLength: 200),
+                    FieldSchema.CreateFloatVector("embedding", dimension: 4)
+                }
+            }
+        }, TestContext.Current.CancellationToken);
+
+        await Client.CreateIndexAsync(new CreateIndexReq
+        {
+            CollectionName = collectionName,
+            Indexes = [new IndexParam("embedding", null, IndexType.Flat, MetricType.L2)]
+        }, TestContext.Current.CancellationToken);
+
+        await Client.InsertAsync(new InsertReq
+        {
+            CollectionName = collectionName,
+            ColumnsData =
+            [
+                FieldData.Create("id", new long[] { 1 }),
+                FieldData.CreateVarChar("title", new[] { "first" }),
+                FieldData.CreateFloatVector("embedding", [new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f })])
+            ]
+        }, TestContext.Current.CancellationToken);
+
+        await Client.LoadCollectionAsync(new LoadCollectionReq { CollectionName = collectionName },
+            TestContext.Current.CancellationToken);
+        await WaitForLoadAsync(collectionName);
+
+        SearchResp search = await Client.SearchAsync(new SearchReq
+        {
+            CollectionName = collectionName,
+            VectorFieldName = "embedding",
+            Vectors = [new ReadOnlyMemory<float>(new[] { 0.1f, 0.2f, 0.3f, 0.4f })],
+            MetricType = MetricType.L2,
+            Limit = 2,
+            Parameters = new SearchParameters { OutputFields = { "title" }, Expression = "id == -1" }
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Empty(search.Scores);
+        Assert.Equal([0L], search.Limits);
+
+        // 2.x servers send untyped placeholders (omitted above), while 3.x/master sends zero-row
+        // columns. Accept either shape; both mean the caller sees no output values for zero hits.
+        Assert.All(search.FieldsData, field => Assert.Equal(0, field.RowCount));
+
+        SingleResult single = Assert.Single(search.SingleResults!);
+        Assert.Empty(single.OutputFields);
+
+        await ResetCollectionAsync(collectionName);
+    }
+
+    [Fact]
     public async Task Query_with_expression_and_dynamic_filters()
     {
         const string collectionName = nameof(Query_with_expression_and_dynamic_filters);
