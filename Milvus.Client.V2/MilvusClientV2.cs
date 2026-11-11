@@ -35,12 +35,28 @@ namespace Milvus.Client.V2;
 /// </remarks>
 public sealed partial class MilvusClientV2 : IDisposable
 {
+    // Marker the global-cluster topology manager / retry path looks for in a server error reason to detect a
+    // global-cluster routing error (the current primary cannot serve the request; probe the topology for a primary
+    // change and retry), mirroring the Java SDK's RpcUtils.handleGlobalRoutingError.
+    private const string GlobalRoutingErrorMarker = "STREAMING_CODE_REPLICATE_VIOLATION";
+
     /// <summary>
     /// Creates a new <see cref="MilvusClientV2" />, connecting to the given Milvus instance.
     /// </summary>
     /// <param name="config">The connection parameters, mirroring the <c>ConnectParam</c> of the C++ SDK and the
     /// <c>ConnectConfig</c> of the Java SDK.</param>
     public MilvusClientV2(ConnectConfig config)
+        : this(config, globalClusterHttpHandler: null, globalClusterSrvResolver: null)
+    {
+    }
+
+    // Test seams: the handler used for global-cluster topology REST calls, and the SRV resolver used to discover
+    // the ha-manager seeds. The public constructor uses the default platform handler / DnsClient; tests inject
+    // canned-response handler and seed list per instance so the topology fetch does not depend on real DNS.
+    internal MilvusClientV2(
+        ConnectConfig config,
+        System.Net.Http.HttpMessageHandler? globalClusterHttpHandler,
+        Func<string, IReadOnlyList<SrvTarget>>? globalClusterSrvResolver)
     {
         Verify.NotNull(config);
 
@@ -53,13 +69,26 @@ public sealed partial class MilvusClientV2 : IDisposable
                 nameof(config));
         }
 
-        _grpcChannel = CreateDefaultChannel(config);
         _endpoint = TryGetEndpoint(config.Uri);
-        GrpcClient = new Grpc.MilvusService.MilvusServiceClient(_grpcChannel);
-        TelemetryGrpcClient = new Grpc.ClientTelemetryService.ClientTelemetryServiceClient(_grpcChannel);
+        _connectConfig = config;
+
+        // A global-cluster endpoint (hostname contains "global-cluster") fronts a Zilliz Cloud deployment whose
+        // member topology must be fetched from the global REST endpoint before the physical primary channel can be
+        // built; the channel is created lazily on connect. A regular endpoint builds its channel eagerly.
+        _globalCluster = GlobalClusterManager.TryCreate(config, globalClusterHttpHandler);
+        if (_globalCluster is not null && globalClusterSrvResolver is not null)
+        {
+            _globalCluster.ResolveSrv = globalClusterSrvResolver;
+        }
+
+        if (_globalCluster is null)
+        {
+            CreateChannelAndClients(config.Uri);
+        }
+
         _telemetry = new ClientTelemetryManager(
             config.Telemetry ?? new TelemetryConfig(),
-            TelemetryGrpcClient,
+            _telemetryGrpcClient,
             () =>
             {
                 // Read the (now writable) username under the connect lock so a concurrent
@@ -188,6 +217,15 @@ public sealed partial class MilvusClientV2 : IDisposable
 
     private async Task ConnectRpcAsync(CancellationToken cancellationToken)
     {
+        // A global-cluster endpoint defers channel creation until connect: fetch the topology, connect to the
+        // current primary, and arm the topology refresher so a later primary change fails the client over.
+        if (_globalCluster is not null)
+        {
+            await EnsureGlobalPrimaryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        // After the global-primary resolution (or for a regular endpoint, from construction) the channel exists.
+        GrpcChannel channel = _grpcChannel!;
         var request = new Grpc.ConnectRequest
         {
             ClientInfo = new Grpc.ClientInfo
@@ -195,7 +233,7 @@ public sealed partial class MilvusClientV2 : IDisposable
                 SdkType = "CSharp",
                 SdkVersion = typeof(MilvusClientV2).Assembly.GetName().Version?.ToString() ?? "unknown",
                 User = _username,
-                Host = TryGetUriHost(_grpcChannel.Target),
+                Host = TryGetUriHost(channel.Target),
                 LocalTime = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture)
             }
         };
@@ -222,6 +260,239 @@ public sealed partial class MilvusClientV2 : IDisposable
                 MilvusErrorCode.UnexpectedError, $"Failed to connect to Milvus: {ex.StatusCode} {ex.Status.Detail}",
                 ex.StatusCode, ex);
         }
+    }
+
+    // Resolves the physical primary channel for a global-cluster client: fetches the topology, connects to the
+    // current primary, and arms the refresh / failover hooks.
+    private async Task EnsureGlobalPrimaryAsync(CancellationToken cancellationToken)
+    {
+        GlobalClusterManager manager = _globalCluster!;
+
+        // Arm the failover hooks first so the first-fetch watcher (a slow seed reporting a newer topology) can
+        // already fail the client over.
+        manager.OnTopologyChange = OnGlobalTopologyChange;
+        manager.GetCachedVersion = () =>
+        {
+            // Interlocked.Read: a torn 64-bit read on the 32-bit targets could otherwise gate the stale-discard on a
+            // garbage version.
+            long version = Interlocked.Read(ref _appliedTopologyVersion);
+            return version < 0 ? (long?)null : version;
+        };
+
+        // First connection: fetch the topology (no cached version) and connect to its primary.
+        if (_grpcChannel is null)
+        {
+            GlobalTopology? topology;
+            try
+            {
+                topology = await manager.FetchTopologyAsync(
+                    cachedVersion: null, onHigherVersion: OnGlobalTopologyChange, cancellationToken).ConfigureAwait(false);
+            }
+            catch (GlobalClusterApiException ex)
+            {
+                // The topology API exception type is internal; surface a MilvusException at the public boundary
+                // (Java surfaces its public GlobalClusterApiException directly).
+                throw new MilvusException(MilvusErrorCode.UnexpectedError, ex.Message, ex);
+            }
+
+            if (topology is null)
+            {
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError, "Failed to fetch global cluster topology.");
+                }
+
+            // Validate the first topology has a primary before applying: OnGlobalTopologyChange treats a
+            // no-primary topology as a no-op, but the first connect must fail loudly.
+            try
+            {
+                _ = topology.Primary;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError, "No primary (writable) cluster found in global topology.", ex);
+            }
+
+            // Apply through the same version compare-and-set the refresh paths use, so a concurrent initial-fetch
+            // watcher that already installed a newer topology cannot be overwritten by this older first answer
+            // (mirroring the Java GlobalStub, where every update funnels through the CAS under the topology lock).
+            await OnGlobalTopologyChange(topology).ConfigureAwait(false);
+            if (_grpcChannel is null)
+            {
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError, "Failed to connect to a global cluster primary.");
+            }
+        }
+
+        // Start the periodic refresher (idempotent): a newer topology whose primary differs rebuilds the channel; a
+        // gRPC UNAVAILABLE error probes the topology for a primary change.
+        manager.Start();
+    }
+
+    // Internal test hook: forces a topology refresh so a primary change can be exercised deterministically.
+    internal async Task RefreshGlobalTopologyAsync(CancellationToken cancellationToken = default)
+    {
+        if (_globalCluster is null)
+        {
+            return;
+        }
+
+        await EnsureGlobalPrimaryAsync(cancellationToken).ConfigureAwait(false);
+        await _globalCluster.RefreshAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // Called by the GlobalClusterManager after a topology refresh. A topology no newer than the last applied one is
+    // stale (an old answer landing after a newer one, e.g. timer vs UNAVAILABLE probe) and is discarded so the
+    // client is not flipped back to a previous primary.
+    //
+    // Every write to the shared topology state funnels through this compare-and-set under _connectLock, so no
+    // update path (initial-fetch watcher, periodic refresh, connectivity-failure probe) can roll the version back
+    // however the threads interleave, mirroring the Java GlobalStub.onTopologyChange.
+    private Task OnGlobalTopologyChange(GlobalTopology newTopology)
+    {
+        lock (_connectLock)
+        {
+            // The client is being disposed; a topology refresh still in flight must not fail over onto a channel
+            // that was (or is about to be) disposed.
+            if (_disposed)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (newTopology.Version <= _appliedTopologyVersion)
+            {
+                _log.GlobalTopologyStale(newTopology.Version, _appliedTopologyVersion);
+                return Task.CompletedTask;
+            }
+
+            ClusterInfo newPrimary;
+            try
+            {
+                newPrimary = newTopology.Primary;
+            }
+            catch (InvalidOperationException)
+            {
+                // A topology with no writable cluster cannot be applied; keep the current primary.
+                _log.GlobalTopologyNoPrimary(newTopology.Version);
+                return Task.CompletedTask;
+            }
+
+            string newEndpoint = newPrimary.Endpoint;
+            string newConnectionUri = NormalizePrimaryUri(_connectConfig, newEndpoint);
+            string? currentConnectionUri = _primaryEndpoint is null
+                ? null
+                : NormalizePrimaryUri(_connectConfig, _primaryEndpoint);
+
+            if (newConnectionUri.Equals(currentConnectionUri, StringComparison.Ordinal))
+            {
+                // The primary endpoint is unchanged; only the (newer) version is recorded.
+                _appliedTopologyVersion = newTopology.Version;
+                return Task.CompletedTask;
+            }
+
+            _log.GlobalPrimaryChanged(_primaryEndpoint ?? "", newEndpoint);
+            ApplyPrimary(newEndpoint);
+            _appliedTopologyVersion = newTopology.Version;
+            return Task.CompletedTask;
+        }
+    }
+
+    // Rebuilds the physical channel and both gRPC clients to the given primary endpoint (host:port). The cache key
+    // endpoint (_endpoint) is left pointing at the logical global endpoint, matching the Java SDK, so schema/ts
+    // caches recorded before a failover remain reachable after it.
+    private void ApplyPrimary(string primaryEndpoint)
+    {
+        CreateChannelAndClients(NormalizePrimaryUri(_connectConfig, primaryEndpoint));
+        _primaryEndpoint = primaryEndpoint;
+    }
+
+    /// <summary>
+    /// The current physical primary endpoint (host:port) this global-cluster client is connected to, or <c>null</c>
+    /// for a regular client / before the first connect.
+    /// </summary>
+    internal string? PrimaryEndpoint => _primaryEndpoint;
+
+    // Normalizes a primary endpoint to "scheme://host:port" using the same rules as the Java SDK's
+    // GlobalStub.normalizePrimaryUri: a scheme-less endpoint inherits the original config's https/http scheme, and
+    // an absent port becomes 443 (https) or 19530 (http). Used both to build the replacement channel and to decide
+    // whether a newer topology actually moves the primary.
+    private static string NormalizePrimaryUri(ConnectConfig config, string endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            throw new MilvusException(MilvusErrorCode.UnexpectedError, "Primary endpoint is required");
+        }
+
+        string value = endpoint.Trim();
+        bool isHttps = value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+        bool isHttp = value.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
+        if (!isHttps && !isHttp)
+        {
+#pragma warning disable CA2249 // netstandard2.0/net462 have no string.Contains(string, StringComparison).
+            if (value.IndexOf("://", StringComparison.Ordinal) >= 0)
+#pragma warning restore CA2249
+            {
+                throw new MilvusException(
+                    MilvusErrorCode.UnexpectedError, "Unsupported primary endpoint scheme: " + endpoint);
+            }
+
+            // Global endpoints are https (Zilliz Cloud); a scheme-less primary inherits the original config's scheme,
+            // matching the Java SDK's isSecure().
+            isHttps = config.Uri.StartsWith("https", StringComparison.OrdinalIgnoreCase);
+            value = (isHttps ? "https://" : "http://") + value;
+        }
+
+        try
+        {
+            Uri parsed = new(value);
+            string host = parsed.Host;
+            if (string.IsNullOrEmpty(host))
+            {
+                throw new MilvusException(MilvusErrorCode.UnexpectedError, "Invalid primary endpoint: " + endpoint);
+            }
+
+            int port = parsed.IsDefaultPort
+                ? (isHttps ? 443 : 19530)
+                : parsed.Port;
+            return $"{parsed.Scheme}://{host}:{port}";
+        }
+        catch (UriFormatException ex)
+        {
+            throw new MilvusException(MilvusErrorCode.UnexpectedError, "Invalid primary endpoint: " + endpoint, ex);
+        }
+    }
+
+    // A global-cluster routing error is retried only for a global-cluster client (mirroring the Java SDK, where
+    // handleGlobalRoutingError is a no-op when no global refresh trigger is installed); regular clients surface it
+    // immediately like any other server error.
+    private bool IsGlobalClusterRoutingErrorRetryable(Exception exception)
+        => _globalCluster is not null
+           && exception is MilvusException
+           && IsGlobalRoutingError(exception);
+
+    // Invoked by the retry loop on each retryable attempt, mirroring the Java SDK's handleGlobalConnectionError /
+    // handleGlobalRoutingError: a gRPC UNAVAILABLE or a server-side global-cluster routing error probes the
+    // topology for a primary change (debounced inside the manager), so the next call already targets the new
+    // primary.
+    private void OnGlobalClusterAttemptFailed(Exception exception)
+    {
+        if (_globalCluster is null)
+        {
+            return;
+        }
+
+        if (exception is RpcException { StatusCode: StatusCode.Unavailable } || IsGlobalRoutingError(exception))
+        {
+            _globalCluster.OnConnectivityFailure();
+        }
+    }
+
+    // netstandard2.0/net462 have no string.Contains(string, StringComparison); IndexOf is the shared spelling.
+    private static bool IsGlobalRoutingError(Exception exception)
+    {
+#pragma warning disable CA2249 // Consider using string.Contains for readability
+        return exception.Message.IndexOf(GlobalRoutingErrorMarker, StringComparison.Ordinal) >= 0;
+#pragma warning restore CA2249
     }
 
     private static string TryGetUriHost(string uri)
@@ -256,7 +527,7 @@ public sealed partial class MilvusClientV2 : IDisposable
     /// <summary>
     /// Base address of the Milvus server.
     /// </summary>
-    public string Address => _grpcChannel.Target;
+    public string Address => _grpcChannel?.Target ?? _endpoint;
 
     /// <summary>
     /// Checks the health of the Milvus server.
@@ -344,7 +615,22 @@ public sealed partial class MilvusClientV2 : IDisposable
     public void Dispose()
     {
         _telemetry.Dispose();
-        _grpcChannel.Dispose();
+        _globalCluster?.Dispose();
+        lock (_connectLock)
+        {
+            // Fence further failovers: a topology refresh already in flight must not swap in a channel after the
+            // current ones are disposed (mirroring the Java GlobalStub's closed flag).
+            _disposed = true;
+
+            _grpcChannel?.Dispose();
+            foreach (GrpcChannel retired in _retiredChannels)
+            {
+                retired.Dispose();
+            }
+
+            _retiredChannels.Clear();
+        }
+
         _connectLock.Dispose();
     }
 
@@ -382,8 +668,71 @@ public sealed partial class MilvusClientV2 : IDisposable
         return GrpcChannel.ForAddress(uri, config.ChannelOptions ?? CreateDefaultChannelOptions(config));
     }
 
+    // Builds the physical channel and the two gRPC clients for the given endpoint. Used for the initial (regular)
+    // connection and for every global-cluster primary (re)connect.
+    //
+    // The swap is serialized under _connectLock so two overlapping refreshes (5-min timer + UNAVAILABLE probe)
+    // cannot interleave and orphan a channel. The old channel is NOT disposed here: in-flight calls may still hold a
+    // reference to the old MilvusServiceClient and would throw ObjectDisposedException mid-RPC. It is retired and
+    // disposed by Dispose() once the client (and all calls) are done.
+    private void CreateChannelAndClients(string uri)
+    {
+        lock (_connectLock)
+        {
+            GrpcChannel newChannel = CreateDefaultChannel(
+                new ConnectConfig
+                {
+                    Uri = uri,
+                    LoggerFactory = _connectConfig.LoggerFactory,
+                    ChannelOptions = _connectConfig.ChannelOptions,
+                    KeepAliveTime = _connectConfig.KeepAliveTime,
+                    KeepAliveTimeout = _connectConfig.KeepAliveTimeout,
+                    KeepAliveWithoutCalls = _connectConfig.KeepAliveWithoutCalls
+                });
+
+            // Swap the channel and both clients transactionally: if anything after the channel creation fails the
+            // old channel/stubs are restored (mirroring the Java GlobalStub.onTopologyChange rollback), so a failed
+            // failover never leaves the client half-moved.
+            GrpcChannel? previousChannel = _grpcChannel;
+            Grpc.MilvusService.MilvusServiceClient? previousClient = _grpcClient;
+            Grpc.ClientTelemetryService.ClientTelemetryServiceClient? previousTelemetry = _telemetryGrpcClient;
+            try
+            {
+                _grpcChannel = newChannel;
+                _grpcClient = new Grpc.MilvusService.MilvusServiceClient(newChannel);
+                _telemetryGrpcClient = new Grpc.ClientTelemetryService.ClientTelemetryServiceClient(newChannel);
+                _telemetry?.Retarget(_telemetryGrpcClient);
+            }
+            catch (Exception)
+            {
+                _grpcChannel = previousChannel;
+                _grpcClient = previousClient;
+                _telemetryGrpcClient = previousTelemetry;
+                newChannel.Dispose();
+                throw;
+            }
+
+            // Retire the old channel only after the swap succeeded: in-flight calls may still hold a reference to
+            // the old MilvusServiceClient and would throw ObjectDisposedException mid-RPC. It is retired and
+            // disposed by Dispose() once the client (and all calls) are done.
+            if (previousChannel is not null)
+            {
+                _retiredChannels.Add(previousChannel);
+            }
+        }
+    }
+
     private readonly ILogger _log;
-    private readonly GrpcChannel _grpcChannel;
+
+    // Volatile: the failover writer (CreateChannelAndClients) swaps this under the connect lock while the connect
+    // path and Address read it without the lock; volatile keeps every read a consistent old-or-new reference.
+    private volatile GrpcChannel? _grpcChannel;
+
+    // Channels retired by global-cluster failover, kept alive (not disposed) until client Dispose so a call that
+    // already captured the old MilvusServiceClient cannot hit ObjectDisposedException mid-RPC. Guarded by
+    // _connectLock, which also serializes the channel swap.
+    private readonly List<GrpcChannel> _retiredChannels = new();
+
     private string _username;
     private string _password;
     private readonly RetryConfig _retryConfig;
@@ -391,6 +740,32 @@ public sealed partial class MilvusClientV2 : IDisposable
     private readonly TimeSpan? _connectTimeout;
     private string _database;
     private string? _authorizationHeader;
+
+    // Global-cluster (Zilliz Cloud) topology manager; null for a regular endpoint. Owns topology discovery,
+    // periodic refresh and the UNAVAILABLE-triggered probe; on a primary change it rebuilds the gRPC channel.
+    private readonly GlobalClusterManager? _globalCluster;
+
+    // Original connect config, retained for global-cluster failover: a replacement primary channel is built with
+    // the same credentials/options but the primary's gRPC endpoint.
+    private readonly ConnectConfig _connectConfig;
+
+    // The version of the topology currently applied; refreshes whose version is not newer are discarded so an old
+    // answer landing after a newer one cannot flip the client back to a previous primary. Written under the
+    // connect lock and read elsewhere through Volatile.Read.
+    private long _appliedTopologyVersion = -1;
+
+    // Set under the connect lock by Dispose; a topology refresh still in flight must not fail over after the
+    // channels are disposed.
+    private bool _disposed;
+
+    // The physical gRPC clients, replaced on global-cluster failover. Read through the public/internal properties
+    // below so existing call sites keep working across a channel swap.
+    private volatile Grpc.MilvusService.MilvusServiceClient _grpcClient = null!;
+    private volatile Grpc.ClientTelemetryService.ClientTelemetryServiceClient _telemetryGrpcClient = null!;
+
+    // The current physical primary endpoint (host:port), tracked explicitly so failover is observable independently
+    // of the channel's Target string (which may normalize differently). Null until the first channel exists.
+    private volatile string? _primaryEndpoint;
 
     // Depth of the enclosing logical telemetry operation (e.g. a schema-mismatch retry that re-enters the
     // facade). InvokeAsync records only at depth 0 so a logical Insert/Upsert is recorded exactly once, while
@@ -419,9 +794,9 @@ public sealed partial class MilvusClientV2 : IDisposable
     internal string ResolveDatabaseName(string? requestDatabaseName)
         => string.IsNullOrEmpty(requestDatabaseName) ? CurrentDatabase : requestDatabaseName!;
 
-    internal Grpc.MilvusService.MilvusServiceClient GrpcClient { get; }
+    internal Grpc.MilvusService.MilvusServiceClient GrpcClient => _grpcClient;
 
-    internal Grpc.ClientTelemetryService.ClientTelemetryServiceClient TelemetryGrpcClient { get; }
+    internal Grpc.ClientTelemetryService.ClientTelemetryServiceClient TelemetryGrpcClient => _telemetryGrpcClient;
 
     private readonly ClientTelemetryManager _telemetry;
 
@@ -576,7 +951,9 @@ public sealed partial class MilvusClientV2 : IDisposable
                         return innerResponse;
                     },
                     _retryConfig,
-                    cancellationToken).ConfigureAwait(false);
+                    cancellationToken,
+                    IsGlobalClusterRoutingErrorRetryable,
+                    OnGlobalClusterAttemptFailed).ConfigureAwait(false);
 
                 if (telemetryStopwatch is not null)
                 {
