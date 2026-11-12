@@ -60,7 +60,13 @@ echo "==> Building $ROOT_DIR/Milvus.Client.V2"
 # Build the SDK project first so its reference assembly (obj/.../ref) is produced; building only the test
 # project through a ProjectReference transitively builds the SDK but does not emit the ref assembly, which
 # makes the test compilation fail with CS0006 when the SDK's obj was cleaned.
-dotnet build "$ROOT_DIR/Milvus.Client.V2/Milvus.Client.V2.csproj"
+#
+# Build from the repo root using relative project paths rather than absolute ones: MSBuild resolves
+# .editorconfig severity overrides relative to the project path, and an absolute path that goes through a
+# symlinked directory (e.g. /home/user/work -> /data/user/work) can fail to apply them, turning CA1307/CA1720
+# (suggestion/silent in .editorconfig) into hard errors under TreatWarningsAsErrors.
+cd "$ROOT_DIR"
+dotnet build Milvus.Client.V2/Milvus.Client.V2.csproj
 
 echo "==> Building $TESTS_PROJECT"
 # Build from a clean output: deleting bin/obj forces the SDK to re-emit the app's runtimeconfig.json and
@@ -71,7 +77,7 @@ rm -rf "$TESTS_PROJECT/bin" "$TESTS_PROJECT/obj"
 # Build non-incrementally: incremental builds decide 'up-to-date' from the obj cache and can skip re-copying
 # NuGet dependency DLLs or regenerating runtimeconfig.json into bin when they were removed/stale, which then
 # fails every `dotnet exec` with FileNotFound/TypeLoadException. A full rebuild keeps bin complete.
-dotnet build "$TESTS_PROJECT/Milvus.Client.V2.Tests.csproj" --no-incremental
+dotnet build Milvus.Client.V2.Tests/Milvus.Client.V2.Tests.csproj --no-incremental
 
 for layer in "${LAYERS[@]}"; do
   echo "==> Running $layer tests"

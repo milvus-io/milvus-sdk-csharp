@@ -209,8 +209,9 @@ public class CreateCollectionReqTests
     [Fact]
     public void ToGrpc_stamps_struct_nullable_and_inherits_to_sub_fields()
     {
-        // A nullable struct is stamped on the wire and its nullable flag is applied to every sub-field (a struct
-        // is nullable as a whole), matching the Java/Rust SDK encoding.
+        // A nullable struct is stamped on the wire and its row-level nullable flag is applied to every
+        // sub-field's wire nullable (a struct is nullable as a whole); a sub-field's own Nullable (element-level
+        // null) travels independently on the wire element_nullable, matching the Java/Rust SDK encoding.
         var request = new CreateCollectionReq
         {
             CollectionName = "book",
@@ -234,15 +235,83 @@ public class CreateCollectionReqTests
 
         Milvus.Client.Grpc.StructArrayFieldSchema structField = Assert.Single(schema.StructArrayFields);
         Assert.True(structField.Nullable);
-        Assert.True(structField.Fields.Single().Nullable);
+        Milvus.Client.Grpc.FieldSchema subField = structField.Fields.Single();
+        Assert.True(subField.Nullable);
+        Assert.True(subField.ElementNullable);
     }
 
     [Fact]
-    public void ToGrpc_rejects_nullable_sub_field_on_non_nullable_struct()
+    public void ToGrpc_encodes_struct_sub_field_element_nullable_and_nested_array()
     {
-        // A struct that is not nullable cannot have an individually nullable sub-field; this is the only path
-        // (the create request) that reaches the sub-field-level rejection -- AddCollectionStructField requires a
-        // nullable struct and fails at the struct-level check first.
+        // An element-nullable scalar sub-field maps its Nullable to the wire element_nullable; a nested Array
+        // sub-field carries a recursive type_schema (root -> inner -> leaf) with the inner-array capacity and
+        // the leaf type/nullability, mirroring pymilvus and the Java/C++/Rust SDKs.
+        var request = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields =
+                        {
+                            new FieldSchema("score", DataType.Int32) { Nullable = true },
+                            new FieldSchema("tags", DataType.Array)
+                            {
+                                ElementDataType = DataType.VarChar,
+                                MaxCapacity = 8,
+                                MaxLength = 16,
+                                Nullable = true,
+                                ElementNullable = true
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        Milvus.Client.Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        var schema = Milvus.Client.Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Milvus.Client.Grpc.StructArrayFieldSchema structField = Assert.Single(schema.StructArrayFields);
+        Assert.Equal(2, structField.Fields.Count);
+
+        // Element-nullable scalar sub-field: Array on the wire with the real type in element_type and the
+        // element-level nullability on element_nullable.
+        Milvus.Client.Grpc.FieldSchema score = structField.Fields[0];
+        Assert.Equal(Milvus.Client.Grpc.DataType.Array, score.DataType);
+        Assert.Equal(Milvus.Client.Grpc.DataType.Int32, score.ElementType);
+        Assert.True(score.ElementNullable);
+        Assert.Contains(score.TypeParams, p => p.Key == "max_capacity" && p.Value == "4");
+
+        // Nested Array sub-field: element_type = Array plus a recursive type_schema.
+        Milvus.Client.Grpc.FieldSchema tags = structField.Fields[1];
+        Assert.Equal(Milvus.Client.Grpc.DataType.Array, tags.DataType);
+        Assert.Equal(Milvus.Client.Grpc.DataType.Array, tags.ElementType);
+        Assert.True(tags.ElementNullable);
+
+        Milvus.Client.Grpc.TypeSchema root = tags.TypeSchema;
+        Assert.NotNull(root);
+        Assert.Contains(root.TypeParams, p => p.Key == "max_capacity" && p.Value == "4");
+        Milvus.Client.Grpc.TypeSchema inner = Assert.IsType<Milvus.Client.Grpc.TypeSchema>(root.ArrayElement);
+        Assert.True(inner.Nullable);
+        Assert.Contains(inner.TypeParams, p => p.Key == "max_capacity" && p.Value == "8");
+        Milvus.Client.Grpc.TypeSchema leaf = Assert.IsType<Milvus.Client.Grpc.TypeSchema>(inner.ArrayElement);
+        Assert.Equal(Milvus.Client.Grpc.DataType.VarChar, leaf.LeafType);
+        Assert.True(leaf.Nullable);
+        Assert.Contains(leaf.TypeParams, p => p.Key == "max_length" && p.Value == "16");
+    }
+
+    [Fact]
+    public void ToGrpc_allows_nullable_sub_field_on_non_nullable_struct()
+    {
+        // A sub-field's Nullable encodes element-level null and is independent of the struct's row-level
+        // nullability, so an element-nullable sub-field is valid under a non-nullable struct (matching pymilvus
+        // and the Java/Rust SDKs).
         var request = new CreateCollectionReq
         {
             CollectionName = "book",
@@ -260,7 +329,126 @@ public class CreateCollectionReqTests
             }
         };
 
-        Assert.Throws<ArgumentException>(() => request.ToGrpcCreateCollectionRequest());
+        Milvus.Client.Grpc.CreateCollectionRequest grpc = request.ToGrpcCreateCollectionRequest();
+        var schema = Milvus.Client.Grpc.CollectionSchema.Parser.ParseFrom(grpc.Schema);
+
+        Milvus.Client.Grpc.StructArrayFieldSchema structField = Assert.Single(schema.StructArrayFields);
+        Assert.False(structField.Nullable);
+        Assert.False(structField.Fields.Single().Nullable);
+        Assert.True(structField.Fields.Single().ElementNullable);
+    }
+
+    [Fact]
+    public void ToGrpc_rejects_bad_struct_sub_field_schemas()
+    {
+        // A nested Array sub-field without an element type or capacity is rejected up front.
+        var missingElementType = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields = { new FieldSchema("tags", DataType.Array) { MaxCapacity = 8 } }
+                    }
+                }
+            }
+        };
+        Assert.Throws<ArgumentException>(() => missingElementType.ToGrpcCreateCollectionRequest());
+
+        var missingCapacity = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields = { new FieldSchema("tags", DataType.Array) { ElementDataType = DataType.VarChar } }
+                    }
+                }
+            }
+        };
+        Assert.Throws<ArgumentException>(() => missingCapacity.ToGrpcCreateCollectionRequest());
+
+        // elementNullable requires an Array sub-field.
+        var nonArrayElementNullable = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields = { new FieldSchema("lang", DataType.VarChar) { ElementNullable = true } }
+                    }
+                }
+            }
+        };
+        Assert.Throws<ArgumentException>(() => nonArrayElementNullable.ToGrpcCreateCollectionRequest());
+
+        // A VarChar-element Array sub-field requires MaxLength (the server rejects it with ErrorCode 1101).
+        var missingMaxLength = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields =
+                        {
+                            new FieldSchema("tags", DataType.Array)
+                            {
+                                ElementDataType = DataType.VarChar,
+                                MaxCapacity = 8
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        ArgumentException maxLengthEx = Assert.Throws<ArgumentException>(() => missingMaxLength.ToGrpcCreateCollectionRequest());
+        Assert.Contains("MaxLength is required", maxLengthEx.Message);
+
+        // A nested Array-of-Array sub-field is rejected.
+        var arrayOfArray = new CreateCollectionReq
+        {
+            CollectionName = "book",
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields =
+                {
+                    new StructFieldSchema("st")
+                    {
+                        MaxCapacity = 4,
+                        Fields =
+                        {
+                            new FieldSchema("tags", DataType.Array)
+                            {
+                                ElementDataType = DataType.Array,
+                                MaxCapacity = 8
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Assert.Throws<ArgumentException>(() => arrayOfArray.ToGrpcCreateCollectionRequest());
     }
 
     [Fact]

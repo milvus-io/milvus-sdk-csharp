@@ -156,7 +156,22 @@ public sealed class FieldSchema
     /// <summary>
     /// Whether the field is nullable.
     /// </summary>
+    /// <remarks>
+    /// For a struct sub-field, <see cref="Nullable" /> carries the element-level nullability of that
+    /// sub-field (whether a struct element's value for this sub-field may be null), which is mapped to the
+    /// wire <c>element_nullable</c>. For a nested <see cref="DataType.Array" /> sub-field, <see cref="Nullable" />
+    /// permits the inner array itself to be null while <see cref="ElementNullable" /> permits null values inside
+    /// each inner array. Row-level nullability of the struct as a whole lives on
+    /// <see cref="StructFieldSchema.Nullable" />.
+    /// </remarks>
     public bool Nullable { get; set; }
+
+    /// <summary>
+    /// Whether a struct's <see cref="DataType.Array" /> sub-field permits null elements inside each inner
+    /// array. Only meaningful for a nested Array sub-field of a <see cref="StructFieldSchema" />; ignored
+    /// elsewhere. Maps to the wire <c>element_nullable</c> of the recursive <c>type_schema</c> leaf.
+    /// </summary>
+    public bool ElementNullable { get; set; }
 
     /// <summary>
     /// The default value for the field.

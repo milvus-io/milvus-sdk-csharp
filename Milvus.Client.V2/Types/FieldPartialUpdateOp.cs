@@ -1,12 +1,14 @@
 namespace Milvus.Client.V2.Types;
 
+using Milvus.Client.V2.Utils;
+
 /// <summary>
 /// Describes how a field value is applied during a partial upsert.
 /// </summary>
 /// <remarks>
-/// <see cref="FieldPartialUpdateOpType.ArrayAppend" /> and <see cref="FieldPartialUpdateOpType.ArrayRemove" />
-/// require Milvus server v2.6.17 or later. Older servers ignore these operations and may apply the supplied
-/// array value using replace semantics.
+/// <see cref="FieldPartialUpdateOpType.ArrayAppend" />, <see cref="FieldPartialUpdateOpType.ArrayRemove" />
+/// and <see cref="FieldPartialUpdateOpType.PathReplace" /> require a newer Milvus server. Older servers
+/// ignore these operations and may apply the supplied value using replace semantics.
 /// </remarks>
 public sealed class FieldPartialUpdateOp
 {
@@ -29,12 +31,57 @@ public sealed class FieldPartialUpdateOp
     /// </summary>
     public FieldPartialUpdateOpType OpType { get; }
 
+    /// <summary>
+    /// The path for a <see cref="FieldPartialUpdateOpType.PathReplace" /> operation on a struct field. The
+    /// path is relative to the parent field and uses <c>[index]</c> to replace one complete struct element or
+    /// <c>[index][child]</c> to replace one child of that element. Required for <see cref="FieldPartialUpdateOpType.PathReplace" />.
+    /// </summary>
+    public string? Path { get; set; }
+
     internal Grpc.FieldPartialUpdateOp ToGrpc()
-        => new()
+    {
+        var op = new Grpc.FieldPartialUpdateOp
         {
             FieldName = FieldName,
             Op = (Grpc.FieldPartialUpdateOp.Types.OpType)(int)OpType
         };
+
+        // A Path on a non-PATH_REPLACE op is meaningless and would be silently dropped; reject it up front
+        // (mirroring pymilvus's "path is only supported for PATH_REPLACE").
+        if (OpType != FieldPartialUpdateOpType.PathReplace && !string.IsNullOrWhiteSpace(Path))
+        {
+            throw new ArgumentException(
+                $"Path is only supported for a {FieldPartialUpdateOpType.PathReplace} op, but op for field " +
+                $"'{FieldName}' is {OpType}.", nameof(Path));
+        }
+
+        if (OpType == FieldPartialUpdateOpType.PathReplace)
+        {
+            // The proto requires a path for PATH_REPLACE. The row-data path validates it earlier in
+            // RowDataConverter, but the columnar path (ColumnsData) does not, so reject a missing or
+            // malformed path here to avoid forwarding it to the server.
+            if (string.IsNullOrWhiteSpace(Path))
+            {
+                throw new ArgumentException(
+                    $"Path is required for a {FieldPartialUpdateOpType.PathReplace} op on field '{FieldName}'.",
+                    nameof(Path));
+            }
+
+            // Path is guaranteed non-null after the IsNullOrWhiteSpace check above; bind to a local so the
+            // netstandard2.0/net462 compilers that do not infer the null state are satisfied.
+            string path = Path!;
+            if (!StructFieldUtils.IsValidPath(path))
+            {
+                throw new ArgumentException(
+                    $"PATH_REPLACE on field '{FieldName}' requires [index] or [index][child], got: '{path}'.",
+                    nameof(Path));
+            }
+
+            op.Path = path;
+        }
+
+        return op;
+    }
 }
 
 /// <summary>
@@ -57,5 +104,12 @@ public enum FieldPartialUpdateOpType
     /// Removes every occurrence of each supplied element from the existing array. Requires an array field; it is
     /// a no-op when the base array is empty or no element matches.
     /// </summary>
-    ArrayRemove = 2
+    ArrayRemove = 2,
+
+    /// <summary>
+    /// Replaces an existing value selected by <see cref="FieldPartialUpdateOp.Path" />. The supported paths are
+    /// relative to the field name and use either <c>[index]</c> (replace one complete struct element) or
+    /// <c>[index][child]</c> (replace one child of that element) syntax.
+    /// </summary>
+    PathReplace = 3
 }
