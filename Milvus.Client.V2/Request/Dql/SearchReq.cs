@@ -205,32 +205,172 @@ public sealed class SearchReq
 
         if (EmbeddingLists is { Count: > 0 })
         {
-            // Each embedding list is packed into one placeholder value: the vectors' floats concatenated in
-            // little-endian. nq is the number of embedding lists (the struct elements to score), set by the caller.
-            var embListPlaceholder = new Grpc.PlaceholderValue { Tag = "$0", Type = Grpc.PlaceholderType.EmbListFloatVector };
+            // Each embedding list is packed into one placeholder value: the vectors' values concatenated in
+            // little-endian (float) or raw bytes (binary/int8). nq is the number of embedding lists (the struct
+            // elements to score), set by the caller. All vectors in a list share one type, which selects the
+            // wire placeholder type (EmbListFloatVector / EmbListBinaryVector / EmbListInt8Vector).
+            Grpc.PlaceholderType placeholderType = Grpc.PlaceholderType.EmbListFloatVector;
             foreach (EmbeddingList embeddingList in EmbeddingLists)
             {
-                int byteCount = 0;
-                foreach (ReadOnlyMemory<float> vector in embeddingList.Vectors)
+                if (embeddingList.BinaryVectors.Count > 0)
                 {
-                    byteCount += vector.Length * sizeof(float);
+                    placeholderType = Grpc.PlaceholderType.EmbListBinaryVector;
+                    break;
                 }
 
-                var bytes = new byte[byteCount];
-                int offset = 0;
+                if (embeddingList.Int8Vectors.Count > 0)
+                {
+                    placeholderType = Grpc.PlaceholderType.EmbListInt8Vector;
+                    break;
+                }
+
+                if (embeddingList.Vectors.Count > 0)
+                {
+                    placeholderType = Grpc.PlaceholderType.EmbListFloatVector;
+                    break;
+                }
+            }
+
+            // All embedding lists in one search must share the same vector type: the placeholder type is
+            // derived from the first non-empty list and applied to every list, so a mixed request would
+            // silently mis-encode (a list of the wrong type contributes an empty placeholder value). Reject it
+            // up front. A single list must also not mix vector types (the encode switch packs only one
+            // category, silently dropping the others). An empty list (no vectors of any type) is allowed and
+            // simply contributes no query.
+            foreach (EmbeddingList embeddingList in EmbeddingLists)
+            {
+                int nonEmptyCollections = (embeddingList.Vectors.Count > 0 ? 1 : 0)
+                    + (embeddingList.BinaryVectors.Count > 0 ? 1 : 0)
+                    + (embeddingList.Int8Vectors.Count > 0 ? 1 : 0);
+                if (nonEmptyCollections > 1)
+                {
+                    throw new ArgumentException(
+                        "An embedding list cannot mix float, binary and int8 vectors; each list must carry " +
+                        "exactly one vector type.", nameof(EmbeddingLists));
+                }
+
+                Grpc.PlaceholderType listType = embeddingList.BinaryVectors.Count > 0
+                    ? Grpc.PlaceholderType.EmbListBinaryVector
+                    : embeddingList.Int8Vectors.Count > 0
+                        ? Grpc.PlaceholderType.EmbListInt8Vector
+                        : embeddingList.Vectors.Count > 0
+                            ? Grpc.PlaceholderType.EmbListFloatVector
+                            : Grpc.PlaceholderType.None;
+
+                if (listType != Grpc.PlaceholderType.None && listType != placeholderType)
+                {
+                    throw new ArgumentException(
+                        "All embedding lists in a search must carry the same vector type; a list cannot mix " +
+                        "float, binary and int8 vectors.", nameof(EmbeddingLists));
+                }
+
+                // Each list is flattened into one placeholder value that the server splits by the schema
+                // dimension, so all vectors within one list must share the same size; otherwise the payload is
+                // silently mis-split (or rejected opaquely by the server).
+                int? uniformLength = null;
                 foreach (ReadOnlyMemory<float> vector in embeddingList.Vectors)
                 {
-                    foreach (float value in vector.Span)
+                    if (uniformLength is null)
                     {
-                        byte[] raw = BitConverter.GetBytes(value);
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[0] : raw[3];
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[1] : raw[2];
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[2] : raw[1];
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[3] : raw[0];
+                        uniformLength = vector.Length;
+                    }
+                    else if (vector.Length != uniformLength)
+                    {
+                        throw new ArgumentException(
+                            "All vectors within one embedding list must share the same dimension.",
+                            nameof(EmbeddingLists));
                     }
                 }
 
-                embListPlaceholder.Values.Add(ByteString.CopyFrom(bytes));
+                foreach (ReadOnlyMemory<byte> vector in embeddingList.BinaryVectors)
+                {
+                    if (uniformLength is null)
+                    {
+                        uniformLength = vector.Length;
+                    }
+                    else if (vector.Length != uniformLength)
+                    {
+                        throw new ArgumentException(
+                            "All vectors within one embedding list must share the same dimension.",
+                            nameof(EmbeddingLists));
+                    }
+                }
+
+                foreach (ReadOnlyMemory<sbyte> vector in embeddingList.Int8Vectors)
+                {
+                    if (uniformLength is null)
+                    {
+                        uniformLength = vector.Length;
+                    }
+                    else if (vector.Length != uniformLength)
+                    {
+                        throw new ArgumentException(
+                            "All vectors within one embedding list must share the same dimension.",
+                            nameof(EmbeddingLists));
+                    }
+                }
+            }
+
+            var embListPlaceholder = new Grpc.PlaceholderValue { Tag = "$0", Type = placeholderType };
+            foreach (EmbeddingList embeddingList in EmbeddingLists)
+            {
+                switch (placeholderType)
+                {
+                    case Grpc.PlaceholderType.EmbListFloatVector:
+                    {
+                        int byteCount = 0;
+                        foreach (ReadOnlyMemory<float> vector in embeddingList.Vectors)
+                        {
+                            byteCount += vector.Length * sizeof(float);
+                        }
+
+                        var bytes = new byte[byteCount];
+                        int offset = 0;
+                        foreach (ReadOnlyMemory<float> vector in embeddingList.Vectors)
+                        {
+                            foreach (float value in vector.Span)
+                            {
+                                byte[] raw = BitConverter.GetBytes(value);
+                                bytes[offset++] = BitConverter.IsLittleEndian ? raw[0] : raw[3];
+                                bytes[offset++] = BitConverter.IsLittleEndian ? raw[1] : raw[2];
+                                bytes[offset++] = BitConverter.IsLittleEndian ? raw[2] : raw[1];
+                                bytes[offset++] = BitConverter.IsLittleEndian ? raw[3] : raw[0];
+                            }
+                        }
+
+                        embListPlaceholder.Values.Add(ByteString.CopyFrom(bytes));
+                        break;
+                    }
+
+                    case Grpc.PlaceholderType.EmbListBinaryVector:
+                        // One placeholder value per embedding list, holding all the list's binary vectors'
+                        // bytes concatenated (matching the float branch and pymilvus's flattened encoding).
+                        var binaryBytes = new List<byte>();
+                        foreach (ReadOnlyMemory<byte> vector in embeddingList.BinaryVectors)
+                        {
+                            binaryBytes.AddRange(vector.ToArray());
+                        }
+
+                        embListPlaceholder.Values.Add(ByteString.CopyFrom(binaryBytes.ToArray()));
+                        break;
+
+                    case Grpc.PlaceholderType.EmbListInt8Vector:
+                        // One placeholder value per embedding list, holding all the list's int8 vectors.
+                        var int8Bytes = new List<byte>();
+                        foreach (ReadOnlyMemory<sbyte> vector in embeddingList.Int8Vectors)
+                        {
+                            foreach (sbyte value in vector.Span)
+                            {
+                                int8Bytes.Add(unchecked((byte)value));
+                            }
+                        }
+
+                        embListPlaceholder.Values.Add(ByteString.CopyFrom(int8Bytes.ToArray()));
+                        break;
+
+                    default:
+                        throw new NotSupportedException($"Unsupported embedding list placeholder type {placeholderType}");
+                }
             }
 
             return embListPlaceholder;

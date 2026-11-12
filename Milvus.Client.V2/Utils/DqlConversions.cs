@@ -554,7 +554,20 @@ internal static class DqlConversions
                     ? (DataType)subField.Type
                     : (DataType)subField.Scalars.ArrayData.ElementType;
 
-            var subFieldSchema = new FieldSchema(subField.FieldName, dataType);
+            // A sub-field added via the bracketed struct[sub] path may carry the "struct[" prefix in its wire
+            // name; strip it so the decoded element keys match the plain names users declared and inserted with
+            // (mirroring pymilvus/Java). Create-time sub-fields are already plain names.
+            string subFieldName = StructFieldNames.StripStructSubFieldName(fieldData.FieldName, subField.FieldName);
+
+            var subFieldSchema = new FieldSchema(subFieldName, dataType)
+            {
+                // Element-level nullability is recoverable from the wire payload: a sub-field whose per-row
+                // cells carry their own valid_data uses element-level null, so a query-then-reinsert round
+                // trip may re-encode the decoded null elements.
+                Nullable = subField.Type == Grpc.DataType.ArrayOfVector
+                    ? subField.Vectors.VectorArray.Data.Any(cell => cell.ValidData.Count > 0)
+                    : subField.Scalars.ArrayData.Data.Any(cell => cell.ValidData.Count > 0)
+            };
             if (subField.Type == Grpc.DataType.ArrayOfVector)
             {
                 // Preserve the vector dimension from the wire so a query-then-reinsert round trip re-encodes
@@ -564,6 +577,22 @@ internal static class DqlConversions
                 if (dim > 0)
                 {
                     subFieldSchema.Dimension = (int)dim;
+                }
+            }
+            else if (dataType == DataType.Array)
+            {
+                // Nested Array sub-field: recover the leaf element type and nullability from the per-row
+                // cells so a query-then-reinsert round trip re-encodes the nested arrays with the same shape
+                // (EncodeRowNestedArray requires the sub-field's ElementDataType and ElementNullable). A row
+                // cell may carry no array payload (oneof DataCase None, an all-null inner-array row), so skip
+                // those and take the first cell that actually carries an ArrayData.
+                Grpc.ScalarField? firstCell = subField.Scalars.ArrayData.Data.FirstOrDefault(
+                    cell => cell.ArrayData is not null && cell.ArrayData.ElementType != Grpc.DataType.None);
+                if (firstCell?.ArrayData is { } inner)
+                {
+                    subFieldSchema.ElementDataType = (DataType)inner.ElementType;
+                    subFieldSchema.ElementNullable = subField.Scalars.ArrayData.Data.Any(
+                        cell => cell.ArrayData is { } cellInner && cellInner.Data.Any(leaf => leaf.ValidData.Count > 0));
                 }
             }
 
@@ -640,7 +669,7 @@ internal static class DqlConversions
             rows[i] = DecodeStructScalarRow(arrayData.Data[i], elementType);
         }
 
-        string name = subField.FieldName;
+        string name = schema.Name;
         return AddCompactedMapping(subField.ValidData, rows,
             r => new Dictionary<string, object?> { [name] = r });
     }
@@ -674,21 +703,120 @@ internal static class DqlConversions
     }
 
     private static List<object?> DecodeStructScalarRow(Grpc.ScalarField scalar, Grpc.DataType elementType)
-        => elementType switch
+        => elementType == Grpc.DataType.Array
+            // Nested Array sub-field: the row cell is itself an ArrayArray of leaf values, with the cell's
+            // own valid_data marking null inner arrays.
+            ? DecodeStructNestedArrayRow(scalar)
+            // A struct element with no data (oneof DataCase None) yields an empty row; guard the typed
+            // accessors so an empty/null struct element cannot throw during decode.
+            : ExpandStructRow(elementType switch
+            {
+                Grpc.DataType.Bool => (scalar.BoolData?.Data ?? []).Select(x => (object?)x).ToList(),
+                Grpc.DataType.Int8 => (scalar.IntData?.Data ?? []).Select(x => (object?)(sbyte)x).ToList(),
+                Grpc.DataType.Int16 => (scalar.IntData?.Data ?? []).Select(x => (object?)(short)x).ToList(),
+                Grpc.DataType.Int32 => (scalar.IntData?.Data ?? []).Select(x => (object?)x).ToList(),
+                Grpc.DataType.Int64 => (scalar.LongData?.Data ?? []).Select(x => (object?)x).ToList(),
+                Grpc.DataType.Float => (scalar.FloatData?.Data ?? []).Select(x => (object?)x).ToList(),
+                Grpc.DataType.Double => (scalar.DoubleData?.Data ?? []).Select(x => (object?)x).ToList(),
+                Grpc.DataType.VarChar or Grpc.DataType.String => (scalar.StringData?.Data ?? []).Select(x => (object?)x).ToList(),
+                Grpc.DataType.Json => (scalar.JsonData?.Data ?? []).Select(p => (object?)p.ToStringUtf8()).ToList(),
+                _ => throw new NotSupportedException($"Struct scalar sub-field element type {elementType} not supported")
+            }, scalar.ValidData);
+
+    // Decodes one struct row cell of a nested-Array sub-field. The cell's own valid_data marks which inner
+    // arrays are null (element-level null); its ArrayData holds one leaf per inner array, and each leaf's
+    // valid_data marks null values inside the inner array. The server sends either a dense payload (one leaf
+    // per logical element, null inner arrays carried as empty placeholder leaves, told apart by length) or a
+    // compacted payload (only non-null inner arrays stored).
+    private static List<object?> DecodeStructNestedArrayRow(Grpc.ScalarField rowCell)
+    {
+        // A cell with no array payload (oneof DataCase None, e.g. an all-null inner-array row) yields an
+        // empty leaf list; guard the typed accessor like the sibling DecodeStructScalarRow branches so a
+        // null payload cannot throw NullReferenceException.
+        Grpc.ArrayArray? inner = rowCell.ArrayData;
+        List<object?> leaves = inner is null
+            ? new List<object?>()
+            : inner.Data
+                .Select(leaf => (object?)DecodeStructScalarRow(leaf, inner.ElementType))
+                .ToList();
+
+        if (rowCell.ValidData.Count == 0)
         {
-            // A struct element with no data (oneof DataCase None) yields an empty row; guard the typed accessors
-            // so an empty/null struct element cannot throw a NullReferenceException during decode.
-            Grpc.DataType.Bool => (scalar.BoolData?.Data ?? []).Select(x => (object?)x).ToList(),
-            Grpc.DataType.Int8 => (scalar.IntData?.Data ?? []).Select(x => (object?)(sbyte)x).ToList(),
-            Grpc.DataType.Int16 => (scalar.IntData?.Data ?? []).Select(x => (object?)(short)x).ToList(),
-            Grpc.DataType.Int32 => (scalar.IntData?.Data ?? []).Select(x => (object?)x).ToList(),
-            Grpc.DataType.Int64 => (scalar.LongData?.Data ?? []).Select(x => (object?)x).ToList(),
-            Grpc.DataType.Float => (scalar.FloatData?.Data ?? []).Select(x => (object?)x).ToList(),
-            Grpc.DataType.Double => (scalar.DoubleData?.Data ?? []).Select(x => (object?)x).ToList(),
-            Grpc.DataType.VarChar or Grpc.DataType.String => (scalar.StringData?.Data ?? []).Select(x => (object?)x).ToList(),
-            Grpc.DataType.Json => (scalar.JsonData?.Data ?? []).Select(p => (object?)p.ToStringUtf8()).ToList(),
-            _ => throw new NotSupportedException($"Struct scalar sub-field element type {elementType} not supported")
-        };
+            // Not element-nullable: every inner array is present, so the leaves are already full-length.
+            return leaves;
+        }
+
+        if (rowCell.ValidData.Count == leaves.Count)
+        {
+            // Dense payload: one leaf per logical element (null inner arrays are empty placeholder leaves);
+            // substitute null for invalid positions.
+            var dense = new List<object?>(leaves.Count);
+            for (int i = 0; i < leaves.Count; i++)
+            {
+                dense.Add(rowCell.ValidData[i] ? leaves[i] : null);
+            }
+
+            return dense;
+        }
+
+        // Compacted payload: only non-null inner arrays are stored; valid_data marks the logical positions.
+        var result = new List<object?>(rowCell.ValidData.Count);
+        int payloadIndex = 0;
+        foreach (bool valid in rowCell.ValidData)
+        {
+            if (valid)
+            {
+                result.Add(payloadIndex < leaves.Count ? leaves[payloadIndex++] : null);
+            }
+            else
+            {
+                result.Add(null);
+            }
+        }
+
+        return result;
+    }
+
+    // Re-expands a struct row payload against the cell's per-element valid_data. The server sends the payload
+    // in one of two shapes, told apart by length (matching the Java SDK's setNoneData): a dense payload has one
+    // slot per logical element (null values zero/empty-filled) with a same-length valid_data mask, so it is
+    // masked positionally; a compacted payload stores only the non-null values, so nulls are re-inserted at
+    // their logical positions. Without a valid_data mask the payload is already full-length.
+    private static List<object?> ExpandStructRow(IReadOnlyList<object?> payload, RepeatedField<bool> validData)
+    {
+        if (validData.Count == 0)
+        {
+            return payload.ToList();
+        }
+
+        if (validData.Count == payload.Count)
+        {
+            // Dense payload: each logical element already has a slot; substitute null for invalid positions.
+            var dense = new List<object?>(payload.Count);
+            for (int i = 0; i < payload.Count; i++)
+            {
+                dense.Add(validData[i] ? payload[i] : null);
+            }
+
+            return dense;
+        }
+
+        var result = new List<object?>(validData.Count);
+        int payloadIndex = 0;
+        foreach (bool valid in validData)
+        {
+            if (valid)
+            {
+                result.Add(payloadIndex < payload.Count ? payload[payloadIndex++] : null);
+            }
+            else
+            {
+                result.Add(null);
+            }
+        }
+
+        return result;
+    }
 
     // Builds a reader returning the logical row's list of struct-element vectors for a vector sub-field
     // (each VectorArray.data item is one valid row's packed vectors; null rows are compacted out and flagged
@@ -701,7 +829,7 @@ internal static class DqlConversions
         // The outer VectorField.dim carries the schema dimension (Java sets it via
         // VectorField.newBuilder().setVectorArray(...).setDim(schemaDim)); VectorArray.dim may be zero.
         int dim = subField.Vectors.Dim != 0 ? (int)subField.Vectors.Dim : (int)vectorArray.Dim;
-        string name = subField.FieldName;
+        string name = schema.Name;
         if (dim <= 0)
         {
             // No dimensions means no decodable vectors; degrade to an empty row list instead of a
@@ -722,7 +850,7 @@ internal static class DqlConversions
 
     private static List<object?> DecodeStructVectorRow(
         Grpc.VectorField vector, Grpc.DataType elementType, int dim)
-        => elementType switch
+        => ExpandStructRow(elementType switch
         {
             // An empty struct-vector element (oneof DataCase None) yields an empty row; guard the typed
             // accessors so a null struct vector element cannot throw during decode.
@@ -734,7 +862,7 @@ internal static class DqlConversions
             Grpc.DataType.SparseFloatVector => (vector.SparseFloatVector?.Contents ?? [])
                 .Select(c => (object?)SparseVector<float>.FromBytes(c.Span)).ToList(),
             _ => throw new NotSupportedException($"Struct vector sub-field element type {elementType} not supported")
-        };
+        }, vector.ValidData);
 
     private static ReadOnlyMemory<byte>[] ChunkBytes(byte[] raw, int bytesPerVector)
     {

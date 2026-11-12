@@ -577,6 +577,125 @@ public class DqlReqTests
     }
 
     [Fact]
+    public void SearchReq_encodes_binary_embedding_list_placeholder()
+    {
+        // A binary embedding list packs all of its vectors' bytes into a single EmbListBinaryVector placeholder
+        // value (matching the float branch and the Java SDK's flattened encoding), with one value per list.
+        var request = new SearchReq
+        {
+            CollectionName = "book",
+            VectorFieldName = "clips[binary]",
+            EmbeddingLists =
+            [
+                new EmbeddingList()
+                    .AddBinary(new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3, 4 }))
+                    .AddBinary(new ReadOnlyMemory<byte>(new byte[] { 5, 6, 7, 8 }))
+            ],
+            MetricType = MetricType.MaxSimHamming,
+            Limit = 1
+        };
+
+        Grpc.PlaceholderValue placeholder = request.ToPlaceholderValue();
+
+        Assert.Equal(Grpc.PlaceholderType.EmbListBinaryVector, placeholder.Type);
+        Assert.Single(placeholder.Values);
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, placeholder.Values[0].ToByteArray());
+    }
+
+    [Fact]
+    public void SearchReq_rejects_embedding_list_with_mismatched_dimensions()
+    {
+        // All vectors within one embedding list must share the same dimension: the list is flattened into one
+        // placeholder value that the server splits by the schema dimension, so mixed sizes would be
+        // silently mis-split.
+        var request = new SearchReq
+        {
+            CollectionName = "book",
+            VectorFieldName = "clips[vector]",
+            EmbeddingLists =
+            [
+                new EmbeddingList(new[]
+                {
+                    new ReadOnlyMemory<float>(new[] { 1f, 2f }),
+                    new ReadOnlyMemory<float>(new[] { 1f, 2f, 3f })
+                })
+            ],
+            MetricType = MetricType.MaxSimCosine,
+            Limit = 1
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToPlaceholderValue());
+    }
+
+    [Fact]
+    public void SearchReq_rejects_embedding_list_that_mixes_vector_types()
+    {
+        // A single embedding list must carry exactly one vector type: the encode switch packs only one
+        // category, so a list mixing float and binary would silently drop one side.
+        var request = new SearchReq
+        {
+            CollectionName = "book",
+            VectorFieldName = "clips[vector]",
+            EmbeddingLists =
+            [
+                new EmbeddingList()
+                    .Add(new ReadOnlyMemory<float>(new[] { 1f, 2f }))
+                    .AddBinary(new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3, 4 }))
+            ],
+            MetricType = MetricType.MaxSimCosine,
+            Limit = 1
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToPlaceholderValue());
+    }
+
+    [Fact]
+    public void SearchReq_rejects_mixed_embedding_list_types()
+    {
+        // All embedding lists in one search must share one vector type; the placeholder type is derived from
+        // the first non-empty list, so a mixed request would silently mis-encode the others. Reject up front.
+        var request = new SearchReq
+        {
+            CollectionName = "book",
+            VectorFieldName = "clips[vector]",
+            EmbeddingLists =
+            [
+                new EmbeddingList().AddBinary(new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3, 4 })),
+                new EmbeddingList(new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) })
+            ],
+            MetricType = MetricType.MaxSimHamming,
+            Limit = 1
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToPlaceholderValue());
+    }
+
+    [Fact]
+    public void SearchReq_encodes_int8_embedding_list_placeholder()
+    {
+        // An int8 embedding list packs all of its vectors into a single EmbListInt8Vector placeholder value.
+        var request = new SearchReq
+        {
+            CollectionName = "book",
+            VectorFieldName = "clips[int8]",
+            EmbeddingLists =
+            [
+                new EmbeddingList()
+                    .AddInt8(new ReadOnlyMemory<sbyte>(new sbyte[] { 1, -2, 3, -4 }))
+                    .AddInt8(new ReadOnlyMemory<sbyte>(new sbyte[] { -5, 6, 7, -8 }))
+            ],
+            MetricType = MetricType.MaxSimL2,
+            Limit = 1
+        };
+
+        Grpc.PlaceholderValue placeholder = request.ToPlaceholderValue();
+
+        Assert.Equal(Grpc.PlaceholderType.EmbListInt8Vector, placeholder.Type);
+        Assert.Single(placeholder.Values);
+        Assert.Equal(new byte[] { 1, 0xFE, 3, 0xFC, 0xFB, 6, 7, 0xF8 }, placeholder.Values[0].ToByteArray());
+    }
+
+    [Fact]
     public void SearchReq_encodes_sparse_placeholder()
     {
         // Sparse wire format: one (uint32 LE index, float32 LE value) pair per non-zero element, ascending.

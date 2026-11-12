@@ -143,13 +143,87 @@ public class CollectionApiForwardingTests
             },
             TestContext.Current.CancellationToken);
 
+        Grpc.AlterCollectionSchemaRequest request =
+            Assert.IsType<Grpc.AlterCollectionSchemaRequest>(server.Service.Requests["AlterCollectionSchema"]);
+        Assert.Equal("add_field_coll", request.CollectionName);
+
+        Grpc.AlterCollectionSchemaRequest.Types.AddRequest addRequest = request.Action.AddRequest;
+        Grpc.FieldSchema field = Assert.Single(addRequest.FieldInfos).FieldSchema;
+        Assert.Equal("embedding", field.Name);
+        Assert.Equal(Grpc.DataType.FloatVector, field.DataType);
+    }
+
+    [Fact]
+    public async Task AddCollectionField_struct_sub_field_forwards_request_and_does_not_fall_back()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        await client.AddCollectionFieldAsync(
+            new AddCollectionFieldReq
+            {
+                CollectionName = "add_sub_field_coll",
+                Field = new FieldSchema("clips[note]", DataType.VarChar) { MaxLength = 64, Nullable = true }
+            },
+            TestContext.Current.CancellationToken);
+
+        Grpc.AlterCollectionSchemaRequest request =
+            Assert.IsType<Grpc.AlterCollectionSchemaRequest>(server.Service.Requests["AlterCollectionSchema"]);
+        Grpc.FieldSchema field = Assert.Single(request.Action.AddRequest.FieldInfos).FieldSchema;
+        // A struct sub-field keeps its bracketed name and is wrapped as a non-nullable Array with
+        // element_nullable=true (row nullability is inherited from the parent struct on the server).
+        Assert.Equal("clips[note]", field.Name);
+        Assert.Equal(Grpc.DataType.Array, field.DataType);
+        Assert.Equal(Grpc.DataType.VarChar, field.ElementType);
+        Assert.False(field.Nullable);
+        Assert.True(field.ElementNullable);
+        Assert.False(server.Service.Requests.ContainsKey("AddCollectionField"),
+            "a struct sub-field add must not fall back to the legacy AddCollectionField RPC");
+    }
+
+    [Fact]
+    public async Task AddCollectionField_struct_sub_field_does_not_fall_back_when_alter_unimplemented()
+    {
+        using var server = new MockMilvusServer();
+        server.Service.AlterCollectionSchemaUnimplemented = true;
+        using MilvusClientV2 client = server.CreateClient();
+
+        // A struct sub-field add requires AlterCollectionSchema and must propagate the UNIMPLEMENTED error
+        // rather than falling back to the legacy AddCollectionField RPC (matching pymilvus/Java/C++/Rust).
+        await Assert.ThrowsAsync<MilvusException>(() => client.AddCollectionFieldAsync(
+            new AddCollectionFieldReq
+            {
+                CollectionName = "add_sub_field_coll",
+                Field = new FieldSchema("clips[note]", DataType.VarChar) { MaxLength = 64, Nullable = true }
+            },
+            TestContext.Current.CancellationToken));
+
+        Assert.False(server.Service.Requests.ContainsKey("AddCollectionField"),
+            "a struct sub-field add must never reach the legacy AddCollectionField RPC");
+    }
+
+    [Fact]
+    public async Task AddCollectionField_falls_back_to_legacy_rpc_when_alter_unimplemented()
+    {
+        using var server = new MockMilvusServer();
+        server.Service.AlterCollectionSchemaUnimplemented = true;
+        using MilvusClientV2 client = server.CreateClient();
+
+        // An ordinary field add falls back to the legacy AddCollectionField RPC when the server does not
+        // support schema alteration.
+        FieldSchema embedding = FieldSchema.CreateFloatVector("embedding", dimension: 8);
+        embedding.Nullable = true;
+        await client.AddCollectionFieldAsync(
+            new AddCollectionFieldReq
+            {
+                CollectionName = "add_field_coll",
+                Field = embedding
+            },
+            TestContext.Current.CancellationToken);
+
         Grpc.AddCollectionFieldRequest request =
             Assert.IsType<Grpc.AddCollectionFieldRequest>(server.Service.Requests["AddCollectionField"]);
         Assert.Equal("add_field_coll", request.CollectionName);
-
-        Grpc.FieldSchema field = Grpc.FieldSchema.Parser.ParseFrom(request.Schema);
-        Assert.Equal("embedding", field.Name);
-        Assert.Equal(Grpc.DataType.FloatVector, field.DataType);
     }
 
     [Fact]
