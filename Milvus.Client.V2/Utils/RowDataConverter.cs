@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 using Milvus.Client.V2.Types;
 
@@ -12,11 +13,17 @@ namespace Milvus.Client.V2.Utils;
 // defaults), and with dynamic fields enabled, unknown keys are aggregated into the $meta JSON column.
 internal static class RowDataConverter
 {
+    // Strictly matches a PATH_REPLACE path: [index] or [index][child], aligned with pymilvus; a typo must not
+    // silently fall back to the whole-element interpretation.
+    private static readonly Regex StructPathReplaceRegex =
+        new(@"\[(?:0|[1-9][0-9]*)\](?:\[([^\[\]\s]+)\])?", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     internal static List<FieldData> ConvertRows(
         IReadOnlyList<IDictionary<string, object?>> rows,
         CollectionSchema schema,
         bool isUpsert,
-        bool isPartialUpdate = false)
+        bool isPartialUpdate = false,
+        IReadOnlyList<FieldPartialUpdateOp>? fieldOps = null)
     {
         int rowCount = rows.Count;
 
@@ -172,7 +179,8 @@ internal static class RowDataConverter
         }
 
         // Struct fields: build one StructFieldData per provided struct column, converting each row's value
-        // (a list of struct-element dictionaries) into the columnar shape.
+        // (a list of struct-element dictionaries) into the columnar shape. A PATH_REPLACE op on a struct field
+        // restricts the emitted sub-fields to the targeted child and validates the operand.
         foreach (StructFieldSchema structField in schema.StructFields)
         {
             if (!structColumns.TryGetValue(structField.Name, out List<object?>? structColumn))
@@ -180,20 +188,111 @@ internal static class RowDataConverter
                 continue;
             }
 
-            var rowsData = new IReadOnlyList<IDictionary<string, object?>>?[rowCount];
-            for (int i = 0; i < rowCount; i++)
+            FieldPartialUpdateOp? pathOp = fieldOps?.FirstOrDefault(op => op != null
+                && op.FieldName == structField.Name
+                && op.OpType == FieldPartialUpdateOpType.PathReplace);
+            string? pathChild = null;
+            if (pathOp is not null)
             {
-                rowsData[i] = structColumn[i] is IEnumerable enumerable
-                    ? enumerable.Cast<object?>().Select(AsStructElement).ToList()
-                    : structColumn[i] is null ? null : throw new ArgumentException(
+                if (string.IsNullOrWhiteSpace(pathOp.Path))
+                {
+                    throw new ArgumentException(
+                        $"PATH_REPLACE requires a path for struct field '{structField.Name}'.", nameof(fieldOps));
+                }
+
+                pathChild = ParsePathReplaceChild(structField.Name, pathOp.Path!);
+            }
+
+            List<FieldSchema> subFields = structField.Fields.ToList();
+            if (pathChild is not null)
+            {
+                FieldSchema? child = subFields.FirstOrDefault(f => f.Name == pathChild);
+                if (child is null)
+                {
+                    throw new ArgumentException(
+                        $"PATH_REPLACE child '{pathChild}' not found in struct field '{structField.Name}'.",
+                        nameof(fieldOps));
+                }
+
+                subFields = new List<FieldSchema> { child };
+            }
+
+            var rowsData = new IReadOnlyList<IDictionary<string, object?>>?[rowCount];            for (int i = 0; i < rowCount; i++)
+            {
+                if (pathOp is not null)
+                {
+                    // A PATH_REPLACE operand must be a single-element array in every row; a null/missing parent
+                    // is rejected so the operation does not silently degrade into a null struct row.
+                    if (structColumn[i] is null)
+                    {
+                        throw new ArgumentException(
+                            $"PATH_REPLACE requires an operand for struct field '{structField.Name}' in row {i}, " +
+                            "got a null or missing value.", nameof(rows));
+                    }
+
+                    List<object?> elements = structColumn[i] is IEnumerable enumerable
+                        ? enumerable.Cast<object?>().ToList()
+                        : throw new ArgumentException(
+                            $"Row {i} of struct field '{structField.Name}' is not a list of struct elements.",
+                            nameof(rows));
+
+                    if (elements.Count != 1)
+                    {
+                        throw new ArgumentException(
+                            $"PATH_REPLACE requires exactly one element for struct field '{structField.Name}' in row {i}.",
+                            nameof(rows));
+                    }
+
+                    if (pathChild is not null && !AsStructElement(elements[0]).ContainsKey(pathChild))
+                    {
+                        throw new ArgumentException(
+                            $"PATH_REPLACE operand for struct field '{structField.Name}' must explicitly contain " +
+                            $"child '{pathChild}' in row {i}.", nameof(rows));
+                    }
+                }
+
+                if (structColumn[i] is null)
+                {
+                    // A null struct row is only valid on a nullable struct; reject it up front (mirroring
+                    // pymilvus) instead of sending a wire payload the server would reject with an opaque error.
+                    if (!structField.Nullable)
+                    {
+                        throw new ArgumentException(
+                            $"Struct field '{structField.Name}' is not nullable but row {i} provides a null value.",
+                            nameof(rows));
+                    }
+
+                    rowsData[i] = null;
+                    continue;
+                }
+
+                rowsData[i] = structColumn[i] is IEnumerable rowEnumerable
+                    ? rowEnumerable.Cast<object?>().Select(AsStructElement).ToList()
+                    : throw new ArgumentException(
                         $"Row {i} of struct field '{structField.Name}' is not a list of struct elements.",
                         nameof(rows));
             }
 
-            result.Add(new StructFieldData(structField.Name, rowsData, structField.Fields.ToList()));
+            result.Add(new StructFieldData(structField.Name, rowsData, subFields.ToList()));
         }
 
         return result;
+    }
+
+    // Parses a PATH_REPLACE path into the targeted child sub-field name, or null for a whole-element [index]
+    // path. Rejects malformed paths up front, aligned with pymilvus.
+    private static string? ParsePathReplaceChild(string structName, string path)
+    {
+        Match match = StructPathReplaceRegex.Match(path);
+        if (!match.Success || match.Length != path.Length)
+        {
+            throw new ArgumentException(
+                $"PATH_REPLACE on struct '{structName}' requires [index] or [index][child], got: '{path}'.",
+                nameof(path));
+        }
+
+        string child = match.Groups[1].Value;
+        return child.Length > 0 ? child : null;
     }
 
     private static IDictionary<string, object?> AsStructElement(object? value)

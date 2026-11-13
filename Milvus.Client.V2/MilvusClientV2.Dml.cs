@@ -258,7 +258,7 @@ public sealed partial class MilvusClientV2
             }
 
             request.ColumnsData = RowDataConverter.ConvertRows(
-                request.RowsData, schema, isUpsert, isPartialUpdate);
+                request.RowsData, schema, isUpsert, isPartialUpdate, request.FieldOps);
             request.RowsData = Array.Empty<IDictionary<string, object?>>();
         }
     }

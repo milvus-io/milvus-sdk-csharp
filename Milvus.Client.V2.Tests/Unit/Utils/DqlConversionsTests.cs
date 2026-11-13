@@ -399,4 +399,319 @@ public class DqlConversionsTests
         Assert.Equal(Grpc.DataType.ArrayOfVector, reVecSub.Type);
         Assert.Equal(2, reVecSub.Vectors.VectorArray.Dim);
     }
+
+    [Fact]
+    public void ProcessReturnedFieldData_decodes_element_nullable_struct_scalar_row()
+    {
+        // A struct scalar sub-field with element-level null: the row cell's valid_data marks which elements
+        // are null and the typed payload is compacted to the non-null values.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "metadata",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var scoreSub = new Grpc.FieldData
+        {
+            FieldName = "score",
+            Type = Grpc.DataType.Array,
+            Scalars = new Grpc.ScalarField
+            {
+                ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.Int32 }
+            }
+        };
+        var rowCell = new Grpc.ScalarField();
+        rowCell.IntData = new Grpc.IntArray();
+        rowCell.IntData.Data.Add(10);
+        rowCell.IntData.Data.Add(30);
+        rowCell.ValidData.Add(true);
+        rowCell.ValidData.Add(false);
+        rowCell.ValidData.Add(true);
+        scoreSub.Scalars.ArrayData.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(scoreSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+        Assert.Equal(1, structData.RowCount);
+
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal(3, elements.Count);
+        Assert.Equal(10, elements[0]["score"]);
+        Assert.Null(elements[1]["score"]);
+        Assert.Equal(30, elements[2]["score"]);
+    }
+
+    [Fact]
+    public void ProcessReturnedFieldData_decodes_element_nullable_struct_vector_row()
+    {
+        // A struct vector sub-field with element-level null: null vectors are compacted out and the cell's
+        // valid_data marks their positions.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "metadata",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var embSub = new Grpc.FieldData
+        {
+            FieldName = "emb",
+            Type = Grpc.DataType.ArrayOfVector,
+            Vectors = new Grpc.VectorField
+            {
+                Dim = 2,
+                VectorArray = new Grpc.VectorArray { Dim = 2, ElementType = Grpc.DataType.FloatVector }
+            }
+        };
+        var rowCell = new Grpc.VectorField { Dim = 2 };
+        rowCell.FloatVector = new Grpc.FloatArray();
+        rowCell.FloatVector.Data.Add(1f);
+        rowCell.FloatVector.Data.Add(2f);
+        rowCell.FloatVector.Data.Add(3f);
+        rowCell.FloatVector.Data.Add(4f);
+        rowCell.ValidData.Add(true);
+        rowCell.ValidData.Add(false);
+        rowCell.ValidData.Add(true);
+        embSub.Vectors.VectorArray.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(embSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal(3, elements.Count);
+        Assert.Equal(new[] { 1f, 2f }, ((ReadOnlyMemory<float>)elements[0]["emb"]!).ToArray());
+        Assert.Null(elements[1]["emb"]);
+        Assert.Equal(new[] { 3f, 4f }, ((ReadOnlyMemory<float>)elements[2]["emb"]!).ToArray());
+    }
+
+    [Fact]
+    public void ProcessReturnedFieldData_decodes_dense_element_nullable_struct_scalar_row()
+    {
+        // Real servers return struct element payloads densely: one slot per element (null values zero-filled)
+        // with a same-length valid_data mask. The dense branch must mask positionally rather than treat the
+        // payload as compacted.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "metadata",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var scoreSub = new Grpc.FieldData
+        {
+            FieldName = "score",
+            Type = Grpc.DataType.Array,
+            Scalars = new Grpc.ScalarField
+            {
+                ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.Int32 }
+            }
+        };
+        var rowCell = new Grpc.ScalarField();
+        rowCell.IntData = new Grpc.IntArray();
+        rowCell.IntData.Data.Add(10);
+        rowCell.IntData.Data.Add(0); // null element, zero-filled placeholder
+        rowCell.IntData.Data.Add(30);
+        rowCell.ValidData.Add(true);
+        rowCell.ValidData.Add(false);
+        rowCell.ValidData.Add(true);
+        scoreSub.Scalars.ArrayData.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(scoreSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal(3, elements.Count);
+        Assert.Equal(10, elements[0]["score"]);
+        Assert.Null(elements[1]["score"]);
+        Assert.Equal(30, elements[2]["score"]);
+    }
+
+    [Fact]
+    public void ProcessReturnedFieldData_decodes_dense_struct_nested_array_sub_field()
+    {
+        // Real servers return nested-Array sub-fields densely: one leaf per logical element, with a null inner
+        // array carried as an empty placeholder leaf and a same-length valid_data mask.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "metadata",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var tagsSub = new Grpc.FieldData
+        {
+            FieldName = "tags",
+            Type = Grpc.DataType.Array,
+            Scalars = new Grpc.ScalarField
+            {
+                ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.Array }
+            }
+        };
+        var rowCell = new Grpc.ScalarField
+        {
+            ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.VarChar }
+        };
+        var leaf0 = new Grpc.ScalarField();
+        leaf0.StringData = new Grpc.StringArray();
+        leaf0.StringData.Data.Add("a");
+        leaf0.ValidData.Add(true);
+        leaf0.ValidData.Add(false);
+        var leaf1 = new Grpc.ScalarField(); // null inner array: empty placeholder leaf
+        var leaf2 = new Grpc.ScalarField();
+        leaf2.StringData = new Grpc.StringArray();
+        leaf2.StringData.Data.Add("b");
+        rowCell.ArrayData.Data.Add(leaf0);
+        rowCell.ArrayData.Data.Add(leaf1);
+        rowCell.ArrayData.Data.Add(leaf2);
+        rowCell.ValidData.Add(true);
+        rowCell.ValidData.Add(false);
+        rowCell.ValidData.Add(true);
+        tagsSub.Scalars.ArrayData.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(tagsSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal(3, elements.Count);
+        Assert.Equal(new object?[] { "a", null }, ((IEnumerable<object?>)elements[0]["tags"]!).Cast<object?>().ToArray());
+        Assert.Null(elements[1]["tags"]);
+        Assert.Equal(new object?[] { "b" }, ((IEnumerable<object?>)elements[2]["tags"]!).Cast<object?>().ToArray());
+    }
+
+    [Fact]
+    public void ProcessReturnedFieldData_strips_struct_sub_field_path_key()
+    {
+        // A sub-field added via addCollectionField("clips[note]") may be echoed back with the "clips[" prefix
+        // in its wire field name; the decoded struct element map keys must be stripped back to "note"
+        // (mirroring pymilvus/Java) so they match the plain names users inserted with.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "clips",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var noteSub = new Grpc.FieldData
+        {
+            FieldName = "clips[note]",
+            Type = Grpc.DataType.Array,
+            Scalars = new Grpc.ScalarField
+            {
+                ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.VarChar }
+            }
+        };
+        var rowCell = new Grpc.ScalarField();
+        rowCell.StringData = new Grpc.StringArray();
+        rowCell.StringData.Data.Add("hello");
+        noteSub.Scalars.ArrayData.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(noteSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal("hello", elements[0]["note"]);
+        Assert.False(elements[0].ContainsKey("clips[note]"));
+    }
+
+    [Fact]
+    public void ProcessReturnedFieldData_struct_nested_array_recovers_element_type_from_later_cell()
+    {
+        // A nested-Array sub-field whose first row cell carries no array payload (an all-null inner-array row,
+        // oneof DataCase None) must still recover its leaf element type from a later cell, so a
+        // query-then-reinsert round trip does not throw NullReferenceException in EncodeRowNestedArray.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "metadata",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var tagsSub = new Grpc.FieldData
+        {
+            FieldName = "tags",
+            Type = Grpc.DataType.Array,
+            Scalars = new Grpc.ScalarField
+            {
+                ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.Array }
+            }
+        };
+        var emptyCell = new Grpc.ScalarField(); // all-null inner arrays: no array payload
+        emptyCell.ValidData.Add(false);
+        var rowCell = new Grpc.ScalarField
+        {
+            ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.VarChar }
+        };
+        var leaf = new Grpc.ScalarField();
+        leaf.StringData = new Grpc.StringArray();
+        leaf.StringData.Data.Add("a");
+        rowCell.ArrayData.Data.Add(leaf);
+        rowCell.ValidData.Add(true);
+        tagsSub.Scalars.ArrayData.Data.Add(emptyCell);
+        tagsSub.Scalars.ArrayData.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(tagsSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+
+        // Re-encode must not throw (ElementDataType recovered from the second cell), and the recovered leaf
+        // type must be encoded into the row cell's inner ArrayData.
+        Grpc.FieldData reencoded = structData.ToGrpcFieldData();
+        Grpc.ScalarField reRowCell = reencoded.StructArrays.Fields[0].Scalars.ArrayData.Data[1];
+        Assert.Equal(Grpc.DataType.VarChar, reRowCell.ArrayData.ElementType);
+    }
+
+    [Fact]
+    public void ProcessReturnedFieldData_decodes_struct_nested_array_sub_field()
+    {
+        // A nested Array sub-field: the row cell is itself an ArrayArray of leaf values, with its own valid_data
+        // marking null inner arrays and each leaf's valid_data marking null values inside the inner array.
+        var structField = new Grpc.FieldData
+        {
+            FieldName = "metadata",
+            Type = Grpc.DataType.ArrayOfStruct,
+            StructArrays = new Grpc.StructArrayField()
+        };
+        var tagsSub = new Grpc.FieldData
+        {
+            FieldName = "tags",
+            Type = Grpc.DataType.Array,
+            Scalars = new Grpc.ScalarField
+            {
+                ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.Array }
+            }
+        };
+        var rowCell = new Grpc.ScalarField
+        {
+            ArrayData = new Grpc.ArrayArray { ElementType = Grpc.DataType.VarChar }
+        };
+        var leaf0 = new Grpc.ScalarField();
+        leaf0.StringData = new Grpc.StringArray();
+        leaf0.StringData.Data.Add("a");
+        leaf0.ValidData.Add(true);
+        leaf0.ValidData.Add(false);
+        var leaf2 = new Grpc.ScalarField();
+        leaf2.StringData = new Grpc.StringArray();
+        leaf2.StringData.Data.Add("b");
+        rowCell.ArrayData.Data.Add(leaf0);
+        rowCell.ArrayData.Data.Add(leaf2);
+        rowCell.ValidData.Add(true);
+        rowCell.ValidData.Add(false);
+        rowCell.ValidData.Add(true);
+        tagsSub.Scalars.ArrayData.Data.Add(rowCell);
+        structField.StructArrays.Fields.Add(tagsSub);
+
+        FieldData decoded = Decode(structField);
+        var structData = Assert.IsType<StructFieldData>(decoded);
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal(3, elements.Count);
+        // Element 0: ["a", null] (leaf validity marks the trailing null); element 1: null inner array;
+        // element 2: ["b"].
+        Assert.Equal(new object?[] { "a", null }, ((IEnumerable<object?>)elements[0]["tags"]!).Cast<object?>().ToArray());
+        Assert.Null(elements[1]["tags"]);
+        Assert.Equal(new object?[] { "b" }, ((IEnumerable<object?>)elements[2]["tags"]!).Cast<object?>().ToArray());
+
+        // The recovered sub-field schema carries ElementNullable (leaf nullability) from the wire, so a
+        // query-then-reinsert round trip re-encodes the null leaf without throwing.
+        Grpc.FieldData reencoded = structData.ToGrpcFieldData();
+        Grpc.FieldData reTags = reencoded.StructArrays.Fields.Single(f => f.FieldName == "tags");
+        Grpc.ScalarField reRowCell = Assert.Single(reTags.Scalars.ArrayData.Data);
+        Assert.Equal(new[] { true, false, true }, reRowCell.ValidData);
+        Assert.Equal(new[] { "a" }, reRowCell.ArrayData.Data[0].StringData.Data);
+        Assert.Equal(new[] { true, false }, reRowCell.ArrayData.Data[0].ValidData);
+    }
 }

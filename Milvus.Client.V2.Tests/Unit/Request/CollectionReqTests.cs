@@ -881,4 +881,145 @@ public class CollectionReqTests
         var request = new DropFunctionFieldReq { CollectionName = "book", FunctionName = " " };
         Assert.Throws<ArgumentException>(() => request.ToGrpcAlterCollectionSchemaRequest());
     }
+
+    [Fact]
+    public void AddCollectionField_struct_sub_field_encodes_wire_sub_field_schema()
+    {
+        // A struct sub-field add keeps the bracketed name and wraps the schema as a non-nullable Array with
+        // element_nullable=true (row nullability and the outer capacity are inherited from the parent struct),
+        // mirroring pymilvus and the Java/C++/Rust SDKs.
+        var request = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[note]", DataType.VarChar) { MaxLength = 64, Nullable = true }
+        };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+        Grpc.FieldSchema field = Assert.Single(grpc.Action.AddRequest.FieldInfos).FieldSchema;
+        Assert.Equal("clips[note]", field.Name);
+        Assert.Equal(Grpc.DataType.Array, field.DataType);
+        Assert.Equal(Grpc.DataType.VarChar, field.ElementType);
+        Assert.False(field.Nullable);
+        Assert.True(field.ElementNullable);
+        Assert.Contains(field.TypeParams, p => p.Key == "max_length" && p.Value == "64");
+    }
+
+    [Fact]
+    public void AddCollectionField_struct_nested_array_sub_field_encodes_type_schema()
+    {
+        var request = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[marks]", DataType.Array)
+            {
+                ElementDataType = DataType.Int32,
+                MaxCapacity = 4,
+                Nullable = true,
+                ElementNullable = true
+            }
+        };
+
+        Grpc.AlterCollectionSchemaRequest grpc = request.ToGrpcAlterCollectionSchemaRequest();
+        Grpc.FieldSchema field = Assert.Single(grpc.Action.AddRequest.FieldInfos).FieldSchema;
+        Assert.Equal("clips[marks]", field.Name);
+        Assert.Equal(Grpc.DataType.Array, field.ElementType);
+        Assert.True(field.ElementNullable);
+        Assert.False(field.Nullable);
+
+        Grpc.TypeSchema root = field.TypeSchema;
+        Assert.NotNull(root);
+        Grpc.TypeSchema inner = Assert.IsType<Grpc.TypeSchema>(root.ArrayElement);
+        Assert.True(inner.Nullable);
+        Assert.Contains(inner.TypeParams, p => p.Key == "max_capacity" && p.Value == "4");
+        Grpc.TypeSchema leaf = Assert.IsType<Grpc.TypeSchema>(inner.ArrayElement);
+        Assert.Equal(Grpc.DataType.Int32, leaf.LeafType);
+        Assert.True(leaf.Nullable);
+    }
+
+    [Fact]
+    public void AddCollectionField_struct_sub_field_validation()
+    {
+        // A struct sub-field add requires element-level nullable.
+        var nonNullable = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[note]", DataType.VarChar) { MaxLength = 64 }
+        };
+        ArgumentException ex = Assert.Throws<ArgumentException>(() => nonNullable.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("nullable=true", ex.Message);
+
+        // A nested Array sub-field add requires max_capacity.
+        var missingCapacity = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[marks]", DataType.Array)
+            {
+                ElementDataType = DataType.Int32,
+                Nullable = true
+            }
+        };
+        Assert.Throws<ArgumentException>(() => missingCapacity.ToGrpcAlterCollectionSchemaRequest());
+
+        // elementNullable requires an Array sub-field.
+        var nonArrayElementNullable = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[note]", DataType.VarChar)
+            {
+                MaxLength = 64,
+                Nullable = true,
+                ElementNullable = true
+            }
+        };
+        Assert.Throws<ArgumentException>(() => nonArrayElementNullable.ToGrpcAlterCollectionSchemaRequest());
+
+        // A malformed bracketed path is rejected locally.
+        var malformed = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[note][extra]", DataType.VarChar) { MaxLength = 64, Nullable = true }
+        };
+        Assert.Throws<ArgumentException>(() => malformed.ToGrpcAlterCollectionSchemaRequest());
+
+        // A SparseFloatVector sub-field is rejected (the server only accepts fixed-dimension vectors in a
+        // struct), mirroring the create path.
+        var sparse = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[emb]", DataType.SparseFloatVector) { Nullable = true }
+        };
+        ArgumentException sparseEx = Assert.Throws<ArgumentException>(() => sparse.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("SparseFloatVector", sparseEx.Message);
+
+        // Text analyzers are rejected on a sub-field add, mirroring the create path.
+        var analyzer = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[note]", DataType.VarChar)
+            {
+                MaxLength = 64,
+                Nullable = true,
+                EnableAnalyzer = true
+            }
+        };
+        ArgumentException analyzerEx = Assert.Throws<ArgumentException>(() => analyzer.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("analyzers", analyzerEx.Message);
+
+        // A struct sub-field add cannot reach the legacy AddCollectionField RPC.
+        Assert.Throws<ArgumentException>(() => nonNullable.ToGrpcAddCollectionFieldRequest());
+
+        // A VarChar-element Array sub-field add requires max_length (the server rejects it with ErrorCode 1101).
+        var missingMaxLength = new AddCollectionFieldReq
+        {
+            CollectionName = "book",
+            Field = new FieldSchema("clips[tags]", DataType.Array)
+            {
+                ElementDataType = DataType.VarChar,
+                MaxCapacity = 8,
+                Nullable = true
+            }
+        };
+        ArgumentException maxLengthEx = Assert.Throws<ArgumentException>(() => missingMaxLength.ToGrpcAlterCollectionSchemaRequest());
+        Assert.Contains("max_length is required", maxLengthEx.Message);
+    }
 }

@@ -295,6 +295,65 @@ public class DmlReqTests
     }
 
     [Fact]
+    public void Upsert_path_replace_serializes_op_and_path()
+    {
+        var request = new UpsertReq
+        {
+            CollectionName = "book",
+            ColumnsData = new[] { FieldData.Create("id", new long[] { 1 }) },
+            FieldOps = new[]
+            {
+                new FieldPartialUpdateOp("metadata", FieldPartialUpdateOpType.PathReplace) { Path = "[1][tags]" }
+            }
+        };
+
+        Grpc.UpsertRequest grpc = request.ToGrpcUpsertRequest();
+
+        // A PATH_REPLACE op implies a partial update and forwards its path on the wire.
+        Assert.True(grpc.PartialUpdate);
+        Grpc.FieldPartialUpdateOp op = Assert.Single(grpc.FieldOps);
+        Assert.Equal("metadata", op.FieldName);
+        Assert.Equal(Grpc.FieldPartialUpdateOp.Types.OpType.PathReplace, op.Op);
+        Assert.Equal("[1][tags]", op.Path);
+    }
+
+    [Fact]
+    public void Upsert_path_on_non_path_replace_op_is_rejected()
+    {
+        // A Path on a non-PATH_REPLACE op would be silently dropped on the wire; reject it up front (mirroring
+        // pymilvus's "path is only supported for PATH_REPLACE").
+        var request = new UpsertReq
+        {
+            CollectionName = "book",
+            ColumnsData = new[] { FieldData.Create("id", new long[] { 1 }) },
+            FieldOps =
+            [
+                new FieldPartialUpdateOp("tags", FieldPartialUpdateOpType.ArrayAppend) { Path = "[1]" }
+            ]
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToGrpcUpsertRequest());
+    }
+
+    [Fact]
+    public void Upsert_path_replace_requires_path()
+    {
+        // The columnar (ColumnsData) path bypasses RowDataConverter's PATH_REPLACE validation, so ToGrpc must
+        // reject a PathReplace op without a Path instead of forwarding an empty path to the server.
+        var request = new UpsertReq
+        {
+            CollectionName = "book",
+            ColumnsData = new[] { FieldData.Create("id", new long[] { 1 }) },
+            FieldOps =
+            [
+                new FieldPartialUpdateOp("metadata", FieldPartialUpdateOpType.PathReplace)
+            ]
+        };
+
+        Assert.Throws<ArgumentException>(() => request.ToGrpcUpsertRequest());
+    }
+
+    [Fact]
     public void Upsert_serializes_scalar_and_vector_fields()
     {
         var request = new UpsertReq

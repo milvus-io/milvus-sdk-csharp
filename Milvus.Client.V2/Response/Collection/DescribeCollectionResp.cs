@@ -1,4 +1,5 @@
 using Milvus.Client.V2.Types;
+using Milvus.Client.V2.Utils;
 
 using System.Globalization;
 using System.Text.Json;
@@ -253,11 +254,16 @@ public sealed class DescribeCollectionResp
                 structField.TypeParams[parameter.Key] = parameter.Value;
             }
 
-            // Read the struct-level capacity once from the wire (every sub-field carries the same max_capacity
-            // type param, but relying on that invariant would let the last sub-field win), parsing a single time.
+            // Read the struct-level capacity once from the wire. Every sub-field carries the same
+            // max_capacity type param (a nested Array sub-field instead carries it on the root of its
+            // recursive type_schema), but relying on that invariant would let the last sub-field win; parse a
+            // single time from either location.
             string? capacityParam = grpcStruct.Fields
-                .SelectMany(f => f.TypeParams)
-                .Where(p => p.Key == "max_capacity")
+                .SelectMany(f => f.TypeParams.Where(p => p.Key == "max_capacity"))
+                .Concat(grpcStruct.Fields
+                    .Where(f => f.TypeSchema is not null)
+                    .Select(f => f.TypeSchema!.TypeParams.Where(p => p.Key == "max_capacity"))
+                    .SelectMany(p => p))
                 .Select(p => p.Value)
                 .FirstOrDefault();
             if (capacityParam is not null
@@ -277,13 +283,36 @@ public sealed class DescribeCollectionResp
                     continue;
                 }
 
+                // A nested Array sub-field carries element_type = Array plus a recursive type_schema whose
+                // root -> inner -> leaf describe the inner-array capacity and leaf type/nullability; the SDK
+                // field becomes an Array whose element type is the leaf type.
+                Grpc.TypeSchema? inner = grpcSubField.TypeSchema?.ArrayElement;
+                Grpc.TypeSchema? leaf = inner?.ArrayElement;
+                bool isNestedArray = grpcSubField.ElementType == Grpc.DataType.Array && leaf is not null;
+
                 var subField = new FieldSchema(
-                    grpcSubField.Name,
-                    (DataType)grpcSubField.ElementType,
+                    // A sub-field added via the bracketed struct[sub] path may be echoed back with its wire
+                    // name still carrying the "struct[" prefix; strip it so the user-facing name matches what
+                    // was declared at create time (mirroring pymilvus/Java). Create-time sub-fields are already
+                    // plain names and pass through unchanged.
+                    StructFieldNames.StripStructSubFieldName(structField.Name, grpcSubField.Name),
+                    isNestedArray ? DataType.Array : (DataType)grpcSubField.ElementType,
                     description: string.IsNullOrEmpty(grpcSubField.Description) ? "" : grpcSubField.Description)
                 {
-                    IsDynamic = grpcSubField.IsDynamic
+                    IsDynamic = grpcSubField.IsDynamic,
+                    // The wire element_nullable carries the sub-field's element-level nullability (whether a
+                    // struct element's value for this sub-field may be null); the wire nullable carries the
+                    // struct's row-level nullability and is not stored per sub-field.
+                    Nullable = grpcSubField.ElementNullable,
+                    ElementDataType = isNestedArray ? (DataType)leaf!.LeafType : null
                 };
+
+                if (isNestedArray)
+                {
+                    subField.ElementNullable = leaf!.Nullable;
+                    ReadCapacityParam(inner!.TypeParams, value => subField.MaxCapacity = value);
+                    ReadLengthParam(leaf.TypeParams, value => subField.MaxLength = value);
+                }
 
                 foreach (Grpc.KeyValuePair parameter in grpcSubField.TypeParams)
                 {
@@ -362,4 +391,32 @@ public sealed class DescribeCollectionResp
             JsonValueKind.Array => element.EnumerateArray().Select(ConvertJsonValue).ToList(),
             _ => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertJsonValue(p.Value))
         };
+
+    // Parses the max_capacity type param of a nested Array type_schema node, degrading silently like the
+    // top-level type_params parses (a malformed value must not abort the whole describe).
+    private static void ReadCapacityParam(
+        IEnumerable<Grpc.KeyValuePair> parameters, Action<int> assign)
+    {
+        Grpc.KeyValuePair? capacity = parameters.FirstOrDefault(p => p.Key == "max_capacity");
+        if (capacity is not null
+            && long.TryParse(capacity.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsed)
+            && parsed <= int.MaxValue)
+        {
+            assign((int)parsed);
+        }
+    }
+
+    // Parses the max_length type param of a nested Array type_schema leaf, degrading silently like the
+    // top-level type_params parses.
+    private static void ReadLengthParam(
+        IEnumerable<Grpc.KeyValuePair> parameters, Action<int> assign)
+    {
+        Grpc.KeyValuePair? length = parameters.FirstOrDefault(p => p.Key == "max_length");
+        if (length is not null
+            && long.TryParse(length.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsed)
+            && parsed <= int.MaxValue)
+        {
+            assign((int)parsed);
+        }
+    }
 }

@@ -206,4 +206,154 @@ public class CollectionSystemTests : SystemTestBase
 
         await ResetCollectionAsync(collectionName);
     }
+
+    [Fact]
+    public async Task Struct_field_element_nullable_and_sub_field_evolution()
+    {
+        // Requires a server with the element-level null (EN) stack: sub-fields may carry null elements,
+        // nested Array sub-fields support null inner values, and sub-fields can be added/dropped via the
+        // bracketed struct[sub] path.
+        const string collectionName = nameof(Struct_field_element_nullable_and_sub_field_evolution);
+
+        await ResetCollectionAsync(collectionName);
+
+        var structField = new StructFieldSchema("st")
+        {
+            MaxCapacity = 8,
+            Nullable = true,
+            Fields =
+            {
+                new FieldSchema("score", DataType.Int32) { Nullable = true },
+                new FieldSchema("tags", DataType.Array)
+                {
+                    ElementDataType = DataType.VarChar,
+                    MaxCapacity = 8,
+                    MaxLength = 16,
+                    Nullable = true,
+                    ElementNullable = true
+                },
+                // A vector sub-field makes the schema carry a vector field (the server rejects a collection
+                // schema without one).
+                new FieldSchema("emb", DataType.FloatVector) { Dimension = 2 }
+            }
+        };
+
+        await Client.CreateCollectionAsync(new CreateCollectionReq
+        {
+            CollectionName = collectionName,
+            Schema = new CollectionSchema
+            {
+                Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+                StructFields = { structField }
+            }
+        }, TestContext.Current.CancellationToken);
+
+        // LoadCollection requires an index on the collection's vector field (here the struct vector sub-field).
+        await Client.CreateIndexAsync(new CreateIndexReq
+        {
+            CollectionName = collectionName,
+            Indexes = [ new IndexParam("st[emb]", null, IndexType.Hnsw, MetricType.MaxSimCosine) ]
+        }, TestContext.Current.CancellationToken);
+
+        await Client.InsertAsync(new InsertReq
+        {
+            CollectionName = collectionName,
+            RowsData =
+            [
+                new Dictionary<string, object?>
+                {
+                    ["id"] = 1L,
+                    ["st"] = new object[]
+                    {
+                        new Dictionary<string, object?>
+                        {
+                            ["score"] = 1,
+                            ["tags"] = new object?[] { "a", null },
+                            ["emb"] = new[] { 1f, 2f }
+                        },
+                        new Dictionary<string, object?>
+                        {
+                            ["score"] = null,
+                            ["tags"] = null,
+                            ["emb"] = new[] { 3f, 4f }
+                        },
+                        new Dictionary<string, object?>
+                        {
+                            ["score"] = 3,
+                            ["tags"] = new object?[] { "b" },
+                            ["emb"] = new[] { 5f, 6f }
+                        }
+                    }
+                }
+            ]
+        }, TestContext.Current.CancellationToken);
+
+        await Client.LoadCollectionAsync(new LoadCollectionReq { CollectionName = collectionName },
+            TestContext.Current.CancellationToken);
+        await WaitForLoadAsync(collectionName);
+
+        QueryResp query = await Client.QueryAsync(new QueryReq
+        {
+            CollectionName = collectionName,
+            Expression = "id == 1",
+            Parameters = new QueryParameters { OutputFields = { "st" }, ConsistencyLevel = ConsistencyLevel.Strong }
+        }, TestContext.Current.CancellationToken);
+
+        var structData = Assert.IsType<StructFieldData>(query.FieldsData!.Single(f => f.FieldName == "st"));
+        IReadOnlyList<IDictionary<string, object?>> elements = structData.Data[0]!;
+        Assert.Equal(3, elements.Count);
+        Assert.Equal(1, elements[0]["score"]);
+        Assert.Equal(new object?[] { "a", null }, ((IEnumerable<object?>)elements[0]["tags"]!).Cast<object?>().ToArray());
+        Assert.Null(elements[1]["score"]);
+        Assert.Null(elements[1]["tags"]);
+        Assert.Equal(3, elements[2]["score"]);
+        Assert.Equal(new object?[] { "b" }, ((IEnumerable<object?>)elements[2]["tags"]!).Cast<object?>().ToArray());
+
+        // Add a struct sub-field by its bracketed path, insert a row carrying it, then drop it again.
+        await Client.AddCollectionFieldAsync(new AddCollectionFieldReq
+        {
+            CollectionName = collectionName,
+            Field = new FieldSchema("st[note]", DataType.VarChar) { MaxLength = 64, Nullable = true }
+        }, TestContext.Current.CancellationToken);
+
+        await Client.InsertAsync(new InsertReq
+        {
+            CollectionName = collectionName,
+            RowsData =
+            [
+                new Dictionary<string, object?>
+                {
+                    ["id"] = 2L,
+                    ["st"] = new object[]
+                    {
+                        new Dictionary<string, object?>
+                        {
+                            ["score"] = 5,
+                            ["note"] = "hello",
+                            ["emb"] = new[] { 7f, 8f }
+                        }
+                    }
+                }
+            ]
+        }, TestContext.Current.CancellationToken);
+
+        QueryResp evolved = await Client.QueryAsync(new QueryReq
+        {
+            CollectionName = collectionName,
+            Expression = "id == 2",
+            Parameters = new QueryParameters { OutputFields = { "st[note]" }, ConsistencyLevel = ConsistencyLevel.Strong }
+        }, TestContext.Current.CancellationToken);
+        // The server projects a struct sub-field back as the parent struct field, carrying only the projected
+        // sub-field in each element.
+        var evolvedStruct = Assert.IsType<StructFieldData>(evolved.FieldsData!.Single(f => f.FieldName == "st"));
+        Assert.Equal("hello", evolvedStruct.Data[0]![0]["note"]);
+
+        await Client.DropCollectionFieldAsync(new DropCollectionFieldReq
+        {
+            CollectionName = collectionName,
+            FieldName = "st[note]"
+        }, TestContext.Current.CancellationToken);
+
+        await ResetCollectionAsync(collectionName);
+    }
 }
