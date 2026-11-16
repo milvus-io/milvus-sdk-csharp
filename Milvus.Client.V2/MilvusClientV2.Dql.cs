@@ -1818,7 +1818,48 @@ public sealed partial class MilvusClientV2
 
         // Serialize the extra parameters as a proper JSON object so string values are quoted and
         // special characters are escaped, matching how the Java SDK sends the same bag.
-        return System.Text.Json.JsonSerializer.Serialize(json);
+        // The values are strings, numbers and booleans: they are written with Utf8JsonWriter, not with
+        // JsonSerializer, whose reflection-based serialization is disabled in trimmed and NativeAOT apps.
+        using var stream = new MemoryStream();
+        using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            foreach (KeyValuePair<string, object?> parameter in json)
+            {
+                writer.WritePropertyName(parameter.Key);
+                switch (parameter.Value)
+                {
+                    case null:
+                        writer.WriteNullValue();
+                        break;
+                    case string text:
+                        writer.WriteStringValue(text);
+                        break;
+                    case bool flag:
+                        writer.WriteBooleanValue(flag);
+                        break;
+                    case int number:
+                        writer.WriteNumberValue(number);
+                        break;
+                    case long number:
+                        writer.WriteNumberValue(number);
+                        break;
+                    case float number:
+                        writer.WriteNumberValue(number);
+                        break;
+                    case double number:
+                        writer.WriteNumberValue(number);
+                        break;
+                    default:
+                        throw new NotSupportedException(
+                            $"The search parameter '{parameter.Key}' has the unsupported type {parameter.Value.GetType()}.");
+                }
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
 
     private static double ParseRangeNumber(string value, string parameterName)
