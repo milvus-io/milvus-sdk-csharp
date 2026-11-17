@@ -153,7 +153,7 @@ public sealed class CreateCollectionReq
                 grpcField.TypeParams.Add(new Grpc.KeyValuePair
                 {
                     Key = Constants.AnalyzerParams,
-                    Value = JsonSerializer.Serialize(field.AnalyzerParams)
+                    Value = JsonUtil.Serialize(field.AnalyzerParams)
                 });
             }
 
@@ -162,7 +162,7 @@ public sealed class CreateCollectionReq
                 grpcField.TypeParams.Add(new Grpc.KeyValuePair
                 {
                     Key = Constants.MultiAnalyzerParams,
-                    Value = JsonSerializer.Serialize(field.MultiAnalyzerParams)
+                    Value = JsonUtil.Serialize(field.MultiAnalyzerParams)
                 });
             }
 
@@ -367,14 +367,15 @@ public sealed class CreateCollectionReq
                 break;
             case DataType.Json:
                 // JSON defaults travel in the string_data slot (Java serializes JsonObject via toString);
-                // accept any JSON-serializable value (a dictionary, list, string or primitive) and encode it.
+                // accept any value JsonUtil can serialize (a primitive, string-keyed dictionary, collection,
+                // JsonElement or pre-encoded JSON string) and encode it. Arbitrary objects are rejected.
                 // A string default is treated as JSON, so validate it parses rather than writing invalid JSON.
                 result.StringData = value switch
                 {
                     string jsonString when IsValidJson(jsonString) => jsonString,
                     string => throw new ArgumentException(
                         $"JSON default value '{value}' is not valid JSON.", nameof(value)),
-                    _ => System.Text.Json.JsonSerializer.Serialize(value)
+                    _ => JsonUtil.Serialize(value)
                 };
                 break;
             case DataType.Timestamptz:

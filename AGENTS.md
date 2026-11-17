@@ -36,6 +36,26 @@ dotnet build Milvus.Client.sln
 - `global.json` pins the SDK to `8.0.415` (`rollForward: latestFeature`), which only rolls forward within the
   8.0.x feature band — a machine with only .NET 9/10 SDKs cannot build the repo.
 
+## NativeAOT / trimming
+
+`Milvus.Client.V2` runs inside apps published with `PublishTrimmed` / `PublishAot`, which disable System.Text.Json's
+reflection-based serialization by default (`JsonSerializerIsReflectionEnabledByDefault=false`). Any
+`JsonSerializer.Serialize(object)` / `Deserialize<T>()` that resolves types through the reflection resolver throws
+`InvalidOperationException` at runtime there, so:
+
+- All SDK-side JSON writes go through `Utils/JsonUtil.cs` (a reflection-free `Utf8JsonWriter` dispatcher; use its
+  `WriteValue` overload when writing into an existing writer). Do **not** introduce a new reflection-resolver
+  `JsonSerializer.Serialize*`/`Deserialize<T>` call in `Milvus.Client.V2` — reuse `JsonUtil`. `Utils/EnumUtil.cs` is
+  the AOT-safe replacement for `Enum.GetValues(Type)`.
+- Other reflection is not banned, but must be trimming-safe: prefer AOT-safe forms (generic overloads, source
+  generation) and annotate best-effort fallbacks with a justification instead of suppressing warnings casually.
+- Keep the SDK clean under the trim/AOT analyzers: publishing any project that references `Milvus.Client.V2` with
+  Trimmed or AOT should emit no `IL20xx`/`IL30xx` warnings for `Milvus.Client.V2` code.
+- Local verification without an AOT toolchain: add `<JsonSerializerIsReflectionEnabledByDefault>false</...>` to an
+  app's csproj to reproduce the AOT condition under plain `dotnet run`. To exercise the real trimmed runtime, publish
+  `examples/v2` with `-p:PublishTrimmed=true` (add `-p:DeveloperBuild=True` so the SDK builds only `net8.0`, avoiding
+  `NETSDK1124`).
+
 ## Testing
 
 Two test projects, one per SDK. Both use xunit v3.

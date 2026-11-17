@@ -148,7 +148,7 @@ public sealed class IndexDesc
 
     private static bool TryParseIndexType(string wire, out IndexType indexType)
     {
-        foreach (IndexType value in Enum.GetValues(typeof(IndexType)))
+        foreach (IndexType value in EnumUtil.GetValues<IndexType>())
         {
             if (value != Types.IndexType.Invalid && string.Equals(value.ToWireString(), wire, StringComparison.OrdinalIgnoreCase))
             {
@@ -163,7 +163,7 @@ public sealed class IndexDesc
 
     private static bool TryParseMetricType(string wire, out MetricType metricType)
     {
-        foreach (MetricType value in Enum.GetValues(typeof(MetricType)))
+        foreach (MetricType value in EnumUtil.GetValues<MetricType>())
         {
             if (value != Types.MetricType.Invalid && string.Equals(value.ToWireString(), wire, StringComparison.OrdinalIgnoreCase))
             {

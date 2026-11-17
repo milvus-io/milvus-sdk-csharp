@@ -109,7 +109,7 @@ public sealed class BulkImport : IDisposable
         string path, string databaseName, object payload, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl + path);
-        request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        request.Content = new StringContent(JsonUtil.Serialize(payload), Encoding.UTF8, "application/json");
         if (!string.IsNullOrEmpty(_apiKey))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
