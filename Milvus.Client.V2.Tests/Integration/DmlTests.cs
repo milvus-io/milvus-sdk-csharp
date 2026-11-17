@@ -304,6 +304,80 @@ public class DmlTests
     }
 
     [Fact]
+    public async Task Insert_forwards_element_nullable_struct_rows()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        server.Service.DescribeSchema = new CollectionSchema
+        {
+            Name = "dml_coll",
+            Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true, autoId: true) },
+            StructFields =
+            {
+                new StructFieldSchema("st")
+                {
+                    MaxCapacity = 8,
+                    Nullable = true,
+                    Fields =
+                    {
+                        new FieldSchema("score", DataType.Int32) { Nullable = true },
+                        new FieldSchema("tags", DataType.Array)
+                        {
+                            ElementDataType = DataType.VarChar,
+                            MaxCapacity = 8,
+                            Nullable = true,
+                            ElementNullable = true
+                        }
+                    }
+                }
+            }
+        };
+
+        CollectionTsCache.Instance.Clear();
+        SchemaCache.Instance.Clear();
+
+        await client.InsertAsync(
+            new InsertReq
+            {
+                CollectionName = "dml_coll",
+                RowsData =
+                [
+                    new Dictionary<string, object?>
+                    {
+                        ["st"] = new object[]
+                        {
+                            new Dictionary<string, object?> { ["score"] = 1, ["tags"] = new object?[] { "a", null } },
+                            new Dictionary<string, object?> { ["score"] = null, ["tags"] = null },
+                            new Dictionary<string, object?> { ["score"] = 3, ["tags"] = new object?[] { "b" } }
+                        }
+                    }
+                ]
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("dml_coll", server.Service.LastInsertedCollection);
+
+        Milvus.Client.Grpc.FieldData structField = server.Service.LastInsertedFieldData!.Single(f => f.FieldName == "st");
+        Assert.Equal(2, structField.StructArrays.Fields.Count);
+
+        // Element-nullable scalar sub-field: one row cell with compacted values and per-element validity.
+        Milvus.Client.Grpc.FieldData score = structField.StructArrays.Fields[0];
+        Grpc.ScalarField scoreCell = Assert.Single(score.Scalars.ArrayData.Data);
+        Assert.Equal(new[] { 1, 3 }, scoreCell.IntData.Data);
+        Assert.Equal(new[] { true, false, true }, scoreCell.ValidData);
+
+        // Nested Array sub-field: one row cell that is itself an ArrayArray with leaf validity.
+        Milvus.Client.Grpc.FieldData tags = structField.StructArrays.Fields[1];
+        Assert.Equal(Grpc.DataType.Array, tags.Scalars.ArrayData.ElementType);
+        Grpc.ScalarField tagsCell = Assert.Single(tags.Scalars.ArrayData.Data);
+        Assert.Equal(new[] { true, false, true }, tagsCell.ValidData);
+        Assert.Equal(2, tagsCell.ArrayData.Data.Count);
+        Assert.Equal(new[] { "a" }, tagsCell.ArrayData.Data[0].StringData.Data);
+        Assert.Equal(new[] { true, false }, tagsCell.ArrayData.Data[0].ValidData);
+    }
+
+    [Fact]
     public async Task Delete_forwards_expression()
     {
         using var server = new MockMilvusServer();
@@ -432,6 +506,74 @@ public class DmlTests
         Assert.Equal(2, response.UpsertCount);
         Assert.Equal(200UL, response.Timestamp);
         Assert.Equal(200L, CollectionTsCache.Instance.Get(server.Uri, "default", "dml_coll"));
+    }
+
+    [Fact]
+    public async Task Upsert_path_replace_forwards_child_and_path()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        server.Service.DescribeSchema = new CollectionSchema
+        {
+            Name = "dml_coll",
+            Fields = { new FieldSchema("id", DataType.Int64, isPrimaryKey: true) },
+            StructFields =
+            {
+                new StructFieldSchema("metadata")
+                {
+                    MaxCapacity = 8,
+                    Fields =
+                    {
+                        new FieldSchema("score", DataType.Int32),
+                        new FieldSchema("tags", DataType.Array)
+                        {
+                            ElementDataType = DataType.Int64,
+                            MaxCapacity = 8,
+                            Nullable = true,
+                            ElementNullable = true
+                        }
+                    }
+                }
+            }
+        };
+
+        CollectionTsCache.Instance.Clear();
+        SchemaCache.Instance.Clear();
+
+        await client.UpsertAsync(
+            new UpsertReq
+            {
+                CollectionName = "dml_coll",
+                RowsData =
+                [
+                    new Dictionary<string, object?>
+                    {
+                        ["id"] = 1L,
+                        ["metadata"] = new object[]
+                        {
+                            new Dictionary<string, object?> { ["tags"] = new object?[] { 1L, 2L } }
+                        }
+                    }
+                ],
+                FieldOps =
+                [
+                    new FieldPartialUpdateOp("metadata", FieldPartialUpdateOpType.PathReplace) { Path = "[1][tags]" }
+                ]
+            },
+            TestContext.Current.CancellationToken);
+
+        var grpc = Assert.IsType<Milvus.Client.Grpc.UpsertRequest>(server.Service.Requests["Upsert"]);
+        Assert.True(grpc.PartialUpdate);
+        Grpc.FieldPartialUpdateOp op = Assert.Single(grpc.FieldOps);
+        Assert.Equal("metadata", op.FieldName);
+        Assert.Equal(Grpc.FieldPartialUpdateOp.Types.OpType.PathReplace, op.Op);
+        Assert.Equal("[1][tags]", op.Path);
+
+        // Only the targeted child sub-field is emitted in the struct array.
+        Grpc.FieldData metadata = grpc.FieldsData.Single(f => f.FieldName == "metadata");
+        Assert.Single(metadata.StructArrays.Fields);
+        Assert.Equal("tags", metadata.StructArrays.Fields[0].FieldName);
     }
 
     [Fact]

@@ -260,6 +260,58 @@ public class StructFieldDataTests
     }
 
     [Fact]
+    public void ToGrpc_encodes_float16_sub_field_with_null_element()
+    {
+        // A null element on an element-nullable FP16 sub-field is compacted into per-element valid_data and
+        // contributes no bytes to the packed half-precision payload.
+        var field = new StructFieldData(
+            "st",
+            new IReadOnlyList<IDictionary<string, object?>>?[]
+            {
+                new List<IDictionary<string, object?>>
+                {
+                    new Dictionary<string, object?> { ["vector"] = new ushort[] { 0x3C00, 0 } },
+                    new Dictionary<string, object?> { ["vector"] = null }
+                }
+            },
+            new List<FieldSchema> { new("vector", DataType.Float16Vector) { Dimension = 2, Nullable = true } });
+
+        Milvus.Client.Grpc.FieldData grpc = field.ToGrpcFieldData();
+
+        Milvus.Client.Grpc.FieldData vectorSub = grpc.StructArrays.Fields[0];
+        Assert.Equal(Milvus.Client.Grpc.DataType.Float16Vector, vectorSub.Vectors.VectorArray.ElementType);
+        Milvus.Client.Grpc.VectorField row = Assert.Single(vectorSub.Vectors.VectorArray.Data);
+        Assert.Equal(new[] { true, false }, row.ValidData.ToArray());
+        Assert.Equal(4, row.Float16Vector.Length); // only the first (non-null) element's 2 ushorts
+        Assert.Equal(new byte[] { 0x00, 0x3C, 0x00, 0x00 }, row.Float16Vector.ToByteArray());
+    }
+
+    [Fact]
+    public void ToGrpc_encodes_bfloat16_sub_field_with_null_element()
+    {
+        var field = new StructFieldData(
+            "st",
+            new IReadOnlyList<IDictionary<string, object?>>?[]
+            {
+                new List<IDictionary<string, object?>>
+                {
+                    new Dictionary<string, object?> { ["vector"] = new ushort[] { Float16Utils.FloatToBf16(1f), 0 } },
+                    new Dictionary<string, object?> { ["vector"] = null }
+                }
+            },
+            new List<FieldSchema> { new("vector", DataType.BFloat16Vector) { Dimension = 2, Nullable = true } });
+
+        Milvus.Client.Grpc.FieldData grpc = field.ToGrpcFieldData();
+
+        Milvus.Client.Grpc.FieldData vectorSub = grpc.StructArrays.Fields[0];
+        Assert.Equal(Milvus.Client.Grpc.DataType.Bfloat16Vector, vectorSub.Vectors.VectorArray.ElementType);
+        Milvus.Client.Grpc.VectorField row = Assert.Single(vectorSub.Vectors.VectorArray.Data);
+        Assert.Equal(new[] { true, false }, row.ValidData.ToArray());
+        Assert.Equal(4, row.Bfloat16Vector.Length); // only the first (non-null) element's 2 ushorts
+        Assert.Equal(new byte[] { 0x80, 0x3F, 0x00, 0x00 }, row.Bfloat16Vector.ToByteArray());
+    }
+
+    [Fact]
     public void ToGrpc_encodes_int8_vector_sub_field()
     {
         var field = new StructFieldData(

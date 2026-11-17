@@ -280,9 +280,11 @@ public sealed class CreateCollectionReq
 
     // Encodes a struct field as a proto StructArrayFieldSchema. Each sub-field becomes a proto FieldSchema
     // whose data type is Array (scalar sub-fields) or ArrayOfVector (vector sub-fields), with the real type in
-    // element_type, the struct's max capacity carried as a max_capacity type param, and the struct's nullable
-    // flag applied to every sub-field (a struct is nullable as a whole). Mirrors the Java/C++/Rust SDK struct
-    // encoding. Shared by the create-collection path and AddCollectionStructField.
+    // element_type, the struct's max capacity carried as a max_capacity type param, and the struct's row-level
+    // nullable flag propagated to every sub-field's wire nullable. A sub-field's own element-level nullability
+    // travels on the wire element_nullable; a nested Array sub-field additionally carries a recursive
+    // type_schema. Mirrors the Java/C++/Rust SDK struct encoding. Shared by the create-collection path and
+    // AddCollectionStructField.
     internal static Grpc.StructArrayFieldSchema ConvertToGrpcStructFieldSchema(StructFieldSchema structField, bool nullable)
     {
         if (structField.MaxCapacity <= 0)
@@ -323,14 +325,6 @@ public sealed class CreateCollectionReq
                     "clustering key, auto-id, or have a default value.", nameof(structField));
             }
 
-            // A struct is nullable as a whole: a sub-field cannot be nullable independently of the struct.
-            if (subField.Nullable && !nullable)
-            {
-                throw new ArgumentException(
-                    $"Struct sub-field '{structField.Name}.{subField.Name}' cannot be nullable; set the " +
-                    "struct's Nullable instead.", nameof(structField));
-            }
-
             if (!names.Add(subField.Name))
             {
                 throw new ArgumentException(
@@ -338,38 +332,155 @@ public sealed class CreateCollectionReq
                     nameof(structField));
             }
 
-            // Struct sub-fields are encoded as Array/ArrayOfVector FieldSchemas; the server does not accept
-            // text-analyzer configuration on them. Reject rather than silently dropping the settings so a
-            // caller's EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams cannot be lost.
-            if (subField.EnableAnalyzer || subField.EnableMatch
-                || subField.AnalyzerParams is { Count: > 0 } || subField.MultiAnalyzerParams is { Count: > 0 })
+            ValidateStructSubFieldSchema(subField, structField);
+
+            grpcStruct.Fields.Add(ConvertToGrpcStructSubFieldSchema(subField, nullable, structField.MaxCapacity));
+        }
+
+        return grpcStruct;
+    }
+
+    // Validates a struct sub-field schema up front (mirroring the Java/Rust SDKs' addField validation) so a
+    // caller's malformed sub-field fails with a clear message instead of an opaque server error.
+    private static void ValidateStructSubFieldSchema(FieldSchema subField, StructFieldSchema structField)
+    {
+        // The server's ArrayOfVector validation only accepts fixed-dimension element types
+        // (IsFixDimVectorType); a sparse vector has no dimension and is always rejected server-side, so
+        // fail fast here instead of letting the caller hit an opaque server error.
+        if (subField.DataType == DataType.SparseFloatVector)
+        {
+            throw new ArgumentException(
+                $"Struct sub-field '{structField.Name}.{subField.Name}' does not support " +
+                $"{nameof(DataType.SparseFloatVector)}: the server only accepts fixed-dimension vector " +
+                "element types in a struct.", nameof(structField));
+        }
+
+        // Struct sub-fields are encoded as Array/ArrayOfVector FieldSchemas; the server does not accept
+        // text-analyzer configuration on them. Reject rather than silently dropping the settings so a
+        // caller's EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams cannot be lost.
+        if (subField.EnableAnalyzer || subField.EnableMatch
+            || subField.AnalyzerParams is { Count: > 0 } || subField.MultiAnalyzerParams is { Count: > 0 })
+        {
+            throw new ArgumentException(
+                $"Struct sub-field '{structField.Name}.{subField.Name}' does not support text analyzers " +
+                "(EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams).", nameof(structField));
+        }
+
+        if (subField.DataType == DataType.Array)
+        {
+            if (subField.ElementDataType is null)
             {
                 throw new ArgumentException(
-                    $"Struct sub-field '{structField.Name}.{subField.Name}' does not support text analyzers " +
-                    "(EnableAnalyzer/EnableMatch/AnalyzerParams/MultiAnalyzerParams).", nameof(structField));
+                    $"Element data type is required for Array sub-field '{structField.Name}.{subField.Name}'.",
+                    nameof(structField));
             }
 
-            Grpc.FieldSchema grpcSubField = new()
+            if (subField.ElementDataType == DataType.Array)
             {
-                Name = subField.Name,
-                Description = subField.Description,
-                ElementType = (Grpc.DataType)(int)subField.DataType,
-                Nullable = nullable
+                throw new ArgumentException(
+                    $"Struct sub-field '{structField.Name}.{subField.Name}' does not support nested Array of " +
+                    "Array.", nameof(structField));
+            }
+
+            if (subField.MaxCapacity is null or <= 0)
+            {
+                throw new ArgumentException(
+                    $"MaxCapacity is required for Array sub-field '{structField.Name}.{subField.Name}'.",
+                    nameof(structField));
+            }
+
+            // The server requires a max_length type param on a VarChar element of an Array sub-field
+            // (ErrorCode 1101); fail fast instead of letting the caller hit an opaque create-time error.
+            if (subField.ElementDataType == DataType.VarChar && subField.MaxLength is null or <= 0)
+            {
+                throw new ArgumentException(
+                    $"MaxLength is required for VarChar Array sub-field '{structField.Name}.{subField.Name}'.",
+                    nameof(structField));
+            }
+        }
+        else if (subField.ElementNullable)
+        {
+            throw new ArgumentException(
+                $"ElementNullable requires an Array sub-field, field '{structField.Name}.{subField.Name}'.",
+                nameof(structField));
+        }
+    }
+
+    // Encodes one struct sub-field as a proto FieldSchema. On the wire every sub-field is an Array (scalar)
+    // or ArrayOfVector (vector) whose element_type is the real type; rowNullable is the parent struct's
+    // row-level nullability (propagated to the wire nullable of every sub-field) and outerCapacity the
+    // struct's element cap. The sub-field's own Nullable (element-level null) maps to the wire
+    // element_nullable. A nested Array sub-field additionally builds a recursive type_schema
+    // (root -> inner -> leaf) carrying the inner-array capacity and leaf type/nullability. Mirrors the
+    // C++ ConvertStructSubFieldSchema / Java buildGrpcStructSubFieldSchema.
+    internal static Grpc.FieldSchema ConvertToGrpcStructSubFieldSchema(
+        FieldSchema subField, bool rowNullable, int? outerCapacity)
+    {
+        var grpcSubField = new Grpc.FieldSchema
+        {
+            Name = subField.Name,
+            Description = subField.Description,
+            ElementType = (Grpc.DataType)(int)subField.DataType,
+            Nullable = rowNullable,
+            ElementNullable = subField.Nullable,
+            IsPrimaryKey = false,
+            IsPartitionKey = false,
+            IsClusteringKey = false,
+            AutoID = false,
+            ExternalField = subField.ExternalField ?? ""
+        };
+
+        if (subField.DataType == DataType.Array)
+        {
+            // Nested Array sub-field: the wire element type is Array and the recursive type_schema describes
+            // the inner array and its leaf values.
+            var leaf = new Grpc.TypeSchema
+            {
+                LeafType = (Grpc.DataType)(int)subField.ElementDataType!,
+                Nullable = subField.ElementNullable
             };
-            // The server's ArrayOfVector validation only accepts fixed-dimension element types
-            // (IsFixDimVectorType); a sparse vector has no dimension and is always rejected server-side, so
-            // fail fast here instead of letting the caller hit an opaque server error.
-            if (subField.DataType == DataType.SparseFloatVector)
+            if (subField.ElementDataType == DataType.VarChar && subField.MaxLength is { } leafMaxLength)
             {
-                throw new ArgumentException(
-                    $"Struct sub-field '{structField.Name}.{subField.Name}' does not support " +
-                    $"{nameof(DataType.SparseFloatVector)}: the server only accepts fixed-dimension vector " +
-                    "element types in a struct.", nameof(structField));
+                leaf.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.VarcharMaxLength,
+                    Value = leafMaxLength.ToString(CultureInfo.InvariantCulture)
+                });
             }
 
+            var inner = new Grpc.TypeSchema
+            {
+                Nullable = subField.Nullable
+            };
+            inner.ArrayElement = leaf;
+            inner.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.MaxCapacity,
+                Value = subField.MaxCapacity!.Value.ToString(CultureInfo.InvariantCulture)
+            });
+
+            var root = new Grpc.TypeSchema
+            {
+                Nullable = rowNullable
+            };
+            root.ArrayElement = inner;
+            if (outerCapacity is { } capacity)
+            {
+                root.TypeParams.Add(new Grpc.KeyValuePair
+                {
+                    Key = Constants.MaxCapacity,
+                    Value = capacity.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+
+            grpcSubField.DataType = Grpc.DataType.Array;
+            grpcSubField.ElementType = Grpc.DataType.Array;
+            grpcSubField.TypeSchema = root;
+        }
+        else
+        {
             bool isVector = IsVectorType(subField.DataType);
             grpcSubField.DataType = isVector ? Grpc.DataType.ArrayOfVector : Grpc.DataType.Array;
-            grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.MaxCapacity, Value = structField.MaxCapacity.ToString(CultureInfo.InvariantCulture) });
 
             if (subField.MaxLength is { } maxLength)
             {
@@ -380,24 +491,32 @@ public sealed class CreateCollectionReq
             {
                 grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = Constants.VectorDim, Value = dimension.ToString(CultureInfo.InvariantCulture) });
             }
-
-            // Mirror FieldSchema::TypeParams for struct sub-fields (C++ AddTypeParam), skipping typed keys.
-            foreach (KeyValuePair<string, string> typeParam in subField.TypeParams)
-            {
-                if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
-                    or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
-                    or Constants.MultiAnalyzerParams)
-                {
-                    continue;
-                }
-
-                grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = NormalizeTypeParamKey(typeParam.Key), Value = typeParam.Value });
-            }
-
-            grpcStruct.Fields.Add(grpcSubField);
         }
 
-        return grpcStruct;
+        if (outerCapacity is { } outerCapacityValue)
+        {
+            grpcSubField.TypeParams.Add(new Grpc.KeyValuePair
+            {
+                Key = Constants.MaxCapacity,
+                Value = outerCapacityValue.ToString(CultureInfo.InvariantCulture)
+            });
+        }
+
+        // Mirror FieldSchema::TypeParams for struct sub-fields (C++ AddTypeParam), skipping typed keys. For a
+        // nested Array sub-field, max_capacity and max_length are consumed by the recursive type_schema.
+        foreach (KeyValuePair<string, string> typeParam in subField.TypeParams)
+        {
+            if (typeParam.Key is Constants.VarcharMaxLength or Constants.VectorDim or Constants.MaxCapacity
+                or Constants.EnableAnalyzer or Constants.EnableMatch or Constants.AnalyzerParams
+                or Constants.MultiAnalyzerParams)
+            {
+                continue;
+            }
+
+            grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = NormalizeTypeParamKey(typeParam.Key), Value = typeParam.Value });
+        }
+
+        return grpcSubField;
     }
 
     internal static Grpc.ValueField ConvertToValueField(object value, DataType dataType)
