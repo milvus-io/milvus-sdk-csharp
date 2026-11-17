@@ -226,15 +226,21 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
             var grpcStruct = new Grpc.StructArrayFieldSchema
             {
                 Name = structField.Name,
-                Description = structField.Description
+                Description = structField.Description,
+                Nullable = structField.Nullable
             };
             foreach (Milvus.Client.V2.Types.FieldSchema subField in structField.Fields)
             {
+                // On the wire every struct sub-field is an Array (scalar) or ArrayOfVector (vector) whose
+                // element_type is the real type; the struct's row-level nullable is propagated to the wire
+                // nullable and the sub-field's element-level nullability to element_nullable.
                 var grpcSubField = new Grpc.FieldSchema
                 {
                     Name = subField.Name,
                     ElementType = (Grpc.DataType)(int)subField.DataType,
-                    DataType = IsVectorType(subField.DataType) ? Grpc.DataType.ArrayOfVector : Grpc.DataType.Array
+                    DataType = IsVectorType(subField.DataType) ? Grpc.DataType.ArrayOfVector : Grpc.DataType.Array,
+                    Nullable = structField.Nullable,
+                    ElementNullable = subField.Nullable
                 };
                 grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = "max_capacity", Value = structField.MaxCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture) });
                 if (subField.MaxLength is not null)
@@ -244,6 +250,39 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
                 if (subField.Dimension is not null)
                 {
                     grpcSubField.TypeParams.Add(new Grpc.KeyValuePair { Key = "dim", Value = subField.Dimension.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+                }
+                if (subField.DataType == Milvus.Client.V2.Types.DataType.Array && subField.ElementDataType is not null)
+                {
+                    // Nested Array sub-field: element_type = Array plus a recursive type_schema.
+                    grpcSubField.ElementType = Grpc.DataType.Array;
+                    var leaf = new Grpc.TypeSchema
+                    {
+                        LeafType = (Grpc.DataType)(int)subField.ElementDataType.Value,
+                        Nullable = subField.ElementNullable
+                    };
+                    if (subField.ElementDataType == Milvus.Client.V2.Types.DataType.VarChar && subField.MaxLength is not null)
+                    {
+                        leaf.TypeParams.Add(new Grpc.KeyValuePair { Key = "max_length", Value = subField.MaxLength.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+                    }
+
+                    var inner = new Grpc.TypeSchema
+                    {
+                        Nullable = subField.Nullable,
+                        ArrayElement = leaf
+                    };
+                    inner.TypeParams.Add(new Grpc.KeyValuePair
+                    {
+                        Key = "max_capacity",
+                        Value = (subField.MaxCapacity ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    });
+
+                    var root = new Grpc.TypeSchema
+                    {
+                        Nullable = structField.Nullable,
+                        ArrayElement = inner
+                    };
+                    root.TypeParams.Add(new Grpc.KeyValuePair { Key = "max_capacity", Value = structField.MaxCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+                    grpcSubField.TypeSchema = root;
                 }
                 grpcStruct.Fields.Add(grpcSubField);
             }
@@ -923,8 +962,43 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         AlterCollectionSchemaRequest request, ServerCallContext context)
     {
         Record(nameof(AlterCollectionSchema), request);
+        // Simulates an older server that does not support schema alteration, exercising the facade's fallback
+        // to the legacy AddCollectionField RPC.
+        if (AlterCollectionSchemaUnimplemented)
+        {
+            throw new RpcException(new global::Grpc.Core.Status(StatusCode.Unimplemented,
+                "AlterCollectionSchema is not implemented"));
+        }
+
+        // Simulates an external (federated) collection, which rejects AlterCollectionSchema but accepts the
+        // legacy AddCollectionField RPC; the facade falls back to it (matching pymilvus).
+        if (AlterCollectionSchemaExternalUnsupported)
+        {
+            return Task.FromResult(new AlterCollectionSchemaResponse
+            {
+                AlterStatus = new Milvus.Client.Grpc.Status
+                {
+                    Code = 1100,
+                    Reason = "alter collection schema operation is not supported for external collection"
+                }
+            });
+        }
+
         return Task.FromResult(new AlterCollectionSchemaResponse { AlterStatus = NextStatus() });
     }
+
+    /// <summary>
+    /// When set, <c>AlterCollectionSchema</c> throws gRPC <c>UNIMPLEMENTED</c>, letting tests exercise the
+    /// add-field fallback to the legacy <c>AddCollectionField</c> RPC.
+    /// </summary>
+    public bool AlterCollectionSchemaUnimplemented { get; set; }
+
+    /// <summary>
+    /// When set, <c>AlterCollectionSchema</c> returns the external-collection "schema alteration unsupported"
+    /// error (code 1100), letting tests exercise the add-field fallback to the legacy <c>AddCollectionField</c>
+    /// RPC for external (federated) collections.
+    /// </summary>
+    public bool AlterCollectionSchemaExternalUnsupported { get; set; }
 
     public override Task<Grpc.Status> AlterCollectionField(AlterCollectionFieldRequest request, ServerCallContext context)
     {

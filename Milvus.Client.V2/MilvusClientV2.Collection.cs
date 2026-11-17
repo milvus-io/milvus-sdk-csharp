@@ -439,7 +439,8 @@ public sealed partial class MilvusClientV2
     }
 
     /// <summary>
-    /// Adds a field to a collection's schema, invalidating the cached schema.
+    /// Adds a field to a collection's schema, invalidating the cached schema. A field name in the form
+    /// <c>clips[note]</c> adds a struct sub-field to the existing struct field <c>clips</c>.
     /// </summary>
     /// <param name="request">The request containing the collection name and the field to add.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -450,11 +451,40 @@ public sealed partial class MilvusClientV2
         Verify.NotNull(request);
         await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
 
-        Grpc.AddCollectionFieldRequest grpcRequest = request.ToGrpcAddCollectionFieldRequest();
-        await InvokeAsync(GrpcClient.AddCollectionFieldAsync, grpcRequest, cancellationToken).ConfigureAwait(false);
+        // Struct sub-fields are added through the modern AlterCollectionSchema RPC (the legacy
+        // AddCollectionField RPC cannot express a sub-field path) and never fall back to it, matching pymilvus
+        // and the Java/C++/Rust SDKs. Ordinary fields fall back to the legacy RPC when the server does not
+        // support schema alteration (gRPC UNIMPLEMENTED) or reports that schema alteration is unsupported for
+        // an external (federated) collection.
+        bool isSubFieldPath = request.IsStructSubFieldPath;
+
+        Grpc.AlterCollectionSchemaRequest grpcRequest = request.ToGrpcAlterCollectionSchemaRequest();
+        try
+        {
+            await InvokeAsync(GrpcClient.AlterCollectionSchemaAsync, grpcRequest, static r => r.AlterStatus, cancellationToken).ConfigureAwait(false);
+        }
+        catch (MilvusException ex) when (!isSubFieldPath
+            && (ex.GrpcStatusCode == global::Grpc.Core.StatusCode.Unimplemented
+                || IsExternalCollectionSchemaAlterUnsupported(ex)))
+        {
+            Grpc.AddCollectionFieldRequest legacyRequest = request.ToGrpcAddCollectionFieldRequest();
+            await InvokeAsync(GrpcClient.AddCollectionFieldAsync, legacyRequest, cancellationToken).ConfigureAwait(false);
+        }
 
         InvalidateCollectionCaches(request.CollectionName, ResolveDatabaseName(request.DatabaseName));
     }
+
+    /// <summary>
+    /// Detects the server's "alter collection schema operation is not supported for external collection"
+    /// error (status code 1100 / legacy IllegalArgument = 5), mirroring pymilvus's
+    /// <c>is_external_collection_schema_alter_unsupported</c>: an external (federated) collection rejects
+    /// <c>AlterCollectionSchema</c> but accepts the legacy <c>AddCollectionField</c> RPC, so the facade falls
+    /// back to it like pymilvus does.
+    /// </summary>
+    private static bool IsExternalCollectionSchemaAlterUnsupported(MilvusException ex)
+        => ((int)ex.ErrorCode == 1100 || (int)ex.ErrorCode == 5)
+            && ex.Message.Contains(
+                "alter collection schema operation is not supported for external collection");
 
     /// <summary>
     /// Adds a function (e.g. BM25) to a collection's schema.

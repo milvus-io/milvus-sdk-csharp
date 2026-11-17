@@ -246,35 +246,10 @@ public sealed class AnnSearchReq
 
         if (EmbeddingLists is { Count: > 0 })
         {
-            // Each embedding list is packed into one placeholder value: the vectors' floats concatenated in
-            // little-endian. nq is the number of embedding lists (the struct elements to score), set by the caller.
-            var embListPlaceholder = new Grpc.PlaceholderValue { Tag = "$0", Type = Grpc.PlaceholderType.EmbListFloatVector };
-            foreach (EmbeddingList embeddingList in EmbeddingLists)
-            {
-                int byteCount = 0;
-                foreach (ReadOnlyMemory<float> vector in embeddingList.Vectors)
-                {
-                    byteCount += vector.Length * sizeof(float);
-                }
-
-                var bytes = new byte[byteCount];
-                int offset = 0;
-                foreach (ReadOnlyMemory<float> vector in embeddingList.Vectors)
-                {
-                    foreach (float value in vector.Span)
-                    {
-                        byte[] raw = BitConverter.GetBytes(value);
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[0] : raw[3];
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[1] : raw[2];
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[2] : raw[1];
-                        bytes[offset++] = BitConverter.IsLittleEndian ? raw[3] : raw[0];
-                    }
-                }
-
-                embListPlaceholder.Values.Add(ByteString.CopyFrom(bytes));
-            }
-
-            return embListPlaceholder;
+            // Each embedding list is packed into one placeholder value (float/binary/int8, sharing the type
+            // detection, validation and packing with the standalone SearchReq leg). nq is the number of
+            // embedding lists (the struct elements to score), set by the caller.
+            return EmbeddingListCodec.EncodeEmbeddingListPlaceholder(EmbeddingLists);
         }
 
         if (Texts is { Count: > 0 })

@@ -495,4 +495,111 @@ public class CollectionRespTests
         Assert.Single(structField.Fields);
         Assert.Equal("a", structField.Fields[0].Name);
     }
+
+    [Fact]
+    public void DescribeCollection_strips_struct_sub_field_path_prefix()
+    {
+        // A sub-field added via addCollectionField("clips[note]") may be echoed back by the server with its
+        // wire name still carrying the "clips[" prefix; the user-facing name must be stripped back to "note"
+        // (mirroring pymilvus/Java), while create-time plain names pass through unchanged.
+        var grpcSchema = new Grpc.CollectionSchema
+        {
+            StructArrayFields =
+            {
+                new Grpc.StructArrayFieldSchema
+                {
+                    Name = "clips",
+                    Fields =
+                    {
+                        new Grpc.FieldSchema { Name = "score", ElementType = Grpc.DataType.Int32 },
+                        new Grpc.FieldSchema { Name = "clips[note]", ElementType = Grpc.DataType.VarChar }
+                    }
+                }
+            }
+        };
+
+        CollectionSchema schema = DescribeCollectionResp.ConvertSchema(grpcSchema);
+
+        StructFieldSchema structField = Assert.Single(schema.StructFields);
+        Assert.Equal("clips", structField.Name);
+        Assert.Equal(2, structField.Fields.Count);
+        Assert.Equal("score", structField.Fields[0].Name);
+        Assert.Equal("note", structField.Fields[1].Name);
+    }
+
+    [Fact]
+    public void DescribeCollection_round_trips_element_nullable_and_nested_array_sub_fields()
+    {
+        // A sub-field's wire element_nullable maps to the SDK sub-field's Nullable (element-level null), and a
+        // nested Array sub-field recovers its leaf type, inner capacity and nullability from the recursive
+        // type_schema. The struct-level outer capacity for a nested Array sub-field is read from the type_schema
+        // root.
+        var grpcSchema = new Grpc.CollectionSchema
+        {
+            StructArrayFields =
+            {
+                new Grpc.StructArrayFieldSchema
+                {
+                    Name = "clips",
+                    Nullable = true,
+                    Fields =
+                    {
+                        new Grpc.FieldSchema
+                        {
+                            Name = "score",
+                            ElementType = Grpc.DataType.Int32,
+                            ElementNullable = true,
+                            TypeParams =
+                            {
+                                new Grpc.KeyValuePair { Key = "max_capacity", Value = "100" }
+                            }
+                        },
+                        new Grpc.FieldSchema
+                        {
+                            Name = "tags",
+                            ElementType = Grpc.DataType.Array,
+                            ElementNullable = true,
+                            TypeSchema = new Grpc.TypeSchema
+                            {
+                                Nullable = true,
+                                TypeParams = { new Grpc.KeyValuePair { Key = "max_capacity", Value = "100" } },
+                                ArrayElement = new Grpc.TypeSchema
+                                {
+                                    Nullable = true,
+                                    TypeParams = { new Grpc.KeyValuePair { Key = "max_capacity", Value = "8" } },
+                                    ArrayElement = new Grpc.TypeSchema
+                                    {
+                                        Nullable = true,
+                                        LeafType = Grpc.DataType.VarChar,
+                                        TypeParams = { new Grpc.KeyValuePair { Key = "max_length", Value = "16" } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        CollectionSchema schema = DescribeCollectionResp.ConvertSchema(grpcSchema);
+
+        StructFieldSchema structField = Assert.Single(schema.StructFields);
+        Assert.True(structField.Nullable);
+        Assert.Equal(100, structField.MaxCapacity);
+        Assert.Equal(2, structField.Fields.Count);
+
+        // Element-nullable scalar sub-field: SDK Nullable = wire element_nullable.
+        FieldSchema score = structField.Fields[0];
+        Assert.Equal(DataType.Int32, score.DataType);
+        Assert.True(score.Nullable);
+
+        // Nested Array sub-field: SDK field is Array with the leaf type, inner capacity, and leaf nullability.
+        FieldSchema tags = structField.Fields[1];
+        Assert.Equal(DataType.Array, tags.DataType);
+        Assert.Equal(DataType.VarChar, tags.ElementDataType);
+        Assert.True(tags.Nullable);
+        Assert.True(tags.ElementNullable);
+        Assert.Equal(8, tags.MaxCapacity);
+        Assert.Equal(16, tags.MaxLength);
+    }
 }
