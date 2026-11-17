@@ -319,6 +319,48 @@ public class DqlTests
     }
 
     [Fact]
+    public async Task Search_writes_the_params_json_with_native_types_and_escaping()
+    {
+        using var server = new MockMilvusServer();
+        using MilvusClientV2 client = server.CreateClient();
+
+        var parameters = new SearchParameters
+        {
+            Radius = "0.5",
+            RangeFilter = "1.0",
+            Ef = 64,
+            DropRatioSearch = 0.5,
+            AnalyzerName = "english",
+            PageRetainOrder = true
+        };
+        parameters.ExtraParameters["note"] = "a\"b<\u00e9";
+
+        await client.SearchAsync(
+            new SearchReq
+            {
+                CollectionName = "coll",
+                VectorFieldName = "embedding",
+                Vectors = new[] { new ReadOnlyMemory<float>(new[] { 1f, 2f }) },
+                MetricType = MetricType.L2,
+                Limit = 1,
+                Parameters = parameters
+            },
+            TestContext.Current.CancellationToken);
+
+        var byKey = server.Service.LastSearchParams.ToDictionary(p => p.Key, p => p.Value);
+
+        // The exact text: the JSON is written by hand (no reflection-based serialization, which trimmed and
+        // NativeAOT apps disable), and must stay what JsonSerializer produced for the same values.
+        // The text also fixes the member order, which is the order Combine adds them in: ExtraParameters,
+        // then radius/range_filter, then TypedIndexParams. The server does not depend on that order, so a
+        // reorder in Combine only needs this expected text updated.
+        Assert.Equal(
+            @"{""note"":""a\u0022b\u003C\u00E9"",""radius"":0.5,""range_filter"":1,""ef"":64," +
+            @"""drop_ratio_search"":0.5,""analyzer_name"":""english"",""page_retain_order"":true}",
+            byKey["params"]);
+    }
+
+    [Fact]
     public async Task HybridSearch_rejects_typed_index_params_on_top_level()
     {
         using var server = new MockMilvusServer();
