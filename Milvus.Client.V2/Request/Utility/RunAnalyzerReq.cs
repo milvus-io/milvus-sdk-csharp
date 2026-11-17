@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Milvus.Client.V2.Utils;
 namespace Milvus.Client.V2.Requests.Utility;
 
@@ -88,7 +87,7 @@ public sealed class RunAnalyzerReq
         // the wire, which the server would treat as an ad hoc analyzer alongside the field analyzer.
         if (AnalyzerParams is { Count: > 0 })
         {
-            request.AnalyzerParams = JsonSerializer.Serialize(AnalyzerParams);
+            request.AnalyzerParams = JsonUtil.Serialize(AnalyzerParams);
         }
 
         foreach (string text in Texts)

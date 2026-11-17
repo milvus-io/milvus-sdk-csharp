@@ -7,6 +7,7 @@ using System.Text.Json;
 using Google.Protobuf;
 
 using Milvus.Client.V2.Types;
+using Milvus.Client.V2.Utils;
 
 namespace Milvus.Client.V2;
 
@@ -583,10 +584,10 @@ public sealed class ClientTelemetryManager : IDisposable
         {
             lock (_collectionsLock)
             {
-                return Ok(command.CommandId, new
+                return Ok(command.CommandId, new Dictionary<string, object?>
                 {
-                    all_collections_enabled = _allCollectionsEnabled,
-                    enabled_collections = _enabledCollections.OrderBy(x => x, StringComparer.Ordinal).ToArray()
+                    ["all_collections_enabled"] = _allCollectionsEnabled,
+                    ["enabled_collections"] = _enabledCollections.OrderBy(x => x, StringComparer.Ordinal).ToArray()
                 });
             }
         }
@@ -641,7 +642,7 @@ public sealed class ClientTelemetryManager : IDisposable
                 }
             }
 
-            return Ok(command.CommandId, new { applied = true });
+            return Ok(command.CommandId, new Dictionary<string, object?> { ["applied"] = true });
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
@@ -683,18 +684,18 @@ public sealed class ClientTelemetryManager : IDisposable
 
         // Mirror the Java reference's 1MB reply cap: halve the list, then truncate the single remaining
         // error's longest truncatable field until the payload fits.
-        byte[] encoded = JsonSerializer.SerializeToUtf8Bytes(errors);
+        byte[] encoded = JsonUtil.SerializeToUtf8Bytes(errors);
         while (encoded.Length > MaxReplyBytes && errors.Count > 1)
         {
             errors.RemoveRange(errors.Count / 2, errors.Count - errors.Count / 2);
-            encoded = JsonSerializer.SerializeToUtf8Bytes(errors);
+            encoded = JsonUtil.SerializeToUtf8Bytes(errors);
         }
 
         while (encoded.Length > MaxReplyBytes && errors.Count == 1)
         {
             int previousSize = encoded.Length;
             TruncateLongestErrorField(errors[0]);
-            encoded = JsonSerializer.SerializeToUtf8Bytes(errors);
+            encoded = JsonUtil.SerializeToUtf8Bytes(errors);
             if (encoded.Length >= previousSize)
             {
                 // Guarantee monotonic progress even when JSON escaping defeats the truncation.
@@ -707,7 +708,7 @@ public sealed class ClientTelemetryManager : IDisposable
                     }
                 }
 
-                encoded = JsonSerializer.SerializeToUtf8Bytes(errors);
+                encoded = JsonUtil.SerializeToUtf8Bytes(errors);
                 if (encoded.Length >= previousSize)
                 {
                     break;
@@ -811,7 +812,7 @@ public sealed class ClientTelemetryManager : IDisposable
                     ? DetailHistory(inRange)
                     : AggregateHistory(inRange, start, end);
 
-                byte[] encoded = JsonSerializer.SerializeToUtf8Bytes(response);
+                byte[] encoded = JsonUtil.SerializeToUtf8Bytes(response);
                 if (encoded.Length > MaxReplyBytes)
                 {
                     return new ClientTelemetryCommandReply(command.CommandId, false, "response too large, try a smaller time range");
@@ -950,12 +951,12 @@ public sealed class ClientTelemetryManager : IDisposable
                 ["all_collections_enabled"] = _allCollectionsEnabled
             };
 
-            return Ok(command.CommandId, new { user_config = userConfig });
+            return Ok(command.CommandId, new Dictionary<string, object?> { ["user_config"] = userConfig });
         }
     }
 
     private static ClientTelemetryCommandReply Ok(string commandId, object value)
-        => new(commandId, true, "", JsonSerializer.SerializeToUtf8Bytes(value));
+        => new(commandId, true, "", JsonUtil.SerializeToUtf8Bytes(value));
 
     /// <summary>
     /// Stops the heartbeat loop and releases the manager's resources.
