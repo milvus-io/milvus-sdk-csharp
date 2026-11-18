@@ -265,7 +265,7 @@ public sealed class BoostRerank : FunctionReranker<BoostRerank>
             dict["seed"] = seed.Value;
         }
 
-        Params["random_score"] = System.Text.Json.JsonSerializer.Serialize(dict);
+        Params["random_score"] = JsonUtil.Serialize(dict);
         return this;
     }
 }
@@ -360,7 +360,7 @@ public sealed class ModelRerank : FunctionReranker<ModelRerank>
     /// </summary>
     public ModelRerank WithQueries(IEnumerable<string> queries)
     {
-        Params["queries"] = System.Text.Json.JsonSerializer.Serialize(queries.ToArray());
+        Params["queries"] = JsonUtil.Serialize(queries.ToArray());
         return this;
     }
 

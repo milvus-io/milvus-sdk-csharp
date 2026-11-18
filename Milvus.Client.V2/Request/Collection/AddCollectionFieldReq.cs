@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Milvus.Client.V2.Types;
 using Milvus.Client.V2.Utils;
 namespace Milvus.Client.V2.Requests.Collection;
@@ -72,7 +71,7 @@ public sealed class AddCollectionFieldReq
             grpcField.TypeParams.Add(new Grpc.KeyValuePair
             {
                 Key = Constants.AnalyzerParams,
-                Value = JsonSerializer.Serialize(Field.AnalyzerParams)
+                Value = JsonUtil.Serialize(Field.AnalyzerParams)
             });
         }
 
@@ -81,7 +80,7 @@ public sealed class AddCollectionFieldReq
             grpcField.TypeParams.Add(new Grpc.KeyValuePair
             {
                 Key = Constants.MultiAnalyzerParams,
-                Value = JsonSerializer.Serialize(Field.MultiAnalyzerParams)
+                Value = JsonUtil.Serialize(Field.MultiAnalyzerParams)
             });
         }
 
