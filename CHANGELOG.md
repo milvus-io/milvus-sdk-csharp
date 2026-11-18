@@ -1,5 +1,29 @@
 # Changelog
 
+## milvus-sdk-csharp 2.6.2 (2026-11-18)
+
+### Feature
+
+- Rename `ConsistencyLevel.BoundedStaleness` to `Bounded` (same value), keeping the old name as an
+  `[Obsolete]` alias, matching PyMilvus/Java/C++/Rust
+- `UpdatePasswordReq.ResetConnection`: explicitly reconnect with the new credentials, re-registering
+  client info as the updated user (PyMilvus `update_password(reset_connection=True)` parity)
+- `FlushAllReq.WaitFlushedMs` with the default `0` now waits until flush-all completes instead of
+  returning immediately, matching PyMilvus `flush_all`
+
+### Improvement
+
+- Deprecate `ConsistencyLevel.Customized` in favor of `Bounded`, aligning with the Java/C++ SDKs
+
+### Fix
+
+- `SingleResult.Merge` now pairs page columns by field name instead of positionally, fixing
+  `InvalidCastException` when the server returns columns in a different order across pages
+- Handle empty result output field placeholders in search responses
+- Write search params and all remaining V2 JSON with a reflection-free writer, fixing
+  `InvalidOperationException` in apps published with `PublishTrimmed` / `PublishAot` (including
+  analyzer params, insert/upsert JSON columns, and reranker params)
+
 ## milvus-sdk-csharp 2.6.1 (2026-10-20)
 
 ### Breaking Change
