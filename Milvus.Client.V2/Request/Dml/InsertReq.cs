@@ -149,9 +149,9 @@ public sealed class InsertReq
             for (int rowNum = 0; rowNum < rowCount; rowNum++)
             {
                 // A row with no dynamic keys must serialize as an empty JSON object, not the literal JSON null
-                // that JsonSerializer.Serialize(null) emits (the server expects an object in the $meta column).
+                // that JsonUtil.Serialize(null) emits (the server expects an object in the $meta column).
                 Dictionary<string, object?>? rowDynamic = dynamicFieldsData[rowNum] ?? new Dictionary<string, object?>();
-                encodedJson[rowNum] = System.Text.Json.JsonSerializer.Serialize(rowDynamic);
+                encodedJson[rowNum] = JsonUtil.Serialize(rowDynamic);
             }
 
             request.FieldsData.Add(FieldData.CreateDynamicJson(encodedJson).ToGrpcFieldData());

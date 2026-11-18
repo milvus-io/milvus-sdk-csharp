@@ -343,7 +343,7 @@ internal static class RowDataConverter
             }
 
             writer.WritePropertyName(key);
-            JsonSerializer.Serialize(writer, value);
+            JsonUtil.WriteValue(writer, value);
             writer.WriteEndObject();
         }
 
@@ -463,7 +463,7 @@ internal static class RowDataConverter
             : value;
 
     private static string EncodeJson(object? value)
-        => value is null ? "null" : JsonSerializer.Serialize(value);
+        => value is null ? "null" : JsonUtil.Serialize(value);
 
     // Timestamptz row values travel as ISO-8601 strings (matching the Java SDK); accept a pre-formatted
     // string or a DateTimeOffset/DateTime and render it in round-trip ISO-8601. For a DateTime, new

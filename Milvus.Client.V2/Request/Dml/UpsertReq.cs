@@ -174,7 +174,7 @@ public sealed class UpsertReq
             var encodedJson = new string[rowCount];
             for (int rowNum = 0; rowNum < rowCount; rowNum++)
             {
-                encodedJson[rowNum] = System.Text.Json.JsonSerializer.Serialize(dynamicFieldsData[rowNum]);
+                encodedJson[rowNum] = JsonUtil.Serialize(dynamicFieldsData[rowNum]);
             }
 
             request.FieldsData.Add(FieldData.CreateDynamicJson(encodedJson).ToGrpcFieldData());

@@ -421,7 +421,7 @@ public sealed class StructFieldData : FieldData<IReadOnlyList<IDictionary<string
                 var jsonArray = new Grpc.JSONArray();
                 foreach (object? value in present)
                 {
-                    jsonArray.Data.Add(ByteString.CopyFromUtf8(System.Text.Json.JsonSerializer.Serialize(value)));
+                    jsonArray.Data.Add(ByteString.CopyFromUtf8(JsonUtil.Serialize(value)));
                 }
 
                 scalar.JsonData = jsonArray;

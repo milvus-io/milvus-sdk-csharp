@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using Milvus.Client.V2.Utils;
 
 namespace Milvus.Client.V2.Requests.Rls;
@@ -46,7 +44,7 @@ public sealed class SetRLSPrincipalTagsReq
         {
             CollectionName = CollectionName,
             PrincipalName = PrincipalName,
-            Tags = JsonSerializer.Serialize(Tags)
+            Tags = JsonUtil.Serialize(Tags)
         };
         request.DbName = DatabaseName ?? "";
         return request;

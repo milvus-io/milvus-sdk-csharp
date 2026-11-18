@@ -1287,7 +1287,7 @@ public sealed partial class MilvusClientV2
     private static bool TryParseMetricType(string name, out MetricType metricType)
     {
         // The index parameters carry metric_type as the wire name (e.g. "L2"); map it back to the enum.
-        foreach (MetricType value in Enum.GetValues(typeof(MetricType)))
+        foreach (MetricType value in EnumUtil.GetValues<MetricType>())
         {
             if (value == MetricType.Invalid)
             {
@@ -1817,49 +1817,22 @@ public sealed partial class MilvusClientV2
         }
 
         // Serialize the extra parameters as a proper JSON object so string values are quoted and
-        // special characters are escaped, matching how the Java SDK sends the same bag.
-        // The values are strings, numbers and booleans: they are written with Utf8JsonWriter, not with
-        // JsonSerializer, whose reflection-based serialization is disabled in trimmed and NativeAOT apps.
-        using var stream = new MemoryStream();
-        using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
+        // special characters are escaped, matching how the Java SDK sends the same bag. The values are
+        // strings, numbers and booleans; JsonUtil writes them with Utf8JsonWriter, not with JsonSerializer,
+        // whose reflection-based serialization is disabled in trimmed and NativeAOT apps.
+        //
+        // Validate each value before delegating so an unsupported param keeps the key-specific error that
+        // the previous inline writer reported ("The search parameter '{key}' has the unsupported type ...").
+        foreach (KeyValuePair<string, object?> parameter in json)
         {
-            writer.WriteStartObject();
-            foreach (KeyValuePair<string, object?> parameter in json)
+            if (parameter.Value is not (null or string or bool or int or long or float or double))
             {
-                writer.WritePropertyName(parameter.Key);
-                switch (parameter.Value)
-                {
-                    case null:
-                        writer.WriteNullValue();
-                        break;
-                    case string text:
-                        writer.WriteStringValue(text);
-                        break;
-                    case bool flag:
-                        writer.WriteBooleanValue(flag);
-                        break;
-                    case int number:
-                        writer.WriteNumberValue(number);
-                        break;
-                    case long number:
-                        writer.WriteNumberValue(number);
-                        break;
-                    case float number:
-                        writer.WriteNumberValue(number);
-                        break;
-                    case double number:
-                        writer.WriteNumberValue(number);
-                        break;
-                    default:
-                        throw new NotSupportedException(
-                            $"The search parameter '{parameter.Key}' has the unsupported type {parameter.Value.GetType()}.");
-                }
+                throw new NotSupportedException(
+                    $"The search parameter '{parameter.Key}' has the unsupported type {parameter.Value.GetType()}.");
             }
-
-            writer.WriteEndObject();
         }
 
-        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        return JsonUtil.Serialize(json);
     }
 
     private static double ParseRangeNumber(string value, string parameterName)
