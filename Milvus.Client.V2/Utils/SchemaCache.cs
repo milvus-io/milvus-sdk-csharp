@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using Milvus.Client.V2.Responses.Collection;
 
 namespace Milvus.Client.V2.Utils;
@@ -10,26 +11,20 @@ namespace Milvus.Client.V2.Utils;
 internal sealed class SchemaCache
 {
     /// <summary>
-    /// The default maximum number of cached entries, matching the Java SDK's <c>DEFAULT_CAPACITY</c> (4096).
-    /// When the cache exceeds this bound, the least-recently-accessed entry is evicted (LRU).
-    /// </summary>
-    public const int DefaultCapacity = 4096;
-
-    /// <summary>
     /// The shared instance.
     /// </summary>
     public static SchemaCache Instance { get; } = new();
 
     private readonly ConcurrentDictionary<CollectionCacheKey, Entry<object?>> _cache = new();
     private readonly object _lock = new();
-    private readonly int _capacity;
+    private volatile int _capacity;
     private long _accessSequence;
 
     /// <summary>
-    /// Creates a new cache with the default capacity (<see cref="DefaultCapacity" />).
+    /// Creates a new cache with the default capacity (<see cref="Constants.CacheDefaultCapacity" />).
     /// </summary>
     public SchemaCache()
-        : this(DefaultCapacity)
+        : this(Constants.CacheDefaultCapacity)
     {
     }
 
@@ -64,6 +59,7 @@ internal sealed class SchemaCache
         bool forceUpdate = false,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(loader);
         if (!forceUpdate && _cache.TryGetValue(key, out Entry<object?>? existing))
         {
             Touch(existing);
@@ -122,20 +118,52 @@ internal sealed class SchemaCache
                 return;
             }
 
-            CollectionCacheKey? victim = null;
-            long oldest = long.MaxValue;
-            foreach (KeyValuePair<CollectionCacheKey, Entry<object?>> pair in _cache)
-            {
-                if (pair.Value.LastAccess < oldest)
-                {
-                    oldest = pair.Value.LastAccess;
-                    victim = pair.Key;
-                }
-            }
+            EvictLeastRecentlyUsed();
+        }
+    }
 
-            if (victim is { } key)
+    private void EvictLeastRecentlyUsed()
+    {
+        CollectionCacheKey? victim = null;
+        long oldest = long.MaxValue;
+        foreach (KeyValuePair<CollectionCacheKey, Entry<object?>> pair in _cache)
+        {
+            if (pair.Value.LastAccess < oldest)
             {
-                _cache.TryRemove(key, out _);
+                oldest = pair.Value.LastAccess;
+                victim = pair.Key;
+            }
+        }
+
+        if (victim is { } key)
+        {
+            _cache.TryRemove(key, out _);
+        }
+    }
+
+    /// <summary>
+    /// The current maximum number of cached schemas. Use <see cref="SetCapacity" /> to change it; shrinking evicts the
+    /// least-recently-accessed entries.
+    /// </summary>
+    public int Capacity => _capacity;
+
+    /// <summary>
+    /// Sets the cache capacity, evicting least-recently-used entries as needed.
+    /// </summary>
+    /// <param name="newCapacity">The new maximum number of cached schemas. Must be greater than zero.</param>
+    public void SetCapacity(int newCapacity)
+    {
+        if (newCapacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(newCapacity), "Cache capacity must be greater than zero");
+        }
+
+        lock (_lock)
+        {
+            _capacity = newCapacity;
+            while (_cache.Count > _capacity)
+            {
+                EvictLeastRecentlyUsed();
             }
         }
     }
@@ -193,7 +221,7 @@ internal sealed class SchemaCache
     /// Used to invalidate alias-keyed cache entries when the canonical collection is dropped or its schema is
     /// mutated.
     /// </summary>
-    public List<string> GetAliasKeys(string endpoint, string database, string collectionName)
+    public ReadOnlyCollection<string> GetAliasKeys(string endpoint, string database, string collectionName)
     {
         CollectionCacheKey prefix = CollectionCacheKey.Create(endpoint, database, "");
         var aliases = new List<string>();
@@ -213,7 +241,7 @@ internal sealed class SchemaCache
             }
         }
 
-        return aliases;
+        return aliases.AsReadOnly();
     }
 
     /// <summary>

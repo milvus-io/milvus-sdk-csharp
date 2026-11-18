@@ -106,4 +106,87 @@ public class SchemaCacheTests
         => await cache.GetOrLoadAsync(
             CollectionCacheKey.Create("localhost:19530", "default", collection),
             ct => new ValueTask<string>(collection), cancellationToken: ct);
+
+    [Fact]
+    public async Task SetCapacity_shrinks_and_evicts_lru_schemas()
+    {
+        var cache = new SchemaCache(5);
+        CancellationToken ct = TestContext.Current.CancellationToken;
+
+        for (int i = 1; i <= 5; i++)
+        {
+            await Load(cache, $"c{i}", ct);
+        }
+
+        Assert.Equal(5, cache.Count);
+        cache.SetCapacity(2);
+        Assert.Equal(2, cache.Count);
+
+        // c1..c3 were loaded first and are the least recently accessed, so shrinking evicts them;
+        // c4/c5 survive and are served from cache without a reload.
+        int loads = 0;
+        string c4 = await cache.GetOrLoadAsync(
+            CollectionCacheKey.Create("localhost:19530", "default", "c4"),
+            ct => { loads++; return new ValueTask<string>("c4-reloaded"); }, cancellationToken: ct);
+        string c5 = await cache.GetOrLoadAsync(
+            CollectionCacheKey.Create("localhost:19530", "default", "c5"),
+            ct => { loads++; return new ValueTask<string>("c5-reloaded"); }, cancellationToken: ct);
+        Assert.Equal("c4", c4);
+        Assert.Equal("c5", c5);
+        Assert.Equal(0, loads);
+
+        // An evicted entry reloads on demand, confirming it was not kept.
+        string c1 = await cache.GetOrLoadAsync(
+            CollectionCacheKey.Create("localhost:19530", "default", "c1"),
+            ct => { loads++; return new ValueTask<string>("c1-reloaded"); }, cancellationToken: ct);
+        Assert.Equal("c1-reloaded", c1);
+        Assert.Equal(1, loads);
+        Assert.Equal(2, cache.Count);
+
+        cache.SetCapacity(1);
+        Assert.Equal(1, cache.Count);
+        Assert.True(cache.Count <= cache.Capacity);
+    }
+
+    [Fact]
+    public async Task SetCapacity_can_grow()
+    {
+        var cache = new SchemaCache(2);
+        CancellationToken ct = TestContext.Current.CancellationToken;
+
+        await Load(cache, "a", ct);
+        await Load(cache, "b", ct);
+
+        cache.SetCapacity(4);
+        Assert.Equal(4, cache.Capacity);
+        await Load(cache, "c", ct);
+        await Load(cache, "d", ct);
+        Assert.Equal(4, cache.Count);
+        Assert.Equal("a", await cache.GetOrLoadAsync(
+            CollectionCacheKey.Create("localhost:19530", "default", "a"),
+            ct => new ValueTask<string>("a-reloaded"), cancellationToken: ct));
+    }
+
+    [Fact]
+    public void Rejects_non_positive_capacity()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SchemaCache(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SchemaCache(-1));
+
+        var cache = new SchemaCache(1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => cache.SetCapacity(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => cache.SetCapacity(-1));
+    }
+
+    [Fact]
+    public async Task GetOrLoadAsync_rejects_null_loader()
+    {
+        var cache = new SchemaCache(16);
+        Func<CancellationToken, ValueTask<string>>? loader = null;
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            cache.GetOrLoadAsync(
+                CollectionCacheKey.Create("localhost:19530", "default", "coll"),
+                loader!,
+                cancellationToken: TestContext.Current.CancellationToken).AsTask());
+    }
 }

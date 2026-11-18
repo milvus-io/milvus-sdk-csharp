@@ -369,8 +369,8 @@ the facade + its DTOs only; everything that supports them is internal**.
 
 | Visibility | Contents |
 |---|---|
-| **public** | `MilvusClientV2` (facade), `MilvusClientV2Session` (cluster-scoped DQL view, §4.6), `ClientTelemetryManager` + telemetry types (`TelemetryConfig`, `TelemetrySnapshot`, `TelemetryError`, `ClientTelemetryCommand`, `ClientTelemetryCommandReply`, `MetricsInfo`, `ClientInfo`, §4.12), `*Req` / `*Resp` DTOs, `Types` (config & data model: `ConnectConfig`, `RetryConfig`, `DataType`, `IndexType`, `MetricType`, `FieldSchema`, `CollectionSchema`, `FieldSchema`, `HealthState`, ...), `MilvusException`, `MilvusErrorCode`, `MilvusTimestampUtils`, the FP16 utility, and `CollectionTsCache` (process-wide singleton kept public for parity with the Java/C++ static caches; see §5.1.2) |
-| **internal** | `Milvus.Client.Grpc.*` (generated proto), `InvokeAsync`, the gRPC client, `ToGrpc*()` / `FromGrpc()`, `Utils` helpers (`Verify`, `Constants`, `LoggingExtensions`), caches (`SchemaCache`), `RetryPolicy`, `RestfulClient` |
+| **public** | `MilvusClientV2` (facade), `MilvusClientV2Session` (cluster-scoped DQL view, §4.6), `ClientTelemetryManager` + telemetry types (`TelemetryConfig`, `TelemetrySnapshot`, `TelemetryError`, `ClientTelemetryCommand`, `ClientTelemetryCommandReply`, `MetricsInfo`, `ClientInfo`, §4.12), `*Req` / `*Resp` DTOs, `Types` (config & data model: `ConnectConfig`, `RetryConfig`, `DataType`, `IndexType`, `MetricType`, `FieldSchema`, `CollectionSchema`, `FieldSchema`, `HealthState`, ...), `MilvusException`, `MilvusErrorCode`, `MilvusTimestampUtils`, the FP16 utility, and `CacheConfig` (static capacity tuning for the internal caches; see §5.1.4) |
+| **internal** | `Milvus.Client.Grpc.*` (generated proto), `InvokeAsync`, the gRPC client, `ToGrpc*()` / `FromGrpc()`, `Utils` helpers (`Verify`, `Constants`, `LoggingExtensions`), the collection caches (`CollectionTsCache`, `SchemaCache`, `CollectionCacheKey`), `RetryPolicy`, `RestfulClient` |
 | `InternalsVisibleTo("Milvus.Client.V2.Tests")` | tests only |
 
 `sealed` is used on **leaf** DTO classes (request/response types and concrete value types) so they
@@ -912,7 +912,7 @@ and C++ `DqlUtils.DeduceGuaranteeTimestamp`):
 > `1` and `0` are the well-known constants `GuaranteeEventuallyTs` / `GuaranteeStrongTs`.
 
 ```csharp
-public sealed class CollectionTsCache
+internal sealed class CollectionTsCache
 {
     public static CollectionTsCache Instance { get; } = new();   // process-wide singleton
 
@@ -927,11 +927,16 @@ public sealed class CollectionTsCache
         // alias: transfer latest ts to the alias, keep the original
     public void Clear();
     public int Count { get; }
+    public int Capacity { get; }              // read-only; change via CacheConfig.SetCapacity
+    public void SetCapacity(int newCapacity); // resizes; shrinking evicts LRU entries
 }
 ```
 
-- Implementation: `ConcurrentDictionary<CollectionCacheKey, long>`; lock-free reads, `lock` for
-  monotonic `Set` and the `Move`/`Copy`/`Invalidate*` writes.
+- Implementation: a capacity-bounded LRU cache keyed by `CollectionCacheKey`. Default capacity is
+  4096 (`Constants.CacheDefaultCapacity`); when a write pushes the cache past the bound, the
+  least-recently-accessed entry is evicted. `Get` touches the entry's recency (under `_lock`, since
+  the recency sequence must be monotonic); `Set` and the `Move`/`Copy`/`Invalidate*` writes hold
+  `_lock`. `SetCapacity` shrinks/grows the cache, evicting LRU entries as needed when shrinking.
 - **Hook points**:
   - `InsertAsync` / `UpsertAsync` / `DeleteAsync` → `Set(...)` with the mutation timestamp (read side
     of the Session guarantee described above).
@@ -959,18 +964,49 @@ internal sealed class SchemaCache   // internal: an implementation detail, not p
     public void Invalidate(string endpoint, string database, string collection);
     public void InvalidateDb(string endpoint, string database);
     public void Clear();
+    public int Count { get; }
+    public int Capacity { get; }              // read-only; change via CacheConfig.SetCapacity
+    public void SetCapacity(int newCapacity); // resizes; shrinking evicts LRU entries
 }
 ```
 
 - Implementation: `ConcurrentDictionary<CollectionCacheKey, Lazy<Task<...>>>` (or a per-key
-  `SemaphoreSlim`) to guarantee single-flight loading.
+  `SemaphoreSlim`) to guarantee single-flight loading; the cache is capacity-bounded (default 4096)
+  and evicts the least-recently-accessed schema when a load pushes it past the bound. `SetCapacity`
+  shrinks/grows the cache, evicting LRU entries as needed when shrinking.
 - Only the **schema** is cached; load/segment state is always queried live to avoid staleness.
 - **Hook points**:
   - `DescribeCollectionAsync` → `GetOrLoadAsync(...)`.
   - `DropCollection`, `AlterCollection*`, `RenameCollection` → `Invalidate` (or `Move`).
   - `CreateAlias`/`AlterAlias` → `Copy` (alias shares the schema).
 
-#### 5.1.4 Where the cache is invoked (facade layer)
+#### 5.1.4 `CacheConfig` (static capacity tuning)
+
+The cache classes are internal implementation details; the only public surface is a static tuning
+entry point, mirroring C++ `milvus::Cache::SetCapacity/GetCapacity` and Rust
+`set_cache_capacity`/`get_cache_capacity`:
+
+```csharp
+public static class CacheConfig
+{
+    public const int DefaultCapacity = 4096;   // both caches, matching PyMilvus's DEFAULT_CAPACITY
+
+    public static void SetCapacity(int capacity);  // both caches; > 0
+    public static int Capacity { get; }            // schema cache capacity (both share one value)
+}
+```
+
+`SetCapacity` applies to both process-wide singletons (`SchemaCache.Instance` and
+`CollectionTsCache.Instance`) under a dedicated lock, so concurrent calls cannot leave the two
+caches at divergent capacities; shrinking evicts least-recently-accessed entries immediately.
+`Capacity` reads the schema cache's capacity directly (a single shared value, mirroring C++/Rust
+`GetCapacity`) and needs no extra serialization — `_capacity` is `volatile`, so the lock-free read
+always observes the latest `SetCapacity`. Because `CollectionTsCache` backs the `Session`
+consistency level, evicting a collection's timestamp makes the next `Session` read for it fall back
+to eventual consistency until a later mutation stores a fresh timestamp — the same trade-off C++
+documents on `Cache::SetCapacity`.
+
+#### 5.1.5 Where the cache is invoked (facade layer)
 
 Both caches are read/written **from the facade orchestration methods**
 (`MilvusClientV2.*.cs`), never from the conversion layer or from `InvokeAsync`:
