@@ -191,4 +191,12 @@ internal static class Constants
     /// operations finished.
     /// </summary>
     internal const long GuaranteeStrongTs = 0L;
+
+    /// <summary>
+    /// Default maximum number of entries for the process-wide caches
+    /// (<see cref="CollectionTsCache" /> / <see cref="SchemaCache" />), matching PyMilvus's
+    /// <c>DEFAULT_CAPACITY</c> (4096). When a cache exceeds this bound, the least-recently-accessed entry is
+    /// evicted (LRU).
+    /// </summary>
+    internal const int CacheDefaultCapacity = 4096;
 }

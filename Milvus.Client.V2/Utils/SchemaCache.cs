@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using Milvus.Client.V2.Responses.Collection;
 
 namespace Milvus.Client.V2.Utils;
@@ -7,29 +9,29 @@ namespace Milvus.Client.V2.Utils;
 /// A process-wide cache of collection schemas, avoiding repeated <c>DescribeCollection</c> RPCs. Concurrent
 /// loads for the same key are coalesced (single-flight). Mirrors the Java <c>SchemaCache</c> / C++ <c>SchemaCache</c>.
 /// </summary>
+// Process-lifetime reader-writer lock on a process-wide singleton cache; the shared Instance is
+// never disposed, so a formal IDisposable would only exist to satisfy CA1001 and would force every
+// short-lived test instance to be disposed.
+[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable",
+    Justification = "Process-lifetime lock on a never-disposed singleton cache.")]
 internal sealed class SchemaCache
 {
-    /// <summary>
-    /// The default maximum number of cached entries, matching the Java SDK's <c>DEFAULT_CAPACITY</c> (4096).
-    /// When the cache exceeds this bound, the least-recently-accessed entry is evicted (LRU).
-    /// </summary>
-    public const int DefaultCapacity = 4096;
-
     /// <summary>
     /// The shared instance.
     /// </summary>
     public static SchemaCache Instance { get; } = new();
 
     private readonly ConcurrentDictionary<CollectionCacheKey, Entry<object?>> _cache = new();
-    private readonly object _lock = new();
-    private readonly int _capacity;
+
+    private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.NoRecursion);
     private long _accessSequence;
+    private volatile int _capacity;
 
     /// <summary>
-    /// Creates a new cache with the default capacity (<see cref="DefaultCapacity" />).
+    /// Creates a new cache with the default capacity (<see cref="Constants.CacheDefaultCapacity" />).
     /// </summary>
     public SchemaCache()
-        : this(DefaultCapacity)
+        : this(Constants.CacheDefaultCapacity)
     {
     }
 
@@ -64,6 +66,7 @@ internal sealed class SchemaCache
         bool forceUpdate = false,
         CancellationToken cancellationToken = default)
     {
+        Verify.NotNull(loader);
         if (!forceUpdate && _cache.TryGetValue(key, out Entry<object?>? existing))
         {
             Touch(existing);
@@ -92,9 +95,17 @@ internal sealed class SchemaCache
                 // Allow a later retry, but only remove the entry if it is still ours: a concurrent rename
                 // (Move) relocates this entry to a new key, and a fresh load of the original name may already
                 // have replaced it -- evicting that live entry would strand its waiters forever.
-                if (_cache.TryGetValue(key, out Entry<object?>? current) && ReferenceEquals(current, winner))
+                _lock.EnterWriteLock();
+                try
                 {
-                    _cache.TryRemove(key, out _);
+                    if (_cache.TryGetValue(key, out Entry<object?>? current) && ReferenceEquals(current, winner))
+                    {
+                        _cache.TryRemove(key, out _);
+                    }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
                 }
 
                 throw;
@@ -115,28 +126,71 @@ internal sealed class SchemaCache
             return;
         }
 
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             if (_cache.Count <= _capacity)
             {
                 return;
             }
 
-            CollectionCacheKey? victim = null;
-            long oldest = long.MaxValue;
-            foreach (KeyValuePair<CollectionCacheKey, Entry<object?>> pair in _cache)
-            {
-                if (pair.Value.LastAccess < oldest)
-                {
-                    oldest = pair.Value.LastAccess;
-                    victim = pair.Key;
-                }
-            }
+            EvictLeastRecentlyUsed();
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
 
-            if (victim is { } key)
+    private void EvictLeastRecentlyUsed()
+    {
+        CollectionCacheKey? victim = null;
+        long oldest = long.MaxValue;
+        foreach (KeyValuePair<CollectionCacheKey, Entry<object?>> pair in _cache)
+        {
+            long lastAccess = Volatile.Read(ref pair.Value.LastAccess);
+            if (lastAccess < oldest)
             {
-                _cache.TryRemove(key, out _);
+                oldest = lastAccess;
+                victim = pair.Key;
             }
+        }
+
+        if (victim is { } key)
+        {
+            _cache.TryRemove(key, out _);
+        }
+    }
+
+    /// <summary>
+    /// The current maximum number of cached schemas. Use <see cref="SetCapacity" /> to change it; shrinking evicts the
+    /// least-recently-accessed entries.
+    /// </summary>
+    public int Capacity => _capacity;
+
+    /// <summary>
+    /// Sets the cache capacity, evicting least-recently-used entries as needed.
+    /// </summary>
+    /// <param name="newCapacity">The new maximum number of cached schemas. Must be greater than zero.</param>
+    public void SetCapacity(int newCapacity)
+    {
+        if (newCapacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(newCapacity), "Cache capacity must be greater than zero");
+        }
+
+        _lock.EnterWriteLock();
+        try
+        {
+            _capacity = newCapacity;
+            while (_cache.Count > _capacity)
+            {
+                EvictLeastRecentlyUsed();
+            }
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
 
@@ -222,12 +276,20 @@ internal sealed class SchemaCache
     public void InvalidateDb(string endpoint, string database)
     {
         CollectionCacheKey prefix = CollectionCacheKey.Create(endpoint, database, "");
-        foreach (CollectionCacheKey key in _cache.Keys)
+        _lock.EnterWriteLock();
+        try
         {
-            if (key.Endpoint == prefix.Endpoint && key.Database == prefix.Database)
+            foreach (CollectionCacheKey key in _cache.Keys)
             {
-                _cache.TryRemove(key, out _);
+                if (key.Endpoint == prefix.Endpoint && key.Database == prefix.Database)
+                {
+                    _cache.TryRemove(key, out _);
+                }
             }
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
 
@@ -237,9 +299,17 @@ internal sealed class SchemaCache
     public void Move(string endpoint, string oldDatabase, string oldCollection, string newDatabase, string newCollection)
     {
         CollectionCacheKey oldKey = CollectionCacheKey.Create(endpoint, oldDatabase, oldCollection);
-        if (_cache.TryRemove(oldKey, out Entry<object?>? entry))
+        _lock.EnterWriteLock();
+        try
         {
-            _cache[CollectionCacheKey.Create(endpoint, newDatabase, newCollection)] = entry;
+            if (_cache.TryRemove(oldKey, out Entry<object?>? entry))
+            {
+                _cache[CollectionCacheKey.Create(endpoint, newDatabase, newCollection)] = entry;
+            }
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
 
@@ -255,9 +325,12 @@ internal sealed class SchemaCache
 
     private void Touch(Entry<object?> entry)
     {
-        lock (_lock)
+        long access = Interlocked.Increment(ref _accessSequence);
+        long previous = Volatile.Read(ref entry.LastAccess);
+        while (previous < access
+               && Interlocked.CompareExchange(ref entry.LastAccess, access, previous) != previous)
         {
-            entry.LastAccess = ++_accessSequence;
+            previous = Volatile.Read(ref entry.LastAccess);
         }
     }
 
@@ -267,7 +340,7 @@ internal sealed class SchemaCache
 
         public Task<T> Task => _tcs.Task;
 
-        public long LastAccess { get; set; }
+        public long LastAccess;
 
         public void SetResult(T value) => _tcs.TrySetResult(value);
         public void SetException(Exception ex) => _tcs.TrySetException(ex);
