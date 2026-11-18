@@ -1,5 +1,30 @@
 # Changelog
 
+## milvus-sdk-csharp 3.0.1 (2026-11-18)
+
+### Feature
+
+- Client telemetry: `GetClientTelemetryAsync` and `ClientTelemetryManager`
+  (`MilvusClientV2.GetTelemetry()`), with `TelemetryConfig` on `ConnectConfig`, per-operation metrics,
+  window snapshots, bounded recent-error tracking, and built-in command handling
+- `MilvusClientV2Session` (`Session(clusterId)`): route DQL operations to a target cluster,
+  aligning with the Java SDK session API
+- Global-cluster topology discovery, refresh and primary failover for Zilliz Cloud global endpoints
+  (`GlobalTopology` / `ClusterInfo` / `ClusterCapability`)
+- `ListRunningRequestsAsync` / `CancelRequestsAsync`: list and cancel running Search/HybridSearch/
+  Query requests in a cluster
+- Struct-field schema enhancements: element-level null, nested Array sub-fields, and struct
+  sub-field add/drop via bracketed paths (e.g. `clips[note]`)
+- MilvusClientV2 parity fixes: `ExternalField` vector field, typed `OrderBy` / `GroupBy`, iterator
+  cursor, and element-filter support
+
+### Fix
+
+- Handle empty result output field placeholders in search responses
+- Write search params and all remaining V2 JSON with a reflection-free writer, fixing
+  `InvalidOperationException` in apps published with `PublishTrimmed` / `PublishAot` (including
+  analyzer params, insert/upsert JSON columns, and reranker params)
+
 ## milvus-sdk-csharp 3.0.0 (2026-10-23)
 
 ### Feature
