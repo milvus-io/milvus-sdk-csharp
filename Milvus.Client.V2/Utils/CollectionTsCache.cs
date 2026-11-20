@@ -3,25 +3,88 @@ using System.Collections.Concurrent;
 namespace Milvus.Client.V2.Utils;
 
 /// <summary>
-/// A process-wide cache of the per-collection DML last-timestamp, used to build the <c>guaranteeTimestamp</c> for
-/// <c>ConsistencyLevel.Session</c> queries (read-your-writes within one session). Mirrors the Java
-/// <c>CollectionTsCache</c> / C++ <c>CollectionTsCache</c>.
+/// A process-wide, capacity-bounded LRU cache of the per-collection DML last-timestamp, used to build the
+/// <c>guaranteeTimestamp</c> for <c>ConsistencyLevel.Session</c> queries (read-your-writes within one session).
+/// Mirrors the Java <c>CollectionTsCache</c> / C++ <c>CollectionTsCache</c> and PyMilvus's <c>CollectionTsCache</c>
+/// (an LRU cache capped at 4096 entries by default).
 /// </summary>
-public sealed class CollectionTsCache
+internal sealed class CollectionTsCache
 {
     /// <summary>
     /// The shared instance.
     /// </summary>
     public static CollectionTsCache Instance { get; } = new();
 
-    private readonly ConcurrentDictionary<CollectionCacheKey, long> _cache = new();
+    private readonly ConcurrentDictionary<CollectionCacheKey, Entry> _cache = new();
     private readonly object _lock = new();
+    private volatile int _capacity;
+    private long _accessSequence;
 
     /// <summary>
-    /// Gets the last DML timestamp for the given collection, or 0 when absent.
+    /// Creates a new cache with the default capacity (<see cref="Constants.CacheDefaultCapacity" />).
+    /// </summary>
+    public CollectionTsCache()
+        : this(Constants.CacheDefaultCapacity)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new cache with the given capacity.
+    /// </summary>
+    /// <param name="capacity">The maximum number of entries before the least-recently-used entry is evicted.
+    /// Must be greater than zero.</param>
+    public CollectionTsCache(int capacity)
+    {
+        if (capacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(capacity), "Cache capacity must be greater than zero");
+        }
+
+        _capacity = capacity;
+    }
+
+    /// <summary>
+    /// The current maximum number of cached entries. Use <see cref="SetCapacity" /> to change it; shrinking evicts the
+    /// least-recently-accessed entries.
+    /// </summary>
+    public int Capacity => _capacity;
+
+    /// <summary>
+    /// Sets the cache capacity, evicting least-recently-used entries as needed.
+    /// </summary>
+    /// <param name="newCapacity">The new maximum number of cached entries. Must be greater than zero.</param>
+    public void SetCapacity(int newCapacity)
+    {
+        if (newCapacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(newCapacity), "Cache capacity must be greater than zero");
+        }
+
+        lock (_lock)
+        {
+            _capacity = newCapacity;
+            while (_cache.Count > _capacity)
+            {
+                EvictLeastRecentlyUsed();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the last DML timestamp for the given collection, or 0 when absent. Touches the entry so it counts
+    /// as most-recently used.
     /// </summary>
     public long Get(string endpoint, string database, string collection)
-        => _cache.TryGetValue(CollectionCacheKey.Create(endpoint, database, collection), out long ts) ? ts : 0L;
+    {
+        CollectionCacheKey key = CollectionCacheKey.Create(endpoint, database, collection);
+        if (_cache.TryGetValue(key, out Entry? entry))
+        {
+            Touch(entry);
+            return entry.Timestamp;
+        }
+
+        return 0L;
+    }
 
     /// <summary>
     /// Records the last DML timestamp for the given collection. A zero timestamp is ignored; the stored value is
@@ -37,7 +100,20 @@ public sealed class CollectionTsCache
         CollectionCacheKey key = CollectionCacheKey.Create(endpoint, database, collection);
         lock (_lock)
         {
-            _cache.AddOrUpdate(key, timestamp, (_, current) => Math.Max(current, timestamp));
+            if (_cache.TryGetValue(key, out Entry? entry))
+            {
+                if (timestamp > entry.Timestamp)
+                {
+                    entry.Timestamp = timestamp;
+                }
+
+                // _lock is already held; bump the recency inline instead of re-entering it via Touch().
+                entry.LastAccess = NextAccess();
+                return;
+            }
+
+            _cache[key] = new Entry(timestamp, NextAccess());
+            EvictIfNeeded();
         }
     }
 
@@ -93,8 +169,9 @@ public sealed class CollectionTsCache
 
         lock (_lock)
         {
-            long latest = Math.Max(_cache.TryGetValue(source, out long s) ? s : 0L,
-                _cache.TryGetValue(target, out long t) ? t : 0L);
+            long latest = Math.Max(
+                _cache.TryGetValue(source, out Entry? sourceEntry) ? sourceEntry.Timestamp : 0L,
+                _cache.TryGetValue(target, out Entry? targetEntry) ? targetEntry.Timestamp : 0L);
 
             if (dropSource)
             {
@@ -105,7 +182,8 @@ public sealed class CollectionTsCache
 
             if (latest != 0L)
             {
-                _cache[target] = latest;
+                _cache[target] = new Entry(latest, NextAccess());
+                EvictIfNeeded();
             }
         }
     }
@@ -119,4 +197,55 @@ public sealed class CollectionTsCache
     /// The number of cached entries.
     /// </summary>
     public int Count => _cache.Count;
+
+    private long NextAccess() => ++_accessSequence;
+
+    private void Touch(Entry entry)
+    {
+        lock (_lock)
+        {
+            entry.LastAccess = ++_accessSequence;
+        }
+    }
+
+    private void EvictIfNeeded()
+    {
+        if (_cache.Count <= _capacity)
+        {
+            return;
+        }
+
+        EvictLeastRecentlyUsed();
+    }
+
+    private void EvictLeastRecentlyUsed()
+    {
+        CollectionCacheKey? victim = null;
+        long oldest = long.MaxValue;
+        foreach (KeyValuePair<CollectionCacheKey, Entry> pair in _cache)
+        {
+            if (pair.Value.LastAccess < oldest)
+            {
+                oldest = pair.Value.LastAccess;
+                victim = pair.Key;
+            }
+        }
+
+        if (victim is { } key)
+        {
+            _cache.TryRemove(key, out _);
+        }
+    }
+
+    private sealed class Entry
+    {
+        public Entry(long timestamp, long lastAccess)
+        {
+            Timestamp = timestamp;
+            LastAccess = lastAccess;
+        }
+
+        public long Timestamp { get; set; }
+        public long LastAccess { get; set; }
+    }
 }
