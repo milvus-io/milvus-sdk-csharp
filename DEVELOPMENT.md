@@ -36,6 +36,16 @@ dotnet build Milvus.Client.sln
 `TreatWarningsAsErrors=true` is enabled via `Directory.Build.props` — fix warnings, do not suppress
 them casually. `Directory.Packages.props` centralizes package versions.
 
+All projects under the root `Directory.Build.props` — the two SDK assemblies, both test projects,
+and the examples — are strong-name signed via `PublicSign` using the committed public-only
+`Milvus.Client.snk`; the shipped SDK assemblies therefore carry `PublicKeyToken=935508312d658e9a`
+(matching the `StrongNameTests` regression guards in both test projects). The standalone `tutorial/`
+projects override `Directory.Build.props` and are not signed. To rotate the key, replace
+`Milvus.Client.snk`, update the expected token in those tests, **and** update the full `PublicKey`
+hex embedded in the `InternalsVisibleTo` entry of `Milvus.Client.V2/Milvus.Client.V2.csproj`
+(derived from the new key, as printed by `sn -Tp`), since the strong-named granting assembly
+requires the friend assembly's current public key (CS1726 otherwise). No private key is committed.
+
 Generated protobuf bindings are written to each project's `obj/` folder by `Grpc.Tools`. Do not edit
 generated files under `obj/` or `bin/`.
 
