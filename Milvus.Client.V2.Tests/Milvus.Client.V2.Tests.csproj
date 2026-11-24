@@ -3,7 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <NoWarn>$(NoWarn);CA1062</NoWarn>
+    <!-- These test projects are strong-named via the root Directory.Build.props, but they reference
+         unsigned test-only packages (e.g. GitHubActionsTestLogger); a code path that touches those
+         types would otherwise raise CS8002 under TreatWarningsAsErrors. -->
+    <NoWarn>$(NoWarn);CA1062;CS8002</NoWarn>
     <!-- The xunit v3 in-process runner is driven with `dotnet exec <dll>` (scripts/run_tests.sh), which
          requires a runtimeconfig.json; libraries do not emit one by default. -->
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>

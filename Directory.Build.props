@@ -12,6 +12,14 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+    <!-- Public (OSS) strong-name signing with a committed public-only key, so consumers with signing /
+         code-analysis rules don't get CS8002 when referencing the SDK. PublicSign produces a fake
+         signature (no private key in the repo); .NET Framework 3.5 SP1+ skips strong-name validation for
+         full-trust loads, so the net462 target is unaffected in normal use. -->
+    <SignAssembly>true</SignAssembly>
+    <PublicSign>true</PublicSign>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)Milvus.Client.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <Import Project="Version.props" />
