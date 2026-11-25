@@ -1098,6 +1098,7 @@ public sealed partial class MilvusClientV2
 
         string? token = null;
         float? lastBound = null;
+        string? cursor = null;
 
         // Filtered-page accumulation cache: when ExternalFilterFunc is set, filtered pages are buffered and
         // only yielded once a full batch of targetLen (= min(BatchSize, remaining)) rows has accumulated,
@@ -1128,6 +1129,22 @@ public sealed partial class MilvusClientV2
             {
                 ReplaceKeyValueItems(grpcRequest.SearchParams,
                     new Grpc.KeyValuePair { Key = "search_iter_last_bound", Value = FormatIteratorBound(lastBound.Value) });
+            }
+
+            if (cursor is { Length: > 0 })
+            {
+                ReplaceKeyValueItems(grpcRequest.SearchParams,
+                    new Grpc.KeyValuePair { Key = "search_iter_cursor", Value = cursor });
+            }
+            else
+            {
+                for (int i = grpcRequest.SearchParams.Count - 1; i >= 0; i--)
+                {
+                    if (grpcRequest.SearchParams[i].Key == "search_iter_cursor")
+                    {
+                        grpcRequest.SearchParams.RemoveAt(i);
+                    }
+                }
             }
 
             Grpc.SearchResults response = await InvokeAsync(
@@ -1161,6 +1178,7 @@ public sealed partial class MilvusClientV2
 
             token ??= iteratorInfo.Token;
             lastBound = iteratorInfo.LastBound;
+            cursor = string.IsNullOrEmpty(iteratorInfo.Cursor) ? null : iteratorInfo.Cursor;
 
             int count = response.Results?.Topks.Count > 0 ? (int)response.Results.Topks[0] : 0;
             if (count == 0)

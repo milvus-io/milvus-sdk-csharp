@@ -1184,6 +1184,7 @@ public class DqlTests
         server.Service.SearchIteratorToken = "tok-1";
         // The server pins a snapshot timestamp for the iterator, which the client must forward on page 2.
         server.Service.NextSearchSessionTs = 999;
+        server.Service.SearchIteratorCursorForCall = call => $"c1:call-{call}";
 
         var pages = new List<SingleResult>();
         await foreach (SingleResult page in client
@@ -1210,7 +1211,7 @@ public class DqlTests
         Assert.True(server.Service.Requests.ContainsKey("Search"));
         Assert.Equal(2, server.Service.SearchRequests.Count);
 
-        // Page 1 carries no cursor; page 2 must forward the token and last bound returned by page 1.
+        // Page 1 carries no cursor; page 2 must forward the token, last bound, and cursor returned by page 1.
         var page1 = server.Service.SearchRequests[0];
         var page1Params = page1.SearchParams.ToDictionary(p => p.Key, p => p.Value);
         Assert.Equal("True", page1Params["iterator"]);
@@ -1218,11 +1219,13 @@ public class DqlTests
         Assert.Equal("1", page1Params["topk"]);
         Assert.Equal("1", page1Params["search_iter_batch_size"]);
         Assert.DoesNotContain("search_iter_id", page1Params);
+        Assert.DoesNotContain("search_iter_cursor", page1Params);
 
         var page2 = server.Service.SearchRequests[1];
         var page2Params = page2.SearchParams.ToDictionary(p => p.Key, p => p.Value);
         Assert.Equal("tok-1", page2Params["search_iter_id"]);
         Assert.Equal("1.500000000000000", page2Params["search_iter_last_bound"]);
+        Assert.Equal("c1:call-0", page2Params["search_iter_cursor"]);
         // The snapshot timestamp returned by page 1 is pinned for page 2.
         Assert.Equal(999UL, page2.GuaranteeTimestamp);
     }
