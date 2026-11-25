@@ -492,6 +492,11 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
     public string? SearchIteratorToken { get; set; }
 
     /// <summary>
+    /// Optional per-call (0-based) search-iterator cursor returned alongside <see cref="SearchIteratorToken"/>.
+    /// </summary>
+    public Func<int, string?>? SearchIteratorCursorForCall { get; set; }
+
+    /// <summary>
     /// When set, <c>Search</c> returns these extra output columns on every page, letting tests exercise the
     /// search-iterator output-field merge with real columns. The list is passed to each Search call; a test can
     /// return a different column order per call to prove the merge pairs columns by name, not position.
@@ -567,10 +572,12 @@ internal sealed class MockMilvusService : MilvusService.MilvusServiceBase
         if (SearchIteratorToken is not null)
         {
             // Keep returning the token on every page; the iteration loop ends via its `remaining` count.
+            string? cursor = SearchIteratorCursorForCall?.Invoke(SearchRequests.Count - 1);
             results.Results.SearchIteratorV2Results = new Grpc.SearchIteratorV2Results
             {
                 Token = SearchIteratorToken,
-                LastBound = 1.5f
+                LastBound = 1.5f,
+                Cursor = cursor ?? string.Empty
             };
         }
 
