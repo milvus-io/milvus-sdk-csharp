@@ -638,6 +638,13 @@ public sealed partial class MilvusClientV2 : IDisposable
     {
         var options = new GrpcChannelOptions { LoggerFactory = config.LoggerFactory };
 
+        // Raise the per-call message size caps to the gRPC wire-protocol maximum (~2 GB) so a single API call can
+        // send and receive large payloads, mirroring the Java SDK (maxInboundMessageSize(Integer.MAX_VALUE)) and the
+        // C++ SDK (SetMaxSendMessageSize(-1) / SetMaxReceiveMessageSize(-1)). Grpc.Net.Client otherwise defaults the
+        // receive cap to 4 MB, which rejects responses larger than 4 MB.
+        options.MaxReceiveMessageSize = int.MaxValue;
+        options.MaxSendMessageSize = int.MaxValue;
+
 #if NET5_0_OR_GREATER
         // Keepalive pings keep the channel healthy across idle gaps and through load-balancer idle timeouts,
         // mirroring the Java SDK's keepAliveTimeMs/keepAliveTimeoutMs/keepAliveWithoutCalls.
